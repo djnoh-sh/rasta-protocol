@@ -15,7 +15,16 @@ typedef struct
 {
 	void * pvContext;
 	rsrx_action_dispatch_fn pfDispatch;
-} rsrx_action_sink_t;
+} rsrx_action_executor_t;
+
+typedef struct
+{
+	rsrx_action_executor_t xTransportExecutor;
+	rsrx_action_executor_t xTimerExecutor;
+	rsrx_action_executor_t xApiExecutor;
+	rsrx_action_executor_t xDiagnosticsExecutor;
+	rsrx_action_executor_t xLifecycleExecutor;
+} rsrx_action_executor_table_t;
 
 typedef struct
 {
@@ -26,12 +35,12 @@ typedef struct
 typedef struct
 {
 	rsrx_state_machine_context_t xStateMachine;
-	rsrx_action_sink_t xActionSink;
+	rsrx_action_executor_table_t xExecutors;
 } rsrx_orchestrator_context_t;
 
 rsrx_status_t rsrx_orchestrator_init(
 	rsrx_orchestrator_context_t * pxContext,
-	const rsrx_action_sink_t * pxActionSink);
+	const rsrx_action_executor_table_t * pxExecutors);
 
 rsrx_status_t rsrx_orchestrator_process_event(
 	rsrx_orchestrator_context_t * pxContext,

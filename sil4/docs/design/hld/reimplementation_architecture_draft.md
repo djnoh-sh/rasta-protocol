@@ -150,7 +150,7 @@ SHUTDOWN --> [*]
 | `rsrx_orchestrator_process_event` | In | 외부 event를 상태 머신에 전달하고 결과 action을 순서대로 dispatch |
 | `rsrx_orchestrator_get_state` | Out | orchestration 관점 현재 연결 상태 조회 |
 | `rsrx_orchestrator_reset` | In | orchestration 컨텍스트를 초기 상태로 복귀 |
-| `action_sink_dispatch` | Out | 전이 결과의 action을 adapter 계층으로 순차 전달 |
+| `transport/timer/api/diagnostics/lifecycle executors` | Out | 전이 결과의 action을 category별 executor에 순차 전달 |
 | `transition_report` | Out | 상태 전이 결과와 dispatch 개수를 상위 계층에 제공 |
 
 ## Safety Mechanisms
