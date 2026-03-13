@@ -153,6 +153,15 @@ SHUTDOWN --> [*]
 | `transport/timer/api/diagnostics/lifecycle executors` | Out | 전이 결과의 action을 category별 executor에 순차 전달 |
 | `transition_report` | Out | 상태 전이 결과와 dispatch 개수를 상위 계층에 제공 |
 
+### Module Interface Focus: MOD-007 Platform Abstraction
+
+| Interface | Direction | Description |
+| --- | --- | --- |
+| `rsrx_clock_port_t` | Out | monotonic time 획득 포트 |
+| `rsrx_timer_port_t` | Out | supervision/retransmission timer command 포트 |
+| `rsrx_diagnostics_port_t` | Out | structured diagnostics record 기록 포트 |
+| `rsrx_platform_port_table_t` | In | platform services 집합을 상위 모듈에 제공 |
+
 ## Safety Mechanisms
 
 - 오류 감지:
@@ -175,6 +184,7 @@ SHUTDOWN --> [*]
 | DD-003 | 상태 머신을 독립 모듈로 분리한다 | 상태 전이 검증 용이 | 송수신 로직 내부에 분산 구현 | 리뷰성과 테스트성 향상 |
 | DD-004 | 설정 검증을 startup 게이트로 둔다 | 위험한 설정으로 시작 금지 | 런타임 중 부분 보정 | 예측 가능성 향상 |
 | DD-005 | 상태 결정과 side effect 실행 사이에 orchestrator 경계를 둔다 | pure state machine 유지와 인터페이스 검증성 확보 | state machine 내부에서 직접 side effect 실행 | 추적성과 단위 테스트성 향상 |
+| DD-006 | platform abstraction을 구조화된 port table로 정의한다 | timer/diagnostics/clock 의존성을 타입 계약으로 고정 | 모듈별 임의 callback 집합 | 이식성과 추적성 향상 |
 
 ## Verification Impact
 

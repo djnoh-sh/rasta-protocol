@@ -29,3 +29,6 @@ add_executable(rsrx_orchestrator_test
 	tests/unit/test_rsrx_orchestrator.c)
 
 target_link_libraries(rsrx_orchestrator_test rsrx_orchestrator)
+
+add_executable(rsrx_platform_contract_test
+	tests/unit/test_rsrx_platform_contract.c)
