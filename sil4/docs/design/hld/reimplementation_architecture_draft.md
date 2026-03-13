@@ -95,7 +95,48 @@
   - 허용되지 않은 이벤트는 정의된 오류 처리 경로로만 진입한다.
   - timeout과 protocol violation은 `SAFE_DISCONNECT`로 이어져야 한다.
 - 관련 다이어그램:
-  - 추후 상태도 문서 추가 예정
+  - 아래 `Connection State Machine` 다이어그램 참조
+
+### Connection State Machine
+
+```plantuml
+@startuml
+title SIL4 Reimplementation - Connection State Machine (Draft)
+
+[*] --> UNINITIALIZED
+UNINITIALIZED --> INITIALIZED : init_success
+UNINITIALIZED --> SHUTDOWN : init_failure
+
+INITIALIZED --> CONNECTING : connect_request\nor valid inbound connect
+INITIALIZED --> SHUTDOWN : shutdown_request
+
+CONNECTING --> ESTABLISHED : handshake_success
+CONNECTING --> SAFE_DISCONNECT : invalid_message\nversion_mismatch\ntimeout
+CONNECTING --> SHUTDOWN : shutdown_request
+
+ESTABLISHED --> ESTABLISHED : valid_heartbeat\nvalid_data
+ESTABLISHED --> RETRANSMISSION_PENDING : seq_gap_detected
+ESTABLISHED --> SAFE_DISCONNECT : protocol_error\ntimeout\ndisconnect_request
+ESTABLISHED --> SHUTDOWN : shutdown_request
+
+RETRANSMISSION_PENDING --> ESTABLISHED : recovery_success
+RETRANSMISSION_PENDING --> SAFE_DISCONNECT : retransmission_failure\ntimeout\ninvalid_response
+RETRANSMISSION_PENDING --> SHUTDOWN : shutdown_request
+
+SAFE_DISCONNECT --> INITIALIZED : cleanup_complete
+SHUTDOWN --> [*]
+@enduml
+```
+
+### Module Interface Focus: MOD-002 Connection State Machine
+
+| Interface | Direction | Description |
+| --- | --- | --- |
+| `state_machine_init` | In | 상태 머신 컨텍스트 초기화 |
+| `state_machine_handle_event` | In | 외부 이벤트를 받아 상태 전이와 action 결정 |
+| `state_machine_get_state` | Out | 현재 상태 조회 |
+| `state_machine_reset` | In | 종료 후 초기 상태로 복귀 |
+| `state_machine_actions` | Out | 송신, 로그, 타이머 재설정, disconnect 등 후속 action 목록 |
 
 ## Safety Mechanisms
 
@@ -137,4 +178,4 @@
 - OI-001: redundancy 정책을 하나의 모듈로 둘지, channel manager와 sequencing manager로 더 분리할지 결정 필요
 - OI-002: public API를 synchronous API + callback 혼합으로 유지할지, event queue 기반으로 재설계할지 결정 필요
 - OI-003: SCI 계층을 1차 범위에 포함할지, 하부 RaSTA 코어 안정화 후 2단계로 둘지 결정 필요
-
+- OI-004: `SAFE_DISCONNECT` 이후 자동 복귀를 허용할지, 상위에서 명시적으로 재초기화할지 정책 결정 필요
