@@ -10,6 +10,20 @@ typedef struct
 	uint32_t uActionCount;
 } sil4_transition_rule_t;
 
+static const sil4_action_t xeRejectActions[2] =
+{
+	SIL4_ACTION_LOG_DIAGNOSTIC,
+	SIL4_ACTION_NOTIFY_API
+};
+
+static const sil4_action_t xeFailSafeActions[D_SIL4_ACTION_CAPACITY] =
+{
+	SIL4_ACTION_SEND_DISCONNECT,
+	SIL4_ACTION_ENTER_FAILSAFE,
+	SIL4_ACTION_NOTIFY_API,
+	SIL4_ACTION_LOG_DIAGNOSTIC
+};
+
 static void vSetNoActionResult(
 	sil4_transition_result_t * pxResult,
 	sil4_state_t eCurrentState,
@@ -50,6 +64,24 @@ static void vCopyActions(
 	}
 }
 
+static void vApplyTransitionRule(
+	sil4_transition_result_t * pxResult,
+	sil4_state_machine_context_t * pxContext,
+	const sil4_transition_rule_t * pxRule)
+{
+	pxResult->ePreviousState = pxContext->eCurrentState;
+	pxResult->eNextState = pxRule->eNextState;
+	pxResult->eStatus = pxRule->eStatus;
+
+	vCopyActions(
+		&pxResult->xActions,
+		pxRule->eActions,
+		pxRule->uActionCount);
+
+	pxContext->eCurrentState = pxRule->eNextState;
+	pxContext->eLastStatus = pxRule->eStatus;
+}
+
 static uint32_t uIsStateValid(
 	sil4_state_t eState)
 {
@@ -63,6 +95,26 @@ static uint32_t uIsEventValid(
 	return (uint32_t)((eEvent >= SIL4_EVENT_INIT_SUCCESS) &&
 		(eEvent < SIL4_EVENT_INVALID));
 }
+
+static uint32_t uStateUsesConservativeFailSafePolicy(
+	sil4_state_t eState)
+{
+	return (uint32_t)((eState == SIL4_STATE_CONNECTING) ||
+		(eState == SIL4_STATE_ESTABLISHED) ||
+		(eState == SIL4_STATE_RETRANSMISSION_PENDING));
+}
+
+static const sil4_transition_rule_t * pxFindTransitionRule(
+	sil4_state_t eState,
+	sil4_event_t eEvent);
+
+static void vBuildSafeDisconnectResult(
+	sil4_transition_result_t * pxResult,
+	sil4_state_machine_context_t * pxContext);
+
+static void vBuildIgnoredSafeDisconnectResult(
+	sil4_transition_result_t * pxResult,
+	sil4_state_machine_context_t * pxContext);
 
 static const sil4_transition_rule_t xTransitionRules[] =
 {
@@ -294,12 +346,62 @@ static void vBuildRejectedResult(
 
 	vCopyActions(
 		&pxResult->xActions,
+		xeRejectActions,
+		2U);
+}
+
+static void vBuildSafeDisconnectResult(
+	sil4_transition_result_t * pxResult,
+	sil4_state_machine_context_t * pxContext)
+{
+	pxResult->ePreviousState = pxContext->eCurrentState;
+	pxResult->eNextState = SIL4_STATE_SAFE_DISCONNECT;
+	pxResult->eStatus = SIL4_STATUS_REJECTED;
+
+	vCopyActions(
+		&pxResult->xActions,
+		xeFailSafeActions,
+		D_SIL4_ACTION_CAPACITY);
+
+	pxContext->eCurrentState = SIL4_STATE_SAFE_DISCONNECT;
+	pxContext->eLastStatus = SIL4_STATUS_REJECTED;
+}
+
+static void vBuildIgnoredSafeDisconnectResult(
+	sil4_transition_result_t * pxResult,
+	sil4_state_machine_context_t * pxContext)
+{
+	pxResult->ePreviousState = pxContext->eCurrentState;
+	pxResult->eNextState = SIL4_STATE_SAFE_DISCONNECT;
+	pxResult->eStatus = SIL4_STATUS_OK;
+
+	vCopyActions(
+		&pxResult->xActions,
 		(const sil4_action_t[])
 		{
-			SIL4_ACTION_LOG_DIAGNOSTIC,
-			SIL4_ACTION_NOTIFY_API
+			SIL4_ACTION_LOG_DIAGNOSTIC
 		},
-		2U);
+		1U);
+
+	pxContext->eLastStatus = SIL4_STATUS_OK;
+}
+
+static const sil4_transition_rule_t * pxFindTransitionRule(
+	sil4_state_t eState,
+	sil4_event_t eEvent)
+{
+	uint32_t uIndex;
+
+	for(uIndex = 0U; uIndex < (sizeof(xTransitionRules) / sizeof(xTransitionRules[0])); ++uIndex)
+	{
+		if((xTransitionRules[uIndex].eCurrentState == eState) &&
+			(xTransitionRules[uIndex].eEvent == eEvent))
+		{
+			return &xTransitionRules[uIndex];
+		}
+	}
+
+	return (const sil4_transition_rule_t *)0;
 }
 
 sil4_status_t state_machine_init(
@@ -322,8 +424,8 @@ sil4_status_t state_machine_handle_event(
 	sil4_event_t eEvent,
 	sil4_transition_result_t * pxResult)
 {
-	uint32_t uIndex;
 	sil4_state_t eCurrentState;
+	const sil4_transition_rule_t * pxRule;
 
 	if((pxContext == (sil4_state_machine_context_t *)0) ||
 		(pxResult == (sil4_transition_result_t *)0))
@@ -356,68 +458,23 @@ sil4_status_t state_machine_handle_event(
 		return SIL4_STATUS_OK;
 	}
 
-	for(uIndex = 0U; uIndex < (sizeof(xTransitionRules) / sizeof(xTransitionRules[0])); ++uIndex)
+	pxRule = pxFindTransitionRule(eCurrentState, eEvent);
+
+	if(pxRule != (const sil4_transition_rule_t *)0)
 	{
-		if((xTransitionRules[uIndex].eCurrentState == eCurrentState) &&
-			(xTransitionRules[uIndex].eEvent == eEvent))
-		{
-			pxResult->ePreviousState = eCurrentState;
-			pxResult->eNextState = xTransitionRules[uIndex].eNextState;
-			pxResult->eStatus = xTransitionRules[uIndex].eStatus;
-
-			vCopyActions(
-				&pxResult->xActions,
-				xTransitionRules[uIndex].eActions,
-				xTransitionRules[uIndex].uActionCount);
-
-			pxContext->eCurrentState = xTransitionRules[uIndex].eNextState;
-			pxContext->eLastStatus = xTransitionRules[uIndex].eStatus;
-
-			return xTransitionRules[uIndex].eStatus;
-		}
+		vApplyTransitionRule(pxResult, pxContext, pxRule);
+		return pxRule->eStatus;
 	}
 
-	if((eCurrentState == SIL4_STATE_CONNECTING) ||
-		(eCurrentState == SIL4_STATE_ESTABLISHED) ||
-		(eCurrentState == SIL4_STATE_RETRANSMISSION_PENDING))
+	if(uStateUsesConservativeFailSafePolicy(eCurrentState) != 0U)
 	{
-		pxResult->ePreviousState = eCurrentState;
-		pxResult->eNextState = SIL4_STATE_SAFE_DISCONNECT;
-		pxResult->eStatus = SIL4_STATUS_REJECTED;
-
-		vCopyActions(
-			&pxResult->xActions,
-			(const sil4_action_t[])
-			{
-				SIL4_ACTION_SEND_DISCONNECT,
-				SIL4_ACTION_ENTER_FAILSAFE,
-				SIL4_ACTION_NOTIFY_API,
-				SIL4_ACTION_LOG_DIAGNOSTIC
-			},
-			4U);
-
-		pxContext->eCurrentState = SIL4_STATE_SAFE_DISCONNECT;
-		pxContext->eLastStatus = SIL4_STATUS_REJECTED;
-
+		vBuildSafeDisconnectResult(pxResult, pxContext);
 		return SIL4_STATUS_REJECTED;
 	}
 
 	if(eCurrentState == SIL4_STATE_SAFE_DISCONNECT)
 	{
-		pxResult->ePreviousState = eCurrentState;
-		pxResult->eNextState = SIL4_STATE_SAFE_DISCONNECT;
-		pxResult->eStatus = SIL4_STATUS_OK;
-
-		vCopyActions(
-			&pxResult->xActions,
-			(const sil4_action_t[])
-			{
-				SIL4_ACTION_LOG_DIAGNOSTIC
-			},
-			1U);
-
-		pxContext->eLastStatus = SIL4_STATUS_OK;
-
+		vBuildIgnoredSafeDisconnectResult(pxResult, pxContext);
 		return SIL4_STATUS_OK;
 	}
 
@@ -452,4 +509,3 @@ sil4_status_t state_machine_reset(
 
 	return SIL4_STATUS_OK;
 }
-
