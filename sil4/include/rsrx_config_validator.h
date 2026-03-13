@@ -1,0 +1,41 @@
+#ifndef RSRX_CONFIG_VALIDATOR_H
+#define RSRX_CONFIG_VALIDATOR_H
+
+#include "rsrx_api.h"
+
+typedef enum
+{
+	RSRX_CONFIG_STATUS_OK = 0,
+	RSRX_CONFIG_STATUS_INVALID_ARGUMENT,
+	RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD,
+	RSRX_CONFIG_STATUS_INVALID_RANGE,
+	RSRX_CONFIG_STATUS_INCONSISTENT_VALUE
+} rsrx_config_status_t;
+
+typedef enum
+{
+	RSRX_CONFIG_FIELD_NONE = 0,
+	RSRX_CONFIG_FIELD_TRANSPORT_PORT,
+	RSRX_CONFIG_FIELD_PLATFORM_CLOCK,
+	RSRX_CONFIG_FIELD_PLATFORM_TIMER,
+	RSRX_CONFIG_FIELD_PLATFORM_DIAGNOSTICS,
+	RSRX_CONFIG_FIELD_DEFAULT_CHANNEL,
+	RSRX_CONFIG_FIELD_FRAME_PAYLOAD,
+	RSRX_CONFIG_FIELD_SUPERVISION_INTERVAL,
+	RSRX_CONFIG_FIELD_RETRANSMISSION_INTERVAL,
+	RSRX_CONFIG_FIELD_DIAGNOSTIC_FLUSH_INTERVAL,
+	RSRX_CONFIG_FIELD_API_CALLBACK,
+	RSRX_CONFIG_FIELD_LIFECYCLE_CALLBACK
+} rsrx_config_field_t;
+
+typedef struct
+{
+	rsrx_config_status_t eStatus;
+	rsrx_config_field_t eField;
+} rsrx_config_validation_report_t;
+
+rsrx_config_status_t rsrx_validate_session_config(
+	const rsrx_session_config_t * pxConfig,
+	rsrx_config_validation_report_t * pxReport);
+
+#endif

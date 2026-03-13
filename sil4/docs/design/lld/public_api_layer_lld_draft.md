@@ -27,6 +27,7 @@
 | --- | --- | --- | --- |
 | `include/rsrx_api.h` | public API/session contract 정의 | Public | 상위 애플리케이션 진입점 |
 | `src/rsrx_api.c` | session 초기화 및 API call routing 구현 | Internal | orchestrator/adapters 조립 |
+| `include/rsrx_config_validator.h` | session config startup gate 계약 | Public | `rsrx_session_init`가 사용 |
 | `tests/unit/test_rsrx_api.c` | public API 골격 단위 테스트 | Internal | callback 및 state transition 검증 |
 
 ## Types and Interfaces
@@ -48,6 +49,7 @@
 ## Functional Behavior
 
 - `rsrx_session_init`:
+  - `rsrx_validate_session_config`를 먼저 호출해 startup gate를 통과한 설정만 허용한다.
   - transport adapter, platform adapter, executor table, orchestrator를 순서대로 초기화한다.
   - API/lifecycle callback을 session 내부 executor로 연결한다.
 - `rsrx_session_start`:
@@ -68,5 +70,6 @@
   - lifecycle callback 호출 검증
   - invalid argument 방어 검증
 - 분석 포인트:
+  - config validation 실패 시 partially initialized state가 남지 않는지 검토
   - session 초기화 순서와 partially initialized state 방지
   - callback 호출 시점이 report 내용과 일치하는지 검토

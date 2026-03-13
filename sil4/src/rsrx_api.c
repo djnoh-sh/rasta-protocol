@@ -1,18 +1,5 @@
 #include "rsrx_api.h"
-
-static uint32_t uSessionConfigIsValid(
-	const rsrx_session_config_t * pxConfig)
-{
-	return (uint32_t)((pxConfig != (const rsrx_session_config_t *)0) &&
-		(pxConfig->xTransportPort.pfSend != (rsrx_transport_send_fn)0) &&
-		(pxConfig->xTransportPort.pfReceive != (rsrx_transport_receive_fn)0) &&
-		(pxConfig->xTransportPort.pfQueryChannel != (rsrx_transport_channel_query_fn)0) &&
-		(pxConfig->xPlatformPorts.xClock.pfNow != (rsrx_clock_now_fn)0) &&
-		(pxConfig->xPlatformPorts.xTimer.pfCommand != (rsrx_timer_command_fn)0) &&
-		(pxConfig->xPlatformPorts.xDiagnostics.pfWrite != (rsrx_diagnostic_write_fn)0) &&
-		(pxConfig->pfApiNotification != (rsrx_api_notification_fn)0) &&
-		(pxConfig->pfLifecycleNotification != (rsrx_lifecycle_notification_fn)0));
-}
+#include "rsrx_config_validator.h"
 
 static void vApiExecutorDispatch(
 	void * pvContext,
@@ -84,9 +71,10 @@ rsrx_status_t rsrx_session_init(
 {
 	rsrx_action_executor_t xApiExecutor;
 	rsrx_action_executor_t xLifecycleExecutor;
+	rsrx_config_validation_report_t xValidationReport;
 
 	if((pxSession == (rsrx_session_t *)0) ||
-		(uSessionConfigIsValid(pxConfig) == 0U))
+		(rsrx_validate_session_config(pxConfig, &xValidationReport) != RSRX_CONFIG_STATUS_OK))
 	{
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}

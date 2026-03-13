@@ -31,11 +31,16 @@ add_library(rsrx_codec STATIC
 
 target_include_directories(rsrx_codec PUBLIC include)
 
+add_library(rsrx_config_validator STATIC
+	src/rsrx_config_validator.c)
+
+target_include_directories(rsrx_config_validator PUBLIC include)
+
 add_library(rsrx_api STATIC
 	src/rsrx_api.c)
 
 target_include_directories(rsrx_api PUBLIC include)
-target_link_libraries(rsrx_api PUBLIC rsrx_platform_adapters)
+target_link_libraries(rsrx_api PUBLIC rsrx_platform_adapters rsrx_config_validator)
 
 add_library(rsrx_transport_supervisor STATIC
 	src/rsrx_transport_supervisor.c)
@@ -68,6 +73,11 @@ add_executable(rsrx_api_test
 	tests/unit/test_rsrx_api.c)
 
 target_link_libraries(rsrx_api_test rsrx_api)
+
+add_executable(rsrx_config_validator_test
+	tests/unit/test_rsrx_config_validator.c)
+
+target_link_libraries(rsrx_config_validator_test rsrx_config_validator)
 
 add_executable(rsrx_codec_contract_test
 	tests/unit/test_rsrx_codec_contract.c)

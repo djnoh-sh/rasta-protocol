@@ -350,8 +350,21 @@ static void vTestSessionRetransmissionPath(void)
 static void vTestInvalidArguments(void)
 {
 	rsrx_session_t xSession = { 0 };
+	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 100U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x01U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	xConfig.uSupervisionIntervalNs = 0U;
+
 	vAssertTrue(rsrx_session_init((rsrx_session_t *)0, (const rsrx_session_config_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null session init");
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "invalid config rejected");
 	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "start before init");
 	vAssertTrue(rsrx_session_get_state((const rsrx_session_t *)0) == RSRX_STATE_INVALID, "get state null");
 	vAssertTrue(rsrx_session_reset((rsrx_session_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "reset null");
