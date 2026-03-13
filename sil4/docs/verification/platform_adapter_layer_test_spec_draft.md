@@ -23,6 +23,6 @@
 
 | Test ID | Req ID | Objective | Precondition | Stimulus | Expected Result | Pass/Fail Criteria |
 | --- | --- | --- | --- | --- | --- | --- |
-| TC-PA-001 | IF-002 | platform-backed executor table 조립 검증 | 유효 port table, transport/api/lifecycle executor 준비 | build executor table 호출 | timer/diagnostics executor가 adapter 함수로 연결 | executor table이 설계와 일치 |
-| TC-PA-002 | SR-003 | timer action 변환 검증 | monotonic clock stub 준비 | `START_SUPERVISION_TIMER` dispatch | timer command가 deadline/reason 포함으로 생성 | timer id, command, deadline, reason 일치 |
+| TC-PA-001 | IF-002 | platform-backed executor table 조립 검증 | 유효 port table, transport/api/lifecycle executor 준비 | build executor table 호출 | transport/timer/diagnostics executor가 adapter 함수로 연결 | executor table이 설계와 일치 |
+| TC-PA-002 | SR-003 | transport 및 timer action 변환 검증 | transport send stub, monotonic clock stub 준비 | `START_HANDSHAKE`, `START_SUPERVISION_TIMER` dispatch | send request 및 timer command가 reason 포함으로 생성 | channel/payload/reason, timer id/command/deadline이 일치 |
 | TC-PA-003 | FR-007, SR-004 | diagnostics action 변환 검증 | diagnostics writer stub 준비 | `LOG_DIAGNOSTIC` dispatch | diagnostic record가 severity/state/status/reason 포함으로 기록 | record 필드가 설계와 일치 |

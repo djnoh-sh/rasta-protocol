@@ -23,6 +23,12 @@ typedef struct
 
 typedef struct
 {
+	rsrx_transport_send_request_t xLastRequest;
+	uint32_t uCallCount;
+} test_transport_context_t;
+
+typedef struct
+{
 	rsrx_action_t eLastAction;
 	uint32_t uCallCount;
 } test_action_context_t;
@@ -60,6 +66,32 @@ static rsrx_platform_status_t eDiagnosticWrite(void * pvContext, const rsrx_diag
 	return RSRX_PLATFORM_STATUS_OK;
 }
 
+static rsrx_transport_status_t eTransportSend(void * pvContext, const rsrx_transport_send_request_t * pxRequest)
+{
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+	pxContext->uCallCount++;
+	pxContext->xLastRequest = *pxRequest;
+	return RSRX_TRANSPORT_STATUS_OK;
+}
+
+static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transport_frame_t * pxFrame)
+{
+	(void)pvContext;
+	(void)pxFrame;
+	return RSRX_TRANSPORT_STATUS_OK;
+}
+
+static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
+{
+	(void)pvContext;
+	if(pxState != (rsrx_transport_channel_state_t *)0)
+	{
+		pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+		pxState->uIsAvailable = 1U;
+	}
+	return RSRX_TRANSPORT_STATUS_OK;
+}
+
 static void vCaptureAction(void * pvContext, const rsrx_transition_result_t * pxTransition, rsrx_action_t eAction, uint32_t uActionIndex)
 {
 	test_action_context_t * pxContext = (test_action_context_t *)pvContext;
@@ -72,18 +104,20 @@ static void vCaptureAction(void * pvContext, const rsrx_transition_result_t * px
 static void vTestPlatformExecutorTableBuild(void)
 {
 	rsrx_platform_adapter_context_t xPlatformContext;
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	test_clock_context_t xClockContext = { 100U, 0U };
 	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_action_context_t xTransportContext = { RSRX_ACTION_NONE, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
 	test_action_context_t xApiContext = { RSRX_ACTION_NONE, 0U };
 	test_action_context_t xLifecycleContext = { RSRX_ACTION_NONE, 0U };
 	rsrx_platform_port_table_t xPorts;
-	rsrx_action_executor_t xTransportExecutor;
+	rsrx_transport_port_t xTransportPort;
 	rsrx_action_executor_t xApiExecutor;
 	rsrx_action_executor_t xLifecycleExecutor;
 	rsrx_action_executor_table_t xExecutors;
 	rsrx_status_t eStatus;
+	static const uint8_t auPayload[4] = { 0x10U, 0x20U, 0x30U, 0x40U };
 
 	xPorts.xClock.pvContext = &xClockContext;
 	xPorts.xClock.pfNow = eClockNow;
@@ -93,9 +127,19 @@ static void vTestPlatformExecutorTableBuild(void)
 	xPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
 
 	vAssertTrue(rsrx_platform_adapter_init(&xPlatformContext, &xPorts, 50U, 75U, 125U) == RSRX_PLATFORM_STATUS_OK, "platform adapter init");
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auPayload,
+			sizeof(auPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter init");
 
-	xTransportExecutor.pvContext = &xTransportContext;
-	xTransportExecutor.pfDispatch = vCaptureAction;
 	xApiExecutor.pvContext = &xApiContext;
 	xApiExecutor.pfDispatch = vCaptureAction;
 	xLifecycleExecutor.pvContext = &xLifecycleContext;
@@ -103,23 +147,28 @@ static void vTestPlatformExecutorTableBuild(void)
 
 	eStatus = rsrx_platform_adapter_build_executor_table(
 		&xExecutors,
+		&xTransportAdapterContext,
 		&xPlatformContext,
-		&xTransportExecutor,
 		&xApiExecutor,
 		&xLifecycleExecutor);
 	vAssertTrue(eStatus == RSRX_STATUS_OK, "build executor table");
+	vAssertTrue(xExecutors.xTransportExecutor.pfDispatch == rsrx_transport_executor_dispatch, "transport executor binding");
 	vAssertTrue(xExecutors.xTimerExecutor.pfDispatch == rsrx_platform_timer_executor_dispatch, "timer executor binding");
 	vAssertTrue(xExecutors.xDiagnosticsExecutor.pfDispatch == rsrx_platform_diagnostics_executor_dispatch, "diagnostics executor binding");
 }
 
-static void vTestTimerAndDiagnosticsDispatch(void)
+static void vTestTransportTimerAndDiagnosticsDispatch(void)
 {
 	rsrx_platform_adapter_context_t xPlatformContext;
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	test_clock_context_t xClockContext = { 1000U, 0U };
 	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
 	rsrx_platform_port_table_t xPorts;
+	rsrx_transport_port_t xTransportPort;
 	rsrx_transition_result_t xTransition;
+	static const uint8_t auPayload[2] = { 0xAAU, 0x55U };
 
 	xPorts.xClock.pvContext = &xClockContext;
 	xPorts.xClock.pfNow = eClockNow;
@@ -129,6 +178,16 @@ static void vTestTimerAndDiagnosticsDispatch(void)
 	xPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
 
 	(void)rsrx_platform_adapter_init(&xPlatformContext, &xPorts, 200U, 300U, 400U);
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	(void)rsrx_transport_adapter_init(
+		&xTransportAdapterContext,
+		&xTransportPort,
+		RSRX_TRANSPORT_CHANNEL_PRIMARY,
+		auPayload,
+		sizeof(auPayload));
 
 	xTransition.ePreviousState = RSRX_STATE_INITIALIZED;
 	xTransition.eNextState = RSRX_STATE_CONNECTING;
@@ -136,6 +195,12 @@ static void vTestTimerAndDiagnosticsDispatch(void)
 	xTransition.eReason = RSRX_REASON_CONNECT_REQUESTED;
 	xTransition.eDiagnostic = RSRX_DIAG_INFO_STATE_TRANSITION;
 	xTransition.xActions.uActionCount = 0U;
+
+	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
+	vAssertTrue(xTransportContext.uCallCount == 1U, "transport send called");
+	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "transport channel mapped");
+	vAssertTrue(xTransportContext.xLastRequest.xPayloadLength == sizeof(auPayload), "transport payload length mapped");
+	vAssertTrue(xTransportContext.xLastRequest.eReason == RSRX_REASON_CONNECT_REQUESTED, "transport reason mapped");
 
 	rsrx_platform_timer_executor_dispatch(&xPlatformContext, &xTransition, RSRX_ACTION_START_SUPERVISION_TIMER, 1U);
 	vAssertTrue(xClockContext.uCallCount == 1U, "clock called");
@@ -154,7 +219,7 @@ static void vTestTimerAndDiagnosticsDispatch(void)
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
-	vTestTimerAndDiagnosticsDispatch();
+	vTestTransportTimerAndDiagnosticsDispatch();
 
 	(void)printf("rsrx_platform_adapters_test: all tests passed\n");
 

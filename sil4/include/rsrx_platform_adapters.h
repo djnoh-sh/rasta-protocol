@@ -5,6 +5,15 @@
 
 #include "rsrx_orchestrator.h"
 #include "rsrx_platform.h"
+#include "rsrx_transport.h"
+
+typedef struct
+{
+	rsrx_transport_port_t xTransportPort;
+	rsrx_transport_channel_id_t eDefaultChannelId;
+	const uint8_t * puFramePayload;
+	size_t xFramePayloadLength;
+} rsrx_transport_adapter_context_t;
 
 typedef struct
 {
@@ -14,6 +23,19 @@ typedef struct
 	rsrx_monotonic_time_ns_t uDiagnosticFlushIntervalNs;
 	uint32_t uEventCounter;
 } rsrx_platform_adapter_context_t;
+
+rsrx_transport_status_t rsrx_transport_adapter_init(
+	rsrx_transport_adapter_context_t * pxContext,
+	const rsrx_transport_port_t * pxTransportPort,
+	rsrx_transport_channel_id_t eDefaultChannelId,
+	const uint8_t * puFramePayload,
+	size_t xFramePayloadLength);
+
+void rsrx_transport_executor_dispatch(
+	void * pvContext,
+	const rsrx_transition_result_t * pxTransition,
+	rsrx_action_t eAction,
+	uint32_t uActionIndex);
 
 rsrx_platform_status_t rsrx_platform_adapter_init(
 	rsrx_platform_adapter_context_t * pxContext,
@@ -36,8 +58,8 @@ void rsrx_platform_diagnostics_executor_dispatch(
 
 rsrx_status_t rsrx_platform_adapter_build_executor_table(
 	rsrx_action_executor_table_t * pxExecutors,
+	rsrx_transport_adapter_context_t * pxTransportContext,
 	rsrx_platform_adapter_context_t * pxPlatformContext,
-	const rsrx_action_executor_t * pxTransportExecutor,
 	const rsrx_action_executor_t * pxApiExecutor,
 	const rsrx_action_executor_t * pxLifecycleExecutor);
 
