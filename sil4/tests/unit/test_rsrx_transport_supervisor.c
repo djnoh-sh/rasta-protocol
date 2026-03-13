@@ -32,6 +32,15 @@ typedef struct
 	uint32_t uLifecycleCount;
 } test_callback_context_t;
 
+typedef struct
+{
+	rsrx_codec_status_t eStatus;
+	rsrx_decoded_message_t xMessage;
+	uint32_t uCallCount;
+} test_codec_context_t;
+
+static test_codec_context_t g_xCodecContext;
+
 static void vAssertTrue(int iCondition, const char * pcMessage)
 {
 	if(iCondition == 0)
@@ -106,6 +115,22 @@ static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t 
 	pxContext->uLifecycleCount++;
 }
 
+static void vSetCodecBehavior(
+	rsrx_codec_status_t eStatus,
+	rsrx_message_type_t eMessageType,
+	rsrx_event_t eSuggestedEvent,
+	rsrx_reason_code_t eReason)
+{
+	g_xCodecContext.eStatus = eStatus;
+	g_xCodecContext.uCallCount = 0U;
+	g_xCodecContext.xMessage.eMessageType = eMessageType;
+	g_xCodecContext.xMessage.eSuggestedEvent = eSuggestedEvent;
+	g_xCodecContext.xMessage.eReason = eReason;
+	g_xCodecContext.xMessage.uSequenceNumber = 1U;
+	g_xCodecContext.xMessage.uConfirmationNumber = 1U;
+	g_xCodecContext.xMessage.xPayloadLength = 0U;
+}
+
 static rsrx_codec_status_t eDecodeFrame(const rsrx_transport_frame_t * pxFrame, rsrx_decoded_message_t * pxMessage)
 {
 	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
@@ -114,13 +139,10 @@ static rsrx_codec_status_t eDecodeFrame(const rsrx_transport_frame_t * pxFrame, 
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
 	}
 
-	pxMessage->eMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
-	pxMessage->eSuggestedEvent = RSRX_EVENT_HANDSHAKE_SUCCESS;
-	pxMessage->eReason = RSRX_REASON_HANDSHAKE_COMPLETED;
-	pxMessage->uSequenceNumber = 1U;
-	pxMessage->uConfirmationNumber = 1U;
+	g_xCodecContext.uCallCount++;
+	*pxMessage = g_xCodecContext.xMessage;
 	pxMessage->xPayloadLength = pxFrame->xPayloadLength;
-	return RSRX_CODEC_STATUS_OK;
+	return g_xCodecContext.eStatus;
 }
 
 static void vFillConfig(
@@ -175,6 +197,11 @@ static void vTestSupervisorInboundHandshakePath(void)
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
 	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session connect");
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_EVENT_HANDSHAKE_SUCCESS,
+		RSRX_REASON_HANDSHAKE_COMPLETED);
 
 	xCodec.pfEncode = (rsrx_encode_message_fn)0;
 	xCodec.pfDecode = eDecodeFrame;
@@ -189,6 +216,8 @@ static void vTestSupervisorInboundHandshakePath(void)
 	vAssertTrue(pxSupervisorReport->xLastMessage.eSuggestedEvent == RSRX_EVENT_HANDSHAKE_SUCCESS, "decoded suggested event");
 	vAssertTrue(pxSupervisorReport->pxLastReport != (const rsrx_orchestrator_report_t *)0, "session report available");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_HANDSHAKE_COMPLETED, "handover reason");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "processed frame count");
+	vAssertTrue(g_xCodecContext.uCallCount == 1U, "codec called once");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "session established");
 }
 
@@ -200,10 +229,101 @@ static void vTestSupervisorInvalidArguments(void)
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, (const rsrx_transport_frame_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame invalid args");
 }
 
+static void vTestSupervisorDecodeFailure(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[2] = { 0x10U, 0x20U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session connect");
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_DECODE_ERROR,
+		RSRX_MESSAGE_TYPE_INVALID,
+		RSRX_EVENT_INVALID,
+		RSRX_REASON_NONE);
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "supervisor init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "decode failure status");
+	vAssertTrue(pxSupervisorReport != (const rsrx_transport_supervisor_report_t *)0, "decode failure report");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "decode failure count");
+	vAssertTrue(pxSupervisorReport->pxLastReport == (const rsrx_orchestrator_report_t *)0, "decode failure session report absent");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eSuggestedEvent == RSRX_EVENT_INVALID, "decode failure suggested event untouched");
+	vAssertTrue(g_xCodecContext.uCallCount == 1U, "decode failure codec call");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "decode failure leaves session state");
+}
+
+static void vTestSupervisorUnsupportedMessage(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[4] = { 0xABU, 0xCDU, 0xEFU, 0x01U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session connect");
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE,
+		RSRX_MESSAGE_TYPE_DIAGNOSTIC,
+		RSRX_EVENT_INVALID,
+		RSRX_REASON_PROTOCOL_ERROR_DETECTED);
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "supervisor init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "unsupported message status");
+	vAssertTrue(pxSupervisorReport != (const rsrx_transport_supervisor_report_t *)0, "unsupported message report");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "unsupported message count");
+	vAssertTrue(pxSupervisorReport->pxLastReport == (const rsrx_orchestrator_report_t *)0, "unsupported message session report absent");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eMessageType == RSRX_MESSAGE_TYPE_DIAGNOSTIC, "unsupported message type retained");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "unsupported message reason retained");
+	vAssertTrue(g_xCodecContext.uCallCount == 1U, "unsupported message codec call");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "unsupported message leaves session state");
+}
+
 int main(void)
 {
 	vTestSupervisorInboundHandshakePath();
 	vTestSupervisorInvalidArguments();
+	vTestSupervisorDecodeFailure();
+	vTestSupervisorUnsupportedMessage();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");
 
