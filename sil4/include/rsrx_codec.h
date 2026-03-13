@@ -72,4 +72,14 @@ typedef struct
 	rsrx_decode_frame_fn pfDecode;
 } rsrx_codec_port_t;
 
+rsrx_codec_status_t rsrx_codec_encode_message(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer);
+
+rsrx_codec_status_t rsrx_codec_decode_frame(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage);
+
+const rsrx_codec_port_t * rsrx_codec_get_default_port(void);
+
 #endif

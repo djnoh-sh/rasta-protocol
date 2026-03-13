@@ -25,7 +25,9 @@
 | File | Purpose | Public/Internal | Notes |
 | --- | --- | --- | --- |
 | `include/rsrx_codec.h` | codec public contract 정의 | Public | encode/decode 타입 및 port 정의 |
+| `src/rsrx_codec.c` | deterministic encode/decode skeleton 구현 | Internal | 고정 header 기반 wire format |
 | `tests/unit/test_rsrx_codec_contract.c` | codec header contract smoke test | Internal | 타입 계약 및 기본 레이아웃 검증 |
+| `tests/unit/test_rsrx_codec.c` | codec round-trip 단위 테스트 | Internal | encode/decode 정상/오류 경로 검증 |
 
 ## Types and Interfaces
 
@@ -46,6 +48,7 @@
 - encode:
   - message type과 sequence/confirmation/payload를 wire-format buffer로 직렬화한다.
   - encode 대상 버퍼는 caller가 제공한다.
+  - skeleton 구현은 고정 길이 header와 variable payload로 구성된 deterministic wire format을 사용한다.
 
 ## Design Rules
 
@@ -59,6 +62,9 @@
   - codec header compile contract 검증
   - decoded message 구조체 계약 검증
   - encode request/buffer 구조체 계약 검증
+  - encode/decode round-trip 검증
+  - unsupported message reject 검증
+  - buffer too small 검증
 - 분석 포인트:
   - payload 최대 길이 상한
   - message type과 suggested event 매핑 정책

@@ -8,11 +8,11 @@
 | FR-002 | HZ-001 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-001, TC-SM-002, TC-SM-009, TC-SM-013, TC-SM-014, TC-SM-016 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 |  |  |  |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_send_request_t`, `rsrx_transport_frame_t` | TC-TR-002 |  | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h` | `rsrx_decoded_message_t`, `rsrx_encode_request_t`, `rsrx_encode_buffer_t` | TC-CODEC-001, TC-CODEC-002, TC-CODEC-003 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_decoded_message_t`, `rsrx_encode_request_t`, `rsrx_encode_buffer_t`, `rsrx_codec_encode_message`, `rsrx_codec_decode_frame` | TC-CODEC-001, TC-CODEC-002, TC-CODEC-004 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame` | TC-SUP-001 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-004, TC-SM-005, TC-SM-011 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_frame_t` | TC-TR-003 |  | Draft |
-| FR-004 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h` | `rsrx_encode_request_t`, `rsrx_encode_buffer_t` | TC-CODEC-003 |  | Draft |
+| FR-004 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_encode_request_t`, `rsrx_encode_buffer_t`, `rsrx_codec_encode_message`, `rsrx_codec_decode_frame` | TC-CODEC-003, TC-CODEC-004, TC-CODEC-006 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame` | TC-SUP-001 |  | Draft |
 | FR-005 | HZ-001 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event`, `rsrx_state_machine_reset` | TC-SM-006, TC-SM-010 |  | Draft |
 | FR-005 | HZ-001 | HLD-001, LLD-003 | `sil4/src/rsrx_orchestrator.c` | `rsrx_orchestrator_process_event`, `rsrx_orchestrator_reset` | TC-OR-002, TC-OR-003, TC-OR-005 |  | Draft |
@@ -22,7 +22,7 @@
 | FR-007 | HZ-006 | HLD-001, LLD-003 | `sil4/include/rsrx_orchestrator.h`, `sil4/src/rsrx_orchestrator.c` | `rsrx_orchestrator_process_event` | TC-OR-003, TC-OR-004, TC-OR-005 |  | Draft |
 | FR-007 | HZ-006 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_platform_diagnostics_executor_dispatch`, `rsrx_platform_adapter_build_executor_table` | TC-PA-003 |  | Draft |
 | SR-001 | HZ-001 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-002, TC-SM-016 |  | Draft |
-| SR-001 | HZ-001 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h` | `rsrx_decoded_message_t` | TC-CODEC-002 |  | Draft |
+| SR-001 | HZ-001 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_decoded_message_t`, `rsrx_codec_decode_frame` | TC-CODEC-002, TC-CODEC-005 |  | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-003, TC-SM-013, TC-SM-017 |  | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_frame_t`, `rsrx_transport_channel_state_t` | TC-TR-003 |  | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_init`, `rsrx_transport_supervisor_process_frame` | TC-SUP-002 |  | Draft |
