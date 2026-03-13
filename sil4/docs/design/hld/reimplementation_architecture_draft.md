@@ -185,6 +185,14 @@ SHUTDOWN --> [*]
 | `rsrx_decoded_message_t` | Out | decoded message와 suggested state machine event 제공 |
 | `rsrx_codec_port_t` | In | encode/decode 구현 집합 |
 
+### Module Interface Focus: MOD-004 Transport Supervisor
+
+| Interface | Direction | Description |
+| --- | --- | --- |
+| `rsrx_transport_supervisor_init` | In | session과 codec을 결합한 supervisor context 초기화 |
+| `rsrx_transport_supervisor_process_frame` | In | inbound frame을 decode하고 session event로 전달 |
+| `rsrx_transport_supervisor_report_t` | Out | 마지막 frame, decoded message, session report 제공 |
+
 ### Module Interface Focus: MOD-009 Platform Adapter Layer
 
 | Interface | Direction | Description |
@@ -224,6 +232,7 @@ SHUTDOWN --> [*]
 | DD-008 | transport는 send/receive/query를 하나의 port contract로 정의한다 | redundancy와 채널 상태 추적을 같은 추상화 위에 올리기 위함 | 개별 함수 포인터 흩어진 정의 | 확장성과 시험성 향상 |
 | DD-010 | public API는 session 중심 contract로 제공한다 | 상위 애플리케이션이 executor/adapters 세부구조를 직접 다루지 않도록 하기 위함 | 개별 모듈 직접 조립 | 사용성 및 오용 방지 향상 |
 | DD-011 | protocol codec은 encode/decode port contract로 정의한다 | transport frame과 state machine event 사이의 변환 책임을 명확히 분리 | transport supervisor 내부 ad-hoc parsing | 검증성과 수신 경로 시험성 향상 |
+| DD-012 | inbound frame 처리는 transport supervisor가 담당한다 | codec과 session 사이 handoff 책임을 분리하기 위함 | public API가 직접 decode 결과를 처리 | 수신 경로 구조화와 시험성 향상 |
 
 ## Verification Impact
 
