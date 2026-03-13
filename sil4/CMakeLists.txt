@@ -43,3 +43,6 @@ add_executable(rsrx_platform_adapters_test
 	tests/unit/test_rsrx_platform_adapters.c)
 
 target_link_libraries(rsrx_platform_adapters_test rsrx_platform_adapters)
+
+add_executable(rsrx_transport_contract_test
+	tests/unit/test_rsrx_transport_contract.c)

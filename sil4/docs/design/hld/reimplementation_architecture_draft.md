@@ -162,6 +162,7 @@ SHUTDOWN --> [*]
 | `rsrx_timer_port_t` | Out | supervision/retransmission timer command 포트 |
 | `rsrx_diagnostics_port_t` | Out | structured diagnostics record 기록 포트 |
 | `rsrx_platform_port_table_t` | In | platform services 집합을 상위 모듈에 제공 |
+| `rsrx_transport_port_t` | Out | send/receive/channel query transport 포트 |
 
 ### Module Interface Focus: MOD-009 Platform Adapter Layer
 
@@ -196,6 +197,7 @@ SHUTDOWN --> [*]
 | DD-005 | 상태 결정과 side effect 실행 사이에 orchestrator 경계를 둔다 | pure state machine 유지와 인터페이스 검증성 확보 | state machine 내부에서 직접 side effect 실행 | 추적성과 단위 테스트성 향상 |
 | DD-006 | platform abstraction을 구조화된 port table로 정의한다 | timer/diagnostics/clock 의존성을 타입 계약으로 고정 | 모듈별 임의 callback 집합 | 이식성과 추적성 향상 |
 | DD-007 | timer/diagnostics executor는 platform adapter layer를 통해서만 platform port에 접근한다 | executor routing과 platform contract의 결합점을 단일화 | orchestrator가 platform port를 직접 호출 | 책임 분리와 시험성 향상 |
+| DD-008 | transport는 send/receive/query를 하나의 port contract로 정의한다 | redundancy와 채널 상태 추적을 같은 추상화 위에 올리기 위함 | 개별 함수 포인터 흩어진 정의 | 확장성과 시험성 향상 |
 
 ## Verification Impact
 
