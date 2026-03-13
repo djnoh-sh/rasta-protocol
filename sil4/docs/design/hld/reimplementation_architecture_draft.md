@@ -154,6 +154,18 @@ SHUTDOWN --> [*]
 | `transport/timer/api/diagnostics/lifecycle executors` | Out | 전이 결과의 action을 category별 executor에 순차 전달 |
 | `transition_report` | Out | 상태 전이 결과와 dispatch 개수를 상위 계층에 제공 |
 
+### Module Interface Focus: MOD-001 Public API Layer
+
+| Interface | Direction | Description |
+| --- | --- | --- |
+| `rsrx_session_init` | In | session config를 받아 하위 모듈과 executor table을 초기화 |
+| `rsrx_session_start` | In | startup success 경로를 시작 |
+| `rsrx_session_connect` | In | 연결 수립을 시작 |
+| `rsrx_session_disconnect` | In | 연결 종료 절차를 시작 |
+| `rsrx_session_process_event` | In | 일반 event를 session에 전달 |
+| `rsrx_session_get_state` | Out | 현재 session 상태 조회 |
+| `rsrx_session_reset` | In | session 상태 초기화 |
+
 ### Module Interface Focus: MOD-007 Platform Abstraction
 
 | Interface | Direction | Description |
@@ -201,6 +213,7 @@ SHUTDOWN --> [*]
 | DD-007 | timer/diagnostics executor는 platform adapter layer를 통해서만 platform port에 접근한다 | executor routing과 platform contract의 결합점을 단일화 | orchestrator가 platform port를 직접 호출 | 책임 분리와 시험성 향상 |
 | DD-009 | transport executor도 adapter layer를 통해 transport port에 접근한다 | send request mapping과 channel 정책을 단일 지점에 고정 | orchestrator가 transport port를 직접 호출 | transport 계약 일관성 향상 |
 | DD-008 | transport는 send/receive/query를 하나의 port contract로 정의한다 | redundancy와 채널 상태 추적을 같은 추상화 위에 올리기 위함 | 개별 함수 포인터 흩어진 정의 | 확장성과 시험성 향상 |
+| DD-010 | public API는 session 중심 contract로 제공한다 | 상위 애플리케이션이 executor/adapters 세부구조를 직접 다루지 않도록 하기 위함 | 개별 모듈 직접 조립 | 사용성 및 오용 방지 향상 |
 
 ## Verification Impact
 

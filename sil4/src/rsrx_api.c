@@ -1,0 +1,202 @@
+#include "rsrx_api.h"
+
+static uint32_t uSessionConfigIsValid(
+	const rsrx_session_config_t * pxConfig)
+{
+	return (uint32_t)((pxConfig != (const rsrx_session_config_t *)0) &&
+		(pxConfig->xTransportPort.pfSend != (rsrx_transport_send_fn)0) &&
+		(pxConfig->xTransportPort.pfReceive != (rsrx_transport_receive_fn)0) &&
+		(pxConfig->xTransportPort.pfQueryChannel != (rsrx_transport_channel_query_fn)0) &&
+		(pxConfig->xPlatformPorts.xClock.pfNow != (rsrx_clock_now_fn)0) &&
+		(pxConfig->xPlatformPorts.xTimer.pfCommand != (rsrx_timer_command_fn)0) &&
+		(pxConfig->xPlatformPorts.xDiagnostics.pfWrite != (rsrx_diagnostic_write_fn)0) &&
+		(pxConfig->pfApiNotification != (rsrx_api_notification_fn)0) &&
+		(pxConfig->pfLifecycleNotification != (rsrx_lifecycle_notification_fn)0));
+}
+
+static void vApiExecutorDispatch(
+	void * pvContext,
+	const rsrx_transition_result_t * pxTransition,
+	rsrx_action_t eAction,
+	uint32_t uActionIndex)
+{
+	rsrx_session_t * pxSession = (rsrx_session_t *)pvContext;
+	(void)pxTransition;
+	(void)eAction;
+	(void)uActionIndex;
+
+	if((pxSession != (rsrx_session_t *)0) &&
+		(pxSession->pfApiNotification != (rsrx_api_notification_fn)0))
+	{
+		pxSession->pfApiNotification(
+			pxSession->pvApiCallbackContext,
+			&pxSession->xLastReport);
+	}
+}
+
+static void vLifecycleExecutorDispatch(
+	void * pvContext,
+	const rsrx_transition_result_t * pxTransition,
+	rsrx_action_t eAction,
+	uint32_t uActionIndex)
+{
+	rsrx_session_t * pxSession = (rsrx_session_t *)pvContext;
+	(void)pxTransition;
+
+	if((pxSession != (rsrx_session_t *)0) &&
+		(pxSession->pfLifecycleNotification != (rsrx_lifecycle_notification_fn)0))
+	{
+		pxSession->pfLifecycleNotification(
+			pxSession->pvLifecycleCallbackContext,
+			&pxSession->xLastReport,
+			eAction,
+			uActionIndex);
+	}
+}
+
+static rsrx_status_t eProcessSessionEvent(
+	rsrx_session_t * pxSession,
+	rsrx_event_t eEvent,
+	const rsrx_orchestrator_report_t ** ppxReport)
+{
+	rsrx_status_t eStatus;
+
+	if((pxSession == (rsrx_session_t *)0) ||
+		(ppxReport == (const rsrx_orchestrator_report_t **)0) ||
+		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_orchestrator_process_event(
+		&pxSession->xOrchestrator,
+		eEvent,
+		&pxSession->xLastReport);
+
+	*ppxReport = &pxSession->xLastReport;
+
+	return eStatus;
+}
+
+rsrx_status_t rsrx_session_init(
+	rsrx_session_t * pxSession,
+	const rsrx_session_config_t * pxConfig)
+{
+	rsrx_action_executor_t xApiExecutor;
+	rsrx_action_executor_t xLifecycleExecutor;
+
+	if((pxSession == (rsrx_session_t *)0) ||
+		(uSessionConfigIsValid(pxConfig) == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_transport_adapter_init(
+		&pxSession->xTransportAdapter,
+		&pxConfig->xTransportPort,
+		pxConfig->eDefaultChannelId,
+		pxConfig->puFramePayload,
+		pxConfig->xFramePayloadLength) != RSRX_TRANSPORT_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_platform_adapter_init(
+		&pxSession->xPlatformAdapter,
+		&pxConfig->xPlatformPorts,
+		pxConfig->uSupervisionIntervalNs,
+		pxConfig->uRetransmissionIntervalNs,
+		pxConfig->uDiagnosticFlushIntervalNs) != RSRX_PLATFORM_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxSession->pvApiCallbackContext = pxConfig->pvApiCallbackContext;
+	pxSession->pfApiNotification = pxConfig->pfApiNotification;
+	pxSession->pvLifecycleCallbackContext = pxConfig->pvLifecycleCallbackContext;
+	pxSession->pfLifecycleNotification = pxConfig->pfLifecycleNotification;
+
+	xApiExecutor.pvContext = pxSession;
+	xApiExecutor.pfDispatch = vApiExecutorDispatch;
+	xLifecycleExecutor.pvContext = pxSession;
+	xLifecycleExecutor.pfDispatch = vLifecycleExecutorDispatch;
+
+	if(rsrx_platform_adapter_build_executor_table(
+		&pxSession->xExecutors,
+		&pxSession->xTransportAdapter,
+		&pxSession->xPlatformAdapter,
+		&xApiExecutor,
+		&xLifecycleExecutor) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_orchestrator_init(&pxSession->xOrchestrator, &pxSession->xExecutors) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxSession->uInitialized = 1U;
+	pxSession->xLastReport.uDispatchedActionCount = 0U;
+	pxSession->xLastReport.xTransition.ePreviousState = RSRX_STATE_INVALID;
+	pxSession->xLastReport.xTransition.eNextState = RSRX_STATE_INVALID;
+	pxSession->xLastReport.xTransition.eStatus = RSRX_STATUS_OK;
+	pxSession->xLastReport.xTransition.eReason = RSRX_REASON_NONE;
+	pxSession->xLastReport.xTransition.eDiagnostic = RSRX_DIAG_NONE;
+	pxSession->xLastReport.xTransition.xActions.uActionCount = 0U;
+
+	return RSRX_STATUS_OK;
+}
+
+rsrx_status_t rsrx_session_start(
+	rsrx_session_t * pxSession,
+	const rsrx_orchestrator_report_t ** ppxReport)
+{
+	return eProcessSessionEvent(pxSession, RSRX_EVENT_INIT_SUCCESS, ppxReport);
+}
+
+rsrx_status_t rsrx_session_connect(
+	rsrx_session_t * pxSession,
+	const rsrx_orchestrator_report_t ** ppxReport)
+{
+	return eProcessSessionEvent(pxSession, RSRX_EVENT_CONNECT_REQUEST, ppxReport);
+}
+
+rsrx_status_t rsrx_session_disconnect(
+	rsrx_session_t * pxSession,
+	const rsrx_orchestrator_report_t ** ppxReport)
+{
+	return eProcessSessionEvent(pxSession, RSRX_EVENT_DISCONNECT_REQUEST, ppxReport);
+}
+
+rsrx_status_t rsrx_session_process_event(
+	rsrx_session_t * pxSession,
+	rsrx_event_t eEvent,
+	const rsrx_orchestrator_report_t ** ppxReport)
+{
+	return eProcessSessionEvent(pxSession, eEvent, ppxReport);
+}
+
+rsrx_state_t rsrx_session_get_state(
+	const rsrx_session_t * pxSession)
+{
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATE_INVALID;
+	}
+
+	return rsrx_orchestrator_get_state(&pxSession->xOrchestrator);
+}
+
+rsrx_status_t rsrx_session_reset(
+	rsrx_session_t * pxSession)
+{
+	if((pxSession == (rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return rsrx_orchestrator_reset(&pxSession->xOrchestrator);
+}

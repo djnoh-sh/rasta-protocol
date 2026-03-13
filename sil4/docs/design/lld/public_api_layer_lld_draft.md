@@ -1,0 +1,72 @@
+# Low-Level Design Draft - Public API Layer
+
+## Document Control
+
+- Document ID: `LLD-007`
+- Version: `0.1.0`
+- Status: `Draft`
+- Owner: `Project Team`
+- Reviewers: `TBD`
+- Last Updated: `2026-03-13`
+
+## Scope
+
+- 대상 모듈:
+  - `MOD-001 Public API Layer`
+- 관련 HLD:
+  - `HLD-001`
+- 관련 요구사항:
+  - `FR-001`
+  - `FR-005`
+  - `IF-001`
+  - `SR-004`
+
+## File Structure
+
+| File | Purpose | Public/Internal | Notes |
+| --- | --- | --- | --- |
+| `include/rsrx_api.h` | public API/session contract 정의 | Public | 상위 애플리케이션 진입점 |
+| `src/rsrx_api.c` | session 초기화 및 API call routing 구현 | Internal | orchestrator/adapters 조립 |
+| `tests/unit/test_rsrx_api.c` | public API 골격 단위 테스트 | Internal | callback 및 state transition 검증 |
+
+## Types and Interfaces
+
+| Element | Kind | Description | Constraints |
+| --- | --- | --- | --- |
+| `rsrx_session_config_t` | struct | session 초기화 입력 계약 | transport/platform ports와 callbacks 필수 |
+| `rsrx_session_t` | struct | session runtime context | transport/platform adapters와 orchestrator 포함 |
+| `rsrx_api_notification_fn` | function pointer | 상태 변화/API notification callback | null 금지 |
+| `rsrx_lifecycle_notification_fn` | function pointer | lifecycle action callback | null 금지 |
+| `rsrx_session_init` | function | session 및 하위 모듈 초기화 | deterministic startup 보장 |
+| `rsrx_session_start` | function | `INIT_SUCCESS` 경로 시작 | session을 `INITIALIZED`로 이동 |
+| `rsrx_session_connect` | function | 연결 시작 | `CONNECT_REQUEST` 전달 |
+| `rsrx_session_disconnect` | function | 연결 종료 요청 | `DISCONNECT_REQUEST` 전달 |
+| `rsrx_session_process_event` | function | 일반 event 전달 | orchestrator wrapper |
+| `rsrx_session_get_state` | function | session 상태 조회 | 읽기 전용 |
+| `rsrx_session_reset` | function | session 상태 초기화 | bounded 동작 |
+
+## Functional Behavior
+
+- `rsrx_session_init`:
+  - transport adapter, platform adapter, executor table, orchestrator를 순서대로 초기화한다.
+  - API/lifecycle callback을 session 내부 executor로 연결한다.
+- `rsrx_session_start`:
+  - `INIT_SUCCESS` event를 주입해 session을 `INITIALIZED` 상태로 전이한다.
+- `rsrx_session_connect`:
+  - `CONNECT_REQUEST` event를 주입해 연결 수립 절차를 시작한다.
+- `rsrx_session_disconnect`:
+  - `DISCONNECT_REQUEST` event를 주입해 safe disconnect 경로를 시작한다.
+- `rsrx_session_process_event`:
+  - 상위 계층이 decoded event 또는 timer event를 직접 전달할 수 있는 일반 경로를 제공한다.
+
+## Verification Notes
+
+- 필요한 테스트:
+  - session init/start/connect 경로 검증
+  - session disconnect 경로 검증
+  - API notification callback 호출 검증
+  - lifecycle callback 호출 검증
+  - invalid argument 방어 검증
+- 분석 포인트:
+  - session 초기화 순서와 partially initialized state 방지
+  - callback 호출 시점이 report 내용과 일치하는지 검토
