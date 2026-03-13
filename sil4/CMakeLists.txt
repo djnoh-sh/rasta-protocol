@@ -57,3 +57,6 @@ add_executable(rsrx_api_test
 	tests/unit/test_rsrx_api.c)
 
 target_link_libraries(rsrx_api_test rsrx_api)
+
+add_executable(rsrx_codec_contract_test
+	tests/unit/test_rsrx_codec_contract.c)
