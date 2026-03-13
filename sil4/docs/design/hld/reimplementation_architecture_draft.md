@@ -65,12 +65,14 @@
 | MOD-005 | Configuration Validator | 설정값 파싱, 타입/범위/일관성 검증을 담당한다 | config source | validated configuration | FR-006 |
 | MOD-006 | Diagnostics and Logging | 진단 정보와 오류 기록을 구조적으로 생성한다 | events, state, errors | diagnostics, logs | FR-007, SR-004 |
 | MOD-007 | Platform Abstraction | timer, socket, memory, synchronization 등 플랫폼 의존 기능을 격리한다 | module requests | platform services | IF-002, SR-003 |
+| MOD-008 | Connection Orchestrator | 상태 머신 입력, action dispatch, 외부 adapter 경계를 조정한다 | api events, decoded events, timer events | action dispatch, transition report | FR-001, FR-005, IF-001, SR-004 |
 
 ## Data Flow
 
 - 주요 입력 경로:
   - `Public API Layer`가 사용자 호출을 받아 `Connection State Machine` 또는 `Configuration Validator`로 전달
   - `Transport Supervisor`가 수신 frame을 받아 `Protocol Codec`과 `Connection State Machine`으로 전달
+  - `Connection Orchestrator`가 외부 event를 받아 `Connection State Machine`에 주입하고 결과 action을 dispatch
 - 주요 출력 경로:
   - 상태 전이 결과에 따라 `Transport Supervisor`가 frame 송신
   - `Diagnostics and Logging`가 구조적 이벤트 기록 생성
@@ -140,6 +142,17 @@ SHUTDOWN --> [*]
 | `transition_reason_code` | Out | 전이 또는 거부의 직접 원인 정보 |
 | `diagnostic_code` | Out | 운영 로그 및 사후 분석용 진단 분류 정보 |
 
+### Module Interface Focus: MOD-008 Connection Orchestrator
+
+| Interface | Direction | Description |
+| --- | --- | --- |
+| `rsrx_orchestrator_init` | In | action sink와 상태 머신을 포함한 orchestrator 컨텍스트 초기화 |
+| `rsrx_orchestrator_process_event` | In | 외부 event를 상태 머신에 전달하고 결과 action을 순서대로 dispatch |
+| `rsrx_orchestrator_get_state` | Out | orchestration 관점 현재 연결 상태 조회 |
+| `rsrx_orchestrator_reset` | In | orchestration 컨텍스트를 초기 상태로 복귀 |
+| `action_sink_dispatch` | Out | 전이 결과의 action을 adapter 계층으로 순차 전달 |
+| `transition_report` | Out | 상태 전이 결과와 dispatch 개수를 상위 계층에 제공 |
+
 ## Safety Mechanisms
 
 - 오류 감지:
@@ -161,6 +174,7 @@ SHUTDOWN --> [*]
 | DD-002 | 플랫폼 의존 기능을 별도 abstraction 계층으로 분리한다 | 검증성 및 이식성 향상 | 상위 로직 직접 OS 호출 | 테스트 구조 단순화 |
 | DD-003 | 상태 머신을 독립 모듈로 분리한다 | 상태 전이 검증 용이 | 송수신 로직 내부에 분산 구현 | 리뷰성과 테스트성 향상 |
 | DD-004 | 설정 검증을 startup 게이트로 둔다 | 위험한 설정으로 시작 금지 | 런타임 중 부분 보정 | 예측 가능성 향상 |
+| DD-005 | 상태 결정과 side effect 실행 사이에 orchestrator 경계를 둔다 | pure state machine 유지와 인터페이스 검증성 확보 | state machine 내부에서 직접 side effect 실행 | 추적성과 단위 테스트성 향상 |
 
 ## Verification Impact
 
