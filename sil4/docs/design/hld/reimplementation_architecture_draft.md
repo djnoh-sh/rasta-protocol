@@ -66,6 +66,7 @@
 | MOD-006 | Diagnostics and Logging | 진단 정보와 오류 기록을 구조적으로 생성한다 | events, state, errors | diagnostics, logs | FR-007, SR-004 |
 | MOD-007 | Platform Abstraction | timer, socket, memory, synchronization 등 플랫폼 의존 기능을 격리한다 | module requests | platform services | IF-002, SR-003 |
 | MOD-008 | Connection Orchestrator | 상태 머신 입력, action dispatch, 외부 adapter 경계를 조정한다 | api events, decoded events, timer events | action dispatch, transition report | FR-001, FR-005, IF-001, SR-004 |
+| MOD-009 | Platform Adapter Layer | orchestrator executor와 platform port를 연결한다 | transition result, platform ports | timer commands, diagnostic records, executor table | IF-002, FR-007, SR-004 |
 
 ## Data Flow
 
@@ -162,6 +163,15 @@ SHUTDOWN --> [*]
 | `rsrx_diagnostics_port_t` | Out | structured diagnostics record 기록 포트 |
 | `rsrx_platform_port_table_t` | In | platform services 집합을 상위 모듈에 제공 |
 
+### Module Interface Focus: MOD-009 Platform Adapter Layer
+
+| Interface | Direction | Description |
+| --- | --- | --- |
+| `rsrx_platform_adapter_init` | In | platform port table과 interval 정책을 adapter context에 로드 |
+| `rsrx_platform_timer_executor_dispatch` | Out | timer action을 timer command로 변환해 platform timer port에 전달 |
+| `rsrx_platform_diagnostics_executor_dispatch` | Out | transition result를 diagnostic record로 변환해 diagnostics port에 전달 |
+| `rsrx_platform_adapter_build_executor_table` | Out | orchestrator에서 사용 가능한 executor table 생성 |
+
 ## Safety Mechanisms
 
 - 오류 감지:
@@ -185,6 +195,7 @@ SHUTDOWN --> [*]
 | DD-004 | 설정 검증을 startup 게이트로 둔다 | 위험한 설정으로 시작 금지 | 런타임 중 부분 보정 | 예측 가능성 향상 |
 | DD-005 | 상태 결정과 side effect 실행 사이에 orchestrator 경계를 둔다 | pure state machine 유지와 인터페이스 검증성 확보 | state machine 내부에서 직접 side effect 실행 | 추적성과 단위 테스트성 향상 |
 | DD-006 | platform abstraction을 구조화된 port table로 정의한다 | timer/diagnostics/clock 의존성을 타입 계약으로 고정 | 모듈별 임의 callback 집합 | 이식성과 추적성 향상 |
+| DD-007 | timer/diagnostics executor는 platform adapter layer를 통해서만 platform port에 접근한다 | executor routing과 platform contract의 결합점을 단일화 | orchestrator가 platform port를 직접 호출 | 책임 분리와 시험성 향상 |
 
 ## Verification Impact
 

@@ -1,0 +1,44 @@
+#ifndef RSRX_PLATFORM_ADAPTERS_H
+#define RSRX_PLATFORM_ADAPTERS_H
+
+#include <stdint.h>
+
+#include "rsrx_orchestrator.h"
+#include "rsrx_platform.h"
+
+typedef struct
+{
+	rsrx_platform_port_table_t xPlatformPorts;
+	rsrx_monotonic_time_ns_t uSupervisionIntervalNs;
+	rsrx_monotonic_time_ns_t uRetransmissionIntervalNs;
+	rsrx_monotonic_time_ns_t uDiagnosticFlushIntervalNs;
+	uint32_t uEventCounter;
+} rsrx_platform_adapter_context_t;
+
+rsrx_platform_status_t rsrx_platform_adapter_init(
+	rsrx_platform_adapter_context_t * pxContext,
+	const rsrx_platform_port_table_t * pxPorts,
+	rsrx_monotonic_time_ns_t uSupervisionIntervalNs,
+	rsrx_monotonic_time_ns_t uRetransmissionIntervalNs,
+	rsrx_monotonic_time_ns_t uDiagnosticFlushIntervalNs);
+
+void rsrx_platform_timer_executor_dispatch(
+	void * pvContext,
+	const rsrx_transition_result_t * pxTransition,
+	rsrx_action_t eAction,
+	uint32_t uActionIndex);
+
+void rsrx_platform_diagnostics_executor_dispatch(
+	void * pvContext,
+	const rsrx_transition_result_t * pxTransition,
+	rsrx_action_t eAction,
+	uint32_t uActionIndex);
+
+rsrx_status_t rsrx_platform_adapter_build_executor_table(
+	rsrx_action_executor_table_t * pxExecutors,
+	rsrx_platform_adapter_context_t * pxPlatformContext,
+	const rsrx_action_executor_t * pxTransportExecutor,
+	const rsrx_action_executor_t * pxApiExecutor,
+	const rsrx_action_executor_t * pxLifecycleExecutor);
+
+#endif

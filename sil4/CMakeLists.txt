@@ -20,6 +20,12 @@ add_library(rsrx_orchestrator STATIC
 target_include_directories(rsrx_orchestrator PUBLIC include)
 target_link_libraries(rsrx_orchestrator PUBLIC rsrx_state_machine)
 
+add_library(rsrx_platform_adapters STATIC
+	src/rsrx_platform_adapters.c)
+
+target_include_directories(rsrx_platform_adapters PUBLIC include)
+target_link_libraries(rsrx_platform_adapters PUBLIC rsrx_orchestrator)
+
 add_executable(rsrx_state_machine_test
 	tests/unit/test_rsrx_state_machine.c)
 
@@ -32,3 +38,8 @@ target_link_libraries(rsrx_orchestrator_test rsrx_orchestrator)
 
 add_executable(rsrx_platform_contract_test
 	tests/unit/test_rsrx_platform_contract.c)
+
+add_executable(rsrx_platform_adapters_test
+	tests/unit/test_rsrx_platform_adapters.c)
+
+target_link_libraries(rsrx_platform_adapters_test rsrx_platform_adapters)
