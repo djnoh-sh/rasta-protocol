@@ -138,6 +138,36 @@ static void vFillConfig(
 	pxConfig->pfLifecycleNotification = vLifecycleNotify;
 }
 
+static void vPrepareEstablishedSession(
+	rsrx_session_t * pxSession,
+	rsrx_session_config_t * pxConfig,
+	const rsrx_orchestrator_report_t ** ppxReport,
+	test_transport_context_t * pxTransport,
+	test_clock_context_t * pxClock,
+	test_timer_context_t * pxTimer,
+	test_diagnostics_context_t * pxDiagnostics,
+	test_counter_t * pxApiCounter,
+	test_counter_t * pxLifecycleCounter,
+	const uint8_t * puPayload,
+	size_t xPayloadLength)
+{
+	vFillConfig(
+		pxConfig,
+		pxTransport,
+		pxClock,
+		pxTimer,
+		pxDiagnostics,
+		pxApiCounter,
+		pxLifecycleCounter,
+		puPayload,
+		xPayloadLength);
+	vAssertTrue(rsrx_session_init(pxSession, pxConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_start(pxSession, ppxReport) == RSRX_STATUS_OK, "session start");
+	vAssertTrue(rsrx_session_connect(pxSession, ppxReport) == RSRX_STATUS_OK, "session connect");
+	vAssertTrue(rsrx_session_process_event(pxSession, RSRX_EVENT_HANDSHAKE_SUCCESS, ppxReport) == RSRX_STATUS_OK, "handshake success");
+	vAssertTrue(rsrx_session_get_state(pxSession) == RSRX_STATE_ESTABLISHED, "session established");
+}
+
 static void vTestSessionStartupAndConnect(void)
 {
 	rsrx_session_t xSession;
@@ -197,6 +227,126 @@ static void vTestSessionDisconnectPath(void)
 	vAssertTrue(xTransport.uSendCount >= 2U, "transport send count after disconnect");
 }
 
+static void vTestSessionInboundHeartbeatPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 700U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x11U, 0x22U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_HEARTBEAT, &pxReport) == RSRX_STATUS_OK, "heartbeat event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "heartbeat keeps established");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_HEARTBEAT_ACCEPTED, "heartbeat reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 2U, "heartbeat dispatched actions");
+	vAssertTrue(xTransport.uSendCount == 1U, "heartbeat does not send transport payload");
+	vAssertTrue(xTimer.uCallCount == 3U, "heartbeat timer restart");
+	vAssertTrue(xTimer.xLastCommand.eCommandType == RSRX_TIMER_COMMAND_RESTART, "heartbeat timer command");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "heartbeat diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "heartbeat no api notify");
+}
+
+static void vTestSessionInboundDataPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 800U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[3] = { 0x21U, 0x22U, 0x23U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_DATA, &pxReport) == RSRX_STATUS_OK, "data event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "data keeps established");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_DATA_ACCEPTED, "data reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 3U, "data dispatched actions");
+	vAssertTrue(xTransport.uSendCount == 2U, "data delivery routed through transport executor");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_DATA_ACCEPTED, "data delivery reason");
+	vAssertTrue(xTimer.uCallCount == 3U, "data timer restart");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "data diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "data no api notify");
+}
+
+static void vTestSessionRetransmissionPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 900U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[4] = { 0x31U, 0x32U, 0x33U, 0x34U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_SEQUENCE_GAP_DETECTED, &pxReport) == RSRX_STATUS_OK, "sequence gap event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retransmission pending");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "sequence gap reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 3U, "sequence gap dispatched actions");
+	vAssertTrue(xTransport.uSendCount == 2U, "retransmission request sent");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "retransmission reason");
+	vAssertTrue(xTimer.uCallCount == 2U, "sequence gap no timer restart");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "sequence gap diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 4U, "sequence gap api notify");
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_RECOVERY_SUCCESS, &pxReport) == RSRX_STATUS_OK, "recovery success event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "recovery returns established");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_RECOVERY_COMPLETED, "recovery reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 4U, "recovery dispatched actions");
+	vAssertTrue(xTimer.uCallCount == 3U, "recovery timer restart");
+	vAssertTrue(xDiagnostics.uCallCount == 4U, "recovery diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 5U, "recovery api notify");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "recovery lifecycle action");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_session_t xSession = { 0 };
@@ -211,6 +361,9 @@ int main(void)
 {
 	vTestSessionStartupAndConnect();
 	vTestSessionDisconnectPath();
+	vTestSessionInboundHeartbeatPath();
+	vTestSessionInboundDataPath();
+	vTestSessionRetransmissionPath();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
