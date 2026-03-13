@@ -73,6 +73,61 @@ static void vAssertActionAt(
 	}
 }
 
+static void vAssertActionSequence(
+	const sil4_transition_result_t * pxResult,
+	const sil4_action_t * peExpectedActions,
+	uint32_t uExpectedCount,
+	const char * pcMessage)
+{
+	uint32_t uIndex;
+
+	vAssertActionCount(uExpectedCount, pxResult->xActions.uActionCount, pcMessage);
+
+	for(uIndex = 0U; uIndex < uExpectedCount; ++uIndex)
+	{
+		if(pxResult->xActions.eActions[uIndex] != peExpectedActions[uIndex])
+		{
+			(void)fprintf(
+				stderr,
+				"ASSERT FAILED: %s (index=%u expected=%d actual=%d)\n",
+				pcMessage,
+				(unsigned int)uIndex,
+				(int)peExpectedActions[uIndex],
+				(int)pxResult->xActions.eActions[uIndex]);
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+static void vAssertNoDuplicateActions(
+	const sil4_transition_result_t * pxResult,
+	const char * pcMessage)
+{
+	uint32_t uOuterIndex;
+	uint32_t uInnerIndex;
+
+	for(uOuterIndex = 0U; uOuterIndex < pxResult->xActions.uActionCount; ++uOuterIndex)
+	{
+		for(uInnerIndex = uOuterIndex + 1U;
+			uInnerIndex < pxResult->xActions.uActionCount;
+			++uInnerIndex)
+		{
+			if(pxResult->xActions.eActions[uOuterIndex] ==
+				pxResult->xActions.eActions[uInnerIndex])
+			{
+				(void)fprintf(
+					stderr,
+					"ASSERT FAILED: %s (duplicate_action=%d first_index=%u second_index=%u)\n",
+					pcMessage,
+					(int)pxResult->xActions.eActions[uOuterIndex],
+					(unsigned int)uOuterIndex,
+					(unsigned int)uInnerIndex);
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+}
+
 static void vMoveToInitialized(
 	sil4_state_machine_context_t * pxContext,
 	sil4_transition_result_t * pxResult)
@@ -136,6 +191,11 @@ static void vTestConnectPath(void)
 	sil4_state_machine_context_t xContext;
 	sil4_transition_result_t xResult;
 	sil4_status_t eStatus;
+	static const sil4_action_t xeExpectedConnectActions[] = {
+		SIL4_ACTION_START_HANDSHAKE,
+		SIL4_ACTION_START_SUPERVISION_TIMER,
+		SIL4_ACTION_NOTIFY_API
+	};
 
 	(void)state_machine_init(&xContext);
 	(void)state_machine_handle_event(&xContext, SIL4_EVENT_INIT_SUCCESS, &xResult);
@@ -143,6 +203,12 @@ static void vTestConnectPath(void)
 	eStatus = state_machine_handle_event(&xContext, SIL4_EVENT_CONNECT_REQUEST, &xResult);
 	vAssertEqualStatus(SIL4_STATUS_OK, eStatus, "connect_request event");
 	vAssertEqualState(SIL4_STATE_CONNECTING, xResult.eNextState, "state after connect_request");
+	vAssertActionSequence(
+		&xResult,
+		xeExpectedConnectActions,
+		(uint32_t)(sizeof(xeExpectedConnectActions) / sizeof(xeExpectedConnectActions[0])),
+		"connect_request actions");
+	vAssertNoDuplicateActions(&xResult, "connect_request actions must be unique");
 
 	eStatus = state_machine_handle_event(&xContext, SIL4_EVENT_HANDSHAKE_SUCCESS, &xResult);
 	vAssertEqualStatus(SIL4_STATUS_OK, eStatus, "handshake_success event");
@@ -167,13 +233,23 @@ static void vTestInvalidEventFailsSafe(void)
 {
 	sil4_state_machine_context_t xContext;
 	sil4_transition_result_t xResult;
+	static const sil4_action_t xeExpectedFailSafeActions[] = {
+		SIL4_ACTION_SEND_DISCONNECT,
+		SIL4_ACTION_ENTER_FAILSAFE,
+		SIL4_ACTION_NOTIFY_API,
+		SIL4_ACTION_LOG_DIAGNOSTIC
+	};
 
 	vMoveToConnecting(&xContext, &xResult);
 
 	(void)state_machine_handle_event(&xContext, SIL4_EVENT_VALID_DATA, &xResult);
 	vAssertEqualState(SIL4_STATE_SAFE_DISCONNECT, xResult.eNextState, "invalid connecting event should fail-safe");
-	vAssertActionCount(4U, xResult.xActions.uActionCount, "fail-safe action count");
-	vAssertActionAt(SIL4_ACTION_SEND_DISCONNECT, &xResult, 0U, "fail-safe action 0");
+	vAssertActionSequence(
+		&xResult,
+		xeExpectedFailSafeActions,
+		(uint32_t)(sizeof(xeExpectedFailSafeActions) / sizeof(xeExpectedFailSafeActions[0])),
+		"fail-safe action order");
+	vAssertNoDuplicateActions(&xResult, "fail-safe actions must be unique");
 }
 
 static void vTestInitializedRejectsUnexpectedData(void)
@@ -248,6 +324,31 @@ static void vTestSafeDisconnectCleanup(void)
 	vAssertEqualState(SIL4_STATE_INITIALIZED, xResult.eNextState, "cleanup returns initialized");
 }
 
+static void vTestActionOrderingAndUniqueness(void)
+{
+	sil4_state_machine_context_t xContext;
+	sil4_transition_result_t xResult;
+	static const sil4_action_t xeExpectedShutdownActions[] = {
+		SIL4_ACTION_SEND_DISCONNECT,
+		SIL4_ACTION_RELEASE_CONNECTION_RESOURCES,
+		SIL4_ACTION_FINALIZE_SHUTDOWN,
+		SIL4_ACTION_NOTIFY_API
+	};
+
+	vMoveToEstablished(&xContext, &xResult);
+	(void)state_machine_handle_event(&xContext, SIL4_EVENT_TIMEOUT, &xResult);
+	vAssertNoDuplicateActions(&xResult, "timeout fail-safe actions must be unique");
+
+	vMoveToEstablished(&xContext, &xResult);
+	(void)state_machine_handle_event(&xContext, SIL4_EVENT_SHUTDOWN_REQUEST, &xResult);
+	vAssertActionSequence(
+		&xResult,
+		xeExpectedShutdownActions,
+		(uint32_t)(sizeof(xeExpectedShutdownActions) / sizeof(xeExpectedShutdownActions[0])),
+		"shutdown action order");
+	vAssertNoDuplicateActions(&xResult, "shutdown actions must be unique");
+}
+
 static void vTestShutdownIgnoresInput(void)
 {
 	sil4_state_machine_context_t xContext;
@@ -294,6 +395,7 @@ int main(void)
 	vTestRetransmissionPath();
 	vTestTimeoutPaths();
 	vTestSafeDisconnectCleanup();
+	vTestActionOrderingAndUniqueness();
 	vTestShutdownIgnoresInput();
 	vTestInvalidArguments();
 

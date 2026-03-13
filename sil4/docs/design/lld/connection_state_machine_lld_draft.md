@@ -38,7 +38,7 @@
 | `sil4_state_t` | enum | 상태 정의 | 명시된 상태 외 값 금지 |
 | `sil4_event_t` | enum | 상태 전이를 유발하는 이벤트 정의 | 이벤트는 타입과 원인을 분리해 표현 |
 | `sil4_action_t` | enum | 상태 전이 후 수행할 후속 action 정의 | side effect는 별도 계층에서 수행 |
-| `sil4_transition_result_t` | struct | 새 상태, action 목록, 오류 코드 포함 | bounded action count 유지 |
+| `sil4_transition_result_t` | struct | 새 상태, action 목록, 오류 코드 포함 | bounded action array 유지, 중복 action 금지 |
 | `state_machine_init` | function | 컨텍스트 초기화 | 초기 상태는 `UNINITIALIZED` 또는 `INITIALIZED` 중 설계 선택 필요 |
 | `state_machine_handle_event` | function | 현재 상태와 이벤트를 받아 전이 결과 생성 | side effect 금지 |
 | `state_machine_get_state` | function | 현재 상태 조회 | 읽기 전용 |
@@ -209,7 +209,7 @@
 
 - 주요 로직 설명:
   - 상태 머신은 `(현재 상태, 이벤트)`를 키로 하는 명시적 전이 테이블 기반으로 구현한다.
-  - 전이 결과는 `next_state`, `action_mask` 또는 bounded action array, `error_code`를 포함한다.
+  - 전이 결과는 `next_state`, bounded action array, `error_code`를 포함한다.
   - 허용되지 않은 전이는 기본적으로 `SAFE_DISCONNECT` 또는 명시된 오류 반환으로 처리한다.
 - 경계 조건:
   - 반복 timeout 이벤트
@@ -220,6 +220,24 @@
   - 잘못된 이벤트 enum
   - 초기화 전 호출
   - shutdown 이후 재사용 정책 불명확
+
+## Action Representation Policy
+
+- action 표현 방식:
+  - `sil4_transition_result_t`는 고정 길이 bounded action array를 사용한다.
+  - bitmask 표현은 사용하지 않는다.
+- 선택 근거:
+  - action 실행 순서를 명시적으로 표현할 수 있어야 한다.
+  - 설계 전이표의 `Actions` 열과 코드 구조를 1:1로 대응시켜 추적성을 높여야 한다.
+  - 동적 메모리 없이 정적 상한을 유지해야 한다.
+- 실행 순서 규칙:
+  - action은 배열에 기록된 순서대로 호출자 계층이 수행한다.
+  - 동일 전이 결과 내 중복 action은 허용하지 않는다.
+  - `ACT_LOG_DIAGNOSTIC`는 action 집합 내 마지막에 배치하는 것을 기본 규칙으로 한다. 단, 설계상 진단 선행이 필요한 경우 별도 근거가 있어야 한다.
+  - `ACT_NOTIFY_API`는 외부 가시 상태 변화가 확정된 뒤 수행되어야 하며, disconnect 송신이나 fail-safe 진입보다 앞서면 안 된다.
+- 용량 규칙:
+  - action array 최대 길이는 컴파일 시점 상수로 고정한다.
+  - 용량 초과가 필요한 설계는 전이 정의 자체를 재검토하며, 런타임 truncation에 의존하지 않는다.
 
 ## State and Data Ownership
 
@@ -242,6 +260,8 @@
   - retransmission 진입과 복구
   - shutdown / reset 경로
   - action 목록 생성 정확성 검증
+  - action 순서 검증
+  - 단일 전이 결과 내 action 중복 금지 검증
 - 필요한 정적분석 포인트:
   - enum 범위 처리
   - 모든 `switch` 분기 완전성
@@ -249,6 +269,5 @@
 
 ## Open Issues
 
-- OI-001: action 표현을 bitmask로 할지 bounded array로 할지 결정 필요
 - OI-002: `CONNECTING` 상태에서 `valid_heartbeat`를 handshake success와 분리할지 여부를 상위 핸드셰이크 설계와 일치시켜야 함
 - OI-003: diagnostics update를 상태 머신 내부에서 할지 외부 orchestrator에서 할지 결정 필요

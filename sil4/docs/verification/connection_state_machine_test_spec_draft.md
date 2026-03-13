@@ -48,6 +48,9 @@
 | TC-SM-010 | FR-005 | `SAFE_DISCONNECT` 이후 cleanup 완료 경로 검증 | `SAFE_DISCONNECT` 상태 | cleanup_complete event | `INITIALIZED` 복귀 | 자원 정리 action 포함 |
 | TC-SM-011 | FR-004 | `RETRANSMISSION_PENDING`에서 invalid response 처리 검증 | `RETRANSMISSION_PENDING` 상태 | invalid_response event | `SAFE_DISCONNECT` 전이 | fail-safe action 생성 |
 | TC-SM-012 | SR-003 | `SHUTDOWN` 상태 입력 무시 검증 | `SHUTDOWN` 상태 | any event | `SHUTDOWN` 유지 | action이 `ACT_NONE` 또는 문서화된 무시 동작 |
+| TC-SM-013 | FR-002, SR-002 | fail-safe 전이 action 순서 검증 | `CONNECTING` 또는 `ESTABLISHED` 상태 | invalid event 또는 timeout event | action 순서가 설계와 동일 | `SEND_DISCONNECT -> ENTER_FAILSAFE -> NOTIFY_API -> LOG_DIAGNOSTIC` 유지 |
+| TC-SM-014 | FR-002 | 정상 연결 요청 action 순서 검증 | `INITIALIZED` 상태 | connect_request event | action 순서가 설계와 동일 | `START_HANDSHAKE -> START_SUPERVISION_TIMER -> NOTIFY_API` 유지 |
+| TC-SM-015 | SR-003 | 단일 전이 결과 내 action 중복 금지 검증 | 모든 주요 전이 경로 | 각 전이 결과 action list 확인 | 동일 action 중복 없음 | action uniqueness rule 위반 없음 |
 
 ## Transition Coverage Matrix
 
@@ -76,6 +79,7 @@
 - `RETRANSMISSION_PENDING` 상태에서 heartbeat와 data event 순서 차이 검증
 - `UNINITIALIZED` 상태에서 shutdown 요청 직후 init 관련 이벤트가 뒤늦게 들어오는 경우 검증
 - `SHUTDOWN` 상태에서 중복 shutdown 요청이 들어오는 경우 검증
+- action array 최대 길이 근접 전이에서 순서와 개수 유지 확인
 
 ## Execution Record
 
