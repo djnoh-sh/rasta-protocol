@@ -137,6 +137,8 @@ SHUTDOWN --> [*]
 | `rsrx_state_machine_get_state` | Out | 현재 상태 조회 |
 | `rsrx_state_machine_reset` | In | 종료 후 초기 상태로 복귀 |
 | `state_machine_actions` | Out | 송신, 로그, 타이머 재설정, disconnect 등 후속 action 목록 |
+| `transition_reason_code` | Out | 전이 또는 거부의 직접 원인 정보 |
+| `diagnostic_code` | Out | 운영 로그 및 사후 분석용 진단 분류 정보 |
 
 ## Safety Mechanisms
 
@@ -149,6 +151,7 @@ SHUTDOWN --> [*]
   - timeout 상한 및 재전송 window를 요구사항으로 고정
 - 진단 정보:
   - 상태 변화, 오류 원인, 관련 peer, 관련 timer 값을 기록
+  - 상태 머신은 전이 결과에 `reason code`와 `diagnostic code`를 함께 제공한다.
 
 ## Design Decisions
 

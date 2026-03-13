@@ -51,6 +51,8 @@
 | TC-SM-013 | FR-002, SR-002 | fail-safe 전이 action 순서 검증 | `CONNECTING` 또는 `ESTABLISHED` 상태 | invalid event 또는 timeout event | action 순서가 설계와 동일 | `SEND_DISCONNECT -> ENTER_FAILSAFE -> NOTIFY_API -> LOG_DIAGNOSTIC` 유지 |
 | TC-SM-014 | FR-002 | 정상 연결 요청 action 순서 검증 | `INITIALIZED` 상태 | connect_request event | action 순서가 설계와 동일 | `START_HANDSHAKE -> START_SUPERVISION_TIMER -> NOTIFY_API` 유지 |
 | TC-SM-015 | SR-003 | 단일 전이 결과 내 action 중복 금지 검증 | 모든 주요 전이 경로 | 각 전이 결과 action list 확인 | 동일 action 중복 없음 | action uniqueness rule 위반 없음 |
+| TC-SM-016 | FR-002, SR-001 | 전이 reason code 검증 | 주요 전이 상태 | 각 핵심 event 주입 | 전이별 reason code가 설계와 일치 | timeout, invalid message, shutdown, recovery reason이 일치 |
+| TC-SM-017 | SR-002, SR-003 | diagnostic code 검증 | 정상/오류 전이 혼합 | heartbeat, timeout, invalid event 주입 | diagnostic code가 설계와 일치 | operational, timeout, interface 오류 분류가 정확 |
 
 ## Transition Coverage Matrix
 

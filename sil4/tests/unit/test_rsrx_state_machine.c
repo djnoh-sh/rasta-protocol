@@ -37,6 +37,40 @@ static void vAssertEqualStatus(
 	}
 }
 
+static void vAssertEqualReason(
+	rsrx_reason_code_t eExpected,
+	rsrx_reason_code_t eActual,
+	const char * pcMessage)
+{
+	if(eExpected != eActual)
+	{
+		(void)fprintf(
+			stderr,
+			"ASSERT FAILED: %s (expected=%d actual=%d)\n",
+			pcMessage,
+			(int)eExpected,
+			(int)eActual);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void vAssertEqualDiagnostic(
+	rsrx_diagnostic_code_t eExpected,
+	rsrx_diagnostic_code_t eActual,
+	const char * pcMessage)
+{
+	if(eExpected != eActual)
+	{
+		(void)fprintf(
+			stderr,
+			"ASSERT FAILED: %s (expected=%d actual=%d)\n",
+			pcMessage,
+			(int)eExpected,
+			(int)eActual);
+		exit(EXIT_FAILURE);
+	}
+}
+
 static void vAssertActionCount(
 	uint32_t uExpected,
 	uint32_t uActual,
@@ -177,10 +211,14 @@ static void vTestInitSuccess(void)
 	eStatus = rsrx_state_machine_init(&xContext);
 	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "init should succeed");
 	vAssertEqualState(RSRX_STATE_UNINITIALIZED, xContext.eCurrentState, "initial state");
+	vAssertEqualReason(RSRX_REASON_NONE, xContext.eLastReason, "initial reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_NONE, xContext.eLastDiagnostic, "initial diagnostic");
 
 	eStatus = rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_INIT_SUCCESS, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "init_success event");
 	vAssertEqualState(RSRX_STATE_INITIALIZED, xResult.eNextState, "state after init_success");
+	vAssertEqualReason(RSRX_REASON_INIT_COMPLETED, xResult.eReason, "init_success reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_INFO_STATE_TRANSITION, xResult.eDiagnostic, "init_success diagnostic");
 	vAssertActionCount(2U, xResult.xActions.uActionCount, "actions after init_success");
 	vAssertActionAt(RSRX_ACTION_LOG_DIAGNOSTIC, &xResult, 0U, "init_success action 0");
 	vAssertActionAt(RSRX_ACTION_NOTIFY_API, &xResult, 1U, "init_success action 1");
@@ -203,6 +241,8 @@ static void vTestConnectPath(void)
 	eStatus = rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_CONNECT_REQUEST, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "connect_request event");
 	vAssertEqualState(RSRX_STATE_CONNECTING, xResult.eNextState, "state after connect_request");
+	vAssertEqualReason(RSRX_REASON_CONNECT_REQUESTED, xResult.eReason, "connect_request reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_INFO_STATE_TRANSITION, xResult.eDiagnostic, "connect_request diagnostic");
 	vAssertActionSequence(
 		&xResult,
 		xeExpectedConnectActions,
@@ -213,6 +253,7 @@ static void vTestConnectPath(void)
 	eStatus = rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_HANDSHAKE_SUCCESS, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "handshake_success event");
 	vAssertEqualState(RSRX_STATE_ESTABLISHED, xResult.eNextState, "state after handshake_success");
+	vAssertEqualReason(RSRX_REASON_HANDSHAKE_COMPLETED, xResult.eReason, "handshake reason");
 }
 
 static void vTestInboundConnectPath(void)
@@ -226,6 +267,7 @@ static void vTestInboundConnectPath(void)
 	eStatus = rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_VALID_INBOUND_CONNECT, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "valid inbound connect event");
 	vAssertEqualState(RSRX_STATE_CONNECTING, xResult.eNextState, "state after inbound connect");
+	vAssertEqualReason(RSRX_REASON_INBOUND_CONNECT_ACCEPTED, xResult.eReason, "inbound connect reason");
 	vAssertActionAt(RSRX_ACTION_ACCEPT_INBOUND_CONNECT, &xResult, 0U, "inbound connect action 0");
 }
 
@@ -244,6 +286,8 @@ static void vTestInvalidEventFailsSafe(void)
 
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_VALID_DATA, &xResult);
 	vAssertEqualState(RSRX_STATE_SAFE_DISCONNECT, xResult.eNextState, "invalid connecting event should fail-safe");
+	vAssertEqualReason(RSRX_REASON_CONSERVATIVE_FAILSAFE, xResult.eReason, "conservative fail-safe reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_ERROR_PROTOCOL, xResult.eDiagnostic, "conservative fail-safe diagnostic");
 	vAssertActionSequence(
 		&xResult,
 		xeExpectedFailSafeActions,
@@ -263,6 +307,8 @@ static void vTestInitializedRejectsUnexpectedData(void)
 	eStatus = rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_VALID_DATA, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_REJECTED, eStatus, "initialized should reject valid_data");
 	vAssertEqualState(RSRX_STATE_INITIALIZED, xResult.eNextState, "initialized state should be preserved");
+	vAssertEqualReason(RSRX_REASON_UNEXPECTED_EVENT_REJECTED, xResult.eReason, "initialized reject reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_WARN_REJECTED_EVENT, xResult.eDiagnostic, "initialized reject diagnostic");
 	vAssertActionCount(2U, xResult.xActions.uActionCount, "initialized reject action count");
 }
 
@@ -275,10 +321,12 @@ static void vTestEstablishedHeartbeatAndData(void)
 
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_VALID_HEARTBEAT, &xResult);
 	vAssertEqualState(RSRX_STATE_ESTABLISHED, xResult.eNextState, "heartbeat keeps established");
+	vAssertEqualReason(RSRX_REASON_HEARTBEAT_ACCEPTED, xResult.eReason, "heartbeat reason");
 	vAssertActionCount(2U, xResult.xActions.uActionCount, "heartbeat action count");
 
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_VALID_DATA, &xResult);
 	vAssertEqualState(RSRX_STATE_ESTABLISHED, xResult.eNextState, "data keeps established");
+	vAssertEqualReason(RSRX_REASON_DATA_ACCEPTED, xResult.eReason, "data reason");
 	vAssertActionAt(RSRX_ACTION_DELIVER_DATA, &xResult, 1U, "data delivery action");
 }
 
@@ -289,13 +337,16 @@ static void vTestRetransmissionPath(void)
 
 	vMoveToRetransmissionPending(&xContext, &xResult);
 	vAssertEqualState(RSRX_STATE_RETRANSMISSION_PENDING, xResult.eNextState, "state after sequence gap");
+	vAssertEqualReason(RSRX_REASON_SEQUENCE_GAP_DETECTED, xResult.eReason, "sequence gap reason");
 
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_RECOVERY_SUCCESS, &xResult);
 	vAssertEqualState(RSRX_STATE_ESTABLISHED, xResult.eNextState, "recovery returns established");
+	vAssertEqualReason(RSRX_REASON_RECOVERY_COMPLETED, xResult.eReason, "recovery reason");
 
 	vMoveToRetransmissionPending(&xContext, &xResult);
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_INVALID_RESPONSE, &xResult);
 	vAssertEqualState(RSRX_STATE_SAFE_DISCONNECT, xResult.eNextState, "invalid response enters safe disconnect");
+	vAssertEqualReason(RSRX_REASON_INVALID_RESPONSE_RECEIVED, xResult.eReason, "invalid response reason");
 }
 
 static void vTestTimeoutPaths(void)
@@ -306,10 +357,13 @@ static void vTestTimeoutPaths(void)
 	vMoveToConnecting(&xContext, &xResult);
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_TIMEOUT, &xResult);
 	vAssertEqualState(RSRX_STATE_SAFE_DISCONNECT, xResult.eNextState, "connecting timeout fails safe");
+	vAssertEqualReason(RSRX_REASON_TIMEOUT_EXPIRED, xResult.eReason, "connecting timeout reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_ERROR_TIMEOUT, xResult.eDiagnostic, "connecting timeout diagnostic");
 
 	vMoveToEstablished(&xContext, &xResult);
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_TIMEOUT, &xResult);
 	vAssertEqualState(RSRX_STATE_SAFE_DISCONNECT, xResult.eNextState, "established timeout fails safe");
+	vAssertEqualReason(RSRX_REASON_TIMEOUT_EXPIRED, xResult.eReason, "established timeout reason");
 }
 
 static void vTestSafeDisconnectCleanup(void)
@@ -319,9 +373,11 @@ static void vTestSafeDisconnectCleanup(void)
 
 	vMoveToSafeDisconnect(&xContext, &xResult);
 	vAssertEqualState(RSRX_STATE_SAFE_DISCONNECT, xResult.eNextState, "disconnect enters safe disconnect");
+	vAssertEqualReason(RSRX_REASON_DISCONNECT_REQUESTED, xResult.eReason, "disconnect reason");
 
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_CLEANUP_COMPLETE, &xResult);
 	vAssertEqualState(RSRX_STATE_INITIALIZED, xResult.eNextState, "cleanup returns initialized");
+	vAssertEqualReason(RSRX_REASON_CLEANUP_COMPLETED, xResult.eReason, "cleanup reason");
 }
 
 static void vTestActionOrderingAndUniqueness(void)
@@ -338,9 +394,11 @@ static void vTestActionOrderingAndUniqueness(void)
 	vMoveToEstablished(&xContext, &xResult);
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_TIMEOUT, &xResult);
 	vAssertNoDuplicateActions(&xResult, "timeout fail-safe actions must be unique");
+	vAssertEqualReason(RSRX_REASON_TIMEOUT_EXPIRED, xResult.eReason, "timeout reason for uniqueness test");
 
 	vMoveToEstablished(&xContext, &xResult);
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_SHUTDOWN_REQUEST, &xResult);
+	vAssertEqualReason(RSRX_REASON_SHUTDOWN_REQUESTED, xResult.eReason, "shutdown reason");
 	vAssertActionSequence(
 		&xResult,
 		xeExpectedShutdownActions,
@@ -357,9 +415,11 @@ static void vTestShutdownIgnoresInput(void)
 	(void)rsrx_state_machine_init(&xContext);
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_INIT_FAILURE, &xResult);
 	vAssertEqualState(RSRX_STATE_SHUTDOWN, xResult.eNextState, "init failure shutdown");
+	vAssertEqualReason(RSRX_REASON_INIT_FAILED, xResult.eReason, "init failure reason");
 
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_CONNECT_REQUEST, &xResult);
 	vAssertEqualState(RSRX_STATE_SHUTDOWN, xResult.eNextState, "shutdown should ignore later events");
+	vAssertEqualReason(RSRX_REASON_IGNORED_IN_SHUTDOWN, xResult.eReason, "shutdown ignore reason");
 	vAssertActionCount(0U, xResult.xActions.uActionCount, "shutdown no action");
 }
 
@@ -376,6 +436,8 @@ static void vTestInvalidArguments(void)
 
 	eStatus = rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_INVALID, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_INVALID_EVENT, eStatus, "invalid event enum");
+	vAssertEqualReason(RSRX_REASON_INVALID_EVENT_ENUM, xResult.eReason, "invalid event reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_ERROR_INTERFACE, xResult.eDiagnostic, "invalid event diagnostic");
 
 	eStatus = rsrx_state_machine_handle_event((rsrx_state_machine_context_t *)0, RSRX_EVENT_INIT_SUCCESS, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_INVALID_ARGUMENT, eStatus, "handle_event null context");

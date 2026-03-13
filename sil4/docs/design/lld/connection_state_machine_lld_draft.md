@@ -38,7 +38,9 @@
 | `rsrx_state_t` | enum | 상태 정의 | 명시된 상태 외 값 금지 |
 | `rsrx_event_t` | enum | 상태 전이를 유발하는 이벤트 정의 | 이벤트는 타입과 원인을 분리해 표현 |
 | `rsrx_action_t` | enum | 상태 전이 후 수행할 후속 action 정의 | side effect는 별도 계층에서 수행 |
-| `rsrx_transition_result_t` | struct | 새 상태, action 목록, 오류 코드 포함 | bounded action array 유지, 중복 action 금지 |
+| `rsrx_reason_code_t` | enum | 전이 또는 거부의 직접 원인 | 전이 semantics와 진단 분류를 혼합하지 않음 |
+| `rsrx_diagnostic_code_t` | enum | 진단/로그 분류 코드 | 로깅 심각도 및 분석 분류용 |
+| `rsrx_transition_result_t` | struct | 새 상태, action 목록, 오류 코드 포함 | bounded action array 유지, 중복 action 금지, reason/diagnostic 포함 |
 | `rsrx_state_machine_init` | function | 컨텍스트 초기화 | 초기 상태는 `UNINITIALIZED` 또는 `INITIALIZED` 중 설계 선택 필요 |
 | `rsrx_state_machine_handle_event` | function | 현재 상태와 이벤트를 받아 전이 결과 생성 | side effect 금지 |
 | `rsrx_state_machine_get_state` | function | 현재 상태 조회 | 읽기 전용 |
@@ -167,6 +169,7 @@
   - 이벤트 값은 유효 enum 범위여야 한다.
 - Postconditions:
   - 전이 결과 구조체에 새 상태와 action 목록이 채워진다.
+  - 전이 결과 구조체에 `reason code`와 `diagnostic code`가 채워진다.
   - 허용되지 않은 이벤트는 안전한 오류 전이로 귀결된다.
 - Error Handling:
   - 잘못된 이벤트나 컨텍스트는 안전 종료 action 또는 오류 코드로 변환
@@ -209,8 +212,23 @@
 
 - 주요 로직 설명:
   - 상태 머신은 `(현재 상태, 이벤트)`를 키로 하는 명시적 전이 테이블 기반으로 구현한다.
-  - 전이 결과는 `next_state`, bounded action array, `error_code`를 포함한다.
+  - 전이 결과는 `next_state`, bounded action array, `error_code`, `reason_code`, `diagnostic_code`를 포함한다.
   - 허용되지 않은 전이는 기본적으로 `SAFE_DISCONNECT` 또는 명시된 오류 반환으로 처리한다.
+
+## Reason and Diagnostic Policy
+
+- `reason code` 규칙:
+  - 전이 자체의 직접 원인을 표현한다.
+  - 예: `TIMEOUT_EXPIRED`, `INVALID_MESSAGE_RECEIVED`, `SHUTDOWN_REQUESTED`
+  - 호출자는 이 값을 기준으로 상위 정책 분기와 테스트 판정을 수행한다.
+- `diagnostic code` 규칙:
+  - 운영 로그와 사후 분석에 필요한 진단 분류를 표현한다.
+  - 예: `ERROR_TIMEOUT`, `ERROR_PROTOCOL`, `WARN_REJECTED_EVENT`
+  - 동일 `reason code`라도 운용 규칙에 따라 다른 diagnostic으로 재매핑하지 않는다.
+- 분리 원칙:
+  - `reason code`는 제어 흐름 의미를 담당한다.
+  - `diagnostic code`는 관찰과 기록 의미를 담당한다.
+  - 두 값은 모두 결정적이어야 하며, 동일 `(state, event)` 입력에 대해 항상 동일해야 한다.
 - 경계 조건:
   - 반복 timeout 이벤트
   - 이미 종료된 상태에서 추가 disconnect 이벤트
@@ -244,6 +262,8 @@
 - 소유 데이터:
   - 현재 상태
   - 마지막 오류 코드
+  - 마지막 reason code
+  - 마지막 diagnostic code
   - 최근 이벤트 메타데이터
   - 진단 카운터 일부 참조값
 - 초기화 규칙:
@@ -262,6 +282,8 @@
   - action 목록 생성 정확성 검증
   - action 순서 검증
   - 단일 전이 결과 내 action 중복 금지 검증
+  - 상태별 reason code 검증
+  - 상태별 diagnostic code 검증
 - 필요한 정적분석 포인트:
   - enum 범위 처리
   - 모든 `switch` 분기 완전성

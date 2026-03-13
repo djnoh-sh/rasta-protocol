@@ -6,6 +6,8 @@ typedef struct
 	rsrx_event_t eEvent;
 	rsrx_state_t eNextState;
 	rsrx_status_t eStatus;
+	rsrx_reason_code_t eReason;
+	rsrx_diagnostic_code_t eDiagnostic;
 	rsrx_action_t eActions[D_RSRX_ACTION_CAPACITY];
 	uint32_t uActionCount;
 } rsrx_transition_rule_t;
@@ -27,13 +29,17 @@ static const rsrx_action_t xeFailSafeActions[D_RSRX_ACTION_CAPACITY] =
 static void vSetNoActionResult(
 	rsrx_transition_result_t * pxResult,
 	rsrx_state_t eCurrentState,
-	rsrx_status_t eStatus)
+	rsrx_status_t eStatus,
+	rsrx_reason_code_t eReason,
+	rsrx_diagnostic_code_t eDiagnostic)
 {
 	uint32_t uIndex;
 
 	pxResult->ePreviousState = eCurrentState;
 	pxResult->eNextState = eCurrentState;
 	pxResult->eStatus = eStatus;
+	pxResult->eReason = eReason;
+	pxResult->eDiagnostic = eDiagnostic;
 	pxResult->xActions.uActionCount = 0U;
 
 	for(uIndex = 0U; uIndex < D_RSRX_ACTION_CAPACITY; ++uIndex)
@@ -72,6 +78,8 @@ static void vApplyTransitionRule(
 	pxResult->ePreviousState = pxContext->eCurrentState;
 	pxResult->eNextState = pxRule->eNextState;
 	pxResult->eStatus = pxRule->eStatus;
+	pxResult->eReason = pxRule->eReason;
+	pxResult->eDiagnostic = pxRule->eDiagnostic;
 
 	vCopyActions(
 		&pxResult->xActions,
@@ -80,6 +88,8 @@ static void vApplyTransitionRule(
 
 	pxContext->eCurrentState = pxRule->eNextState;
 	pxContext->eLastStatus = pxRule->eStatus;
+	pxContext->eLastReason = pxRule->eReason;
+	pxContext->eLastDiagnostic = pxRule->eDiagnostic;
 }
 
 static uint32_t uIsStateValid(
@@ -123,6 +133,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_INIT_SUCCESS,
 		RSRX_STATE_INITIALIZED,
 		RSRX_STATUS_OK,
+		RSRX_REASON_INIT_COMPLETED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_NONE, RSRX_ACTION_NONE },
 		2U
 	},
@@ -131,6 +143,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_INIT_FAILURE,
 		RSRX_STATE_SHUTDOWN,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_INIT_FAILED,
+		RSRX_DIAG_ERROR_CONFIGURATION,
 		{ RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_FINALIZE_SHUTDOWN, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_NONE },
 		3U
 	},
@@ -139,6 +153,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_SHUTDOWN_REQUEST,
 		RSRX_STATE_SHUTDOWN,
 		RSRX_STATUS_OK,
+		RSRX_REASON_SHUTDOWN_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_FINALIZE_SHUTDOWN, RSRX_ACTION_NONE, RSRX_ACTION_NONE, RSRX_ACTION_NONE },
 		1U
 	},
@@ -147,6 +163,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_CONNECT_REQUEST,
 		RSRX_STATE_CONNECTING,
 		RSRX_STATUS_OK,
+		RSRX_REASON_CONNECT_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_START_HANDSHAKE, RSRX_ACTION_START_SUPERVISION_TIMER, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_NONE },
 		3U
 	},
@@ -155,6 +173,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_VALID_INBOUND_CONNECT,
 		RSRX_STATE_CONNECTING,
 		RSRX_STATUS_OK,
+		RSRX_REASON_INBOUND_CONNECT_ACCEPTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_ACCEPT_INBOUND_CONNECT, RSRX_ACTION_START_SUPERVISION_TIMER, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_NONE },
 		3U
 	},
@@ -163,6 +183,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_SHUTDOWN_REQUEST,
 		RSRX_STATE_SHUTDOWN,
 		RSRX_STATUS_OK,
+		RSRX_REASON_SHUTDOWN_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_FINALIZE_SHUTDOWN, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_NONE, RSRX_ACTION_NONE },
 		2U
 	},
@@ -171,6 +193,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_HANDSHAKE_SUCCESS,
 		RSRX_STATE_ESTABLISHED,
 		RSRX_STATUS_OK,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_RESET_SUPERVISION_TIMER, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NONE },
 		3U
 	},
@@ -179,6 +203,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_VALID_HEARTBEAT,
 		RSRX_STATE_CONNECTING,
 		RSRX_STATUS_OK,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		RSRX_DIAG_INFO_OPERATIONAL_EVENT,
 		{ RSRX_ACTION_RESET_SUPERVISION_TIMER, RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NONE, RSRX_ACTION_NONE },
 		2U
 	},
@@ -187,6 +213,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_TIMEOUT,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_TIMEOUT_EXPIRED,
+		RSRX_DIAG_ERROR_TIMEOUT,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -195,6 +223,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_INVALID_MESSAGE,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_INVALID_MESSAGE_RECEIVED,
+		RSRX_DIAG_ERROR_PROTOCOL,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -203,6 +233,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_VERSION_MISMATCH,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_VERSION_MISMATCH_DETECTED,
+		RSRX_DIAG_ERROR_PROTOCOL,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -211,6 +243,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_SHUTDOWN_REQUEST,
 		RSRX_STATE_SHUTDOWN,
 		RSRX_STATUS_OK,
+		RSRX_REASON_SHUTDOWN_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_RELEASE_CONNECTION_RESOURCES, RSRX_ACTION_FINALIZE_SHUTDOWN, RSRX_ACTION_NOTIFY_API },
 		4U
 	},
@@ -219,6 +253,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_VALID_HEARTBEAT,
 		RSRX_STATE_ESTABLISHED,
 		RSRX_STATUS_OK,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		RSRX_DIAG_INFO_OPERATIONAL_EVENT,
 		{ RSRX_ACTION_RESET_SUPERVISION_TIMER, RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NONE, RSRX_ACTION_NONE },
 		2U
 	},
@@ -227,6 +263,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_VALID_DATA,
 		RSRX_STATE_ESTABLISHED,
 		RSRX_STATUS_OK,
+		RSRX_REASON_DATA_ACCEPTED,
+		RSRX_DIAG_INFO_OPERATIONAL_EVENT,
 		{ RSRX_ACTION_RESET_SUPERVISION_TIMER, RSRX_ACTION_DELIVER_DATA, RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NONE },
 		3U
 	},
@@ -235,6 +273,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_SEQUENCE_GAP_DETECTED,
 		RSRX_STATE_RETRANSMISSION_PENDING,
 		RSRX_STATUS_OK,
+		RSRX_REASON_SEQUENCE_GAP_DETECTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_REQUEST_RETRANSMISSION, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NONE },
 		3U
 	},
@@ -243,6 +283,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_DISCONNECT_REQUEST,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_OK,
+		RSRX_REASON_DISCONNECT_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_NONE },
 		3U
 	},
@@ -251,6 +293,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_TIMEOUT,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_TIMEOUT_EXPIRED,
+		RSRX_DIAG_ERROR_TIMEOUT,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -259,6 +303,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_PROTOCOL_ERROR,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_PROTOCOL_ERROR_DETECTED,
+		RSRX_DIAG_ERROR_PROTOCOL,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -267,6 +313,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_SHUTDOWN_REQUEST,
 		RSRX_STATE_SHUTDOWN,
 		RSRX_STATUS_OK,
+		RSRX_REASON_SHUTDOWN_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_RELEASE_CONNECTION_RESOURCES, RSRX_ACTION_FINALIZE_SHUTDOWN, RSRX_ACTION_NOTIFY_API },
 		4U
 	},
@@ -275,6 +323,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_RECOVERY_SUCCESS,
 		RSRX_STATE_ESTABLISHED,
 		RSRX_STATUS_OK,
+		RSRX_REASON_RECOVERY_COMPLETED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_CLEAR_RETRANSMISSION_CONTEXT, RSRX_ACTION_RESET_SUPERVISION_TIMER, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -283,6 +333,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_VALID_HEARTBEAT,
 		RSRX_STATE_RETRANSMISSION_PENDING,
 		RSRX_STATUS_OK,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		RSRX_DIAG_INFO_OPERATIONAL_EVENT,
 		{ RSRX_ACTION_RESET_SUPERVISION_TIMER, RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NONE, RSRX_ACTION_NONE },
 		2U
 	},
@@ -291,6 +343,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_RETRANSMISSION_FAILURE,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_RETRANSMISSION_FAILED,
+		RSRX_DIAG_ERROR_PROTOCOL,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -299,6 +353,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_INVALID_RESPONSE,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_INVALID_RESPONSE_RECEIVED,
+		RSRX_DIAG_ERROR_PROTOCOL,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -307,6 +363,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_TIMEOUT,
 		RSRX_STATE_SAFE_DISCONNECT,
 		RSRX_STATUS_REJECTED,
+		RSRX_REASON_TIMEOUT_EXPIRED,
+		RSRX_DIAG_ERROR_TIMEOUT,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_ENTER_FAILSAFE, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC },
 		4U
 	},
@@ -315,6 +373,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_SHUTDOWN_REQUEST,
 		RSRX_STATE_SHUTDOWN,
 		RSRX_STATUS_OK,
+		RSRX_REASON_SHUTDOWN_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_SEND_DISCONNECT, RSRX_ACTION_RELEASE_CONNECTION_RESOURCES, RSRX_ACTION_FINALIZE_SHUTDOWN, RSRX_ACTION_NOTIFY_API },
 		4U
 	},
@@ -323,6 +383,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_CLEANUP_COMPLETE,
 		RSRX_STATE_INITIALIZED,
 		RSRX_STATUS_OK,
+		RSRX_REASON_CLEANUP_COMPLETED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_RELEASE_CONNECTION_RESOURCES, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_LOG_DIAGNOSTIC, RSRX_ACTION_NONE },
 		3U
 	},
@@ -331,6 +393,8 @@ static const rsrx_transition_rule_t xTransitionRules[] =
 		RSRX_EVENT_SHUTDOWN_REQUEST,
 		RSRX_STATE_SHUTDOWN,
 		RSRX_STATUS_OK,
+		RSRX_REASON_SHUTDOWN_REQUESTED,
+		RSRX_DIAG_INFO_STATE_TRANSITION,
 		{ RSRX_ACTION_RELEASE_CONNECTION_RESOURCES, RSRX_ACTION_FINALIZE_SHUTDOWN, RSRX_ACTION_NOTIFY_API, RSRX_ACTION_NONE },
 		3U
 	}
@@ -343,6 +407,8 @@ static void vBuildRejectedResult(
 	pxResult->ePreviousState = eCurrentState;
 	pxResult->eNextState = eCurrentState;
 	pxResult->eStatus = RSRX_STATUS_REJECTED;
+	pxResult->eReason = RSRX_REASON_UNEXPECTED_EVENT_REJECTED;
+	pxResult->eDiagnostic = RSRX_DIAG_WARN_REJECTED_EVENT;
 
 	vCopyActions(
 		&pxResult->xActions,
@@ -357,6 +423,8 @@ static void vBuildSafeDisconnectResult(
 	pxResult->ePreviousState = pxContext->eCurrentState;
 	pxResult->eNextState = RSRX_STATE_SAFE_DISCONNECT;
 	pxResult->eStatus = RSRX_STATUS_REJECTED;
+	pxResult->eReason = RSRX_REASON_CONSERVATIVE_FAILSAFE;
+	pxResult->eDiagnostic = RSRX_DIAG_ERROR_PROTOCOL;
 
 	vCopyActions(
 		&pxResult->xActions,
@@ -365,6 +433,8 @@ static void vBuildSafeDisconnectResult(
 
 	pxContext->eCurrentState = RSRX_STATE_SAFE_DISCONNECT;
 	pxContext->eLastStatus = RSRX_STATUS_REJECTED;
+	pxContext->eLastReason = RSRX_REASON_CONSERVATIVE_FAILSAFE;
+	pxContext->eLastDiagnostic = RSRX_DIAG_ERROR_PROTOCOL;
 }
 
 static void vBuildIgnoredSafeDisconnectResult(
@@ -374,6 +444,8 @@ static void vBuildIgnoredSafeDisconnectResult(
 	pxResult->ePreviousState = pxContext->eCurrentState;
 	pxResult->eNextState = RSRX_STATE_SAFE_DISCONNECT;
 	pxResult->eStatus = RSRX_STATUS_OK;
+	pxResult->eReason = RSRX_REASON_IGNORED_IN_SAFE_DISCONNECT;
+	pxResult->eDiagnostic = RSRX_DIAG_WARN_IGNORED_EVENT;
 
 	vCopyActions(
 		&pxResult->xActions,
@@ -384,6 +456,8 @@ static void vBuildIgnoredSafeDisconnectResult(
 		1U);
 
 	pxContext->eLastStatus = RSRX_STATUS_OK;
+	pxContext->eLastReason = RSRX_REASON_IGNORED_IN_SAFE_DISCONNECT;
+	pxContext->eLastDiagnostic = RSRX_DIAG_WARN_IGNORED_EVENT;
 }
 
 static const rsrx_transition_rule_t * pxFindTransitionRule(
@@ -414,6 +488,8 @@ rsrx_status_t rsrx_state_machine_init(
 
 	pxContext->eCurrentState = RSRX_STATE_UNINITIALIZED;
 	pxContext->eLastStatus = RSRX_STATUS_OK;
+	pxContext->eLastReason = RSRX_REASON_NONE;
+	pxContext->eLastDiagnostic = RSRX_DIAG_NONE;
 	pxContext->uEventCounter = 0U;
 
 	return RSRX_STATUS_OK;
@@ -437,15 +513,29 @@ rsrx_status_t rsrx_state_machine_handle_event(
 
 	if(uIsStateValid(eCurrentState) == 0U)
 	{
-		vSetNoActionResult(pxResult, RSRX_STATE_INVALID, RSRX_STATUS_INVALID_STATE);
+		vSetNoActionResult(
+			pxResult,
+			RSRX_STATE_INVALID,
+			RSRX_STATUS_INVALID_STATE,
+			RSRX_REASON_INVALID_STATE_VALUE,
+			RSRX_DIAG_ERROR_INTERNAL_STATE);
 		pxContext->eLastStatus = RSRX_STATUS_INVALID_STATE;
+		pxContext->eLastReason = RSRX_REASON_INVALID_STATE_VALUE;
+		pxContext->eLastDiagnostic = RSRX_DIAG_ERROR_INTERNAL_STATE;
 		return RSRX_STATUS_INVALID_STATE;
 	}
 
 	if(uIsEventValid(eEvent) == 0U)
 	{
-		vSetNoActionResult(pxResult, eCurrentState, RSRX_STATUS_INVALID_EVENT);
+		vSetNoActionResult(
+			pxResult,
+			eCurrentState,
+			RSRX_STATUS_INVALID_EVENT,
+			RSRX_REASON_INVALID_EVENT_ENUM,
+			RSRX_DIAG_ERROR_INTERFACE);
 		pxContext->eLastStatus = RSRX_STATUS_INVALID_EVENT;
+		pxContext->eLastReason = RSRX_REASON_INVALID_EVENT_ENUM;
+		pxContext->eLastDiagnostic = RSRX_DIAG_ERROR_INTERFACE;
 		return RSRX_STATUS_INVALID_EVENT;
 	}
 
@@ -453,8 +543,15 @@ rsrx_status_t rsrx_state_machine_handle_event(
 
 	if(eCurrentState == RSRX_STATE_SHUTDOWN)
 	{
-		vSetNoActionResult(pxResult, RSRX_STATE_SHUTDOWN, RSRX_STATUS_OK);
+		vSetNoActionResult(
+			pxResult,
+			RSRX_STATE_SHUTDOWN,
+			RSRX_STATUS_OK,
+			RSRX_REASON_IGNORED_IN_SHUTDOWN,
+			RSRX_DIAG_WARN_IGNORED_EVENT);
 		pxContext->eLastStatus = RSRX_STATUS_OK;
+		pxContext->eLastReason = RSRX_REASON_IGNORED_IN_SHUTDOWN;
+		pxContext->eLastDiagnostic = RSRX_DIAG_WARN_IGNORED_EVENT;
 		return RSRX_STATUS_OK;
 	}
 
@@ -480,6 +577,8 @@ rsrx_status_t rsrx_state_machine_handle_event(
 
 	vBuildRejectedResult(pxResult, eCurrentState);
 	pxContext->eLastStatus = RSRX_STATUS_REJECTED;
+	pxContext->eLastReason = RSRX_REASON_UNEXPECTED_EVENT_REJECTED;
+	pxContext->eLastDiagnostic = RSRX_DIAG_WARN_REJECTED_EVENT;
 
 	return RSRX_STATUS_REJECTED;
 }
@@ -505,6 +604,8 @@ rsrx_status_t rsrx_state_machine_reset(
 
 	pxContext->eCurrentState = RSRX_STATE_UNINITIALIZED;
 	pxContext->eLastStatus = RSRX_STATUS_OK;
+	pxContext->eLastReason = RSRX_REASON_NONE;
+	pxContext->eLastDiagnostic = RSRX_DIAG_NONE;
 	pxContext->uEventCounter = 0U;
 
 	return RSRX_STATUS_OK;
