@@ -27,22 +27,22 @@
 
 | File | Purpose | Public/Internal | Notes |
 | --- | --- | --- | --- |
-| `include/sil4_state_machine.h` | 상태 머신 public API 정의 | Public | 상위 API layer와 transport supervisor가 참조 |
-| `src/sil4_state_machine.c` | 상태 전이와 action 생성 구현 | Internal | 인증 대상 핵심 로직 |
-| `tests/unit/test_state_machine.c` | 상태 전이 단위 테스트 | Internal | 모든 허용/비허용 이벤트 조합 검증 |
+| `include/rsrx_state_machine.h` | 상태 머신 public API 정의 | Public | 상위 API layer와 transport supervisor가 참조 |
+| `src/rsrx_state_machine.c` | 상태 전이와 action 생성 구현 | Internal | 인증 대상 핵심 로직 |
+| `tests/unit/test_rsrx_state_machine.c` | 상태 전이 단위 테스트 | Internal | 모든 허용/비허용 이벤트 조합 검증 |
 
 ## Types and Interfaces
 
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
-| `sil4_state_t` | enum | 상태 정의 | 명시된 상태 외 값 금지 |
-| `sil4_event_t` | enum | 상태 전이를 유발하는 이벤트 정의 | 이벤트는 타입과 원인을 분리해 표현 |
-| `sil4_action_t` | enum | 상태 전이 후 수행할 후속 action 정의 | side effect는 별도 계층에서 수행 |
-| `sil4_transition_result_t` | struct | 새 상태, action 목록, 오류 코드 포함 | bounded action array 유지, 중복 action 금지 |
-| `state_machine_init` | function | 컨텍스트 초기화 | 초기 상태는 `UNINITIALIZED` 또는 `INITIALIZED` 중 설계 선택 필요 |
-| `state_machine_handle_event` | function | 현재 상태와 이벤트를 받아 전이 결과 생성 | side effect 금지 |
-| `state_machine_get_state` | function | 현재 상태 조회 | 읽기 전용 |
-| `state_machine_reset` | function | 정리 후 초기 상태 복귀 | shutdown 후에만 허용 |
+| `rsrx_state_t` | enum | 상태 정의 | 명시된 상태 외 값 금지 |
+| `rsrx_event_t` | enum | 상태 전이를 유발하는 이벤트 정의 | 이벤트는 타입과 원인을 분리해 표현 |
+| `rsrx_action_t` | enum | 상태 전이 후 수행할 후속 action 정의 | side effect는 별도 계층에서 수행 |
+| `rsrx_transition_result_t` | struct | 새 상태, action 목록, 오류 코드 포함 | bounded action array 유지, 중복 action 금지 |
+| `rsrx_state_machine_init` | function | 컨텍스트 초기화 | 초기 상태는 `UNINITIALIZED` 또는 `INITIALIZED` 중 설계 선택 필요 |
+| `rsrx_state_machine_handle_event` | function | 현재 상태와 이벤트를 받아 전이 결과 생성 | side effect 금지 |
+| `rsrx_state_machine_get_state` | function | 현재 상태 조회 | 읽기 전용 |
+| `rsrx_state_machine_reset` | function | 정리 후 초기 상태 복귀 | shutdown 후에만 허용 |
 
 ## State, Event, Action Catalog
 
@@ -144,7 +144,7 @@
 
 ### Function
 
-- Name: `state_machine_init`
+- Name: `rsrx_state_machine_init`
 - Related Req IDs: `FR-001`, `SR-003`
 - Preconditions:
   - 전달된 컨텍스트 포인터가 유효해야 한다.
@@ -160,7 +160,7 @@
 
 ### Function
 
-- Name: `state_machine_handle_event`
+- Name: `rsrx_state_machine_handle_event`
 - Related Req IDs: `FR-002`, `FR-004`, `FR-005`, `SR-001`, `SR-002`
 - Preconditions:
   - 상태 머신이 초기화되어 있어야 한다.
@@ -177,7 +177,7 @@
 
 ### Function
 
-- Name: `state_machine_get_state`
+- Name: `rsrx_state_machine_get_state`
 - Related Req IDs: `IF-001`
 - Preconditions:
   - 컨텍스트가 초기화되어 있어야 한다.
@@ -192,7 +192,7 @@
 
 ### Function
 
-- Name: `state_machine_reset`
+- Name: `rsrx_state_machine_reset`
 - Related Req IDs: `FR-005`, `SR-003`
 - Preconditions:
   - 컨텍스트가 유효해야 한다.
@@ -224,7 +224,7 @@
 ## Action Representation Policy
 
 - action 표현 방식:
-  - `sil4_transition_result_t`는 고정 길이 bounded action array를 사용한다.
+  - `rsrx_transition_result_t`는 고정 길이 bounded action array를 사용한다.
   - bitmask 표현은 사용하지 않는다.
 - 선택 근거:
   - action 실행 순서를 명시적으로 표현할 수 있어야 한다.
@@ -247,7 +247,7 @@
   - 최근 이벤트 메타데이터
   - 진단 카운터 일부 참조값
 - 초기화 규칙:
-  - 모든 필드는 `state_machine_init`에서 명시적으로 초기화한다.
+  - 모든 필드는 `rsrx_state_machine_init`에서 명시적으로 초기화한다.
 - 해제 규칙:
   - 상태 머신은 동적 메모리를 소유하지 않는 방향을 기본 원칙으로 한다.
 

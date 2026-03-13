@@ -132,10 +132,10 @@ SHUTDOWN --> [*]
 
 | Interface | Direction | Description |
 | --- | --- | --- |
-| `state_machine_init` | In | 상태 머신 컨텍스트 초기화 |
-| `state_machine_handle_event` | In | 외부 이벤트를 받아 상태 전이와 action 결정 |
-| `state_machine_get_state` | Out | 현재 상태 조회 |
-| `state_machine_reset` | In | 종료 후 초기 상태로 복귀 |
+| `rsrx_state_machine_init` | In | 상태 머신 컨텍스트 초기화 |
+| `rsrx_state_machine_handle_event` | In | 외부 이벤트를 받아 상태 전이와 action 결정 |
+| `rsrx_state_machine_get_state` | Out | 현재 상태 조회 |
+| `rsrx_state_machine_reset` | In | 종료 후 초기 상태로 복귀 |
 | `state_machine_actions` | Out | 송신, 로그, 타이머 재설정, disconnect 등 후속 action 목록 |
 
 ## Safety Mechanisms
