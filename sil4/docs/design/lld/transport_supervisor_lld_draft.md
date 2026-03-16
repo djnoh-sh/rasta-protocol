@@ -61,8 +61,10 @@
   - `FRAME_RECEIVED` event인 경우에만 `process_frame` 경로로 위임한다.
   - poll count와 마지막 channel state를 report에 남긴다.
 - `rsrx_transport_supervisor_process_transport_event`:
-  - `SEND_COMPLETED`는 상태 전이 없이 ignored event로 기록한다.
-  - `SEND_FAILED`와 `CHANNEL_DOWN`은 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
+  - supervisor는 consecutive send failure budget을 내부적으로 유지한다.
+  - `SEND_COMPLETED`와 정상 inbound frame 처리는 send failure budget을 reset한다.
+  - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
+  - `CHANNEL_DOWN`은 즉시 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.
 - `rsrx_transport_supervisor_process_timer_expiry`:
   - supervisor는 timer source를 해석하지 않고 session timer API로 위임한다.
@@ -80,6 +82,7 @@
   - poll receive channel down/no-frame 경로 검증
   - send failed -> protocol error 검증
   - send completed ignored 검증
+  - send failure budget reset 검증
   - timer expiry delegation 검증
 - 분석 포인트:
   - decode 결과와 supervisor-level event override 일관성
@@ -87,3 +90,4 @@
   - report 구조체의 마지막 값 보존 정책
   - query/receive 순서와 channel availability gate의 결정성
   - transport feedback event의 보수적 매핑 정책
+  - transient send failure와 persistent send failure 구분 정책

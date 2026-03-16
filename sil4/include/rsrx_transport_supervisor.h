@@ -26,6 +26,7 @@ typedef struct
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;
 	uint32_t uPollCount;
+	uint32_t uConsecutiveSendFailureCount;
 } rsrx_transport_supervisor_report_t;
 
 typedef struct
@@ -33,6 +34,7 @@ typedef struct
 	rsrx_session_t * pxSession;
 	rsrx_codec_port_t xCodec;
 	rsrx_transport_supervisor_report_t xLastReport;
+	uint32_t uMaxConsecutiveSendFailures;
 	uint32_t uInitialized;
 } rsrx_transport_supervisor_context_t;
 
