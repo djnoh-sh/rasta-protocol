@@ -10,9 +10,9 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `40~45%`
-- 현재 단계: `코어 흐름 연결 및 protocol context 구체화 단계`
-- 다음 주력 단계: `sequence/retransmission context 확장`, `transport supervisor 고도화`, `integration harness`
+- 현재 전체 진행률 추정: `45~50%`
+- 현재 단계: `코어 흐름 연결 및 application data contract 반영 단계`
+- 다음 주력 단계: `transport supervisor 고도화`, `integration harness`, `redundancy/channel manager`
 
 ## Overall Phase Status
 
@@ -37,6 +37,7 @@
 | Transport Abstraction | send/receive/query 계약 | Completed | `rsrx_transport.h`, `test_rsrx_transport_contract.c` |
 | Adapter Layer | transport/timer/diagnostics executor binding | In Progress | `rsrx_platform_adapters.*`, `test_rsrx_platform_adapters.c` |
 | Public API Session | session init/start/connect/disconnect/event API | In Progress | `rsrx_api.*`, `test_rsrx_api.c` |
+| Application Data Contract | inbound data를 상위 계층 callback으로 전달 | Completed | `application_data_contract_lld_draft.md`, `application_data_contract_test_spec_draft.md`, `test_rsrx_api.c`, `test_rsrx_platform_adapters.c` |
 | Codec | encode/decode skeleton | In Progress | `rsrx_codec.*`, `test_rsrx_codec.c` |
 | Protocol Context | sequence/confirmation/retransmission base 관리 | In Progress | `rsrx_protocol_context.*`, `test_rsrx_protocol_context.c` |
 | Transport Supervisor | inbound frame to session handoff | In Progress | `rsrx_transport_supervisor.*`, `test_rsrx_transport_supervisor.c` |
@@ -62,12 +63,13 @@
 | M12 | timer event ingress 도입 | Completed | timer expiry API, tests, traceability |
 | M13 | outbound transport encode 경로 연결 | Completed | codec-backed transport adapter, tests |
 | M14 | protocol context 도입 | Completed | sequence/confirmation/retransmission base context, tests |
+| M15 | application data delivery contract 도입 | Completed | application callback contract, tests, traceability |
 
 ## In-Progress Items
 
 | Item ID | Item | Current State | Exit Criteria |
 | --- | --- | --- | --- |
-| IP-001 | Public API hardening | timer ingress와 outbound send contract 포함 | decoded message handoff와 application data contract까지 포함 |
+| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract 포함 | explicit outbound application send API 또는 queue policy 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | confirmation validation, sequence gap detail, recovery success semantics, retransmission confirm rules 구현 | richer edge cases 보강 |
 | IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, channel state gate, send result/timer delegation, send failure budget 구현 | richer runtime event model 반영 |
@@ -80,7 +82,6 @@
 | NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | supervisor와 protocol context를 decoded message detail과 결합 |
 | NS-002 | Transport Supervisor Completion | receive loop, send result, channel state 반영 필요 | supervisor contract 확장 |
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | transport abstraction 상위 모듈 추가 |
-| NS-004 | Application Data Contract | 상위 계층 데이터 ingress/egress 정의 필요 | API/codec/transport 경계 보강 |
 | NS-005 | Integration Test Harness | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness 구축 |
 | NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | toolchain policy와 report template 수립 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
@@ -102,17 +103,16 @@
 | R-001 | detailed sequence validation 부분 미완 | retransmission confirm rules는 있으나 richer edge cases와 confirm semantics가 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
 | R-002 | transport supervisor 운영 루프 부분 미완 | send failure budget은 있으나 richer runtime feedback model과 retry semantics가 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy 미구현 | 실제 SIL4 과제 범위 대응 부족 | channel manager 별도 workstream 시작 |
-| R-004 | application data contract 미정 | 상위 계층 전달 semantics가 아직 약함 | explicit ingress/egress API 설계 |
+| R-004 | outbound application data API 부재 | inbound delivery는 정리됐지만 상위 계층의 명시적 data send contract는 아직 없다 | public API에 outbound data submission contract 추가 |
 | R-005 | 인증 증빙 부족 | 코드가 있어도 심사 대응 불가 | MISRA/static analysis/review records 병행 시작 |
 
 ## Recommended Next Order
 
-1. `Detailed Sequence and Retransmission Rules`
-2. `Transport Supervisor Maturation`
-3. `Application Data Contract`
-4. `Redundancy and Channel Manager`
-5. `Integration Test Harness`
-6. `Static Analysis and Safety Evidence`
+1. `Transport Supervisor Maturation`
+2. `Outbound Application Data Send Contract`
+3. `Redundancy and Channel Manager`
+4. `Integration Test Harness`
+5. `Static Analysis and Safety Evidence`
 
 ## Next Gate Definition
 

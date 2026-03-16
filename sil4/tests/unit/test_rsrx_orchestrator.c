@@ -86,6 +86,7 @@ static void vDispatchAction(
 static rsrx_action_executor_table_t xCreateExecutorTable(
 	test_executor_context_t * pxTransportContext,
 	test_executor_context_t * pxTimerContext,
+	test_executor_context_t * pxApplicationContext,
 	test_executor_context_t * pxApiContext,
 	test_executor_context_t * pxDiagnosticsContext,
 	test_executor_context_t * pxLifecycleContext)
@@ -96,6 +97,8 @@ static rsrx_action_executor_table_t xCreateExecutorTable(
 	xExecutors.xTransportExecutor.pfDispatch = vDispatchAction;
 	xExecutors.xTimerExecutor.pvContext = pxTimerContext;
 	xExecutors.xTimerExecutor.pfDispatch = vDispatchAction;
+	xExecutors.xApplicationExecutor.pvContext = pxApplicationContext;
+	xExecutors.xApplicationExecutor.pfDispatch = vDispatchAction;
 	xExecutors.xApiExecutor.pvContext = pxApiContext;
 	xExecutors.xApiExecutor.pfDispatch = vDispatchAction;
 	xExecutors.xDiagnosticsExecutor.pvContext = pxDiagnosticsContext;
@@ -112,12 +115,14 @@ static void vTestInitAndConnectDispatch(void)
 	rsrx_orchestrator_report_t xReport;
 	test_executor_context_t xTransportContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xTimerContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	test_executor_context_t xApplicationContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xApiContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xDiagnosticsContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xLifecycleContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	rsrx_action_executor_table_t xExecutors = xCreateExecutorTable(
 		&xTransportContext,
 		&xTimerContext,
+		&xApplicationContext,
 		&xApiContext,
 		&xDiagnosticsContext,
 		&xLifecycleContext);
@@ -156,12 +161,14 @@ static void vTestFailSafeDispatch(void)
 	rsrx_orchestrator_report_t xReport;
 	test_executor_context_t xTransportContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xTimerContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	test_executor_context_t xApplicationContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xApiContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xDiagnosticsContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	test_executor_context_t xLifecycleContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
 	rsrx_action_executor_table_t xExecutors = xCreateExecutorTable(
 		&xTransportContext,
 		&xTimerContext,
+		&xApplicationContext,
 		&xApiContext,
 		&xDiagnosticsContext,
 		&xLifecycleContext);
@@ -197,6 +204,7 @@ static void vTestInvalidArguments(void)
 	rsrx_orchestrator_context_t xContext;
 	rsrx_action_executor_table_t xInvalidExecutors =
 	{
+		{ (void *)0, (rsrx_action_dispatch_fn)0 },
 		{ (void *)0, (rsrx_action_dispatch_fn)0 },
 		{ (void *)0, (rsrx_action_dispatch_fn)0 },
 		{ (void *)0, (rsrx_action_dispatch_fn)0 },

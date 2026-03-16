@@ -16,6 +16,12 @@ typedef struct
 
 typedef struct
 {
+	rsrx_application_data_indication_t xLastIndication;
+	uint32_t uCallCount;
+} test_application_context_t;
+
+typedef struct
+{
 	rsrx_transport_send_request_t xLastRequest;
 	uint32_t uSendCount;
 } test_transport_context_t;
@@ -97,6 +103,17 @@ static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxRe
 	pxContext->uCallCount++;
 }
 
+static void vApplicationDataNotify(
+	void * pvContext,
+	const rsrx_orchestrator_report_t * pxReport,
+	const rsrx_application_data_indication_t * pxIndication)
+{
+	test_application_context_t * pxContext = (test_application_context_t *)pvContext;
+	(void)pxReport;
+	pxContext->uCallCount++;
+	pxContext->xLastIndication = *pxIndication;
+}
+
 static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport, rsrx_action_t eAction, uint32_t uActionIndex)
 {
 	test_counter_t * pxContext = (test_counter_t *)pvContext;
@@ -112,6 +129,7 @@ static void vFillConfig(
 	test_clock_context_t * pxClock,
 	test_timer_context_t * pxTimer,
 	test_diagnostics_context_t * pxDiagnostics,
+	test_application_context_t * pxApplication,
 	test_counter_t * pxApiCounter,
 	test_counter_t * pxLifecycleCounter,
 	const uint8_t * puPayload,
@@ -134,6 +152,8 @@ static void vFillConfig(
 	pxConfig->uSupervisionIntervalNs = 200U;
 	pxConfig->uRetransmissionIntervalNs = 300U;
 	pxConfig->uDiagnosticFlushIntervalNs = 400U;
+	pxConfig->pvApplicationDataContext = pxApplication;
+	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pxApiCounter;
 	pxConfig->pfApiNotification = vApiNotify;
 	pxConfig->pvLifecycleCallbackContext = pxLifecycleCounter;
@@ -148,6 +168,7 @@ static void vPrepareEstablishedSession(
 	test_clock_context_t * pxClock,
 	test_timer_context_t * pxTimer,
 	test_diagnostics_context_t * pxDiagnostics,
+	test_application_context_t * pxApplication,
 	test_counter_t * pxApiCounter,
 	test_counter_t * pxLifecycleCounter,
 	const uint8_t * puPayload,
@@ -159,6 +180,7 @@ static void vPrepareEstablishedSession(
 		pxClock,
 		pxTimer,
 		pxDiagnostics,
+		pxApplication,
 		pxApiCounter,
 		pxLifecycleCounter,
 		puPayload,
@@ -179,11 +201,12 @@ static void vTestSessionStartupAndConnect(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[3] = { 0x01U, 0x02U, 0x03U };
 
-	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
 
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "initial session state");
@@ -211,11 +234,12 @@ static void vTestSessionDisconnectPath(void)
 	test_clock_context_t xClock = { 500U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[2] = { 0xAAU, 0xBBU };
 
-	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
 	(void)rsrx_session_init(&xSession, &xConfig);
 	(void)rsrx_session_start(&xSession, &pxReport);
 	(void)rsrx_session_connect(&xSession, &pxReport);
@@ -238,6 +262,7 @@ static void vTestSessionInboundHeartbeatPath(void)
 	test_clock_context_t xClock = { 700U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[2] = { 0x11U, 0x22U };
@@ -250,6 +275,7 @@ static void vTestSessionInboundHeartbeatPath(void)
 		&xClock,
 		&xTimer,
 		&xDiagnostics,
+		&xApplication,
 		&xApiCounter,
 		&xLifecycleCounter,
 		auPayload,
@@ -275,6 +301,7 @@ static void vTestSessionInboundDataPath(void)
 	test_clock_context_t xClock = { 800U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[3] = { 0x21U, 0x22U, 0x23U };
@@ -287,17 +314,34 @@ static void vTestSessionInboundDataPath(void)
 		&xClock,
 		&xTimer,
 		&xDiagnostics,
+		&xApplication,
 		&xApiCounter,
 		&xLifecycleCounter,
 		auPayload,
 		sizeof(auPayload));
+	rsrx_transport_adapter_record_inbound_message(
+		&xSession.xTransportAdapter,
+		&(const rsrx_decoded_message_t){
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			5U,
+			4U,
+			{ 0x21U, 0x22U, 0x23U },
+			3U });
 
 	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_DATA, &pxReport) == RSRX_STATUS_OK, "data event");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "data keeps established");
 	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_DATA_ACCEPTED, "data reason");
 	vAssertTrue(pxReport->uDispatchedActionCount == 3U, "data dispatched actions");
-	vAssertTrue(xTransport.uSendCount == 2U, "data delivery routed through transport executor");
-	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_DATA_ACCEPTED, "data delivery reason");
+	vAssertTrue(xTransport.uSendCount == 1U, "data delivery does not send outbound transport");
+	vAssertTrue(xApplication.uCallCount == 1U, "application data callback count");
+	vAssertTrue(xApplication.xLastIndication.xPayloadLength == 3U, "application data payload length");
+	vAssertTrue(xApplication.xLastIndication.puPayload != (const uint8_t *)0, "application data payload pointer");
+	vAssertTrue(xApplication.xLastIndication.puPayload[0] == 0x21U, "application data payload byte 0");
+	vAssertTrue(xApplication.xLastIndication.eReason == RSRX_REASON_DATA_ACCEPTED, "application data reason");
+	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 5U, "application data sequence");
+	vAssertTrue(xApplication.xLastIndication.uConfirmationNumber == 4U, "application data confirmation");
 	vAssertTrue(xTimer.uCallCount == 3U, "data timer restart");
 	vAssertTrue(xDiagnostics.uCallCount == 3U, "data diagnostic count");
 	vAssertTrue(xApiCounter.uCallCount == 3U, "data no api notify");
@@ -312,6 +356,7 @@ static void vTestSessionRetransmissionPath(void)
 	test_clock_context_t xClock = { 900U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[4] = { 0x31U, 0x32U, 0x33U, 0x34U };
@@ -324,6 +369,7 @@ static void vTestSessionRetransmissionPath(void)
 		&xClock,
 		&xTimer,
 		&xDiagnostics,
+		&xApplication,
 		&xApiCounter,
 		&xLifecycleCounter,
 		auPayload,
@@ -358,6 +404,7 @@ static void vTestSessionSupervisionTimerExpiry(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[2] = { 0x41U, 0x42U };
@@ -370,6 +417,7 @@ static void vTestSessionSupervisionTimerExpiry(void)
 		&xClock,
 		&xTimer,
 		&xDiagnostics,
+		&xApplication,
 		&xApiCounter,
 		&xLifecycleCounter,
 		auPayload,
@@ -394,6 +442,7 @@ static void vTestSessionRetransmissionTimerExpiry(void)
 	test_clock_context_t xClock = { 1100U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[2] = { 0x51U, 0x52U };
@@ -406,6 +455,7 @@ static void vTestSessionRetransmissionTimerExpiry(void)
 		&xClock,
 		&xTimer,
 		&xDiagnostics,
+		&xApplication,
 		&xApiCounter,
 		&xLifecycleCounter,
 		auPayload,
@@ -431,11 +481,12 @@ static void vTestInvalidArguments(void)
 	test_clock_context_t xClock = { 100U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[1] = { 0x01U };
 
-	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
 	xConfig.uSupervisionIntervalNs = 0U;
 
 	vAssertTrue(rsrx_session_init((rsrx_session_t *)0, (const rsrx_session_config_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null session init");

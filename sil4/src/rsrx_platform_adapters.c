@@ -38,7 +38,6 @@ static uint32_t uActionUsesTransport(
 	return (uint32_t)((eAction == RSRX_ACTION_START_HANDSHAKE) ||
 		(eAction == RSRX_ACTION_ACCEPT_INBOUND_CONNECT) ||
 		(eAction == RSRX_ACTION_SEND_HEARTBEAT) ||
-		(eAction == RSRX_ACTION_DELIVER_DATA) ||
 		(eAction == RSRX_ACTION_REQUEST_RETRANSMISSION) ||
 		(eAction == RSRX_ACTION_SEND_DISCONNECT));
 }
@@ -57,9 +56,6 @@ static rsrx_message_type_t eMapActionToMessageType(
 		case RSRX_ACTION_SEND_HEARTBEAT:
 			return RSRX_MESSAGE_TYPE_HEARTBEAT;
 
-		case RSRX_ACTION_DELIVER_DATA:
-			return RSRX_MESSAGE_TYPE_DATA;
-
 		case RSRX_ACTION_REQUEST_RETRANSMISSION:
 			return RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST;
 
@@ -77,15 +73,12 @@ static const uint8_t * puResolvePayload(
 	rsrx_action_t eAction,
 	size_t * pxPayloadLength)
 {
+	(void)pxContext;
+	(void)eAction;
+
 	if(pxPayloadLength == (size_t *)0)
 	{
 		return (const uint8_t *)0;
-	}
-
-	if(eAction == RSRX_ACTION_DELIVER_DATA)
-	{
-		*pxPayloadLength = pxContext->xFramePayloadLength;
-		return pxContext->puFramePayload;
 	}
 
 	*pxPayloadLength = 0U;
@@ -110,6 +103,7 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->xTransportPort = *pxTransportPort;
 	pxContext->xCodecPort = *pxCodecPort;
 	(void)rsrx_protocol_context_init(&pxContext->xProtocolContext);
+	pxContext->uHasLastInboundMessage = 0U;
 	pxContext->eDefaultChannelId = eDefaultChannelId;
 	pxContext->puFramePayload = puFramePayload;
 	pxContext->xFramePayloadLength = xFramePayloadLength;
@@ -189,6 +183,20 @@ void rsrx_transport_adapter_record_inbound_message(
 	(void)rsrx_protocol_context_record_inbound_message(
 		&pxContext->xProtocolContext,
 		pxMessage);
+	pxContext->xLastInboundMessage = *pxMessage;
+	pxContext->uHasLastInboundMessage = 1U;
+}
+
+const rsrx_decoded_message_t * rsrx_transport_adapter_get_last_inbound_message(
+	const rsrx_transport_adapter_context_t * pxContext)
+{
+	if((pxContext == (const rsrx_transport_adapter_context_t *)0) ||
+		(pxContext->uHasLastInboundMessage == 0U))
+	{
+		return (const rsrx_decoded_message_t *)0;
+	}
+
+	return &pxContext->xLastInboundMessage;
 }
 
 rsrx_transport_status_t rsrx_transport_adapter_query_channel(
@@ -406,6 +414,7 @@ rsrx_status_t rsrx_platform_adapter_build_executor_table(
 	rsrx_action_executor_table_t * pxExecutors,
 	rsrx_transport_adapter_context_t * pxTransportContext,
 	rsrx_platform_adapter_context_t * pxPlatformContext,
+	const rsrx_action_executor_t * pxApplicationExecutor,
 	const rsrx_action_executor_t * pxApiExecutor,
 	const rsrx_action_executor_t * pxLifecycleExecutor)
 {
@@ -415,6 +424,7 @@ rsrx_status_t rsrx_platform_adapter_build_executor_table(
 		(uCodecPortIsValid(&pxTransportContext->xCodecPort) == 0U) ||
 		(pxPlatformContext == (rsrx_platform_adapter_context_t *)0) ||
 		(uPortTableIsValid(&pxPlatformContext->xPlatformPorts) == 0U) ||
+		(uExecutorIsValid(pxApplicationExecutor) == 0U) ||
 		(uExecutorIsValid(pxApiExecutor) == 0U) ||
 		(uExecutorIsValid(pxLifecycleExecutor) == 0U))
 	{
@@ -425,6 +435,7 @@ rsrx_status_t rsrx_platform_adapter_build_executor_table(
 	pxExecutors->xTransportExecutor.pfDispatch = rsrx_transport_executor_dispatch;
 	pxExecutors->xTimerExecutor.pvContext = pxPlatformContext;
 	pxExecutors->xTimerExecutor.pfDispatch = rsrx_platform_timer_executor_dispatch;
+	pxExecutors->xApplicationExecutor = *pxApplicationExecutor;
 	pxExecutors->xApiExecutor = *pxApiExecutor;
 	pxExecutors->xDiagnosticsExecutor.pvContext = pxPlatformContext;
 	pxExecutors->xDiagnosticsExecutor.pfDispatch = rsrx_platform_diagnostics_executor_dispatch;

@@ -13,6 +13,7 @@ static uint32_t uExecutorTableIsValid(
 	return (uint32_t)((pxExecutors != (const rsrx_action_executor_table_t *)0) &&
 		(uExecutorIsValid(&pxExecutors->xTransportExecutor) != 0U) &&
 		(uExecutorIsValid(&pxExecutors->xTimerExecutor) != 0U) &&
+		(uExecutorIsValid(&pxExecutors->xApplicationExecutor) != 0U) &&
 		(uExecutorIsValid(&pxExecutors->xApiExecutor) != 0U) &&
 		(uExecutorIsValid(&pxExecutors->xDiagnosticsExecutor) != 0U) &&
 		(uExecutorIsValid(&pxExecutors->xLifecycleExecutor) != 0U));
@@ -27,10 +28,12 @@ static const rsrx_action_executor_t * pxSelectExecutor(
 		case RSRX_ACTION_START_HANDSHAKE:
 		case RSRX_ACTION_ACCEPT_INBOUND_CONNECT:
 		case RSRX_ACTION_SEND_HEARTBEAT:
-		case RSRX_ACTION_DELIVER_DATA:
 		case RSRX_ACTION_REQUEST_RETRANSMISSION:
 		case RSRX_ACTION_SEND_DISCONNECT:
 			return &pxContext->xExecutors.xTransportExecutor;
+
+		case RSRX_ACTION_DELIVER_DATA:
+			return &pxContext->xExecutors.xApplicationExecutor;
 
 		case RSRX_ACTION_START_SUPERVISION_TIMER:
 		case RSRX_ACTION_RESET_SUPERVISION_TIMER:

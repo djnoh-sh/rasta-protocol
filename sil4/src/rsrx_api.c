@@ -21,6 +21,44 @@ static void vApiExecutorDispatch(
 	}
 }
 
+static void vApplicationExecutorDispatch(
+	void * pvContext,
+	const rsrx_transition_result_t * pxTransition,
+	rsrx_action_t eAction,
+	uint32_t uActionIndex)
+{
+	rsrx_session_t * pxSession = (rsrx_session_t *)pvContext;
+	const rsrx_decoded_message_t * pxMessage;
+	rsrx_application_data_indication_t xIndication;
+	(void)pxTransition;
+	(void)eAction;
+	(void)uActionIndex;
+
+	if((pxSession == (rsrx_session_t *)0) ||
+		(pxSession->pfApplicationData == (rsrx_application_data_fn)0))
+	{
+		return;
+	}
+
+	pxMessage = rsrx_transport_adapter_get_last_inbound_message(
+		&pxSession->xTransportAdapter);
+	if(pxMessage == (const rsrx_decoded_message_t *)0)
+	{
+		return;
+	}
+
+	xIndication.puPayload = pxMessage->auPayload;
+	xIndication.xPayloadLength = pxMessage->xPayloadLength;
+	xIndication.eReason = pxMessage->eReason;
+	xIndication.uSequenceNumber = pxMessage->uSequenceNumber;
+	xIndication.uConfirmationNumber = pxMessage->uConfirmationNumber;
+
+	pxSession->pfApplicationData(
+		pxSession->pvApplicationDataContext,
+		&pxSession->xLastReport,
+		&xIndication);
+}
+
 static void vLifecycleExecutorDispatch(
 	void * pvContext,
 	const rsrx_transition_result_t * pxTransition,
@@ -102,6 +140,7 @@ rsrx_status_t rsrx_session_init(
 	rsrx_session_t * pxSession,
 	const rsrx_session_config_t * pxConfig)
 {
+	rsrx_action_executor_t xApplicationExecutor;
 	rsrx_action_executor_t xApiExecutor;
 	rsrx_action_executor_t xLifecycleExecutor;
 	rsrx_config_validation_report_t xValidationReport;
@@ -135,9 +174,13 @@ rsrx_status_t rsrx_session_init(
 
 	pxSession->pvApiCallbackContext = pxConfig->pvApiCallbackContext;
 	pxSession->pfApiNotification = pxConfig->pfApiNotification;
+	pxSession->pvApplicationDataContext = pxConfig->pvApplicationDataContext;
+	pxSession->pfApplicationData = pxConfig->pfApplicationData;
 	pxSession->pvLifecycleCallbackContext = pxConfig->pvLifecycleCallbackContext;
 	pxSession->pfLifecycleNotification = pxConfig->pfLifecycleNotification;
 
+	xApplicationExecutor.pvContext = pxSession;
+	xApplicationExecutor.pfDispatch = vApplicationExecutorDispatch;
 	xApiExecutor.pvContext = pxSession;
 	xApiExecutor.pfDispatch = vApiExecutorDispatch;
 	xLifecycleExecutor.pvContext = pxSession;
@@ -147,6 +190,7 @@ rsrx_status_t rsrx_session_init(
 		&pxSession->xExecutors,
 		&pxSession->xTransportAdapter,
 		&pxSession->xPlatformAdapter,
+		&xApplicationExecutor,
 		&xApiExecutor,
 		&xLifecycleExecutor) != RSRX_STATUS_OK)
 	{

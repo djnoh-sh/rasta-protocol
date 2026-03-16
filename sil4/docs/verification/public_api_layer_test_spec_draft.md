@@ -27,7 +27,7 @@
 | TC-API-002 | FR-005, SR-004 | session disconnect 경로 검증 | `ESTABLISHED` 상태 session | `session_disconnect` 호출 | `SAFE_DISCONNECT` 전이와 lifecycle callback 발생 | disconnect reason과 callback 동작이 설계와 일치 |
 | TC-API-003 | IF-001 | invalid argument 방어 검증 | null session 또는 미초기화 session | API 호출 | 정의된 invalid argument 처리 | UB 없이 결정적 오류 반환 |
 | TC-API-004 | IF-001 | inbound heartbeat handoff 검증 | `ESTABLISHED` 상태 session | `session_process_event(VALID_HEARTBEAT)` 호출 | 상태 유지, supervision timer 재시작, diagnostic 기록 | transport 추가 송신 없이 운영 이벤트가 반영된다 |
-| TC-API-005 | FR-003, IF-001 | inbound data handoff 검증 | `ESTABLISHED` 상태 session | `session_process_event(VALID_DATA)` 호출 | 상태 유지, data delivery action 수행 | 전달 reason, timer, diagnostic 동작이 설계와 일치 |
+| TC-API-005 | FR-003, IF-001 | inbound data handoff 검증 | `ESTABLISHED` 상태 session, inbound message 기록됨 | `session_process_event(VALID_DATA)` 호출 | 상태 유지, application data callback 수행 | 전달 reason, payload, sequence, confirmation과 timer/diagnostic 동작이 설계와 일치 |
 | TC-API-006 | FR-004, IF-001, SR-004 | retransmission 경로 검증 | `ESTABLISHED` 상태 session | `SEQUENCE_GAP_DETECTED`, 이어서 `RECOVERY_SUCCESS` 호출 | `RETRANSMISSION_PENDING` 진입 후 `ESTABLISHED` 복귀 | retransmission 요청, API notify, recovery lifecycle가 추적 가능하게 남는다 |
 | TC-API-007 | SR-002, IF-001 | supervision timer expiry 검증 | `ESTABLISHED` 상태 session | `session_process_timer_expiry(SUPERVISION)` 호출 | `SAFE_DISCONNECT` 전이와 disconnect action 발생 | timeout reason과 fail-safe action이 설계와 일치 |
 | TC-API-008 | FR-004, SR-002, IF-001 | retransmission timer expiry 검증 | `RETRANSMISSION_PENDING` 상태 session | `session_process_timer_expiry(RETRANSMISSION)` 호출 | `SAFE_DISCONNECT` 전이와 disconnect action 발생 | retransmission failure reason과 action이 설계와 일치 |

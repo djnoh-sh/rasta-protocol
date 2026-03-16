@@ -34,23 +34,25 @@
 
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
-| `rsrx_transport_adapter_context_t` | struct | transport port, codec port, encoded frame buffer를 보유 | 동적 메모리 미사용 |
+| `rsrx_transport_adapter_context_t` | struct | transport port, codec port, encoded frame buffer, last inbound message cache를 보유 | 동적 메모리 미사용 |
 | `rsrx_platform_adapter_context_t` | struct | platform port와 interval 설정 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_adapter_init` | function | transport adapter context 초기화 | 유효한 transport/codec port 필요 |
 | `rsrx_transport_executor_dispatch` | function | transport action을 encode 후 send request로 변환 | transport action만 처리 |
 | `rsrx_platform_adapter_init` | function | platform adapter context 초기화 | 유효한 port table 필요 |
 | `rsrx_platform_timer_executor_dispatch` | function | timer action을 platform timer command로 변환 | timer action만 처리 |
 | `rsrx_platform_diagnostics_executor_dispatch` | function | transition result를 diagnostics record로 변환 | bounded 기록 생성 |
-| `rsrx_platform_adapter_build_executor_table` | function | transport/timer/diagnostics/api/lifecycle executor를 결합 | null 금지 |
+| `rsrx_platform_adapter_build_executor_table` | function | transport/timer/application/diagnostics/api/lifecycle executor를 결합 | null 금지 |
 
 ## Functional Behavior
 
 - transport adapter:
-  - `START_HANDSHAKE`, `ACCEPT_INBOUND_CONNECT`, `SEND_HEARTBEAT`, `DELIVER_DATA`, `REQUEST_RETRANSMISSION`, `SEND_DISCONNECT`를 message type으로 매핑한다.
+  - `START_HANDSHAKE`, `ACCEPT_INBOUND_CONNECT`, `SEND_HEARTBEAT`, `REQUEST_RETRANSMISSION`, `SEND_DISCONNECT`를 message type으로 매핑한다.
   - mapped action은 `protocol context`를 통해 sequence/confirmation이 채워진 `codec encode request`로 변환된다.
   - encode 성공 시 encoded wire buffer를 `rsrx_transport_send_request_t`의 payload로 전달한다.
-  - 현재 단계에서 application payload는 `DELIVER_DATA`에서만 encoded payload에 포함한다.
-  - inbound decoded message는 protocol context의 confirmation 기준을 갱신한다.
+  - inbound decoded message는 protocol context의 confirmation 기준을 갱신하고 마지막 inbound message cache를 보존한다.
+- application executor support:
+  - `DELIVER_DATA`는 transport adapter가 아니라 별도 application executor가 처리한다.
+  - transport adapter는 application executor가 참조할 마지막 inbound message만 제공한다.
 - timer adapter:
   - `START_SUPERVISION_TIMER`, `RESET_SUPERVISION_TIMER`를 monotonic deadline 기반 command로 변환한다.
   - 현재 시간은 `rsrx_clock_port_t`를 통해 조회한다.
@@ -61,13 +63,14 @@
 - executor table builder:
   - transport executor는 transport adapter dispatch 함수로 설정한다.
   - timer/diagnostics executor는 platform adapter dispatch 함수로 설정한다.
-  - api/lifecycle executor는 외부 제공 executor를 사용한다.
+  - application/api/lifecycle executor는 외부 제공 executor를 사용한다.
 
 ## Verification Notes
 
 - 필요한 테스트:
   - executor table 조립 검증
   - transport action -> encoded send request 변환 검증
+  - inbound message cache 조회 검증
   - timer action -> timer command 변환 검증
   - diagnostics action -> diagnostic record 변환 검증
 - 분석 포인트:

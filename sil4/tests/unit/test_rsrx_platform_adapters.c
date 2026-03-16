@@ -110,10 +110,12 @@ static void vTestPlatformExecutorTableBuild(void)
 	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
 	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_action_context_t xApplicationContext = { RSRX_ACTION_NONE, 0U };
 	test_action_context_t xApiContext = { RSRX_ACTION_NONE, 0U };
 	test_action_context_t xLifecycleContext = { RSRX_ACTION_NONE, 0U };
 	rsrx_platform_port_table_t xPorts;
 	rsrx_transport_port_t xTransportPort;
+	rsrx_action_executor_t xApplicationExecutor;
 	rsrx_action_executor_t xApiExecutor;
 	rsrx_action_executor_t xLifecycleExecutor;
 	rsrx_action_executor_table_t xExecutors;
@@ -142,6 +144,8 @@ static void vTestPlatformExecutorTableBuild(void)
 			sizeof(auPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"transport adapter init");
 
+	xApplicationExecutor.pvContext = &xApplicationContext;
+	xApplicationExecutor.pfDispatch = vCaptureAction;
 	xApiExecutor.pvContext = &xApiContext;
 	xApiExecutor.pfDispatch = vCaptureAction;
 	xLifecycleExecutor.pvContext = &xLifecycleContext;
@@ -151,11 +155,13 @@ static void vTestPlatformExecutorTableBuild(void)
 		&xExecutors,
 		&xTransportAdapterContext,
 		&xPlatformContext,
+		&xApplicationExecutor,
 		&xApiExecutor,
 		&xLifecycleExecutor);
 	vAssertTrue(eStatus == RSRX_STATUS_OK, "build executor table");
 	vAssertTrue(xExecutors.xTransportExecutor.pfDispatch == rsrx_transport_executor_dispatch, "transport executor binding");
 	vAssertTrue(xExecutors.xTimerExecutor.pfDispatch == rsrx_platform_timer_executor_dispatch, "timer executor binding");
+	vAssertTrue(xExecutors.xApplicationExecutor.pfDispatch == vCaptureAction, "application executor binding");
 	vAssertTrue(xExecutors.xDiagnosticsExecutor.pfDispatch == rsrx_platform_diagnostics_executor_dispatch, "diagnostics executor binding");
 }
 
@@ -211,23 +217,24 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	rsrx_transport_adapter_record_inbound_message(
 		&xTransportAdapterContext,
 		&(rsrx_decoded_message_t){
-			RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
-			RSRX_EVENT_HANDSHAKE_SUCCESS,
-			RSRX_REASON_HANDSHAKE_COMPLETED,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
 			7U,
-			0U,
-			{ 0U },
-			0U });
-	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_DELIVER_DATA, 0U);
-	vAssertTrue(xTransportContext.uCallCount == 2U, "data send called");
-	vAssertTrue(xTransportContext.xLastRequest.xPayloadLength == (D_RSRX_CODEC_HEADER_BYTES + sizeof(auPayload)), "data payload encoded");
-	vAssertTrue(xTransportContext.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_DATA, "data message type encoded");
-	vAssertTrue(xTransportContext.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_DATA_ACCEPTED, "data reason encoded");
-	vAssertTrue(xTransportContext.xLastRequest.puPayload[7] == 0x02U, "data sequence encoded");
-	vAssertTrue(xTransportContext.xLastRequest.puPayload[11] == 0x07U, "data confirmation encoded");
-	vAssertTrue(xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auPayload[0], "data payload copied");
-	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "transport channel mapped");
-	vAssertTrue(xTransportContext.xLastRequest.eReason == RSRX_REASON_DATA_ACCEPTED, "transport reason mapped");
+			2U,
+			{ 0xABU, 0xCDU },
+			2U });
+	{
+		const rsrx_decoded_message_t * pxLastMessage =
+			rsrx_transport_adapter_get_last_inbound_message(&xTransportAdapterContext);
+		vAssertTrue(pxLastMessage != (const rsrx_decoded_message_t *)0, "last inbound message available");
+		vAssertTrue(pxLastMessage->eMessageType == RSRX_MESSAGE_TYPE_DATA, "last inbound type");
+		vAssertTrue(pxLastMessage->eReason == RSRX_REASON_DATA_ACCEPTED, "last inbound reason");
+		vAssertTrue(pxLastMessage->uSequenceNumber == 7U, "last inbound sequence");
+		vAssertTrue(pxLastMessage->uConfirmationNumber == 2U, "last inbound confirmation");
+		vAssertTrue(pxLastMessage->xPayloadLength == 2U, "last inbound payload length");
+		vAssertTrue(pxLastMessage->auPayload[0] == 0xABU, "last inbound payload copied");
+	}
 
 	rsrx_platform_timer_executor_dispatch(&xPlatformContext, &xTransition, RSRX_ACTION_START_SUPERVISION_TIMER, 1U);
 	vAssertTrue(xClockContext.uCallCount == 1U, "clock called");

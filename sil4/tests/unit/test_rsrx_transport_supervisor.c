@@ -36,6 +36,7 @@ typedef struct
 typedef struct
 {
 	uint32_t uApiCount;
+	uint32_t uApplicationCount;
 	uint32_t uLifecycleCount;
 } test_callback_context_t;
 
@@ -129,6 +130,17 @@ static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxRe
 	pxContext->uApiCount++;
 }
 
+static void vApplicationDataNotify(
+	void * pvContext,
+	const rsrx_orchestrator_report_t * pxReport,
+	const rsrx_application_data_indication_t * pxIndication)
+{
+	test_callback_context_t * pxContext = (test_callback_context_t *)pvContext;
+	(void)pxReport;
+	(void)pxIndication;
+	pxContext->uApplicationCount++;
+}
+
 static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport, rsrx_action_t eAction, uint32_t uActionIndex)
 {
 	test_callback_context_t * pxContext = (test_callback_context_t *)pvContext;
@@ -197,6 +209,8 @@ static void vFillConfig(
 	pxConfig->uSupervisionIntervalNs = 100U;
 	pxConfig->uRetransmissionIntervalNs = 200U;
 	pxConfig->uDiagnosticFlushIntervalNs = 300U;
+	pxConfig->pvApplicationDataContext = pxCallbacks;
+	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pxCallbacks;
 	pxConfig->pfApiNotification = vApiNotify;
 	pxConfig->pvLifecycleCallbackContext = pxCallbacks;
@@ -237,7 +251,7 @@ static void vTestSupervisorInboundHandshakePath(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[3] = { 0x01U, 0x02U, 0x03U };
 
@@ -292,7 +306,7 @@ static void vTestSupervisorDecodeFailure(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[2] = { 0x10U, 0x20U };
 
@@ -339,7 +353,7 @@ static void vTestSupervisorUnsupportedMessage(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[4] = { 0xABU, 0xCDU, 0xEFU, 0x01U };
 
@@ -387,7 +401,7 @@ static void vTestSupervisorSequenceGapDetection(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[3] = { 0x21U, 0x22U, 0x23U };
 
@@ -442,7 +456,7 @@ static void vTestSupervisorStaleSequenceProtocolError(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[2] = { 0x31U, 0x32U };
 
@@ -496,7 +510,7 @@ static void vTestSupervisorPollReceiveHandshake(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	static const uint8_t auPayload[3] = { 0x41U, 0x42U, 0x43U };
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
@@ -537,7 +551,7 @@ static void vTestSupervisorPollReceiveChannelDown(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	static const uint8_t auPayload[1] = { 0x51U };
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
@@ -567,7 +581,7 @@ static void vTestSupervisorPollReceiveNoFrame(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	static const uint8_t auPayload[1] = { 0x61U };
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
@@ -597,7 +611,7 @@ static void vTestSupervisorTransportSendFailed(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[1] = { 0x71U };
 
@@ -637,7 +651,7 @@ static void vTestSupervisorTransportSendCompletedIgnored(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[1] = { 0x72U };
 
@@ -671,7 +685,7 @@ static void vTestSupervisorSendFailureBudgetResetsAfterSuccess(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[2] = { 0x74U, 0x75U };
 
@@ -721,7 +735,7 @@ static void vTestSupervisorRecoverySuccessFromRetransmissionPending(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[2] = { 0x81U, 0x82U };
 
@@ -765,7 +779,7 @@ static void vTestSupervisorRecoverySuccessFromRetransmissionPending(void)
 		RSRX_EVENT_VALID_DATA,
 		RSRX_REASON_DATA_ACCEPTED,
 		2U,
-		3U);
+		2U);
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "recovery success frame");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "recovery returns to established");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_RECOVERY_COMPLETED, "recovery reason");
@@ -783,7 +797,7 @@ static void vTestSupervisorTimerExpiryDelegation(void)
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_callback_context_t xCallbacks = { 0U, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	static const uint8_t auPayload[1] = { 0x73U };
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);

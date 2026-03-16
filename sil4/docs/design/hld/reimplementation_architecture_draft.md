@@ -58,7 +58,7 @@
 
 | Module ID | Module Name | Responsibility | Inputs | Outputs | Related Req IDs |
 | --- | --- | --- | --- | --- | --- |
-| MOD-001 | Public API Layer | 초기화, 연결, 송신, 수신, 종료 API를 제공하고 호출 순서를 통제한다 | API call | status, error, callbacks | FR-001, FR-005, IF-001 |
+| MOD-001 | Public API Layer | 초기화, 연결, 송신, 수신, 종료 API를 제공하고 호출 순서를 통제한다 | API call | status, error, callbacks, application indications | FR-001, FR-003, FR-005, IF-001 |
 | MOD-002 | Connection State Machine | 연결 상태와 이벤트 처리 규칙을 관리한다 | decoded events, timer events | state transition, actions | FR-002, FR-004, SR-001, SR-002 |
 | MOD-003 | Protocol Codec | packet/telegram 직렬화와 역직렬화를 담당한다 | typed data, raw bytes | raw bytes, typed data | FR-003, SR-001 |
 | MOD-004 | Transport Supervisor | transport channel 송수신과 redundancy 정책을 관리한다 | send request, incoming frames | delivered frames, channel status | FR-003, FR-004, SR-002 |
@@ -66,7 +66,7 @@
 | MOD-006 | Diagnostics and Logging | 진단 정보와 오류 기록을 구조적으로 생성한다 | events, state, errors | diagnostics, logs | FR-007, SR-004 |
 | MOD-007 | Platform Abstraction | timer, socket, memory, synchronization 등 플랫폼 의존 기능을 격리한다 | module requests | platform services | IF-002, SR-003 |
 | MOD-008 | Connection Orchestrator | 상태 머신 입력, action dispatch, 외부 adapter 경계를 조정한다 | api events, decoded events, timer events | action dispatch, transition report | FR-001, FR-005, IF-001, SR-004 |
-| MOD-009 | Platform Adapter Layer | orchestrator executor와 platform port를 연결한다 | transition result, platform ports | timer commands, diagnostic records, executor table | IF-002, FR-007, SR-004 |
+| MOD-009 | Platform Adapter Layer | orchestrator executor와 platform/application/transport port를 연결한다 | transition result, platform ports | timer commands, diagnostic records, executor table, inbound message cache | IF-002, FR-003, FR-007, SR-004 |
 
 ## Data Flow
 
@@ -77,7 +77,7 @@
 - 주요 출력 경로:
   - 상태 전이 결과에 따라 `Transport Supervisor`가 frame 송신
   - `Diagnostics and Logging`가 구조적 이벤트 기록 생성
-  - `Public API Layer`가 상위 계층 callback 또는 반환 코드 제공
+  - `Public API Layer`가 상위 계층 callback, application indication 또는 반환 코드 제공
 - 오류 경로:
   - 설정 오류는 startup 단계에서 즉시 실패
   - 프로토콜 오류는 상태 머신을 통해 fail-safe 종료
@@ -166,6 +166,7 @@ SHUTDOWN --> [*]
 | `rsrx_session_process_timer_expiry` | In | timer expiry source를 protocol event로 변환해 전달 |
 | `rsrx_session_get_state` | Out | 현재 session 상태 조회 |
 | `rsrx_session_reset` | In | session 상태 초기화 |
+| `application data callback` | Out | 수용된 inbound data payload와 reason/sequence/confirmation 전달 |
 
 ### Module Interface Focus: MOD-007 Platform Abstraction
 

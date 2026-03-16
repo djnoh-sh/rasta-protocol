@@ -21,6 +21,7 @@ typedef struct
 {
 	rsrx_action_executor_t xTransportExecutor;
 	rsrx_action_executor_t xTimerExecutor;
+	rsrx_action_executor_t xApplicationExecutor;
 	rsrx_action_executor_t xApiExecutor;
 	rsrx_action_executor_t xDiagnosticsExecutor;
 	rsrx_action_executor_t xLifecycleExecutor;

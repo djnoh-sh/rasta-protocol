@@ -17,6 +17,7 @@
   - `HLD-001`
 - 관련 요구사항:
   - `FR-001`
+  - `FR-003`
   - `FR-005`
   - `IF-001`
   - `SR-004`
@@ -37,6 +38,7 @@
 | `rsrx_session_config_t` | struct | session 초기화 입력 계약 | transport/codec/platform ports와 callbacks 필수 |
 | `rsrx_session_t` | struct | session runtime context | transport/platform adapters와 orchestrator 포함 |
 | `rsrx_api_notification_fn` | function pointer | 상태 변화/API notification callback | null 금지 |
+| `rsrx_application_data_fn` | function pointer | inbound application data callback | null 금지 |
 | `rsrx_lifecycle_notification_fn` | function pointer | lifecycle action callback | null 금지 |
 | `rsrx_session_init` | function | session 및 하위 모듈 초기화 | deterministic startup 보장 |
 | `rsrx_session_start` | function | `INIT_SUCCESS` 경로 시작 | session을 `INITIALIZED`로 이동 |
@@ -52,7 +54,7 @@
 - `rsrx_session_init`:
   - `rsrx_validate_session_config`를 먼저 호출해 startup gate를 통과한 설정만 허용한다.
   - transport adapter, platform adapter, executor table, orchestrator를 순서대로 초기화한다.
-  - API/lifecycle callback을 session 내부 executor로 연결한다.
+  - application/API/lifecycle callback을 session 내부 executor로 연결한다.
 - `rsrx_session_start`:
   - `INIT_SUCCESS` event를 주입해 session을 `INITIALIZED` 상태로 전이한다.
 - `rsrx_session_connect`:
@@ -61,6 +63,7 @@
   - `DISCONNECT_REQUEST` event를 주입해 safe disconnect 경로를 시작한다.
 - `rsrx_session_process_event`:
   - 상위 계층이 decoded event 또는 timer event를 직접 전달할 수 있는 일반 경로를 제공한다.
+  - `VALID_DATA`가 수용되면 application executor를 통해 마지막 inbound decoded message를 상위 callback에 전달한다.
 - `rsrx_session_process_timer_expiry`:
   - `SUPERVISION`은 `TIMEOUT`으로 변환한다.
   - `RETRANSMISSION`은 `RETRANSMISSION_FAILURE`로 변환한다.
@@ -73,6 +76,7 @@
   - session disconnect 경로 검증
   - timer expiry ingress 검증
   - API notification callback 호출 검증
+  - application data callback 호출 검증
   - lifecycle callback 호출 검증
   - invalid argument 방어 검증
 - 분석 포인트:

@@ -66,6 +66,16 @@ static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxRe
 	(void)pxReport;
 }
 
+static void vApplicationDataNotify(
+	void * pvContext,
+	const rsrx_orchestrator_report_t * pxReport,
+	const rsrx_application_data_indication_t * pxIndication)
+{
+	(void)pvContext;
+	(void)pxReport;
+	(void)pxIndication;
+}
+
 static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport, rsrx_action_t eAction, uint32_t uActionIndex)
 {
 	(void)pvContext;
@@ -95,6 +105,8 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, test_context_t * 
 	pxConfig->uSupervisionIntervalNs = 100U;
 	pxConfig->uRetransmissionIntervalNs = 200U;
 	pxConfig->uDiagnosticFlushIntervalNs = 300U;
+	pxConfig->pvApplicationDataContext = pxContext;
+	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pxContext;
 	pxConfig->pfApiNotification = vApiNotify;
 	pxConfig->pvLifecycleCallbackContext = pxContext;
@@ -152,6 +164,19 @@ static void vTestInvalidIntervals(void)
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_SUPERVISION_INTERVAL, "invalid interval field");
 }
 
+static void vTestMissingApplicationCallback(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	test_context_t xContext = { 0U };
+
+	vFillValidConfig(&xConfig, &xContext);
+	xConfig.pfApplicationData = (rsrx_application_data_fn)0;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing application callback status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_APPLICATION_DATA_CALLBACK, "missing application callback field");
+}
+
 static void vTestInconsistentPayload(void)
 {
 	rsrx_session_config_t xConfig;
@@ -180,6 +205,7 @@ int main(void)
 	vTestMissingTransportPort();
 	vTestMissingCodecPort();
 	vTestInvalidIntervals();
+	vTestMissingApplicationCallback();
 	vTestInconsistentPayload();
 	vTestInvalidArguments();
 

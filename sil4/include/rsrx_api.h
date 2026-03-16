@@ -9,9 +9,23 @@
 
 typedef struct rsrx_session rsrx_session_t;
 
+typedef struct
+{
+	const uint8_t * puPayload;
+	size_t xPayloadLength;
+	rsrx_reason_code_t eReason;
+	uint32_t uSequenceNumber;
+	uint32_t uConfirmationNumber;
+} rsrx_application_data_indication_t;
+
 typedef void (*rsrx_api_notification_fn)(
 	void * pvContext,
 	const rsrx_orchestrator_report_t * pxReport);
+
+typedef void (*rsrx_application_data_fn)(
+	void * pvContext,
+	const rsrx_orchestrator_report_t * pxReport,
+	const rsrx_application_data_indication_t * pxIndication);
 
 typedef void (*rsrx_lifecycle_notification_fn)(
 	void * pvContext,
@@ -38,6 +52,8 @@ typedef struct
 	rsrx_monotonic_time_ns_t uSupervisionIntervalNs;
 	rsrx_monotonic_time_ns_t uRetransmissionIntervalNs;
 	rsrx_monotonic_time_ns_t uDiagnosticFlushIntervalNs;
+	void * pvApplicationDataContext;
+	rsrx_application_data_fn pfApplicationData;
 	void * pvApiCallbackContext;
 	rsrx_api_notification_fn pfApiNotification;
 	void * pvLifecycleCallbackContext;
@@ -51,6 +67,8 @@ struct rsrx_session
 	rsrx_orchestrator_context_t xOrchestrator;
 	rsrx_action_executor_table_t xExecutors;
 	rsrx_orchestrator_report_t xLastReport;
+	void * pvApplicationDataContext;
+	rsrx_application_data_fn pfApplicationData;
 	void * pvApiCallbackContext;
 	rsrx_api_notification_fn pfApiNotification;
 	void * pvLifecycleCallbackContext;
