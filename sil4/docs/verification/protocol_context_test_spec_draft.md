@@ -25,4 +25,6 @@
 | TC-PC-001 | FR-003 | outbound sequence progression 검증 | 초기화된 protocol context | 연속 outbound encode request 생성 | sequence가 1부터 단조 증가 | sequence numbering이 결정적으로 증가한다 |
 | TC-PC-002 | FR-003 | inbound confirmation tracking 검증 | inbound decoded message 준비 | inbound record 후 outbound encode request 생성 | confirmation이 마지막 inbound sequence와 일치 | confirmation이 inbound context를 반영한다 |
 | TC-PC-003 | FR-004 | retransmission request base sequence 검증 | last inbound sequence가 기록된 protocol context | retransmission request 생성 | payload가 `last_rx + 1`을 big-endian으로 포함 | retransmission 기준점이 결정적으로 계산된다 |
+| TC-PC-005 | FR-003 | inbound confirmation validity 검증 | outbound sequence가 일부 생성된 protocol context | confirmation이 sent-high-watermark를 넘거나 regress하는 inbound message 판정 | `PROTOCOL_ERROR`로 분류 | confirmation monotonicity와 upper bound를 강제 |
+| TC-PC-006 | FR-004 | recovery success resolution 검증 | retransmission pending 상태의 protocol context | base sequence와 일치하는 inbound message 판정 | `RECOVERY_SUCCESS`로 분류 | retransmission recovery completion이 결정적으로 판정 |
 | TC-PC-004 | SR-003 | invalid argument 검증 | null context 또는 null request | context API 호출 | `INVALID_ARGUMENT` 반환 | UB 없이 명시적 오류 반환 |

@@ -110,6 +110,88 @@ static void vTestRetransmissionRequestPayload(void)
 	vAssertTrue(uReadUint32BigEndian(xRequest.puPayload) == 13U, "retransmission base recomputed");
 }
 
+static void vTestInboundConfirmationValidation(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_CONNECT_REQUEST,
+		RSRX_REASON_CONNECT_REQUESTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "first outbound");
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_HEARTBEAT,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "second outbound");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_HEARTBEAT;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_HEARTBEAT;
+	xMessage.eReason = RSRX_REASON_HEARTBEAT_ACCEPTED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 3U;
+	xMessage.xPayloadLength = 0U;
+
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve invalid confirmation");
+	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "invalid confirmation becomes protocol error");
+
+	xMessage.uConfirmationNumber = 2U;
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve valid confirmation");
+	vAssertTrue(eEvent == RSRX_EVENT_VALID_HEARTBEAT, "valid confirmation accepted");
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record valid confirmation");
+
+	xMessage.uSequenceNumber = 2U;
+	xMessage.uConfirmationNumber = 1U;
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve regressing confirmation");
+	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "regressing confirmation rejected");
+}
+
+static void vTestRecoverySuccessResolution(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 3U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+		RSRX_REASON_SEQUENCE_GAP_DETECTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "start retransmission pending");
+
+	xMessage.uSequenceNumber = 4U;
+	xMessage.uConfirmationNumber = 1U;
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve recovery success");
+	vAssertTrue(eEvent == RSRX_EVENT_RECOVERY_SUCCESS, "base sequence resolves to recovery success");
+
+	xMessage.uSequenceNumber = 5U;
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve recovery gap");
+	vAssertTrue(eEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "higher sequence during retransmission remains gap");
+
+	xMessage.uSequenceNumber = 3U;
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve stale during retransmission");
+	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "lower sequence during retransmission is protocol error");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -125,6 +207,8 @@ int main(void)
 	vTestOutboundSequenceProgression();
 	vTestInboundConfirmationTracking();
 	vTestRetransmissionRequestPayload();
+	vTestInboundConfirmationValidation();
+	vTestRecoverySuccessResolution();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_protocol_context_test: all tests passed\n");

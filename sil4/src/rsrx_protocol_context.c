@@ -10,6 +10,27 @@ static void vWriteUint32BigEndian(
 	puBuffer[3] = (uint8_t)(uValue & 0xFFU);
 }
 
+static uint32_t uHighestSentSequenceNumber(
+	const rsrx_protocol_context_t * pxContext)
+{
+	if(pxContext->uNextTxSequenceNumber == 0U)
+	{
+		return 0U;
+	}
+
+	return pxContext->uNextTxSequenceNumber - 1U;
+}
+
+static uint32_t uConfirmationIsValid(
+	const rsrx_protocol_context_t * pxContext,
+	const rsrx_decoded_message_t * pxMessage)
+{
+	const uint32_t uHighestSent = uHighestSentSequenceNumber(pxContext);
+
+	return (uint32_t)((pxMessage->uConfirmationNumber <= uHighestSent) &&
+		(pxMessage->uConfirmationNumber >= pxContext->uLastRemoteConfirmationNumber));
+}
+
 rsrx_status_t rsrx_protocol_context_init(
 	rsrx_protocol_context_t * pxContext)
 {
@@ -21,6 +42,7 @@ rsrx_status_t rsrx_protocol_context_init(
 	pxContext->uNextTxSequenceNumber = 1U;
 	pxContext->uLastRxSequenceNumber = 0U;
 	pxContext->uLastTxConfirmationNumber = 0U;
+	pxContext->uLastRemoteConfirmationNumber = 0U;
 	pxContext->uRetransmissionBaseSequenceNumber = 0U;
 	pxContext->uRetransmissionPending = 0U;
 
@@ -41,6 +63,11 @@ rsrx_status_t rsrx_protocol_context_record_inbound_message(
 	{
 		pxContext->uLastRxSequenceNumber = pxMessage->uSequenceNumber;
 		pxContext->uLastTxConfirmationNumber = pxMessage->uSequenceNumber;
+	}
+
+	if(pxMessage->uConfirmationNumber > pxContext->uLastRemoteConfirmationNumber)
+	{
+		pxContext->uLastRemoteConfirmationNumber = pxMessage->uConfirmationNumber;
 	}
 
 	return RSRX_STATUS_OK;
@@ -70,9 +97,45 @@ rsrx_status_t rsrx_protocol_context_resolve_inbound_event(
 		case RSRX_MESSAGE_TYPE_HEARTBEAT:
 		case RSRX_MESSAGE_TYPE_DATA:
 		case RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST:
+			if(uConfirmationIsValid(pxContext, pxMessage) == 0U)
+			{
+				*peEvent = RSRX_EVENT_PROTOCOL_ERROR;
+				return RSRX_STATUS_OK;
+			}
+
+			if(pxContext->uRetransmissionPending != 0U)
+			{
+				if(pxMessage->uSequenceNumber < pxContext->uRetransmissionBaseSequenceNumber)
+				{
+					*peEvent = RSRX_EVENT_PROTOCOL_ERROR;
+					return RSRX_STATUS_OK;
+				}
+
+				if(pxMessage->uSequenceNumber == pxContext->uRetransmissionBaseSequenceNumber)
+				{
+					*peEvent = RSRX_EVENT_RECOVERY_SUCCESS;
+					return RSRX_STATUS_OK;
+				}
+
+				*peEvent = RSRX_EVENT_SEQUENCE_GAP_DETECTED;
+				return RSRX_STATUS_OK;
+			}
+
 			if(pxContext->uLastRxSequenceNumber == 0U)
 			{
-				*peEvent = pxMessage->eSuggestedEvent;
+				if(pxMessage->uSequenceNumber == 1U)
+				{
+					*peEvent = pxMessage->eSuggestedEvent;
+					return RSRX_STATUS_OK;
+				}
+
+				if(pxMessage->uSequenceNumber > 1U)
+				{
+					*peEvent = RSRX_EVENT_SEQUENCE_GAP_DETECTED;
+					return RSRX_STATUS_OK;
+				}
+
+				*peEvent = RSRX_EVENT_PROTOCOL_ERROR;
 				return RSRX_STATUS_OK;
 			}
 

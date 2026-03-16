@@ -709,6 +709,68 @@ static void vTestSupervisorSendFailureBudgetResetsAfterSuccess(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "budget reset state remains established");
 }
 
+static void vTestSupervisorRecoverySuccessFromRetransmissionPending(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[2] = { 0x81U, 0x82U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "recovery session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "recovery session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "recovery session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "recovery establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "recovery supervisor init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		1U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "recovery first inbound");
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "recovery gap detection");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "recovery retransmission pending");
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "recovery success frame");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "recovery returns to established");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_RECOVERY_COMPLETED, "recovery reason");
+}
+
 static void vTestSupervisorTimerExpiryDelegation(void)
 {
 	rsrx_session_t xSession;
@@ -753,6 +815,7 @@ int main(void)
 	vTestSupervisorTransportSendCompletedIgnored();
 	vTestSupervisorSendFailureBudgetResetsAfterSuccess();
 	vTestSupervisorTimerExpiryDelegation();
+	vTestSupervisorRecoverySuccessFromRetransmissionPending();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");
 

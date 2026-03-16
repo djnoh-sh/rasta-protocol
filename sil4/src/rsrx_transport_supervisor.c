@@ -106,7 +106,8 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 	eInboundEvent = eResolveInboundEvent(
 		pxContext,
 		&pxContext->xLastReport.xLastMessage);
-	if(eInboundEvent == pxContext->xLastReport.xLastMessage.eSuggestedEvent)
+	if((eInboundEvent == pxContext->xLastReport.xLastMessage.eSuggestedEvent) ||
+		(eInboundEvent == RSRX_EVENT_RECOVERY_SUCCESS))
 	{
 		rsrx_transport_adapter_record_inbound_message(
 			&pxContext->pxSession->xTransportAdapter,
