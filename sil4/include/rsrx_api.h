@@ -30,6 +30,7 @@ typedef enum
 typedef struct
 {
 	rsrx_transport_port_t xTransportPort;
+	rsrx_codec_port_t xCodecPort;
 	rsrx_platform_port_table_t xPlatformPorts;
 	rsrx_transport_channel_id_t eDefaultChannelId;
 	const uint8_t * puFramePayload;

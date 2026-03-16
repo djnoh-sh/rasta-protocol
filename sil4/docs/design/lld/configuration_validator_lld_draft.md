@@ -41,6 +41,7 @@
 - `rsrx_validate_session_config`:
   - null config를 즉시 거부한다.
   - transport `send/receive/query` 포트가 모두 정의됐는지 확인한다.
+  - codec `encode` 포트가 정의됐는지 확인한다.
   - platform `clock/timer/diagnostics` 포트가 모두 정의됐는지 확인한다.
   - API callback과 lifecycle callback이 모두 정의됐는지 확인한다.
   - 기본 channel이 `INVALID`인지 검사한다.
@@ -53,6 +54,7 @@
 - 필요한 테스트:
   - valid config 허용 검증
   - 필수 transport port 누락 검증
+  - 필수 codec port 누락 검증
   - interval range 오류 검증
   - payload 일관성 오류 검증
   - invalid argument 검증

@@ -24,7 +24,7 @@ add_library(rsrx_platform_adapters STATIC
 	src/rsrx_platform_adapters.c)
 
 target_include_directories(rsrx_platform_adapters PUBLIC include)
-target_link_libraries(rsrx_platform_adapters PUBLIC rsrx_orchestrator)
+target_link_libraries(rsrx_platform_adapters PUBLIC rsrx_orchestrator rsrx_codec)
 
 add_library(rsrx_codec STATIC
 	src/rsrx_codec.c)
@@ -77,7 +77,7 @@ target_link_libraries(rsrx_api_test rsrx_api)
 add_executable(rsrx_config_validator_test
 	tests/unit/test_rsrx_config_validator.c)
 
-target_link_libraries(rsrx_config_validator_test rsrx_config_validator)
+target_link_libraries(rsrx_config_validator_test rsrx_config_validator rsrx_codec)
 
 add_executable(rsrx_codec_contract_test
 	tests/unit/test_rsrx_codec_contract.c)

@@ -34,10 +34,10 @@
 
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
-| `rsrx_transport_adapter_context_t` | struct | transport port와 send mapping 설정 보유 | 동적 메모리 미사용 |
+| `rsrx_transport_adapter_context_t` | struct | transport port, codec port, encoded frame buffer를 보유 | 동적 메모리 미사용 |
 | `rsrx_platform_adapter_context_t` | struct | platform port와 interval 설정 보유 | 동적 메모리 미사용 |
-| `rsrx_transport_adapter_init` | function | transport adapter context 초기화 | 유효한 transport port 필요 |
-| `rsrx_transport_executor_dispatch` | function | transport action을 send request로 변환 | transport action만 처리 |
+| `rsrx_transport_adapter_init` | function | transport adapter context 초기화 | 유효한 transport/codec port 필요 |
+| `rsrx_transport_executor_dispatch` | function | transport action을 encode 후 send request로 변환 | transport action만 처리 |
 | `rsrx_platform_adapter_init` | function | platform adapter context 초기화 | 유효한 port table 필요 |
 | `rsrx_platform_timer_executor_dispatch` | function | timer action을 platform timer command로 변환 | timer action만 처리 |
 | `rsrx_platform_diagnostics_executor_dispatch` | function | transition result를 diagnostics record로 변환 | bounded 기록 생성 |
@@ -46,8 +46,10 @@
 ## Functional Behavior
 
 - transport adapter:
-  - `START_HANDSHAKE`, `ACCEPT_INBOUND_CONNECT`, `SEND_HEARTBEAT`, `DELIVER_DATA`, `REQUEST_RETRANSMISSION`, `SEND_DISCONNECT`를 `rsrx_transport_send_request_t`로 변환한다.
-  - send request는 default channel, payload pointer, reason code를 포함한다.
+  - `START_HANDSHAKE`, `ACCEPT_INBOUND_CONNECT`, `SEND_HEARTBEAT`, `DELIVER_DATA`, `REQUEST_RETRANSMISSION`, `SEND_DISCONNECT`를 message type으로 매핑한다.
+  - mapped action은 `codec encode request`로 변환된다.
+  - encode 성공 시 encoded wire buffer를 `rsrx_transport_send_request_t`의 payload로 전달한다.
+  - 현재 단계에서 application payload는 `DELIVER_DATA`에서만 encoded payload에 포함한다.
 - timer adapter:
   - `START_SUPERVISION_TIMER`, `RESET_SUPERVISION_TIMER`를 monotonic deadline 기반 command로 변환한다.
   - 현재 시간은 `rsrx_clock_port_t`를 통해 조회한다.
@@ -64,11 +66,12 @@
 
 - 필요한 테스트:
   - executor table 조립 검증
-  - transport action -> send request 변환 검증
+  - transport action -> encoded send request 변환 검증
   - timer action -> timer command 변환 검증
   - diagnostics action -> diagnostic record 변환 검증
 - 분석 포인트:
-  - transport action과 payload mapping의 bounded 정책
+  - transport action과 message type mapping의 bounded 정책
+  - encoded frame buffer 상한과 codec 실패 시 무송신 정책
   - monotonic deadline 계산 bounded 여부
   - severity mapping 완전성
   - platform callback 실패가 상위 상태 머신 결정성에 영향을 주지 않도록 유지

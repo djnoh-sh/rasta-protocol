@@ -7,7 +7,9 @@
 #include "rsrx_state_machine.h"
 #include "rsrx_transport.h"
 
+#define D_RSRX_CODEC_HEADER_BYTES (16U)
 #define D_RSRX_CODEC_MAX_PAYLOAD_BYTES (512U)
+#define D_RSRX_CODEC_MAX_FRAME_BYTES (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 
 typedef enum
 {

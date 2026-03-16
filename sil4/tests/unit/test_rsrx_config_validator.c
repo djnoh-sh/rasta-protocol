@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "rsrx_config_validator.h"
+#include "rsrx_codec.h"
 
 typedef struct
 {
@@ -81,6 +82,7 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, test_context_t * 
 	pxConfig->xTransportPort.pfSend = eTransportSend;
 	pxConfig->xTransportPort.pfReceive = eTransportReceive;
 	pxConfig->xTransportPort.pfQueryChannel = eTransportQuery;
+	pxConfig->xCodecPort = *rsrx_codec_get_default_port();
 	pxConfig->xPlatformPorts.xClock.pvContext = pxContext;
 	pxConfig->xPlatformPorts.xClock.pfNow = eClockNow;
 	pxConfig->xPlatformPorts.xTimer.pvContext = pxContext;
@@ -124,6 +126,19 @@ static void vTestMissingTransportPort(void)
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_TRANSPORT_PORT, "missing transport field");
 }
 
+static void vTestMissingCodecPort(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	test_context_t xContext = { 0U };
+
+	vFillValidConfig(&xConfig, &xContext);
+	xConfig.xCodecPort.pfEncode = (rsrx_encode_message_fn)0;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing codec status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "missing codec field");
+}
+
 static void vTestInvalidIntervals(void)
 {
 	rsrx_session_config_t xConfig;
@@ -163,6 +178,7 @@ int main(void)
 {
 	vTestValidConfiguration();
 	vTestMissingTransportPort();
+	vTestMissingCodecPort();
 	vTestInvalidIntervals();
 	vTestInconsistentPayload();
 	vTestInvalidArguments();

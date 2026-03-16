@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "rsrx_codec.h"
 #include "rsrx_orchestrator.h"
 #include "rsrx_platform.h"
 #include "rsrx_transport.h"
@@ -10,9 +11,11 @@
 typedef struct
 {
 	rsrx_transport_port_t xTransportPort;
+	rsrx_codec_port_t xCodecPort;
 	rsrx_transport_channel_id_t eDefaultChannelId;
 	const uint8_t * puFramePayload;
 	size_t xFramePayloadLength;
+	uint8_t auEncodedFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
 } rsrx_transport_adapter_context_t;
 
 typedef struct
@@ -27,6 +30,7 @@ typedef struct
 rsrx_transport_status_t rsrx_transport_adapter_init(
 	rsrx_transport_adapter_context_t * pxContext,
 	const rsrx_transport_port_t * pxTransportPort,
+	const rsrx_codec_port_t * pxCodecPort,
 	rsrx_transport_channel_id_t eDefaultChannelId,
 	const uint8_t * puFramePayload,
 	size_t xFramePayloadLength);

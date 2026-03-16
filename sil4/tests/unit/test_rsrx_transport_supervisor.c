@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "rsrx_transport_supervisor.h"
+#include "rsrx_codec.h"
 
 typedef struct
 {
@@ -159,6 +160,7 @@ static void vFillConfig(
 	pxConfig->xTransportPort.pfSend = eTransportSend;
 	pxConfig->xTransportPort.pfReceive = eTransportReceive;
 	pxConfig->xTransportPort.pfQueryChannel = eTransportQuery;
+	pxConfig->xCodecPort = *rsrx_codec_get_default_port();
 	pxConfig->xPlatformPorts.xClock.pvContext = pxClock;
 	pxConfig->xPlatformPorts.xClock.pfNow = eClockNow;
 	pxConfig->xPlatformPorts.xTimer.pvContext = pxTimer;
@@ -194,7 +196,7 @@ static void vTestSupervisorInboundHandshakePath(void)
 	static const uint8_t auPayload[3] = { 0x01U, 0x02U, 0x03U };
 
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
-	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "handshake path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
 	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session connect");
 	vSetCodecBehavior(
@@ -246,7 +248,7 @@ static void vTestSupervisorDecodeFailure(void)
 	static const uint8_t auPayload[2] = { 0x10U, 0x20U };
 
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
-	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "decode failure path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
 	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session connect");
 	vSetCodecBehavior(
@@ -290,7 +292,7 @@ static void vTestSupervisorUnsupportedMessage(void)
 	static const uint8_t auPayload[4] = { 0xABU, 0xCDU, 0xEFU, 0x01U };
 
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
-	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "unsupported message path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
 	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session connect");
 	vSetCodecBehavior(

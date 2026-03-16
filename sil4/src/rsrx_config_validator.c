@@ -103,6 +103,15 @@ rsrx_config_status_t rsrx_validate_session_config(
 		return RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD;
 	}
 
+	if(pxConfig->xCodecPort.pfEncode == (rsrx_encode_message_fn)0)
+	{
+		vSetReport(
+			pxReport,
+			RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD,
+			RSRX_CONFIG_FIELD_CODEC_PORT);
+		return RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD;
+	}
+
 	if(pxConfig->xPlatformPorts.xClock.pfNow == (rsrx_clock_now_fn)0)
 	{
 		vSetReport(

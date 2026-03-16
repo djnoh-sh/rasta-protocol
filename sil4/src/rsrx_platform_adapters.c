@@ -9,6 +9,13 @@ static uint32_t uTransportPortIsValid(
 		(pxPort->pfQueryChannel != (rsrx_transport_channel_query_fn)0));
 }
 
+static uint32_t uCodecPortIsValid(
+	const rsrx_codec_port_t * pxPort)
+{
+	return (uint32_t)((pxPort != (const rsrx_codec_port_t *)0) &&
+		(pxPort->pfEncode != (rsrx_encode_message_fn)0));
+}
+
 static uint32_t uPortTableIsValid(
 	const rsrx_platform_port_table_t * pxPorts)
 {
@@ -36,20 +43,72 @@ static uint32_t uActionUsesTransport(
 		(eAction == RSRX_ACTION_SEND_DISCONNECT));
 }
 
+static rsrx_message_type_t eMapActionToMessageType(
+	rsrx_action_t eAction)
+{
+	switch(eAction)
+	{
+		case RSRX_ACTION_START_HANDSHAKE:
+			return RSRX_MESSAGE_TYPE_CONNECT_REQUEST;
+
+		case RSRX_ACTION_ACCEPT_INBOUND_CONNECT:
+			return RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
+
+		case RSRX_ACTION_SEND_HEARTBEAT:
+			return RSRX_MESSAGE_TYPE_HEARTBEAT;
+
+		case RSRX_ACTION_DELIVER_DATA:
+			return RSRX_MESSAGE_TYPE_DATA;
+
+		case RSRX_ACTION_REQUEST_RETRANSMISSION:
+			return RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST;
+
+		case RSRX_ACTION_SEND_DISCONNECT:
+			return RSRX_MESSAGE_TYPE_DISCONNECT;
+
+		case RSRX_ACTION_NONE:
+		default:
+			return RSRX_MESSAGE_TYPE_INVALID;
+	}
+}
+
+static const uint8_t * puResolvePayload(
+	const rsrx_transport_adapter_context_t * pxContext,
+	rsrx_action_t eAction,
+	size_t * pxPayloadLength)
+{
+	if(pxPayloadLength == (size_t *)0)
+	{
+		return (const uint8_t *)0;
+	}
+
+	if(eAction == RSRX_ACTION_DELIVER_DATA)
+	{
+		*pxPayloadLength = pxContext->xFramePayloadLength;
+		return pxContext->puFramePayload;
+	}
+
+	*pxPayloadLength = 0U;
+	return (const uint8_t *)0;
+}
+
 rsrx_transport_status_t rsrx_transport_adapter_init(
 	rsrx_transport_adapter_context_t * pxContext,
 	const rsrx_transport_port_t * pxTransportPort,
+	const rsrx_codec_port_t * pxCodecPort,
 	rsrx_transport_channel_id_t eDefaultChannelId,
 	const uint8_t * puFramePayload,
 	size_t xFramePayloadLength)
 {
 	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
-		(uTransportPortIsValid(pxTransportPort) == 0U))
+		(uTransportPortIsValid(pxTransportPort) == 0U) ||
+		(uCodecPortIsValid(pxCodecPort) == 0U))
 	{
 		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	}
 
 	pxContext->xTransportPort = *pxTransportPort;
+	pxContext->xCodecPort = *pxCodecPort;
 	pxContext->eDefaultChannelId = eDefaultChannelId;
 	pxContext->puFramePayload = puFramePayload;
 	pxContext->xFramePayloadLength = xFramePayloadLength;
@@ -66,6 +125,11 @@ void rsrx_transport_executor_dispatch(
 	rsrx_transport_adapter_context_t * pxContext =
 		(rsrx_transport_adapter_context_t *)pvContext;
 	rsrx_transport_send_request_t xRequest;
+	rsrx_encode_request_t xEncodeRequest;
+	rsrx_encode_buffer_t xEncodeBuffer;
+	rsrx_message_type_t eMessageType;
+	size_t xPayloadLength;
+	const uint8_t * puPayload;
 	(void)uActionIndex;
 
 	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
@@ -75,9 +139,31 @@ void rsrx_transport_executor_dispatch(
 		return;
 	}
 
+	eMessageType = eMapActionToMessageType(eAction);
+	if(eMessageType == RSRX_MESSAGE_TYPE_INVALID)
+	{
+		return;
+	}
+
+	puPayload = puResolvePayload(pxContext, eAction, &xPayloadLength);
+	xEncodeRequest.eMessageType = eMessageType;
+	xEncodeRequest.eReason = pxTransition->eReason;
+	xEncodeRequest.uSequenceNumber = 0U;
+	xEncodeRequest.uConfirmationNumber = 0U;
+	xEncodeRequest.puPayload = puPayload;
+	xEncodeRequest.xPayloadLength = xPayloadLength;
+	xEncodeBuffer.puBuffer = pxContext->auEncodedFrame;
+	xEncodeBuffer.xBufferCapacity = sizeof(pxContext->auEncodedFrame);
+	xEncodeBuffer.xEncodedLength = 0U;
+
+	if(pxContext->xCodecPort.pfEncode(&xEncodeRequest, &xEncodeBuffer) != RSRX_CODEC_STATUS_OK)
+	{
+		return;
+	}
+
 	xRequest.eChannelId = pxContext->eDefaultChannelId;
-	xRequest.puPayload = pxContext->puFramePayload;
-	xRequest.xPayloadLength = pxContext->xFramePayloadLength;
+	xRequest.puPayload = pxContext->auEncodedFrame;
+	xRequest.xPayloadLength = xEncodeBuffer.xEncodedLength;
 	xRequest.eReason = pxTransition->eReason;
 
 	(void)pxContext->xTransportPort.pfSend(
@@ -261,6 +347,7 @@ rsrx_status_t rsrx_platform_adapter_build_executor_table(
 	if((pxExecutors == (rsrx_action_executor_table_t *)0) ||
 		(pxTransportContext == (rsrx_transport_adapter_context_t *)0) ||
 		(uTransportPortIsValid(&pxTransportContext->xTransportPort) == 0U) ||
+		(uCodecPortIsValid(&pxTransportContext->xCodecPort) == 0U) ||
 		(pxPlatformContext == (rsrx_platform_adapter_context_t *)0) ||
 		(uPortTableIsValid(&pxPlatformContext->xPlatformPorts) == 0U) ||
 		(uExecutorIsValid(pxApiExecutor) == 0U) ||

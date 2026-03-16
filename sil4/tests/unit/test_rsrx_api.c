@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "rsrx_api.h"
+#include "rsrx_codec.h"
 
 typedef struct
 {
@@ -120,6 +121,7 @@ static void vFillConfig(
 	pxConfig->xTransportPort.pfSend = eTransportSend;
 	pxConfig->xTransportPort.pfReceive = eTransportReceive;
 	pxConfig->xTransportPort.pfQueryChannel = eTransportQuery;
+	pxConfig->xCodecPort = *rsrx_codec_get_default_port();
 	pxConfig->xPlatformPorts.xClock.pvContext = pxClock;
 	pxConfig->xPlatformPorts.xClock.pfNow = eClockNow;
 	pxConfig->xPlatformPorts.xTimer.pvContext = pxTimer;

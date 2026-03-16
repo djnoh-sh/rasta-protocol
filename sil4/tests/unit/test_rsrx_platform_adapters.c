@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "rsrx_platform_adapters.h"
+#include "rsrx_codec.h"
 
 typedef struct
 {
@@ -135,6 +136,7 @@ static void vTestPlatformExecutorTableBuild(void)
 		rsrx_transport_adapter_init(
 			&xTransportAdapterContext,
 			&xTransportPort,
+			rsrx_codec_get_default_port(),
 			RSRX_TRANSPORT_CHANNEL_PRIMARY,
 			auPayload,
 			sizeof(auPayload)) == RSRX_TRANSPORT_STATUS_OK,
@@ -185,6 +187,7 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	(void)rsrx_transport_adapter_init(
 		&xTransportAdapterContext,
 		&xTransportPort,
+		rsrx_codec_get_default_port(),
 		RSRX_TRANSPORT_CHANNEL_PRIMARY,
 		auPayload,
 		sizeof(auPayload));
@@ -198,9 +201,20 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 
 	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
 	vAssertTrue(xTransportContext.uCallCount == 1U, "transport send called");
+	vAssertTrue(xTransportContext.xLastRequest.xPayloadLength == D_RSRX_CODEC_HEADER_BYTES, "handshake payload encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_CONNECT_REQUEST, "handshake message type encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_CONNECT_REQUESTED, "handshake reason encoded");
+
+	xTransition.ePreviousState = RSRX_STATE_ESTABLISHED;
+	xTransition.eNextState = RSRX_STATE_ESTABLISHED;
+	xTransition.eReason = RSRX_REASON_DATA_ACCEPTED;
+	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_DELIVER_DATA, 0U);
+	vAssertTrue(xTransportContext.uCallCount == 2U, "data send called");
+	vAssertTrue(xTransportContext.xLastRequest.xPayloadLength == (D_RSRX_CODEC_HEADER_BYTES + sizeof(auPayload)), "data payload encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_DATA, "data message type encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auPayload[0], "data payload copied");
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "transport channel mapped");
-	vAssertTrue(xTransportContext.xLastRequest.xPayloadLength == sizeof(auPayload), "transport payload length mapped");
-	vAssertTrue(xTransportContext.xLastRequest.eReason == RSRX_REASON_CONNECT_REQUESTED, "transport reason mapped");
+	vAssertTrue(xTransportContext.xLastRequest.eReason == RSRX_REASON_DATA_ACCEPTED, "transport reason mapped");
 
 	rsrx_platform_timer_executor_dispatch(&xPlatformContext, &xTransition, RSRX_ACTION_START_SUPERVISION_TIMER, 1U);
 	vAssertTrue(xClockContext.uCallCount == 1U, "clock called");
@@ -211,7 +225,7 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 
 	rsrx_platform_diagnostics_executor_dispatch(&xPlatformContext, &xTransition, RSRX_ACTION_LOG_DIAGNOSTIC, 3U);
 	vAssertTrue(xDiagnosticsContext.uCallCount == 1U, "diagnostics write called");
-	vAssertTrue(xDiagnosticsContext.xLastRecord.eReason == RSRX_REASON_CONNECT_REQUESTED, "diagnostic reason propagated");
+	vAssertTrue(xDiagnosticsContext.xLastRecord.eReason == RSRX_REASON_DATA_ACCEPTED, "diagnostic reason propagated");
 	vAssertTrue(xDiagnosticsContext.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_INFO, "diagnostic severity mapped");
 	vAssertTrue(xDiagnosticsContext.xLastRecord.uEventCounter == 1U, "diagnostic event counter incremented");
 }

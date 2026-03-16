@@ -108,6 +108,7 @@ rsrx_status_t rsrx_session_init(
 	if(rsrx_transport_adapter_init(
 		&pxSession->xTransportAdapter,
 		&pxConfig->xTransportPort,
+		&pxConfig->xCodecPort,
 		pxConfig->eDefaultChannelId,
 		pxConfig->puFramePayload,
 		pxConfig->xFramePayloadLength) != RSRX_TRANSPORT_STATUS_OK)

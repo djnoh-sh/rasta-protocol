@@ -34,7 +34,7 @@
 
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
-| `rsrx_session_config_t` | struct | session 초기화 입력 계약 | transport/platform ports와 callbacks 필수 |
+| `rsrx_session_config_t` | struct | session 초기화 입력 계약 | transport/codec/platform ports와 callbacks 필수 |
 | `rsrx_session_t` | struct | session runtime context | transport/platform adapters와 orchestrator 포함 |
 | `rsrx_api_notification_fn` | function pointer | 상태 변화/API notification callback | null 금지 |
 | `rsrx_lifecycle_notification_fn` | function pointer | lifecycle action callback | null 금지 |

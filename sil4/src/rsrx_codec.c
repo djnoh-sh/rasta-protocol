@@ -1,7 +1,5 @@
 #include "rsrx_codec.h"
 
-#define D_RSRX_CODEC_HEADER_BYTES (16U)
-
 static uint32_t uMessageTypeIsSupported(
 	rsrx_message_type_t eMessageType)
 {
