@@ -45,7 +45,10 @@
   - 마지막 report를 초기화한다.
 - `rsrx_transport_supervisor_process_frame`:
   - transport frame을 codec으로 decode한다.
-  - decoded message의 `suggested event`를 session으로 전달한다.
+  - decoded message를 protocol context 규칙으로 평가해 effective event를 결정한다.
+  - sequence가 기대값보다 크면 `SEQUENCE_GAP_DETECTED`로 변환한다.
+  - stale/duplicate sequence는 `PROTOCOL_ERROR`로 변환한다.
+  - in-order frame만 protocol context에 기록한다.
   - 마지막 decoded message와 session report를 저장한다.
 
 ## Verification Notes
@@ -54,6 +57,9 @@
   - inbound handshake frame -> session established 경로 검증
   - invalid argument 방어 검증
   - decode 실패 시 오류 반환 검증
+  - sequence gap -> retransmission pending 검증
+  - stale sequence -> protocol error fail-safe 검증
 - 분석 포인트:
-  - decode 결과와 session event handoff 일관성
+  - decode 결과와 supervisor-level event override 일관성
+  - protocol context 기록 시점과 sequence rule의 결정성
   - report 구조체의 마지막 값 보존 정책

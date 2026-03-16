@@ -17,6 +17,30 @@ static void vResetSupervisorReport(
 	pxReport->uProcessedFrameCount = 0U;
 }
 
+static rsrx_event_t eResolveInboundEvent(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_decoded_message_t * pxMessage)
+{
+	rsrx_event_t eResolvedEvent;
+
+	if(rsrx_protocol_context_resolve_inbound_event(
+		&pxContext->pxSession->xTransportAdapter.xProtocolContext,
+		pxMessage,
+		&eResolvedEvent) != RSRX_STATUS_OK)
+	{
+		return RSRX_EVENT_PROTOCOL_ERROR;
+	}
+
+	return eResolvedEvent;
+}
+
+static uint32_t uSessionStatusIsHandled(
+	rsrx_status_t eStatus)
+{
+	return (uint32_t)((eStatus == RSRX_STATUS_OK) ||
+		(eStatus == RSRX_STATUS_REJECTED));
+}
+
 rsrx_supervisor_status_t rsrx_transport_supervisor_init(
 	rsrx_transport_supervisor_context_t * pxContext,
 	rsrx_session_t * pxSession,
@@ -45,6 +69,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 {
 	rsrx_codec_status_t eCodecStatus;
 	rsrx_status_t eSessionStatus;
+	rsrx_event_t eInboundEvent;
 
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(pxFrame == (const rsrx_transport_frame_t *)0) ||
@@ -62,15 +87,21 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 		return RSRX_SUPERVISOR_STATUS_DECODE_FAILED;
 	}
 
-	rsrx_transport_adapter_record_inbound_message(
-		&pxContext->pxSession->xTransportAdapter,
+	eInboundEvent = eResolveInboundEvent(
+		pxContext,
 		&pxContext->xLastReport.xLastMessage);
+	if(eInboundEvent == pxContext->xLastReport.xLastMessage.eSuggestedEvent)
+	{
+		rsrx_transport_adapter_record_inbound_message(
+			&pxContext->pxSession->xTransportAdapter,
+			&pxContext->xLastReport.xLastMessage);
+	}
 
 	eSessionStatus = rsrx_session_process_event(
 		pxContext->pxSession,
-		pxContext->xLastReport.xLastMessage.eSuggestedEvent,
+		eInboundEvent,
 		&pxContext->xLastReport.pxLastReport);
-	if(eSessionStatus != RSRX_STATUS_OK)
+	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
 	{
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_SESSION_ERROR;

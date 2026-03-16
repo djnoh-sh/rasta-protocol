@@ -19,6 +19,11 @@ rsrx_status_t rsrx_protocol_context_record_inbound_message(
 	rsrx_protocol_context_t * pxContext,
 	const rsrx_decoded_message_t * pxMessage);
 
+rsrx_status_t rsrx_protocol_context_resolve_inbound_event(
+	const rsrx_protocol_context_t * pxContext,
+	const rsrx_decoded_message_t * pxMessage,
+	rsrx_event_t * peEvent);
+
 rsrx_status_t rsrx_protocol_context_build_encode_request(
 	rsrx_protocol_context_t * pxContext,
 	rsrx_message_type_t eMessageType,

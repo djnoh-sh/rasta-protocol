@@ -120,15 +120,17 @@ static void vSetCodecBehavior(
 	rsrx_codec_status_t eStatus,
 	rsrx_message_type_t eMessageType,
 	rsrx_event_t eSuggestedEvent,
-	rsrx_reason_code_t eReason)
+	rsrx_reason_code_t eReason,
+	uint32_t uSequenceNumber,
+	uint32_t uConfirmationNumber)
 {
 	g_xCodecContext.eStatus = eStatus;
 	g_xCodecContext.uCallCount = 0U;
 	g_xCodecContext.xMessage.eMessageType = eMessageType;
 	g_xCodecContext.xMessage.eSuggestedEvent = eSuggestedEvent;
 	g_xCodecContext.xMessage.eReason = eReason;
-	g_xCodecContext.xMessage.uSequenceNumber = 1U;
-	g_xCodecContext.xMessage.uConfirmationNumber = 1U;
+	g_xCodecContext.xMessage.uSequenceNumber = uSequenceNumber;
+	g_xCodecContext.xMessage.uConfirmationNumber = uConfirmationNumber;
 	g_xCodecContext.xMessage.xPayloadLength = 0U;
 }
 
@@ -203,7 +205,9 @@ static void vTestSupervisorInboundHandshakePath(void)
 		RSRX_CODEC_STATUS_OK,
 		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
 		RSRX_EVENT_HANDSHAKE_SUCCESS,
-		RSRX_REASON_HANDSHAKE_COMPLETED);
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U);
 
 	xCodec.pfEncode = (rsrx_encode_message_fn)0;
 	xCodec.pfDecode = eDecodeFrame;
@@ -255,7 +259,9 @@ static void vTestSupervisorDecodeFailure(void)
 		RSRX_CODEC_STATUS_DECODE_ERROR,
 		RSRX_MESSAGE_TYPE_INVALID,
 		RSRX_EVENT_INVALID,
-		RSRX_REASON_NONE);
+		RSRX_REASON_NONE,
+		0U,
+		0U);
 
 	xCodec.pfEncode = (rsrx_encode_message_fn)0;
 	xCodec.pfDecode = eDecodeFrame;
@@ -299,7 +305,9 @@ static void vTestSupervisorUnsupportedMessage(void)
 		RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE,
 		RSRX_MESSAGE_TYPE_DIAGNOSTIC,
 		RSRX_EVENT_INVALID,
-		RSRX_REASON_PROTOCOL_ERROR_DETECTED);
+		RSRX_REASON_PROTOCOL_ERROR_DETECTED,
+		0U,
+		0U);
 
 	xCodec.pfEncode = (rsrx_encode_message_fn)0;
 	xCodec.pfDecode = eDecodeFrame;
@@ -320,12 +328,121 @@ static void vTestSupervisorUnsupportedMessage(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "unsupported message leaves session state");
 }
 
+static void vTestSupervisorSequenceGapDetection(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[3] = { 0x21U, 0x22U, 0x23U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "gap path session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "gap path session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "gap path session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "gap path establish");
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "gap path supervisor init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		1U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "gap path first frame");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "gap path established remains");
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "gap path second frame");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "gap path retransmission pending");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "gap path reason");
+}
+
+static void vTestSupervisorStaleSequenceProtocolError(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	rsrx_supervisor_status_t eStatus;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[2] = { 0x31U, 0x32U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "stale path session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "stale path session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "stale path session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "stale path establish");
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "stale path supervisor init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "stale path first frame");
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		0U);
+	eStatus = rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport);
+	vAssertTrue(eStatus == RSRX_SUPERVISOR_STATUS_OK, "stale path duplicate frame");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "stale path safe disconnect");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "stale path reason");
+}
+
 int main(void)
 {
 	vTestSupervisorInboundHandshakePath();
 	vTestSupervisorInvalidArguments();
 	vTestSupervisorDecodeFailure();
 	vTestSupervisorUnsupportedMessage();
+	vTestSupervisorSequenceGapDetection();
+	vTestSupervisorStaleSequenceProtocolError();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");
 

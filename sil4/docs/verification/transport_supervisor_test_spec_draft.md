@@ -26,3 +26,5 @@
 | TC-SUP-002 | SR-002 | invalid argument 방어 검증 | null context 또는 invalid frame | supervisor init/process 호출 | `INVALID_ARGUMENT` 반환 | UB 없이 결정적 오류 처리 |
 | TC-SUP-003 | SR-002 | decode failure 방어 검증 | `CONNECTING` 상태 session, codec이 `DECODE_ERROR` 반환하도록 준비 | `FRAME_RECEIVED` frame 처리 | `DECODE_FAILED` 반환, session 미호출, processed count 미증가 | session state가 유지되고 supervisor report가 마지막 frame만 보존 |
 | TC-SUP-004 | FR-003, SR-002 | unsupported message 방어 검증 | `CONNECTING` 상태 session, codec이 `UNSUPPORTED_MESSAGE` 반환하도록 준비 | 지원하지 않는 message frame 처리 | `DECODE_FAILED` 반환, decoded type은 기록되지만 session 미호출 | unsupported message가 보고서에 남고 상태 전이는 발생하지 않음 |
+| TC-SUP-005 | FR-004 | sequence gap 검증 | `ESTABLISHED` 상태 session, 먼저 in-order frame 기록 | sequence가 건너뛴 frame 처리 | `RETRANSMISSION_PENDING` 전이 | supervisor가 gap을 감지해 retransmission 경로를 연다 |
+| TC-SUP-006 | SR-001 | stale sequence protocol error 검증 | `ESTABLISHED` 상태 session, 먼저 in-order frame 기록 | duplicate/stale frame 처리 | `SAFE_DISCONNECT` 전이 | supervisor가 stale sequence를 protocol error로 처리한다 |
