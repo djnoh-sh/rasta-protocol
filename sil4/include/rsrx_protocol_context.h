@@ -9,6 +9,7 @@ typedef struct
 	uint32_t uLastRxSequenceNumber;
 	uint32_t uLastTxConfirmationNumber;
 	uint32_t uLastRemoteConfirmationNumber;
+	uint32_t uLastRetransmissionRequestTxSequenceNumber;
 	uint32_t uRetransmissionBaseSequenceNumber;
 	uint32_t uRetransmissionPending;
 } rsrx_protocol_context_t;

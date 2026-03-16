@@ -31,6 +31,14 @@ static uint32_t uConfirmationIsValid(
 		(pxMessage->uConfirmationNumber >= pxContext->uLastRemoteConfirmationNumber));
 }
 
+static uint32_t uRetransmissionRequestIsConfirmed(
+	const rsrx_protocol_context_t * pxContext,
+	const rsrx_decoded_message_t * pxMessage)
+{
+	return (uint32_t)(pxMessage->uConfirmationNumber >=
+		pxContext->uLastRetransmissionRequestTxSequenceNumber);
+}
+
 rsrx_status_t rsrx_protocol_context_init(
 	rsrx_protocol_context_t * pxContext)
 {
@@ -43,6 +51,7 @@ rsrx_status_t rsrx_protocol_context_init(
 	pxContext->uLastRxSequenceNumber = 0U;
 	pxContext->uLastTxConfirmationNumber = 0U;
 	pxContext->uLastRemoteConfirmationNumber = 0U;
+	pxContext->uLastRetransmissionRequestTxSequenceNumber = 0U;
 	pxContext->uRetransmissionBaseSequenceNumber = 0U;
 	pxContext->uRetransmissionPending = 0U;
 
@@ -113,6 +122,12 @@ rsrx_status_t rsrx_protocol_context_resolve_inbound_event(
 
 				if(pxMessage->uSequenceNumber == pxContext->uRetransmissionBaseSequenceNumber)
 				{
+					if(uRetransmissionRequestIsConfirmed(pxContext, pxMessage) == 0U)
+					{
+						*peEvent = RSRX_EVENT_PROTOCOL_ERROR;
+						return RSRX_STATUS_OK;
+					}
+
 					*peEvent = RSRX_EVENT_RECOVERY_SUCCESS;
 					return RSRX_STATUS_OK;
 				}
@@ -191,6 +206,8 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 				pxContext->uLastRxSequenceNumber + 1U;
 			pxContext->uRetransmissionPending = 1U;
 		}
+		pxContext->uLastRetransmissionRequestTxSequenceNumber =
+			pxContext->uNextTxSequenceNumber;
 
 		vWriteUint32BigEndian(
 			auRetransmissionPayload,
@@ -213,6 +230,7 @@ rsrx_status_t rsrx_protocol_context_clear_retransmission(
 	}
 
 	pxContext->uRetransmissionBaseSequenceNumber = 0U;
+	pxContext->uLastRetransmissionRequestTxSequenceNumber = 0U;
 	pxContext->uRetransmissionPending = 0U;
 	return RSRX_STATUS_OK;
 }

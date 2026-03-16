@@ -51,10 +51,11 @@
 - inbound sequence validation:
   - sequenced message의 첫 inbound sequence는 `1`이어야 한다.
   - 일반 상태에서 `last_rx + 1`이면 정상 수용, 더 크면 gap, 더 작으면 protocol error다.
-  - retransmission pending 상태에서는 `retransmission_base`와 같은 sequence가 `RECOVERY_SUCCESS`다.
+  - retransmission pending 상태에서는 `retransmission_base`와 같은 sequence라도 remote confirmation이 마지막 retransmission request tx sequence 이상일 때만 `RECOVERY_SUCCESS`다.
   - retransmission pending 상태에서 `retransmission_base`보다 작으면 protocol error, 더 크면 gap 유지다.
 - retransmission request:
   - 첫 요청 시 `last_rx_sequence + 1`을 base sequence로 저장한다.
+  - retransmission request를 송신할 때 해당 tx sequence를 별도로 저장한다.
   - request payload는 4-byte big-endian base sequence를 사용한다.
   - `clear_retransmission` 이후에는 다음 요청에서 base를 다시 계산한다.
 
@@ -66,6 +67,7 @@
   - retransmission request payload/base sequence 검증
   - inbound confirmation validity 검증
   - retransmission pending에서 recovery success 판정 검증
+  - unconfirmed recovery frame 거부 검증
   - invalid argument 검증
 - 분석 포인트:
   - counter 증가의 bounded behavior

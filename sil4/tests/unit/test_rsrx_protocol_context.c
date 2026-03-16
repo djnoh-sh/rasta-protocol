@@ -183,7 +183,12 @@ static void vTestRecoverySuccessResolution(void)
 	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve recovery success");
 	vAssertTrue(eEvent == RSRX_EVENT_RECOVERY_SUCCESS, "base sequence resolves to recovery success");
 
+	xMessage.uConfirmationNumber = 0U;
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve unconfirmed recovery");
+	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "unconfirmed retransmission recovery rejected");
+
 	xMessage.uSequenceNumber = 5U;
+	xMessage.uConfirmationNumber = 1U;
 	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve recovery gap");
 	vAssertTrue(eEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "higher sequence during retransmission remains gap");
 

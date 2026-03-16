@@ -467,8 +467,8 @@ static void vTestSupervisorStaleSequenceProtocolError(void)
 		RSRX_MESSAGE_TYPE_DATA,
 		RSRX_EVENT_VALID_DATA,
 		RSRX_REASON_DATA_ACCEPTED,
-		2U,
-		0U);
+		1U,
+		1U);
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "stale path first frame");
 
 	vSetCodecBehavior(
@@ -476,8 +476,8 @@ static void vTestSupervisorStaleSequenceProtocolError(void)
 		RSRX_MESSAGE_TYPE_DATA,
 		RSRX_EVENT_VALID_DATA,
 		RSRX_REASON_DATA_ACCEPTED,
-		2U,
-		0U);
+		1U,
+		1U);
 	eStatus = rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport);
 	vAssertTrue(eStatus == RSRX_SUPERVISOR_STATUS_OK, "stale path duplicate frame");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "stale path safe disconnect");
@@ -765,7 +765,7 @@ static void vTestSupervisorRecoverySuccessFromRetransmissionPending(void)
 		RSRX_EVENT_VALID_DATA,
 		RSRX_REASON_DATA_ACCEPTED,
 		2U,
-		0U);
+		3U);
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "recovery success frame");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "recovery returns to established");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_RECOVERY_COMPLETED, "recovery reason");
