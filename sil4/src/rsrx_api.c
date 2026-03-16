@@ -31,6 +31,13 @@ static void vLifecycleExecutorDispatch(
 	(void)pxTransition;
 
 	if((pxSession != (rsrx_session_t *)0) &&
+		(eAction == RSRX_ACTION_CLEAR_RETRANSMISSION_CONTEXT))
+	{
+		rsrx_transport_adapter_clear_retransmission_context(
+			&pxSession->xTransportAdapter);
+	}
+
+	if((pxSession != (rsrx_session_t *)0) &&
 		(pxSession->pfLifecycleNotification != (rsrx_lifecycle_notification_fn)0))
 	{
 		pxSession->pfLifecycleNotification(

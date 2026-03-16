@@ -62,6 +62,10 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 		return RSRX_SUPERVISOR_STATUS_DECODE_FAILED;
 	}
 
+	rsrx_transport_adapter_record_inbound_message(
+		&pxContext->pxSession->xTransportAdapter,
+		&pxContext->xLastReport.xLastMessage);
+
 	eSessionStatus = rsrx_session_process_event(
 		pxContext->pxSession,
 		pxContext->xLastReport.xLastMessage.eSuggestedEvent,

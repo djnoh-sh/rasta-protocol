@@ -10,17 +10,17 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `30~35%`
-- 현재 단계: `코어 구조 구현 및 단위 검증 단계`
-- 다음 주력 단계: `timer event ingress`, `outbound send path 통합`, `sequence/retransmission context 구체화`
+- 현재 전체 진행률 추정: `40~45%`
+- 현재 단계: `코어 흐름 연결 및 protocol context 구체화 단계`
+- 다음 주력 단계: `sequence/retransmission context 확장`, `transport supervisor 고도화`, `integration harness`
 
 ## Overall Phase Status
 
 | Phase ID | Phase | Goal | Status | Progress Estimate | Notes |
 | --- | --- | --- | --- | --- | --- |
 | P1 | 계획/기준선 수립 | 규칙, 문서 구조, 요구사항/HLD/초기 추적성 확립 | Completed | 100% | 작업 규칙과 기본 산출물 체계 정착 |
-| P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | In Progress | 80% | 주요 모듈 골격과 단위 테스트 확보 |
-| P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | Not Started | 10% | 일부 inbound skeleton만 존재 |
+| P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
+| P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | Not Started | 0% | 아직 unit 중심 |
 | P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | Not Started | 5% | 추적성 초안만 있음 |
 
@@ -38,6 +38,7 @@
 | Adapter Layer | transport/timer/diagnostics executor binding | In Progress | `rsrx_platform_adapters.*`, `test_rsrx_platform_adapters.c` |
 | Public API Session | session init/start/connect/disconnect/event API | In Progress | `rsrx_api.*`, `test_rsrx_api.c` |
 | Codec | encode/decode skeleton | In Progress | `rsrx_codec.*`, `test_rsrx_codec.c` |
+| Protocol Context | sequence/confirmation/retransmission base 관리 | In Progress | `rsrx_protocol_context.*`, `test_rsrx_protocol_context.c` |
 | Transport Supervisor | inbound frame to session handoff | In Progress | `rsrx_transport_supervisor.*`, `test_rsrx_transport_supervisor.c` |
 | Configuration Validation | startup gate | Completed | `rsrx_config_validator.*`, `test_rsrx_config_validator.c` |
 | Integration Verification | cross-module scenario test | Not Started | 없음 |
@@ -58,28 +59,31 @@
 | M9 | inbound failure coverage 보강 | Completed | supervisor decode failure tests |
 | M10 | session inbound event coverage 보강 | Completed | heartbeat/data/retransmission tests |
 | M11 | configuration validator 도입 | Completed | validator docs, code, tests |
+| M12 | timer event ingress 도입 | Completed | timer expiry API, tests, traceability |
+| M13 | outbound transport encode 경로 연결 | Completed | codec-backed transport adapter, tests |
+| M14 | protocol context 도입 | Completed | sequence/confirmation/retransmission base context, tests |
 
 ## In-Progress Items
 
 | Item ID | Item | Current State | Exit Criteria |
 | --- | --- | --- | --- |
-| IP-001 | Public API hardening | 기본 경로와 inbound event coverage 확보 | invalid sequencing, timer ingress, outbound send contract까지 포함 |
-| IP-002 | Codec maturation | deterministic skeleton 존재 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
-| IP-003 | Transport supervisor maturation | inbound decode handoff만 구현 | receive loop, send result, channel state, timer interaction 반영 |
-| IP-004 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
+| IP-001 | Public API hardening | timer ingress와 outbound send contract 포함 | decoded message handoff와 application data contract까지 포함 |
+| IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
+| IP-003 | Protocol context maturation | outbound sequence/confirmation과 retransmission base 초기 구현 완료 | inbound validation, sequence gap detail, recovery semantics 보강 |
+| IP-004 | Transport supervisor maturation | inbound decode handoff와 context recording 구현 | receive loop, send result, channel state, timer interaction 반영 |
+| IP-005 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
 ## Not-Started Items
 
 | Item ID | Item | Why It Matters | Planned Entry Point |
 | --- | --- | --- | --- |
-| NS-001 | Timer Event Ingress | timeout supervision과 periodic handling의 실제 진입점 필요 | session/orchestrator에 timer source contract 추가 |
-| NS-002 | Outbound Send Path Completion | API/상태 머신 action이 codec을 거쳐 실제 frame으로 송신되어야 함 | transport supervisor 또는 dedicated TX path 설계 |
-| NS-003 | Sequence/Confirmation Context | ordered delivery와 retransmission의 실질 상태가 아직 없음 | protocol/session context 확장 |
-| NS-004 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | transport abstraction 상위 모듈 추가 |
-| NS-005 | Application Data Contract | 상위 계층 데이터 ingress/egress 정의 필요 | API/codec/transport 경계 보강 |
-| NS-006 | Integration Test Harness | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness 구축 |
-| NS-007 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | toolchain policy와 report template 수립 |
-| NS-008 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
+| NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | supervisor와 protocol context를 decoded message detail과 결합 |
+| NS-002 | Transport Supervisor Completion | receive loop, send result, channel state 반영 필요 | supervisor contract 확장 |
+| NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | transport abstraction 상위 모듈 추가 |
+| NS-004 | Application Data Contract | 상위 계층 데이터 ingress/egress 정의 필요 | API/codec/transport 경계 보강 |
+| NS-005 | Integration Test Harness | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness 구축 |
+| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | toolchain policy와 report template 수립 |
+| NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
 
 ## Readiness Assessment
 
@@ -87,38 +91,37 @@
 | --- | --- | --- |
 | 설계 구조 | High | 모듈 경계와 책임 분리는 많이 안정됨 |
 | 단위 테스트 기반 | Medium | 핵심 skeleton coverage는 있으나 protocol complete 수준은 아님 |
-| 프로토콜 완성도 | Low | sequencing, timer ingress, redundancy가 미완 |
-| 통합 가능성 | Medium | 구조는 연결됐지만 end-to-end flow는 미완 |
+| 프로토콜 완성도 | Medium-Low | timer ingress와 outbound encode는 연결됐지만 detailed sequencing과 redundancy가 미완 |
+| 통합 가능성 | Medium | 주요 경계는 연결됐지만 end-to-end flow와 운영 루프는 미완 |
 | 인증 증빙 준비 | Low | 초안 중심이며 formal evidence는 거의 없음 |
 
 ## Current Risks
 
 | Risk ID | Risk | Impact | Mitigation Direction |
 | --- | --- | --- | --- |
-| R-001 | timer event ingress 부재 | timeout 기반 안전 동작 완결 불가 | timer source contract와 tests 추가 |
-| R-002 | outbound path 미완결 | API event가 wire frame 송신까지 닿지 않음 | codec encode + TX path 통합 |
-| R-003 | sequence context 미부재 | ordered delivery/retransmission 요구 미충족 | session/protocol context 모델 도입 |
-| R-004 | redundancy 미구현 | 실제 SIL4 과제 범위 대응 부족 | channel manager 별도 workstream 시작 |
+| R-001 | detailed sequence validation 미완 | ordered delivery/retransmission 요구의 핵심이 아직 단순화됨 | protocol context와 supervisor 규칙 확장 |
+| R-002 | transport supervisor 운영 루프 부재 | 실제 runtime 입출력 경계가 아직 불완전 | receive/send result/channel state path 구현 |
+| R-003 | redundancy 미구현 | 실제 SIL4 과제 범위 대응 부족 | channel manager 별도 workstream 시작 |
+| R-004 | application data contract 미정 | 상위 계층 전달 semantics가 아직 약함 | explicit ingress/egress API 설계 |
 | R-005 | 인증 증빙 부족 | 코드가 있어도 심사 대응 불가 | MISRA/static analysis/review records 병행 시작 |
 
 ## Recommended Next Order
 
-1. `Timer Event Ingress`
-2. `Outbound Send Path Completion`
-3. `Sequence and Retransmission Context`
-4. `Transport Supervisor Maturation`
-5. `Redundancy and Channel Manager`
-6. `Integration Test Harness`
-7. `Static Analysis and Safety Evidence`
+1. `Detailed Sequence and Retransmission Rules`
+2. `Transport Supervisor Maturation`
+3. `Application Data Contract`
+4. `Redundancy and Channel Manager`
+5. `Integration Test Harness`
+6. `Static Analysis and Safety Evidence`
 
 ## Next Gate Definition
 
-- Gate Name: `G-Next-Core-Flow`
+- Gate Name: `G-Protocol-Context`
 - 목표:
-  - timer expiry event가 session/orchestrator/state machine까지 결정적으로 전달될 것
-  - outbound action이 codec encode를 거쳐 transport send request/frame까지 연결될 것
-  - sequence gap/recovery가 명시적 context를 기반으로 동작할 것
+  - inbound decoded message가 sequence/confirmation context에 반영될 것
+  - outbound data/retransmission/disconnect가 sequence/confirmation을 포함해 encode될 것
+  - retransmission clear와 failure semantics가 명시적 context를 기반으로 동작할 것
 - 통과 조건:
-  - 관련 단위 테스트와 최소 통합 테스트 추가
+  - 관련 단위 테스트와 최소 supervisor-level 테스트 추가
   - traceability matrix에 해당 경로 반영
   - HLD/LLD 갱신

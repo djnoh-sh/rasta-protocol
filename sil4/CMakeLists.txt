@@ -20,16 +20,22 @@ add_library(rsrx_orchestrator STATIC
 target_include_directories(rsrx_orchestrator PUBLIC include)
 target_link_libraries(rsrx_orchestrator PUBLIC rsrx_state_machine)
 
-add_library(rsrx_platform_adapters STATIC
-	src/rsrx_platform_adapters.c)
-
-target_include_directories(rsrx_platform_adapters PUBLIC include)
-target_link_libraries(rsrx_platform_adapters PUBLIC rsrx_orchestrator rsrx_codec)
-
 add_library(rsrx_codec STATIC
 	src/rsrx_codec.c)
 
 target_include_directories(rsrx_codec PUBLIC include)
+
+add_library(rsrx_protocol_context STATIC
+	src/rsrx_protocol_context.c)
+
+target_include_directories(rsrx_protocol_context PUBLIC include)
+target_link_libraries(rsrx_protocol_context PUBLIC rsrx_codec)
+
+add_library(rsrx_platform_adapters STATIC
+	src/rsrx_platform_adapters.c)
+
+target_include_directories(rsrx_platform_adapters PUBLIC include)
+target_link_libraries(rsrx_platform_adapters PUBLIC rsrx_orchestrator rsrx_codec rsrx_protocol_context)
 
 add_library(rsrx_config_validator STATIC
 	src/rsrx_config_validator.c)
@@ -86,6 +92,11 @@ add_executable(rsrx_codec_test
 	tests/unit/test_rsrx_codec.c)
 
 target_link_libraries(rsrx_codec_test rsrx_codec)
+
+add_executable(rsrx_protocol_context_test
+	tests/unit/test_rsrx_protocol_context.c)
+
+target_link_libraries(rsrx_protocol_context_test rsrx_protocol_context)
 
 add_executable(rsrx_transport_supervisor_test
 	tests/unit/test_rsrx_transport_supervisor.c)

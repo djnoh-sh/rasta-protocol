@@ -47,9 +47,10 @@
 
 - transport adapter:
   - `START_HANDSHAKE`, `ACCEPT_INBOUND_CONNECT`, `SEND_HEARTBEAT`, `DELIVER_DATA`, `REQUEST_RETRANSMISSION`, `SEND_DISCONNECT`를 message type으로 매핑한다.
-  - mapped action은 `codec encode request`로 변환된다.
+  - mapped action은 `protocol context`를 통해 sequence/confirmation이 채워진 `codec encode request`로 변환된다.
   - encode 성공 시 encoded wire buffer를 `rsrx_transport_send_request_t`의 payload로 전달한다.
   - 현재 단계에서 application payload는 `DELIVER_DATA`에서만 encoded payload에 포함한다.
+  - inbound decoded message는 protocol context의 confirmation 기준을 갱신한다.
 - timer adapter:
   - `START_SUPERVISION_TIMER`, `RESET_SUPERVISION_TIMER`를 monotonic deadline 기반 command로 변환한다.
   - 현재 시간은 `rsrx_clock_port_t`를 통해 조회한다.

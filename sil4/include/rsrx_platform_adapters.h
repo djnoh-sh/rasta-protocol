@@ -6,12 +6,14 @@
 #include "rsrx_codec.h"
 #include "rsrx_orchestrator.h"
 #include "rsrx_platform.h"
+#include "rsrx_protocol_context.h"
 #include "rsrx_transport.h"
 
 typedef struct
 {
 	rsrx_transport_port_t xTransportPort;
 	rsrx_codec_port_t xCodecPort;
+	rsrx_protocol_context_t xProtocolContext;
 	rsrx_transport_channel_id_t eDefaultChannelId;
 	const uint8_t * puFramePayload;
 	size_t xFramePayloadLength;
@@ -40,6 +42,13 @@ void rsrx_transport_executor_dispatch(
 	const rsrx_transition_result_t * pxTransition,
 	rsrx_action_t eAction,
 	uint32_t uActionIndex);
+
+void rsrx_transport_adapter_record_inbound_message(
+	rsrx_transport_adapter_context_t * pxContext,
+	const rsrx_decoded_message_t * pxMessage);
+
+void rsrx_transport_adapter_clear_retransmission_context(
+	rsrx_transport_adapter_context_t * pxContext);
 
 rsrx_platform_status_t rsrx_platform_adapter_init(
 	rsrx_platform_adapter_context_t * pxContext,
