@@ -70,7 +70,7 @@
 | IP-001 | Public API hardening | timer ingress와 outbound send contract 포함 | decoded message handoff와 application data contract까지 포함 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | outbound sequence/confirmation과 retransmission base 초기 구현 완료 | inbound validation, sequence gap detail, recovery semantics 보강 |
-| IP-004 | Transport supervisor maturation | inbound decode handoff와 context recording 구현 | receive loop, send result, channel state, timer interaction 반영 |
+| IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, channel state gate 구현 | send result와 timer interaction 반영 |
 | IP-005 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
 ## Not-Started Items
@@ -100,7 +100,7 @@
 | Risk ID | Risk | Impact | Mitigation Direction |
 | --- | --- | --- | --- |
 | R-001 | detailed sequence validation 미완 | ordered delivery/retransmission 요구의 핵심이 아직 단순화됨 | protocol context와 supervisor 규칙 확장 |
-| R-002 | transport supervisor 운영 루프 부재 | 실제 runtime 입출력 경계가 아직 불완전 | receive/send result/channel state path 구현 |
+| R-002 | transport supervisor 운영 루프 미완 | poll receive와 channel gate는 있으나 send result/timer interaction이 아직 비어 있음 | send result/timer interaction path 구현 |
 | R-003 | redundancy 미구현 | 실제 SIL4 과제 범위 대응 부족 | channel manager 별도 workstream 시작 |
 | R-004 | application data contract 미정 | 상위 계층 전달 semantics가 아직 약함 | explicit ingress/egress API 설계 |
 | R-005 | 인증 증빙 부족 | 코드가 있어도 심사 대응 불가 | MISRA/static analysis/review records 병행 시작 |

@@ -47,6 +47,14 @@ void rsrx_transport_adapter_record_inbound_message(
 	rsrx_transport_adapter_context_t * pxContext,
 	const rsrx_decoded_message_t * pxMessage);
 
+rsrx_transport_status_t rsrx_transport_adapter_query_channel(
+	const rsrx_transport_adapter_context_t * pxContext,
+	rsrx_transport_channel_state_t * pxState);
+
+rsrx_transport_status_t rsrx_transport_adapter_receive_frame(
+	const rsrx_transport_adapter_context_t * pxContext,
+	rsrx_transport_frame_t * pxFrame);
+
 void rsrx_transport_adapter_clear_retransmission_context(
 	rsrx_transport_adapter_context_t * pxContext);
 

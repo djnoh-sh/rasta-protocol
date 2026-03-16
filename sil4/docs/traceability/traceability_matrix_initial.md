@@ -11,7 +11,7 @@
 | FR-003 | HZ-003 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_send_request_t`, `rsrx_transport_frame_t` | TC-TR-002 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_decoded_message_t`, `rsrx_encode_request_t`, `rsrx_encode_buffer_t`, `rsrx_codec_encode_message`, `rsrx_codec_decode_frame` | TC-CODEC-001, TC-CODEC-002, TC-CODEC-004 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_event` | TC-API-005 |  | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame` | TC-SUP-001, TC-SUP-004 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame`, `rsrx_transport_supervisor_poll_receive` | TC-SUP-001, TC-SUP-004, TC-SUP-007 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-004, TC-SM-005, TC-SM-011 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-011 | `sil4/include/rsrx_protocol_context.h`, `sil4/src/rsrx_protocol_context.c` | `rsrx_protocol_context_build_encode_request`, `rsrx_protocol_context_clear_retransmission` | TC-PC-003 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_frame_t` | TC-TR-003 |  | Draft |
@@ -31,7 +31,7 @@
 | SR-002 | HZ-002 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-003, TC-SM-013, TC-SM-017 |  | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_frame_t`, `rsrx_transport_channel_state_t` | TC-TR-003 |  | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_timer_expiry` | TC-API-007, TC-API-008 |  | Draft |
-| SR-002 | HZ-002 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_init`, `rsrx_transport_supervisor_process_frame` | TC-SUP-002, TC-SUP-003, TC-SUP-004 |  | Draft |
+| SR-002 | HZ-002 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_init`, `rsrx_transport_supervisor_process_frame`, `rsrx_transport_supervisor_poll_receive` | TC-SUP-002, TC-SUP-003, TC-SUP-004, TC-SUP-008 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-002 | `sil4/include/rsrx_state_machine.h`, `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_init`, `rsrx_state_machine_handle_event`, `rsrx_state_machine_get_state`, `rsrx_state_machine_reset` | TC-SM-007, TC-SM-008, TC-SM-012, TC-SM-015, TC-SM-017 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-010 | `sil4/include/rsrx_config_validator.h`, `sil4/src/rsrx_config_validator.c` | `rsrx_validate_session_config` | TC-CFG-005, TC-CFG-006 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-011 | `sil4/include/rsrx_protocol_context.h`, `sil4/src/rsrx_protocol_context.c` | `rsrx_protocol_context_init`, `rsrx_protocol_context_build_encode_request` | TC-PC-004 |  | Draft |

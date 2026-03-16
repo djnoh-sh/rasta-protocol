@@ -37,6 +37,7 @@
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
+| `rsrx_transport_supervisor_poll_receive` | function | channel query 후 frame 수신 polling 수행 | runtime loop 진입점 |
 
 ## Functional Behavior
 
@@ -50,6 +51,13 @@
   - stale/duplicate sequence는 `PROTOCOL_ERROR`로 변환한다.
   - in-order frame만 protocol context에 기록한다.
   - 마지막 decoded message와 session report를 저장한다.
+- `rsrx_transport_supervisor_poll_receive`:
+  - transport adapter를 통해 기본 channel 상태를 조회한다.
+  - channel이 unavailable이면 `CHANNEL_DOWN`을 반환하고 receive는 수행하지 않는다.
+  - channel이 available이면 frame 수신을 시도한다.
+  - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
+  - `FRAME_RECEIVED` event인 경우에만 `process_frame` 경로로 위임한다.
+  - poll count와 마지막 channel state를 report에 남긴다.
 
 ## Verification Notes
 
@@ -59,7 +67,10 @@
   - decode 실패 시 오류 반환 검증
   - sequence gap -> retransmission pending 검증
   - stale sequence -> protocol error fail-safe 검증
+  - poll receive handshake 경로 검증
+  - poll receive channel down/no-frame 경로 검증
 - 분석 포인트:
   - decode 결과와 supervisor-level event override 일관성
   - protocol context 기록 시점과 sequence rule의 결정성
   - report 구조체의 마지막 값 보존 정책
+  - query/receive 순서와 channel availability gate의 결정성

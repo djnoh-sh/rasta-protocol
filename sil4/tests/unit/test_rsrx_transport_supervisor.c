@@ -12,7 +12,13 @@ typedef struct
 typedef struct
 {
 	rsrx_transport_send_request_t xLastRequest;
+	rsrx_transport_frame_t xNextReceiveFrame;
+	rsrx_transport_status_t eReceiveStatus;
+	rsrx_transport_status_t eQueryStatus;
+	uint32_t uChannelAvailable;
 	uint32_t uSendCount;
+	uint32_t uReceiveCount;
+	uint32_t uQueryCount;
 } test_transport_context_t;
 
 typedef struct
@@ -84,20 +90,36 @@ static rsrx_transport_status_t eTransportSend(void * pvContext, const rsrx_trans
 
 static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transport_frame_t * pxFrame)
 {
-	(void)pvContext;
-	(void)pxFrame;
-	return RSRX_TRANSPORT_STATUS_OK;
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+
+	if((pxContext == (test_transport_context_t *)0) ||
+		(pxFrame == (rsrx_transport_frame_t *)0))
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->uReceiveCount++;
+	*pxFrame = pxContext->xNextReceiveFrame;
+	return pxContext->eReceiveStatus;
 }
 
 static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
 {
-	(void)pvContext;
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+
+	if(pxContext == (test_transport_context_t *)0)
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
 	if(pxState != (rsrx_transport_channel_state_t *)0)
 	{
 		pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
-		pxState->uIsAvailable = 1U;
+		pxState->uIsAvailable = pxContext->uChannelAvailable;
 	}
-	return RSRX_TRANSPORT_STATUS_OK;
+
+	pxContext->uQueryCount++;
+	return pxContext->eQueryStatus;
 }
 
 static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport)
@@ -181,6 +203,28 @@ static void vFillConfig(
 	pxConfig->pfLifecycleNotification = vLifecycleNotify;
 }
 
+static void vInitTransportContext(
+	test_transport_context_t * pxTransport,
+	const uint8_t * puPayload,
+	size_t xPayloadLength,
+	rsrx_transport_event_type_t eEventType)
+{
+	pxTransport->xLastRequest.eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxTransport->xLastRequest.puPayload = (const uint8_t *)0;
+	pxTransport->xLastRequest.xPayloadLength = 0U;
+	pxTransport->xLastRequest.eReason = RSRX_REASON_NONE;
+	pxTransport->xNextReceiveFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxTransport->xNextReceiveFrame.puPayload = puPayload;
+	pxTransport->xNextReceiveFrame.xPayloadLength = xPayloadLength;
+	pxTransport->xNextReceiveFrame.eEventType = eEventType;
+	pxTransport->eReceiveStatus = RSRX_TRANSPORT_STATUS_OK;
+	pxTransport->eQueryStatus = RSRX_TRANSPORT_STATUS_OK;
+	pxTransport->uChannelAvailable = 1U;
+	pxTransport->uSendCount = 0U;
+	pxTransport->uReceiveCount = 0U;
+	pxTransport->uQueryCount = 0U;
+}
+
 static void vTestSupervisorInboundHandshakePath(void)
 {
 	rsrx_session_t xSession;
@@ -189,7 +233,7 @@ static void vTestSupervisorInboundHandshakePath(void)
 	rsrx_codec_port_t xCodec;
 	const rsrx_orchestrator_report_t * pxSessionReport;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = { 0 };
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -197,6 +241,7 @@ static void vTestSupervisorInboundHandshakePath(void)
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[3] = { 0x01U, 0x02U, 0x03U };
 
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "handshake path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
@@ -243,7 +288,7 @@ static void vTestSupervisorDecodeFailure(void)
 	rsrx_codec_port_t xCodec;
 	const rsrx_orchestrator_report_t * pxSessionReport;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = { 0 };
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -251,6 +296,7 @@ static void vTestSupervisorDecodeFailure(void)
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[2] = { 0x10U, 0x20U };
 
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "decode failure path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
@@ -289,7 +335,7 @@ static void vTestSupervisorUnsupportedMessage(void)
 	rsrx_codec_port_t xCodec;
 	const rsrx_orchestrator_report_t * pxSessionReport;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = { 0 };
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -297,6 +343,7 @@ static void vTestSupervisorUnsupportedMessage(void)
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[4] = { 0xABU, 0xCDU, 0xEFU, 0x01U };
 
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "unsupported message path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "session start");
@@ -336,7 +383,7 @@ static void vTestSupervisorSequenceGapDetection(void)
 	rsrx_codec_port_t xCodec;
 	const rsrx_orchestrator_report_t * pxSessionReport;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = { 0 };
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -344,6 +391,7 @@ static void vTestSupervisorSequenceGapDetection(void)
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[3] = { 0x21U, 0x22U, 0x23U };
 
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "gap path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "gap path session start");
@@ -390,7 +438,7 @@ static void vTestSupervisorStaleSequenceProtocolError(void)
 	rsrx_supervisor_status_t eStatus;
 	const rsrx_orchestrator_report_t * pxSessionReport;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = { 0 };
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -398,6 +446,7 @@ static void vTestSupervisorStaleSequenceProtocolError(void)
 	rsrx_transport_frame_t xFrame;
 	static const uint8_t auPayload[2] = { 0x31U, 0x32U };
 
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "stale path session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "stale path session start");
@@ -435,6 +484,107 @@ static void vTestSupervisorStaleSequenceProtocolError(void)
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "stale path reason");
 }
 
+static void vTestSupervisorPollReceiveHandshake(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	static const uint8_t auPayload[3] = { 0x41U, 0x42U, 0x43U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll handshake session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll handshake session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll handshake session connect");
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_EVENT_HANDSHAKE_SUCCESS,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U);
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll handshake supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "poll handshake receive");
+	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll handshake poll count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "poll handshake processed count");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "poll handshake channel available");
+	vAssertTrue(xTransport.uQueryCount == 1U, "poll handshake query count");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "poll handshake receive count");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "poll handshake established");
+}
+
+static void vTestSupervisorPollReceiveChannelDown(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x51U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	xTransport.uChannelAvailable = 0U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll down session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll down session start");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll down supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "poll down status");
+	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll down poll count");
+	vAssertTrue(xTransport.uReceiveCount == 0U, "poll down receive not called");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 0U, "poll down channel unavailable");
+}
+
+static void vTestSupervisorPollReceiveNoFrame(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x61U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	xTransport.eReceiveStatus = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll idle session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll idle session start");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll idle supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "poll idle status");
+	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll idle poll count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "poll idle processed count");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "poll idle receive count");
+}
+
 int main(void)
 {
 	vTestSupervisorInboundHandshakePath();
@@ -443,6 +593,9 @@ int main(void)
 	vTestSupervisorUnsupportedMessage();
 	vTestSupervisorSequenceGapDetection();
 	vTestSupervisorStaleSequenceProtocolError();
+	vTestSupervisorPollReceiveHandshake();
+	vTestSupervisorPollReceiveChannelDown();
+	vTestSupervisorPollReceiveNoFrame();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");
 

@@ -191,6 +191,39 @@ void rsrx_transport_adapter_record_inbound_message(
 		pxMessage);
 }
 
+rsrx_transport_status_t rsrx_transport_adapter_query_channel(
+	const rsrx_transport_adapter_context_t * pxContext,
+	rsrx_transport_channel_state_t * pxState)
+{
+	if((pxContext == (const rsrx_transport_adapter_context_t *)0) ||
+		(pxState == (rsrx_transport_channel_state_t *)0))
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxState->eChannelId = pxContext->eDefaultChannelId;
+	pxState->uIsAvailable = 0U;
+
+	return pxContext->xTransportPort.pfQueryChannel(
+		pxContext->xTransportPort.pvContext,
+		pxState);
+}
+
+rsrx_transport_status_t rsrx_transport_adapter_receive_frame(
+	const rsrx_transport_adapter_context_t * pxContext,
+	rsrx_transport_frame_t * pxFrame)
+{
+	if((pxContext == (const rsrx_transport_adapter_context_t *)0) ||
+		(pxFrame == (rsrx_transport_frame_t *)0))
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	return pxContext->xTransportPort.pfReceive(
+		pxContext->xTransportPort.pvContext,
+		pxFrame);
+}
+
 void rsrx_transport_adapter_clear_retransmission_context(
 	rsrx_transport_adapter_context_t * pxContext)
 {

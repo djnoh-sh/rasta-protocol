@@ -11,15 +11,20 @@ typedef enum
 	RSRX_SUPERVISOR_STATUS_OK = 0,
 	RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT,
 	RSRX_SUPERVISOR_STATUS_DECODE_FAILED,
-	RSRX_SUPERVISOR_STATUS_SESSION_ERROR
+	RSRX_SUPERVISOR_STATUS_SESSION_ERROR,
+	RSRX_SUPERVISOR_STATUS_NO_FRAME,
+	RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN,
+	RSRX_SUPERVISOR_STATUS_RECEIVE_ERROR
 } rsrx_supervisor_status_t;
 
 typedef struct
 {
+	rsrx_transport_channel_state_t xLastChannelState;
 	rsrx_transport_frame_t xLastFrame;
 	rsrx_decoded_message_t xLastMessage;
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;
+	uint32_t uPollCount;
 } rsrx_transport_supervisor_report_t;
 
 typedef struct
@@ -38,6 +43,10 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_init(
 rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 	rsrx_transport_supervisor_context_t * pxContext,
 	const rsrx_transport_frame_t * pxFrame,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
+	rsrx_transport_supervisor_context_t * pxContext,
 	const rsrx_transport_supervisor_report_t ** ppxReport);
 
 #endif
