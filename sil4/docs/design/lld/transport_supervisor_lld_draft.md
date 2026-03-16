@@ -38,6 +38,8 @@
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
 | `rsrx_transport_supervisor_poll_receive` | function | channel query 후 frame 수신 polling 수행 | runtime loop 진입점 |
+| `rsrx_transport_supervisor_process_transport_event` | function | send/channel transport event 처리 | outbound/runtime feedback 경계 |
+| `rsrx_transport_supervisor_process_timer_expiry` | function | timer expiry를 session으로 위임 | supervisor-level timer ingress |
 
 ## Functional Behavior
 
@@ -58,6 +60,13 @@
   - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
   - `FRAME_RECEIVED` event인 경우에만 `process_frame` 경로로 위임한다.
   - poll count와 마지막 channel state를 report에 남긴다.
+- `rsrx_transport_supervisor_process_transport_event`:
+  - `SEND_COMPLETED`는 상태 전이 없이 ignored event로 기록한다.
+  - `SEND_FAILED`와 `CHANNEL_DOWN`은 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
+  - `FRAME_RECEIVED`는 direct frame path로 위임한다.
+- `rsrx_transport_supervisor_process_timer_expiry`:
+  - supervisor는 timer source를 해석하지 않고 session timer API로 위임한다.
+  - session이 `REJECTED`를 반환해도 supervisor 관점에서는 처리된 fail-safe 전이로 간주한다.
 
 ## Verification Notes
 
@@ -69,8 +78,12 @@
   - stale sequence -> protocol error fail-safe 검증
   - poll receive handshake 경로 검증
   - poll receive channel down/no-frame 경로 검증
+  - send failed -> protocol error 검증
+  - send completed ignored 검증
+  - timer expiry delegation 검증
 - 분석 포인트:
   - decode 결과와 supervisor-level event override 일관성
   - protocol context 기록 시점과 sequence rule의 결정성
   - report 구조체의 마지막 값 보존 정책
   - query/receive 순서와 channel availability gate의 결정성
+  - transport feedback event의 보수적 매핑 정책

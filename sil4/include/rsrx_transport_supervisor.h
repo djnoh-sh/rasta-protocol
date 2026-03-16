@@ -14,7 +14,8 @@ typedef enum
 	RSRX_SUPERVISOR_STATUS_SESSION_ERROR,
 	RSRX_SUPERVISOR_STATUS_NO_FRAME,
 	RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN,
-	RSRX_SUPERVISOR_STATUS_RECEIVE_ERROR
+	RSRX_SUPERVISOR_STATUS_RECEIVE_ERROR,
+	RSRX_SUPERVISOR_STATUS_IGNORED_EVENT
 } rsrx_supervisor_status_t;
 
 typedef struct
@@ -47,6 +48,16 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 
 rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_transport_frame_t * pxFrame,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_process_timer_expiry(
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_timer_expiry_source_t eTimerSource,
 	const rsrx_transport_supervisor_report_t ** ppxReport);
 
 #endif

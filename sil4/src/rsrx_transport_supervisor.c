@@ -44,6 +44,27 @@ static uint32_t uSessionStatusIsHandled(
 		(eStatus == RSRX_STATUS_REJECTED));
 }
 
+static rsrx_supervisor_status_t eProcessSessionEventInternal(
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_event_t eEvent,
+	const rsrx_transport_supervisor_report_t ** ppxReport)
+{
+	rsrx_status_t eSessionStatus;
+
+	eSessionStatus = rsrx_session_process_event(
+		pxContext->pxSession,
+		eEvent,
+		&pxContext->xLastReport.pxLastReport);
+	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
+	{
+		*ppxReport = &pxContext->xLastReport;
+		return RSRX_SUPERVISOR_STATUS_SESSION_ERROR;
+	}
+
+	*ppxReport = &pxContext->xLastReport;
+	return RSRX_SUPERVISOR_STATUS_OK;
+}
+
 static rsrx_supervisor_status_t eProcessFrameInternal(
 	rsrx_transport_supervisor_context_t * pxContext,
 	const rsrx_transport_frame_t * pxFrame,
@@ -193,4 +214,71 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	}
 
 	return eProcessFrameInternal(pxContext, &xFrame, ppxReport);
+}
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_transport_frame_t * pxFrame,
+	const rsrx_transport_supervisor_report_t ** ppxReport)
+{
+	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
+		(pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
+		(pxContext->uInitialized == 0U))
+	{
+		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->xLastReport.xLastFrame = *pxFrame;
+
+	switch(pxFrame->eEventType)
+	{
+		case RSRX_TRANSPORT_EVENT_SEND_COMPLETED:
+			*ppxReport = &pxContext->xLastReport;
+			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+
+		case RSRX_TRANSPORT_EVENT_SEND_FAILED:
+		case RSRX_TRANSPORT_EVENT_CHANNEL_DOWN:
+			return eProcessSessionEventInternal(
+				pxContext,
+				RSRX_EVENT_PROTOCOL_ERROR,
+				ppxReport);
+
+		case RSRX_TRANSPORT_EVENT_FRAME_RECEIVED:
+			return eProcessFrameInternal(pxContext, pxFrame, ppxReport);
+
+		case RSRX_TRANSPORT_EVENT_CHANNEL_UP:
+		case RSRX_TRANSPORT_EVENT_NONE:
+		default:
+			*ppxReport = &pxContext->xLastReport;
+			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+	}
+}
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_process_timer_expiry(
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_timer_expiry_source_t eTimerSource,
+	const rsrx_transport_supervisor_report_t ** ppxReport)
+{
+	rsrx_status_t eSessionStatus;
+
+	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
+		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
+		(pxContext->uInitialized == 0U))
+	{
+		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
+	}
+
+	eSessionStatus = rsrx_session_process_timer_expiry(
+		pxContext->pxSession,
+		eTimerSource,
+		&pxContext->xLastReport.pxLastReport);
+	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
+	{
+		*ppxReport = &pxContext->xLastReport;
+		return RSRX_SUPERVISOR_STATUS_SESSION_ERROR;
+	}
+
+	*ppxReport = &pxContext->xLastReport;
+	return RSRX_SUPERVISOR_STATUS_OK;
 }
