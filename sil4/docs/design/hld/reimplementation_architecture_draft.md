@@ -163,6 +163,7 @@ SHUTDOWN --> [*]
 | `rsrx_session_connect` | In | 연결 수립을 시작 |
 | `rsrx_session_disconnect` | In | 연결 종료 절차를 시작 |
 | `rsrx_session_process_event` | In | 일반 event를 session에 전달 |
+| `rsrx_session_process_timer_expiry` | In | timer expiry source를 protocol event로 변환해 전달 |
 | `rsrx_session_get_state` | Out | 현재 session 상태 조회 |
 | `rsrx_session_reset` | In | session 상태 초기화 |
 

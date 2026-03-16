@@ -65,6 +65,32 @@ static rsrx_status_t eProcessSessionEvent(
 	return eStatus;
 }
 
+static rsrx_status_t eMapTimerSourceToEvent(
+	rsrx_timer_expiry_source_t eTimerSource,
+	rsrx_event_t * peEvent)
+{
+	if(peEvent == (rsrx_event_t *)0)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	switch(eTimerSource)
+	{
+		case RSRX_TIMER_EXPIRY_SUPERVISION:
+			*peEvent = RSRX_EVENT_TIMEOUT;
+			return RSRX_STATUS_OK;
+
+		case RSRX_TIMER_EXPIRY_RETRANSMISSION:
+			*peEvent = RSRX_EVENT_RETRANSMISSION_FAILURE;
+			return RSRX_STATUS_OK;
+
+		case RSRX_TIMER_EXPIRY_DIAGNOSTIC_FLUSH:
+		case RSRX_TIMER_EXPIRY_INVALID:
+		default:
+			return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+}
+
 rsrx_status_t rsrx_session_init(
 	rsrx_session_t * pxSession,
 	const rsrx_session_config_t * pxConfig)
@@ -162,6 +188,21 @@ rsrx_status_t rsrx_session_process_event(
 	rsrx_event_t eEvent,
 	const rsrx_orchestrator_report_t ** ppxReport)
 {
+	return eProcessSessionEvent(pxSession, eEvent, ppxReport);
+}
+
+rsrx_status_t rsrx_session_process_timer_expiry(
+	rsrx_session_t * pxSession,
+	rsrx_timer_expiry_source_t eTimerSource,
+	const rsrx_orchestrator_report_t ** ppxReport)
+{
+	rsrx_event_t eEvent;
+
+	if(eMapTimerSourceToEvent(eTimerSource, &eEvent) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
 	return eProcessSessionEvent(pxSession, eEvent, ppxReport);
 }
 

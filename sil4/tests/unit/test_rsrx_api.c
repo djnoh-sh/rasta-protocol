@@ -347,6 +347,79 @@ static void vTestSessionRetransmissionPath(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "recovery lifecycle action");
 }
 
+static void vTestSessionSupervisionTimerExpiry(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x41U, 0x42U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_SUPERVISION, &pxReport) == RSRX_STATUS_REJECTED, "supervision timeout status");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "supervision timeout state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_TIMEOUT_EXPIRED, "supervision timeout reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 4U, "supervision timeout actions");
+	vAssertTrue(xTransport.uSendCount == 2U, "supervision timeout disconnect sent");
+	vAssertTrue(xApiCounter.uCallCount == 4U, "supervision timeout api notify");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "supervision timeout diagnostic");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "supervision timeout lifecycle");
+}
+
+static void vTestSessionRetransmissionTimerExpiry(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1100U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x51U, 0x52U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_SEQUENCE_GAP_DETECTED, &pxReport) == RSRX_STATUS_OK, "enter retransmission pending");
+
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_RETRANSMISSION, &pxReport) == RSRX_STATUS_REJECTED, "retransmission timeout status");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retransmission timeout state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_RETRANSMISSION_FAILED, "retransmission timeout reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 4U, "retransmission timeout actions");
+	vAssertTrue(xTransport.uSendCount == 3U, "retransmission timeout disconnect sent");
+	vAssertTrue(xApiCounter.uCallCount == 5U, "retransmission timeout api notify");
+	vAssertTrue(xDiagnostics.uCallCount == 4U, "retransmission timeout diagnostic");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retransmission timeout lifecycle");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_session_t xSession = { 0 };
@@ -366,6 +439,8 @@ static void vTestInvalidArguments(void)
 	vAssertTrue(rsrx_session_init((rsrx_session_t *)0, (const rsrx_session_config_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null session init");
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "invalid config rejected");
 	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "start before init");
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_INVALID, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "invalid timer source");
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_DIAGNOSTIC_FLUSH, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "unsupported timer source");
 	vAssertTrue(rsrx_session_get_state((const rsrx_session_t *)0) == RSRX_STATE_INVALID, "get state null");
 	vAssertTrue(rsrx_session_reset((rsrx_session_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "reset null");
 }
@@ -377,6 +452,8 @@ int main(void)
 	vTestSessionInboundHeartbeatPath();
 	vTestSessionInboundDataPath();
 	vTestSessionRetransmissionPath();
+	vTestSessionSupervisionTimerExpiry();
+	vTestSessionRetransmissionTimerExpiry();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_api_test: all tests passed\n");

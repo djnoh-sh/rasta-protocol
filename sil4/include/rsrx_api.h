@@ -19,6 +19,14 @@ typedef void (*rsrx_lifecycle_notification_fn)(
 	rsrx_action_t eAction,
 	uint32_t uActionIndex);
 
+typedef enum
+{
+	RSRX_TIMER_EXPIRY_INVALID = 0,
+	RSRX_TIMER_EXPIRY_SUPERVISION,
+	RSRX_TIMER_EXPIRY_RETRANSMISSION,
+	RSRX_TIMER_EXPIRY_DIAGNOSTIC_FLUSH
+} rsrx_timer_expiry_source_t;
+
 typedef struct
 {
 	rsrx_transport_port_t xTransportPort;
@@ -68,6 +76,11 @@ rsrx_status_t rsrx_session_disconnect(
 rsrx_status_t rsrx_session_process_event(
 	rsrx_session_t * pxSession,
 	rsrx_event_t eEvent,
+	const rsrx_orchestrator_report_t ** ppxReport);
+
+rsrx_status_t rsrx_session_process_timer_expiry(
+	rsrx_session_t * pxSession,
+	rsrx_timer_expiry_source_t eTimerSource,
 	const rsrx_orchestrator_report_t ** ppxReport);
 
 rsrx_state_t rsrx_session_get_state(

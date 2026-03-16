@@ -43,6 +43,7 @@
 | `rsrx_session_connect` | function | 연결 시작 | `CONNECT_REQUEST` 전달 |
 | `rsrx_session_disconnect` | function | 연결 종료 요청 | `DISCONNECT_REQUEST` 전달 |
 | `rsrx_session_process_event` | function | 일반 event 전달 | orchestrator wrapper |
+| `rsrx_session_process_timer_expiry` | function | timer expiry source를 protocol event로 변환 후 전달 | 지원 범위 밖 timer source는 거부 |
 | `rsrx_session_get_state` | function | session 상태 조회 | 읽기 전용 |
 | `rsrx_session_reset` | function | session 상태 초기화 | bounded 동작 |
 
@@ -60,12 +61,17 @@
   - `DISCONNECT_REQUEST` event를 주입해 safe disconnect 경로를 시작한다.
 - `rsrx_session_process_event`:
   - 상위 계층이 decoded event 또는 timer event를 직접 전달할 수 있는 일반 경로를 제공한다.
+- `rsrx_session_process_timer_expiry`:
+  - `SUPERVISION`은 `TIMEOUT`으로 변환한다.
+  - `RETRANSMISSION`은 `RETRANSMISSION_FAILURE`로 변환한다.
+  - 현재 단계에서 `DIAGNOSTIC_FLUSH`는 상태 머신 이벤트로 연결하지 않고 거부한다.
 
 ## Verification Notes
 
 - 필요한 테스트:
   - session init/start/connect 경로 검증
   - session disconnect 경로 검증
+  - timer expiry ingress 검증
   - API notification callback 호출 검증
   - lifecycle callback 호출 검증
   - invalid argument 방어 검증
