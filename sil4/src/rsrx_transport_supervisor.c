@@ -17,6 +17,9 @@ static void vResetSupervisorReport(
 	pxReport->xLastMessage.uSequenceNumber = 0U;
 	pxReport->xLastMessage.uConfirmationNumber = 0U;
 	pxReport->xLastMessage.xPayloadLength = 0U;
+	pxReport->eLastEffectiveEvent = RSRX_EVENT_INVALID;
+	pxReport->eLastSessionStatus = RSRX_STATUS_OK;
+	pxReport->eLastDecision = RSRX_SUPERVISOR_DECISION_NONE;
 	pxReport->pxLastReport = (const rsrx_orchestrator_report_t *)0;
 	pxReport->uProcessedFrameCount = 0U;
 	pxReport->uPollCount = 0U;
@@ -58,11 +61,17 @@ static rsrx_supervisor_status_t eProcessSessionEventInternal(
 		pxContext->pxSession,
 		eEvent,
 		&pxContext->xLastReport.pxLastReport);
+	pxContext->xLastReport.eLastEffectiveEvent = eEvent;
+	pxContext->xLastReport.eLastSessionStatus = eSessionStatus;
 	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
 	{
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_SESSION_ERROR;
 	}
+	pxContext->xLastReport.eLastDecision =
+		(eSessionStatus == RSRX_STATUS_REJECTED) ?
+			RSRX_SUPERVISOR_DECISION_SESSION_REJECTED :
+			RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED;
 
 	*ppxReport = &pxContext->xLastReport;
 	return RSRX_SUPERVISOR_STATUS_OK;
@@ -99,6 +108,7 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 	eCodecStatus = pxContext->xCodec.pfDecode(pxFrame, &pxContext->xLastReport.xLastMessage);
 	if(eCodecStatus != RSRX_CODEC_STATUS_OK)
 	{
+		pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_DECODE_FAILED;
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_DECODE_FAILED;
 	}
@@ -106,6 +116,7 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 	eInboundEvent = eResolveInboundEvent(
 		pxContext,
 		&pxContext->xLastReport.xLastMessage);
+	pxContext->xLastReport.eLastEffectiveEvent = eInboundEvent;
 	if((eInboundEvent == pxContext->xLastReport.xLastMessage.eSuggestedEvent) ||
 		(eInboundEvent == RSRX_EVENT_RECOVERY_SUCCESS))
 	{
@@ -120,11 +131,16 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 		pxContext->pxSession,
 		eInboundEvent,
 		&pxContext->xLastReport.pxLastReport);
+	pxContext->xLastReport.eLastSessionStatus = eSessionStatus;
 	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
 	{
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_SESSION_ERROR;
 	}
+	pxContext->xLastReport.eLastDecision =
+		(eSessionStatus == RSRX_STATUS_REJECTED) ?
+			RSRX_SUPERVISOR_DECISION_SESSION_REJECTED :
+			RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED;
 
 	pxContext->xLastReport.uProcessedFrameCount++;
 	*ppxReport = &pxContext->xLastReport;
@@ -190,6 +206,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	pxContext->xLastReport.uPollCount++;
 	if(eTransportStatus != RSRX_TRANSPORT_STATUS_OK)
 	{
+		pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN;
 		*ppxReport = &pxContext->xLastReport;
 		if((eTransportStatus == RSRX_TRANSPORT_STATUS_CHANNEL_DOWN) ||
 			(eTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE))
@@ -202,6 +219,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 
 	if(pxContext->xLastReport.xLastChannelState.uIsAvailable == 0U)
 	{
+		pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN;
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN;
 	}
@@ -216,12 +234,14 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 		&xFrame);
 	if(eTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE)
 	{
+		pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE;
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_NO_FRAME;
 	}
 
 	if(eTransportStatus != RSRX_TRANSPORT_STATUS_OK)
 	{
+		pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN;
 		*ppxReport = &pxContext->xLastReport;
 		if(eTransportStatus == RSRX_TRANSPORT_STATUS_CHANNEL_DOWN)
 		{
@@ -234,6 +254,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	if(xFrame.eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
 	{
 		pxContext->xLastReport.xLastFrame = xFrame;
+		pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE;
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_NO_FRAME;
 	}
@@ -260,17 +281,20 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 	{
 		case RSRX_TRANSPORT_EVENT_SEND_COMPLETED:
 			vResetSendFailureBudget(pxContext);
+			pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED;
 			*ppxReport = &pxContext->xLastReport;
 			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 
 		case RSRX_TRANSPORT_EVENT_SEND_FAILED:
 			if(uSendFailureBudgetExceeded(pxContext) == 0U)
 			{
+				pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED;
 				*ppxReport = &pxContext->xLastReport;
 				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 			}
 
 			vResetSendFailureBudget(pxContext);
+			pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED;
 			return eProcessSessionEventInternal(
 				pxContext,
 				RSRX_EVENT_PROTOCOL_ERROR,
@@ -278,6 +302,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 
 		case RSRX_TRANSPORT_EVENT_CHANNEL_DOWN:
 			vResetSendFailureBudget(pxContext);
+			pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED;
 			return eProcessSessionEventInternal(
 				pxContext,
 				RSRX_EVENT_PROTOCOL_ERROR,
@@ -289,6 +314,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 		case RSRX_TRANSPORT_EVENT_CHANNEL_UP:
 		case RSRX_TRANSPORT_EVENT_NONE:
 		default:
+			pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED;
 			*ppxReport = &pxContext->xLastReport;
 			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 	}
@@ -312,6 +338,8 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_timer_expiry(
 		pxContext->pxSession,
 		eTimerSource,
 		&pxContext->xLastReport.pxLastReport);
+	pxContext->xLastReport.eLastSessionStatus = eSessionStatus;
+	pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_TIMER_DELEGATED;
 	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
 	{
 		*ppxReport = &pxContext->xLastReport;

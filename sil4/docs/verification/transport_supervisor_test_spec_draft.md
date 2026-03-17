@@ -22,15 +22,15 @@
 
 | Test ID | Req ID | Objective | Precondition | Stimulus | Expected Result | Pass/Fail Criteria |
 | --- | --- | --- | --- | --- | --- | --- |
-| TC-SUP-001 | FR-003, FR-004 | inbound frame handoff 검증 | `CONNECTING` 상태 session, codec decode stub 준비 | `FRAME_RECEIVED` frame 처리 | decoded event가 session에 전달되어 `ESTABLISHED` 전이 | decoded message와 session report가 설계와 일치 |
+| TC-SUP-001 | FR-003, FR-004 | inbound frame handoff 검증 | `CONNECTING` 상태 session, codec decode stub 준비 | `FRAME_RECEIVED` frame 처리 | decoded event가 session에 전달되어 `ESTABLISHED` 전이 | decoded message, effective event, session status, decision이 설계와 일치 |
 | TC-SUP-002 | SR-002 | invalid argument 방어 검증 | null context 또는 invalid frame | supervisor init/process 호출 | `INVALID_ARGUMENT` 반환 | UB 없이 결정적 오류 처리 |
-| TC-SUP-003 | SR-002 | decode failure 방어 검증 | `CONNECTING` 상태 session, codec이 `DECODE_ERROR` 반환하도록 준비 | `FRAME_RECEIVED` frame 처리 | `DECODE_FAILED` 반환, session 미호출, processed count 미증가 | session state가 유지되고 supervisor report가 마지막 frame만 보존 |
+| TC-SUP-003 | SR-002 | decode failure 방어 검증 | `CONNECTING` 상태 session, codec이 `DECODE_ERROR` 반환하도록 준비 | `FRAME_RECEIVED` frame 처리 | `DECODE_FAILED` 반환, session 미호출, processed count 미증가 | session state가 유지되고 supervisor report가 failure decision을 보존 |
 | TC-SUP-004 | FR-003, SR-002 | unsupported message 방어 검증 | `CONNECTING` 상태 session, codec이 `UNSUPPORTED_MESSAGE` 반환하도록 준비 | 지원하지 않는 message frame 처리 | `DECODE_FAILED` 반환, decoded type은 기록되지만 session 미호출 | unsupported message가 보고서에 남고 상태 전이는 발생하지 않음 |
 | TC-SUP-005 | FR-004 | sequence gap 검증 | `ESTABLISHED` 상태 session, 먼저 in-order frame 기록 | sequence가 건너뛴 frame 처리 | `RETRANSMISSION_PENDING` 전이 | supervisor가 gap을 감지해 retransmission 경로를 연다 |
 | TC-SUP-006 | SR-001 | stale sequence protocol error 검증 | `ESTABLISHED` 상태 session, 먼저 in-order frame 기록 | duplicate/stale frame 처리 | `SAFE_DISCONNECT` 전이 | supervisor가 stale sequence를 protocol error로 처리한다 |
 | TC-SUP-007 | FR-003 | poll receive handshake 경로 검증 | available channel, receive가 handshake frame 반환하도록 준비 | `poll_receive` 호출 | `ESTABLISHED` 전이, poll/receive count 증가 | runtime loop entry가 direct frame path와 동일 동작을 보장 |
-| TC-SUP-008 | SR-002 | poll receive channel down/no-frame 검증 | unavailable channel 또는 receive unavailable 준비 | `poll_receive` 호출 | `CHANNEL_DOWN` 또는 `NO_FRAME` 반환 | channel gate가 decode/session 호출보다 우선 적용 |
-| TC-SUP-009 | SR-002 | transport send failure budget 검증 | `ESTABLISHED` 상태 session 준비 | `SEND_FAILED` transport event를 연속 처리 | 첫 실패는 ignored, budget 도달 시 `SAFE_DISCONNECT` 전이 | transient failure와 persistent failure를 구분 |
-| TC-SUP-010 | FR-003 | transport send completed ignored 검증 | `INITIALIZED` 상태 session 준비 | `SEND_COMPLETED` transport event 처리 | `IGNORED_EVENT` 반환, 상태 유지 | state machine에 없는 transport feedback은 명시적으로 무시 |
+| TC-SUP-008 | SR-002 | poll receive channel down/no-frame 검증 | unavailable channel 또는 receive unavailable 준비 | `poll_receive` 호출 | `CHANNEL_DOWN` 또는 `NO_FRAME` 반환 | channel gate가 decode/session 호출보다 우선 적용되고 decision이 보고된다 |
+| TC-SUP-009 | SR-002 | transport send failure budget 검증 | `ESTABLISHED` 상태 session 준비 | `SEND_FAILED` transport event를 연속 처리 | 첫 실패는 ignored, budget 도달 시 `SAFE_DISCONNECT` 전이 | transient failure와 persistent failure를 구분하고 decision/effective event를 보고 |
+| TC-SUP-010 | FR-003 | transport send completed ignored 검증 | `INITIALIZED` 상태 session 준비 | `SEND_COMPLETED` transport event 처리 | `IGNORED_EVENT` 반환, 상태 유지 | state machine에 없는 transport feedback은 명시적으로 무시되고 decision이 남는다 |
 | TC-SUP-012 | SR-002 | send failure budget reset 검증 | `ESTABLISHED` 상태 session 준비 | send failure 후 정상 inbound frame 처리, 다시 send failure 처리 | budget이 reset되어 다시 ignored 처리 | 정상 traffic이 누적 send failure를 해소 |
-| TC-SUP-011 | SR-002 | timer expiry delegation 검증 | `CONNECTING` 상태 session 준비 | supervision timer expiry 처리 | `SAFE_DISCONNECT` 전이 | timer ingress가 supervisor 경계를 통해 session으로 전달 |
+| TC-SUP-011 | SR-002 | timer expiry delegation 검증 | `CONNECTING` 상태 session 준비 | supervision timer expiry 처리 | `SAFE_DISCONNECT` 전이 | timer ingress가 supervisor 경계를 통해 session으로 전달되고 session status가 보고된다 |

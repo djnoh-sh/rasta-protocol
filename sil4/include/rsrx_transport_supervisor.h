@@ -18,11 +18,30 @@ typedef enum
 	RSRX_SUPERVISOR_STATUS_IGNORED_EVENT
 } rsrx_supervisor_status_t;
 
+typedef enum
+{
+	RSRX_SUPERVISOR_DECISION_NONE = 0,
+	RSRX_SUPERVISOR_DECISION_DECODE_FAILED,
+	RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED,
+	RSRX_SUPERVISOR_DECISION_SESSION_REJECTED,
+	RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN,
+	RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE,
+	RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED,
+	RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED,
+	RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED,
+	RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED,
+	RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED,
+	RSRX_SUPERVISOR_DECISION_TIMER_DELEGATED
+} rsrx_supervisor_decision_t;
+
 typedef struct
 {
 	rsrx_transport_channel_state_t xLastChannelState;
 	rsrx_transport_frame_t xLastFrame;
 	rsrx_decoded_message_t xLastMessage;
+	rsrx_event_t eLastEffectiveEvent;
+	rsrx_status_t eLastSessionStatus;
+	rsrx_supervisor_decision_t eLastDecision;
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;
 	uint32_t uPollCount;

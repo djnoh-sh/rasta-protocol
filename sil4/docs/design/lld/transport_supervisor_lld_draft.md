@@ -33,7 +33,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_supervisor_status_t` | enum | supervisor 결과 코드 | decode/session 오류를 분리 |
-| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, session report 보유 | caller는 읽기 전용 사용 |
+| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, session report 보유 | caller는 읽기 전용 사용 |
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
@@ -52,7 +52,7 @@
   - sequence가 기대값보다 크면 `SEQUENCE_GAP_DETECTED`로 변환한다.
   - stale/duplicate sequence는 `PROTOCOL_ERROR`로 변환한다.
   - in-order frame만 protocol context에 기록한다.
-  - 마지막 decoded message와 session report를 저장한다.
+  - 마지막 decoded message, effective event, session status, supervisor decision, session report를 저장한다.
 - `rsrx_transport_supervisor_poll_receive`:
   - transport adapter를 통해 기본 channel 상태를 조회한다.
   - channel이 unavailable이면 `CHANNEL_DOWN`을 반환하고 receive는 수행하지 않는다.
@@ -66,9 +66,11 @@
   - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
   - `CHANNEL_DOWN`은 즉시 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.
+  - 각 경로는 report에 마지막 decision을 남긴다.
 - `rsrx_transport_supervisor_process_timer_expiry`:
   - supervisor는 timer source를 해석하지 않고 session timer API로 위임한다.
   - session이 `REJECTED`를 반환해도 supervisor 관점에서는 처리된 fail-safe 전이로 간주한다.
+  - 위임 결과는 report에 session status와 decision으로 남긴다.
 
 ## Verification Notes
 
@@ -88,6 +90,7 @@
   - decode 결과와 supervisor-level event override 일관성
   - protocol context 기록 시점과 sequence rule의 결정성
   - report 구조체의 마지막 값 보존 정책
+  - report의 effective event / decision / session status 일관성
   - query/receive 순서와 channel availability gate의 결정성
   - transport feedback event의 보수적 매핑 정책
   - transient send failure와 persistent send failure 구분 정책

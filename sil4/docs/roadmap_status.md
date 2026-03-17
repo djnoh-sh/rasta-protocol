@@ -73,7 +73,7 @@
 | IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | confirmation validation, sequence gap detail, recovery success semantics, retransmission confirm rules 구현 | richer edge cases 보강 |
-| IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, channel state gate, send result/timer delegation, send failure budget 구현 | richer runtime event model 반영 |
+| IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, channel state gate, send result/timer delegation, send failure budget, report observability 강화 구현 | integration-facing runtime event model 반영 |
 | IP-005 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
 ## Not-Started Items
@@ -102,7 +102,7 @@
 | Risk ID | Risk | Impact | Mitigation Direction |
 | --- | --- | --- | --- |
 | R-001 | detailed sequence validation 부분 미완 | retransmission confirm rules는 있으나 richer edge cases와 confirm semantics가 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
-| R-002 | transport supervisor 운영 루프 부분 미완 | send failure budget은 있으나 richer runtime feedback model과 retry semantics가 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
+| R-002 | transport supervisor 운영 루프 부분 미완 | report observability는 강화됐으나 runtime feedback policy와 retry semantics가 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy 미구현 | 실제 SIL4 과제 범위 대응 부족 | channel manager 별도 workstream 시작 |
 | R-004 | outbound application send가 direct-send 모델에 머묾 | 현재는 queue/backpressure/retry semantics가 없다 | queueing policy와 runtime feedback contract 설계 |
 | R-005 | 인증 증빙 부족 | 코드가 있어도 심사 대응 불가 | MISRA/static analysis/review records 병행 시작 |
