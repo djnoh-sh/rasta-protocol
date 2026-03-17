@@ -65,7 +65,7 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 ## Residual Limits
 
 - 현재 workflow는 Linux 단일 플랫폼만 사용한다.
-- PR annotation helper는 존재하지만, 실제 PR comment API 연동은 아직 없다.
+- PR annotation helper와 sticky PR comment publication은 존재하지만, delta-based noise control은 아직 없다.
 - `ctest` registration은 아직 primary path가 아니다.
 - MISRA 전용 analyzer는 CI에 포함되지 않는다.
 
@@ -74,4 +74,4 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 1. severity mapping 문서와 workflow fail policy 연결 강화
 2. second-tool analyzer 도입 여부 결정
 3. `ctest` 전환 조건 재검토
-4. PR comment API 연동 여부 결정
+4. delta-based PR annotation policy 보강

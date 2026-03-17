@@ -98,7 +98,7 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 1. `summary.env` 기반 helper script를 통해 PR annotation markdown을 생성한다.
 2. workflow는 `pull_request` 이벤트에서 helper를 실행하고 step summary에 그 결과를 게시한다.
-3. 실제 PR comment API 연동은 후속 단계로 남긴다.
+3. workflow는 GitHub API를 사용해 marker 기반 sticky PR comment를 create/update 한다.
 
 ## Minimal Implementation Path
 
@@ -112,16 +112,20 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 ### Step C
 
-- noise가 크면 `Blocker`와 `Review Required`만 annotation하고 `Informational`은 summary에만 남긴다.
+- GitHub API로 marker 기반 sticky comment를 create/update 한다.
+
+### Step D
+
+- noise가 크면 `Blocker`와 `Review Required`만 annotation하고 `Informational`은 summary에만 남기는 최적화 여부를 검토한다.
 
 ## Residual Limits
 
-- 현재는 baseline policy만 있고 실제 PR comment step은 없다.
+- sticky PR comment는 구현됐지만 noise threshold와 delta logic은 아직 없다.
 - exact vendor rule matrix가 없어 vendor-level annotation은 불가능하다.
 - trend comparison(이전 PR 대비 bucket 증가)은 아직 구현하지 않았다.
 
 ## Follow-up Actions
 
-1. 실제 PR comment API 연동 여부 결정
-2. `summary.env` 기반 decision logic regression 검증
-3. PR noise threshold 정의
+1. `summary.env` 기반 decision logic regression 검증
+2. PR noise threshold 정의
+3. delta-based increase 판단 규칙 정의
