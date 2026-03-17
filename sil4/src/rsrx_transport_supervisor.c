@@ -51,6 +51,7 @@ static rsrx_supervisor_decision_class_t eMapDecisionClass(
 
 		case RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE:
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED:
+		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED:
 		case RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED:
@@ -241,6 +242,25 @@ static uint32_t uRefreshAvailableChannelState(
 	pxContext->xLastReport.xLastChannelState = xChannelState;
 	vRefreshChannelSwitchTelemetry(pxContext);
 	return 1U;
+}
+
+static uint32_t uFrameTargetsActiveChannel(
+	const rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_transport_channel_id_t eChannelId)
+{
+	rsrx_transport_channel_id_t eActiveChannelId;
+
+	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
+		(pxContext->pxSession == (const rsrx_session_t *)0))
+	{
+		return 0U;
+	}
+
+	eActiveChannelId = rsrx_channel_manager_get_active_channel(
+		&pxContext->pxSession->xChannelManager);
+
+	return (uint32_t)((eActiveChannelId == RSRX_TRANSPORT_CHANNEL_INVALID) ||
+		(eActiveChannelId == eChannelId));
 }
 
 static uint32_t uSendFailureBudgetExceeded(
@@ -508,6 +528,17 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 
 		case RSRX_TRANSPORT_EVENT_SEND_FAILED:
+			if(uFrameTargetsActiveChannel(pxContext, pxFrame->eChannelId) == 0U)
+			{
+				pxContext->xLastReport.eLastBudgetUpdate =
+					RSRX_SUPERVISOR_BUDGET_UPDATE_NONE;
+				vRecordDecision(
+					pxContext,
+					RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED);
+				*ppxReport = &pxContext->xLastReport;
+				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+			}
+
 			if(uSendFailureBudgetExceeded(pxContext) == 0U)
 			{
 				vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED);

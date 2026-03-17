@@ -74,6 +74,7 @@
   - supervisor는 consecutive send failure budget을 내부적으로 유지한다.
   - `SEND_COMPLETED`와 정상 inbound frame 처리는 send failure budget을 reset한다.
   - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
+  - active channel이 아닌 channel에서 도착한 `SEND_FAILED`는 stale transport feedback으로 간주하고 budget을 변경하지 않은 채 ignored 처리한다.
   - report는 마지막 budget update 종류(`incremented`, `reset on inbound frame`, `reset on send completed`, `reset on channel down`, `reset on escalation`)와 누적 reset count를 보존한다.
   - `CHANNEL_DOWN`은 transport adapter를 통해 현재 active channel을 다시 조회한다.
   - down된 channel 외에 대체 channel이 available이면 failover를 사용하고 event를 ignored로 처리한다.
@@ -103,6 +104,7 @@
   - channel down failover ignored 검증
   - channel up refresh 검증
   - send failure budget reset 검증
+  - inactive channel send failure ignore 검증
   - timer expiry delegation 검증
 - 분석 포인트:
   - decode 결과와 supervisor-level event override 일관성
@@ -111,6 +113,7 @@
   - report의 effective event / decision / decision class / session status 일관성
   - cumulative decision counter의 단조 증가 보장
   - send failure budget update/reset telemetry의 일관성
+  - inactive/stale channel transport feedback의 보수적 무시 정책
   - report의 channel switch telemetry와 channel manager state 일관성
   - query/receive 순서와 channel availability gate의 결정성
   - transport feedback event의 보수적 매핑 정책

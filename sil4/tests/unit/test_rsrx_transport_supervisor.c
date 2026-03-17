@@ -757,6 +757,14 @@ static void vTestSupervisorChannelDownUsesFailover(void)
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 2U, "channel failover ignored count");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover switch occurred");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "inactive channel send failure ignored");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "inactive channel send failure budget unchanged");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "inactive channel send failure budget update none");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED, "inactive channel send failure decision");
+	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 3U, "inactive channel send failure ignored count");
 }
 
 static void vTestSupervisorChannelUpRefreshesSelection(void)
