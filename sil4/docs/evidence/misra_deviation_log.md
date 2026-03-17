@@ -17,9 +17,11 @@
 
 ## Deviation Entries
 
+현재 등록된 active deviation 없음.
+
 | Deviation ID | Rule ID | Severity | File | Location | Justification | Risk Assessment | Mitigation | Review ID | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DEV-001 | TBD | TBD |  |  |  |  |  |  | Draft |
+| 없음 | 없음 | 없음 | 없음 | 없음 | baseline execution에서 신규 편차 미관찰 | residual risk는 toolchain 미확정에 한정 | `RV-001` 후속 action으로 toolchain 확정 | `RV-001` | Closed |
 
 ## Status Definitions
 

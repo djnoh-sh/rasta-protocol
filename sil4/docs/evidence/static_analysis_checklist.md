@@ -33,8 +33,8 @@
 
 ## Sign-Off
 
-- Implementer:
-- Reviewer:
-- Date:
-- Report ID:
-- Result: Pass / Pass with Deviation / Rework Required
+- Implementer: `Codex`
+- Reviewer: `TBD`
+- Date: `2026-03-17`
+- Report ID: `SA-REP-001`
+- Result: `Pass`

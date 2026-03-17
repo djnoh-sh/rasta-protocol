@@ -20,9 +20,11 @@
 | EVID-SA-002 | `static_analysis_checklist.md` | Draft | 실행 체크리스트 |
 | EVID-SA-003 | `misra_deviation_log.md` | Draft | 편차 관리 로그 |
 | EVID-SA-004 | `templates/static_analysis_report_template.md` | Draft | 결과 보고서 템플릿 |
+| EVID-SA-005 | `reports/static_analysis_report_2026-03-17_sa1.md` | Draft | 첫 baseline 실행 결과 |
+| EVID-SA-006 | `../reviews/RV-001_static_analysis_baseline_review.md` | Draft | 첫 evidence review 기록 |
 
 ## Next Expected Additions
 
-1. 첫 분석 실행 결과 보고서
-2. 첫 review-linked deviation entry
-3. tool/version baseline 기록
+1. 전용 정적분석 도구 기반 보고서 1건
+2. tool/version baseline 확정 기록
+3. rule profile 확정 및 deviation linkage 갱신
