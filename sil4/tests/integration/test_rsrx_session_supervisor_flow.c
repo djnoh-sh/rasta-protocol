@@ -1476,6 +1476,160 @@ static void vTestIntegratedFailoverTransientRecoveryFlow(void)
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover transient integration final send secondary");
 }
 
+static void vTestIntegratedFailoverTransientSoakFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	rsrx_transport_channel_state_t xChannelState;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xChannelDownFrame;
+	rsrx_transport_frame_t xSendFailedFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondaryDataFrame1[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondaryDataFrame2[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0x11U, 0x22U, 0x33U, 0x44U, 0U, 0U, 0U, 0U };
+	static const uint8_t auSecondaryPayload1[2] = { 0xC3U, 0xC4U };
+	static const uint8_t auSecondaryPayload2[2] = { 0xD5U, 0xD6U };
+	size_t xHandshakeLength;
+	size_t xSecondaryDataLength1;
+	size_t xSecondaryDataLength2;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyConfig(&xConfig);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "failover soak integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "failover soak integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "failover soak integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auSecondaryPayload1,
+		sizeof(auSecondaryPayload1),
+		auSecondaryDataFrame1,
+		sizeof(auSecondaryDataFrame1),
+		&xSecondaryDataLength1);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auSecondaryPayload2,
+		sizeof(auSecondaryPayload2),
+		auSecondaryDataFrame2,
+		sizeof(auSecondaryDataFrame2),
+		&xSecondaryDataLength2);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "failover soak integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "failover soak integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "failover soak integration established");
+
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xChannelDownFrame.puPayload = (const uint8_t *)0;
+	xChannelDownFrame.xPayloadLength = 0U;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xSendFailedFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xSendFailedFrame.puPayload = (const uint8_t *)0;
+	xSendFailedFrame.xPayloadLength = 0U;
+	xSendFailedFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover soak integration first failover");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "failover soak integration first switch");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover soak integration first active secondary");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "failover soak integration first secondary send");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover soak integration first send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover soak integration first receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auSecondaryDataFrame1;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSecondaryDataLength1;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "failover soak integration first recovery");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "failover soak integration first send reset");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "failover soak integration first receive reset");
+
+	xTransport.uPrimaryAvailable = 1U;
+	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "failover soak integration recovery query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "failover soak integration recovery primary");
+	vAssertTrue(xSession.xChannelManager.uTotalSwitchCount == 2U, "failover soak integration primary recovery switch count");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover soak integration second failover");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "failover soak integration second failover switch count");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover soak integration second active secondary");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "failover soak integration second secondary send");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover soak integration second send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover soak integration second receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auSecondaryDataFrame2;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSecondaryDataLength2;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "failover soak integration second recovery");
+
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "failover soak integration final established");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 2U, "failover soak integration cumulative send reset");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "failover soak integration cumulative receive reset");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "failover soak integration final send budget clear");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "failover soak integration final receive budget clear");
+	vAssertTrue(xApplication.uCallCount == 2U, "failover soak integration application callbacks");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "failover soak integration no lifecycle callback");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "failover soak integration final send secondary");
+	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover soak integration final route secondary");
+}
+
 static void vTestIntegratedRedundancyFlapSoakFlow(void)
 {
 	rsrx_session_t xSession;
@@ -2767,6 +2921,7 @@ int main(void)
 	vTestIntegratedChannelFailoverFlow();
 	vTestIntegratedChannelRecoveryHoldoffFlow();
 	vTestIntegratedFailoverTransientRecoveryFlow();
+	vTestIntegratedFailoverTransientSoakFlow();
 	vTestIntegratedRedundancyFlapSoakFlow();
 	vTestIntegratedDecodeFailureFlow();
 	vTestIntegratedSendFailureBudgetFlow();
