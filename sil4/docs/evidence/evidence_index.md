@@ -20,6 +20,7 @@
 | EVID-SA-002 | `static_analysis_checklist.md` | Draft | 실행 체크리스트 |
 | EVID-SA-003 | `misra_deviation_log.md` | Draft | 편차 관리 로그 |
 | EVID-SA-004 | `templates/static_analysis_report_template.md` | Draft | 결과 보고서 템플릿 |
+| EVID-SA-018 | `../reviews/RV-017_static_analysis_report_template_review.md` | Draft | report template refinement review |
 | EVID-SA-005 | `reports/static_analysis_report_2026-03-17_sa1.md` | Draft | 첫 baseline 실행 결과 |
 | EVID-SA-006 | `../reviews/RV-001_static_analysis_baseline_review.md` | Draft | 첫 evidence review 기록 |
 | EVID-SA-007 | `tooling/static_analysis_toolchain_baseline.md` | Draft | baseline tool/version/profile 결정 |
@@ -55,9 +56,9 @@
 
 ## Next Expected Additions
 
-1. rule severity mapping 확정
+1. exact vendor rule matrix
 2. CI execution linkage
-3. exact vendor rule matrix
+3. PR annotation workflow helper
 4. queue/backpressure policy evidence 추가 확장
 5. MISRA subset severity 세분화
 6. second-tool rule taxonomy mapping

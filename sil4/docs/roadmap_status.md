@@ -11,8 +11,8 @@
 ## Summary
 
 - 현재 전체 진행률 추정: `85~88%`
-- 현재 단계: `PR reporting policy formalization 단계`
-- 다음 주력 단계: `static analysis report template refinement`, `exact vendor matrix sample`, `CI-linked evidence expansion`
+- 현재 단계: `static analysis template refinement 단계`
+- 다음 주력 단계: `exact vendor matrix sample`, `PR annotation helper`, `CI-linked evidence expansion`
 
 ## Overall Phase Status
 
@@ -22,7 +22,7 @@
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
-| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 88% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy 확보 |
+| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 90% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template 확보 |
 
 ## Workstream Status
 
@@ -92,6 +92,7 @@
 | M41 | vendor rule ID mapping draft 수립 | Completed | `EVID-CI-012`, `RV-014`, future commercial analyzer 확장 구조 고정 |
 | M42 | ctest registration strategy baseline 수립 | Completed | `EVID-CI-014`, `RV-015`, direct-run 유지와 ctest 전환 조건 고정 |
 | M43 | PR annotation strategy baseline 수립 | Completed | `EVID-CI-016`, `RV-016`, severity/subset 기반 PR reporting policy 고정 |
+| M44 | static analysis report template refinement 완료 | Completed | `EVID-SA-004`, `RV-017`, severity/subset/vendor-aware report section 확보 |
 
 ## In-Progress Items
 
@@ -132,7 +133,7 @@
 | R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 retry semantics와 runtime feedback policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 minimal bounded queue 모델에 머묾 | `outstanding 1 + deferred 1`과 overflow telemetry는 들어갔지만 deeper queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy는 생겼지만 exact vendor matrix와 workflow helper가 아직 없다 | exact vendor matrix, PR annotation helper |
+| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template은 생겼지만 exact vendor matrix와 workflow helper가 아직 없다 | exact vendor matrix, PR annotation helper |
 
 ## Recommended Next Order
 
