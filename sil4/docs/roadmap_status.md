@@ -10,9 +10,9 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `85~88%`
-- 현재 단계: `audit trail closeout 단계`
-- 다음 주력 단계: `first baseline fetch success evidence`, `first actual vendor evidence`, `evidence maintenance`
+- 현재 전체 진행률 추정: `90~92%`
+- 현재 단계: `P3/P4 protocol hardening 단계`
+- 다음 주력 단계: `detailed sequence validation`, `runtime fault integration`, `evidence maintenance`
 
 ## Overall Phase Status
 
@@ -20,8 +20,8 @@
 | --- | --- | --- | --- | --- | --- |
 | P1 | 계획/기준선 수립 | 규칙, 문서 구조, 요구사항/HLD/초기 추적성 확립 | Completed | 100% | 작업 규칙과 기본 산출물 체계 정착 |
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
-| P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
-| P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
+| P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 72% | timer ingress, outbound encode, protocol context edge case, repeated gap retransmission 경로까지 반영 |
+| P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 58% | mixed transient, failover/recovery/holdoff, channel-up flap reset, repeated gap integration까지 확보 |
 | P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 100% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch 구현, first actual vendor rule entry sample, audit trail closeout baseline 확보 |
 
 ## Workstream Status
@@ -111,7 +111,7 @@
 | --- | --- | --- | --- |
 | IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract, bounded `outstanding 1 + deferred 1` queue, outbound telemetry, overflow reject API/diagnostic correlation과 integration coverage, repeated reject streak telemetry, threshold-based escalation, escalation hit telemetry 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
-| IP-003 | Protocol context maturation | confirmation validation, invalid/regressing confirmation integration, initial zero sequence rejection integration, sequence gap detail, repeated gap retransmission integration, recovery success semantics, unconfirmed/stale retransmission rejection integration, retransmission confirm rules, duplicate inbound rejection 구현 | richer edge cases 보강 |
+| IP-003 | Protocol context maturation | confirmation validation, invalid/regressing confirmation integration, initial zero sequence rejection integration, sequence gap detail, repeated gap retransmission/recovery integration, recovery success semantics, unconfirmed/stale retransmission rejection integration, retransmission confirm rules, duplicate inbound rejection 구현 | richer edge cases 보강 |
 | IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, outstanding-send correlation, channel-scoped send failure budget, receive error budget/reset integration, mixed transient budget reset integration, channel-up refresh holdoff/flap-reset integration, failover transient recovery/soak integration, inactive-channel feedback filtering, decision telemetry, budget update/reset observability, deferred queue telemetry exposure 구현 및 integration 검증 진행 | integration-facing runtime event model 반영 |
 | IP-005 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
@@ -119,8 +119,8 @@
 
 | Item ID | Item | Why It Matters | Planned Entry Point |
 | --- | --- | --- | --- |
-| NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | supervisor와 protocol context를 decoded message detail과 결합 |
-| NS-002 | Transport Supervisor Completion | runtime feedback policy와 retry semantics 추가 필요 | channel-up refresh 이후 retry/channel event policy 확장 |
+| NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | retransmission confirm variants와 richer recovery/failure ordering 추가 |
+| NS-002 | Transport Supervisor Completion | runtime feedback policy와 retry semantics 추가 필요 | runtime fault ordering과 queue/backpressure policy 확장 |
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | richer hysteresis, flap suppression 세분화, switching audit 정책 확장 |
 | NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 richer redundancy와 longer-run 시나리오로 확장 |
 | NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | first workflow baseline fetch success evidence와 first actual vendor evidence set 확보 |
@@ -132,17 +132,17 @@
 | --- | --- | --- |
 | 설계 구조 | High | 모듈 경계와 책임 분리는 많이 안정됨 |
 | 단위 테스트 기반 | Medium | 핵심 skeleton coverage는 있으나 protocol complete 수준은 아님 |
-| 프로토콜 완성도 | Medium-Low | timer ingress와 outbound encode는 연결됐지만 detailed sequencing과 redundancy가 미완 |
-| 통합 가능성 | Medium | 주요 경계는 연결됐지만 end-to-end flow와 운영 루프는 미완 |
+| 프로토콜 완성도 | Medium | timer ingress, outbound encode, repeated gap/recovery 경로는 연결됐지만 richer sequencing과 redundancy는 미완 |
+| 통합 가능성 | Medium-High | 주요 경계와 다수의 fault-integration path는 연결됐지만 long-run과 일부 ordering 규칙은 미완 |
 | 인증 증빙 준비 | Low | 초안 중심이며 formal evidence는 거의 없음 |
 
 ## Current Risks
 
 | Risk ID | Risk | Impact | Mitigation Direction |
 | --- | --- | --- | --- |
-| R-001 | detailed sequence validation 부분 미완 | retransmission confirm rules는 있으나 richer edge cases와 confirm semantics가 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
-| R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 retry semantics와 runtime feedback policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
-| R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
+| R-001 | detailed sequence validation 부분 미완 | repeated gap/recovery는 반영됐지만 confirm ordering과 richer retransmission variants는 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
+| R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 runtime ordering과 retry policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
+| R-003 | redundancy policy 미완 | holdoff와 flap soak/refresh reset 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 minimal bounded queue 모델에 머묾 | `outstanding 1 + deferred 1`과 overflow telemetry는 들어갔지만 deeper queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
 | R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch, first actual vendor rule entry sample, audit trail closeout baseline, baseline-fetch success report template은 생겼지만 first workflow baseline fetch success evidence와 first actual vendor evidence set이 아직 없다 | first workflow baseline fetch success evidence 확보, first actual vendor evidence set 확보 |
 
