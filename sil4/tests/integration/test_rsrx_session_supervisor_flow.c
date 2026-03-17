@@ -106,6 +106,7 @@ static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_
 	return RSRX_TRANSPORT_STATUS_OK;
 }
 
+/* cppcheck-suppress constParameterCallback */
 static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
 {
 	const test_clock_context_t * pxContext = (const test_clock_context_t *)pvContext;
@@ -911,6 +912,7 @@ static void vTestIntegratedRedundancyFlapSoakFlow(void)
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy flap integration first held send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration first held send secondary");
 
+	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration flap reset event");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "redundancy flap integration no extra switch on flap");
@@ -924,6 +926,7 @@ static void vTestIntegratedRedundancyFlapSoakFlow(void)
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy flap integration second recovery send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy flap integration second recovery send primary");
 
+	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration third failover");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "redundancy flap integration third switch count");

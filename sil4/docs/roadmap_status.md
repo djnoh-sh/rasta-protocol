@@ -10,8 +10,8 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `81~84%`
-- 현재 단계: `static analysis follow-up cleanup 단계`
+- 현재 전체 진행률 추정: `82~85%`
+- 현재 단계: `static analysis baseline cleanup 완료 단계`
 - 다음 주력 단계: `richer redundancy hysteresis`, `transport supervisor completion`, `integration harness expansion`
 
 ## Overall Phase Status
@@ -78,6 +78,7 @@
 | M27 | first static analysis baseline report 기록 | Completed | SA-REP-001, RV-001, checklist sign-off, deviation log update |
 | M28 | static analysis toolchain baseline 확정 | Completed | gcc warning gate, cppcheck baseline, toolchain doc, reusable script, SA-REP-002 |
 | M29 | static analysis follow-up cleanup 1차 | Completed | targeted redundant assignment cleanup, SA-REP-003, RV-003 |
+| M30 | static analysis residual cleanup 완료 | Completed | targeted residual cleanup, SA-REP-004, RV-004 |
 
 ## In-Progress Items
 
@@ -118,7 +119,7 @@
 | R-002 | transport supervisor 운영 루프 부분 미완 | channel event semantics는 강화됐으나 runtime feedback policy와 retry semantics가 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 direct-send 모델에 머묾 | 현재는 queue/backpressure/retry semantics가 없다 | queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙 부족 | follow-up report까지 생겼지만 residual minor finding과 CI linkage가 아직 남아 있다 | residual cleanup, severity mapping, CI 연계 |
+| R-005 | 인증 증빙 부족 | targeted cleanup은 끝났지만 wider baseline style finding triage와 CI linkage가 아직 남아 있다 | severity mapping, wider triage, CI 연계 |
 
 ## Recommended Next Order
 
