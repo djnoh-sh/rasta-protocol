@@ -93,6 +93,10 @@
 3. first real vendor finding actual review
 4. first real vendor finding actual matrix/deviation entry
 
+runtime evidence template reference:
+
+- `reports/baseline_fetch_success_evidence_template.md`
+
 즉, closeout은 “문서/정책/샘플 기반의 초기 증빙 묶음 완결”을 뜻하고, 실제 운영 evidence까지 닫혔다는 뜻은 아니다.
 
 ## Exit Statement
