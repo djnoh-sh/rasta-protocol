@@ -55,7 +55,7 @@
   - in-order frame만 protocol context에 기록한다.
   - 마지막 decoded message, effective event, session status, supervisor decision, session report를 저장한다.
 - `rsrx_transport_supervisor_poll_receive`:
-  - transport adapter를 통해 기본 channel 상태를 조회한다.
+  - transport adapter를 통해 active channel 상태를 조회한다.
   - channel이 unavailable이면 `CHANNEL_DOWN`을 반환하고 receive는 수행하지 않는다.
   - channel이 available이면 frame 수신을 시도한다.
   - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
@@ -72,7 +72,9 @@
   - supervisor는 consecutive send failure budget을 내부적으로 유지한다.
   - `SEND_COMPLETED`와 정상 inbound frame 처리는 send failure budget을 reset한다.
   - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
-  - `CHANNEL_DOWN`은 즉시 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
+  - `CHANNEL_DOWN`은 transport adapter를 통해 현재 active channel을 다시 조회한다.
+  - down된 channel 외에 대체 channel이 available이면 failover를 사용하고 event를 ignored로 처리한다.
+  - 대체 channel이 없을 때만 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.
   - 각 경로는 report에 마지막 decision을 남긴다.
 - `rsrx_transport_supervisor_process_timer_expiry`:
@@ -93,6 +95,7 @@
   - bounded pump receive drain 검증
   - send failed -> protocol error 검증
   - send completed ignored 검증
+  - channel down failover ignored 검증
   - send failure budget reset 검증
   - timer expiry delegation 검증
 - 분석 포인트:

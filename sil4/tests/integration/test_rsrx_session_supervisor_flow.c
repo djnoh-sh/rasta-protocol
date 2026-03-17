@@ -15,7 +15,8 @@ typedef struct
 	uint32_t uSendCount;
 	uint32_t uReceiveCount;
 	uint32_t uQueryCount;
-	uint32_t uChannelAvailable;
+	uint32_t uPrimaryAvailable;
+	uint32_t uSecondaryAvailable;
 } test_transport_context_t;
 
 typedef struct
@@ -90,8 +91,15 @@ static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_
 
 	if(pxState != (rsrx_transport_channel_state_t *)0)
 	{
-		pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
-		pxState->uIsAvailable = pxContext->uChannelAvailable;
+		if(pxState->eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY)
+		{
+			pxState->uIsAvailable = pxContext->uSecondaryAvailable;
+		}
+		else
+		{
+			pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+			pxState->uIsAvailable = pxContext->uPrimaryAvailable;
+		}
 	}
 
 	pxContext->uQueryCount++;
@@ -239,6 +247,20 @@ static void vFillConfig(
 	pxConfig->pfLifecycleNotification = vLifecycleNotify;
 }
 
+static void vSetActiveStandbyConfig(
+	rsrx_session_config_t * pxConfig)
+{
+	pxConfig->xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	pxConfig->xChannelManagerConfig.uChannelCount = 2U;
+	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
+	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	pxConfig->xChannelManagerConfig.axChannels[1].uIsAvailable = 1U;
+	pxConfig->xChannelManagerConfig.axChannels[1].uPriority = 1U;
+}
+
 static void vTestIntegratedSessionSupervisorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -264,7 +286,8 @@ static void vTestIntegratedSessionSupervisorFlow(void)
 	size_t xHandshakeLength;
 	size_t xInboundDataLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -362,7 +385,8 @@ static void vTestIntegratedRetransmissionRecoveryFlow(void)
 	size_t xGapLength;
 	size_t xRecoveryLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -463,7 +487,8 @@ static void vTestIntegratedTimeoutFailSafeFlow(void)
 	static const uint8_t auFramePayload[8] = { 0U };
 	size_t xHandshakeLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -530,7 +555,8 @@ static void vTestIntegratedChannelDownFailSafeFlow(void)
 	static const uint8_t auFramePayload[8] = { 0U };
 	size_t xHandshakeLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -582,6 +608,119 @@ static void vTestIntegratedChannelDownFailSafeFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "channel down integration lifecycle callback");
 }
 
+static void vTestIntegratedChannelFailoverFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondaryDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	rsrx_transport_frame_t xChannelDownFrame;
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auSecondaryPayload[2] = { 0x66U, 0x67U };
+	static const uint8_t auOutboundPayload[2] = { 0x77U, 0x78U };
+	size_t xHandshakeLength;
+	size_t xSecondaryDataLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyConfig(&xConfig);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "channel failover integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel failover integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel failover integration session connect");
+	vAssertTrue(xTransport.uSendCount == 1U, "channel failover integration connect request sent");
+	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration initial primary send");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "channel failover integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "channel failover integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel failover integration established");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xChannelDownFrame.puPayload = (const uint8_t *)0;
+	xChannelDownFrame.xPayloadLength = 0U;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover integration channel down");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED, "channel failover integration decision");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration selected secondary");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel failover integration state retained");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel failover integration outbound send");
+	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration outbound on secondary");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auSecondaryPayload,
+		sizeof(auSecondaryPayload),
+		auSecondaryDataFrame,
+		sizeof(auSecondaryDataFrame),
+		&xSecondaryDataLength);
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	axFrames[0].puPayload = auSecondaryDataFrame;
+	axFrames[0].xPayloadLength = xSecondaryDataLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "channel failover integration secondary pump");
+	vAssertTrue(xApplication.uCallCount == 1U, "channel failover integration application callback");
+	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 2U, "channel failover integration inbound sequence");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration active channel retained");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "channel failover integration no lifecycle callback");
+}
+
 static void vTestIntegratedDecodeFailureFlow(void)
 {
 	rsrx_session_t xSession;
@@ -602,7 +741,8 @@ static void vTestIntegratedDecodeFailureFlow(void)
 	static const uint8_t auFramePayload[8] = { 0U };
 	size_t xHandshakeLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -679,7 +819,8 @@ static void vTestIntegratedSendFailureBudgetFlow(void)
 	static const uint8_t auFramePayload[8] = { 0U };
 	size_t xHandshakeLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -761,7 +902,8 @@ static void vTestIntegratedSendFailureBudgetResetFlow(void)
 	size_t xHandshakeLength;
 	size_t xDataLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -865,7 +1007,8 @@ static void vTestIntegratedPumpReceiveStabilityFlow(void)
 	size_t xFirstDataLength;
 	size_t xSecondDataLength;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -998,7 +1141,8 @@ static void vTestIntegratedBoundedSoakPumpFlow(void)
 	size_t xHandshakeLength;
 	uint32_t uIndex;
 
-	xTransport.uChannelAvailable = 1U;
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -1113,6 +1257,7 @@ int main(void)
 	vTestIntegratedRetransmissionRecoveryFlow();
 	vTestIntegratedTimeoutFailSafeFlow();
 	vTestIntegratedChannelDownFailSafeFlow();
+	vTestIntegratedChannelFailoverFlow();
 	vTestIntegratedDecodeFailureFlow();
 	vTestIntegratedSendFailureBudgetFlow();
 	vTestIntegratedSendFailureBudgetResetFlow();

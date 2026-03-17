@@ -85,6 +85,26 @@ static void vResetSendFailureBudget(
 	pxContext->xLastReport.uConsecutiveSendFailureCount = 0U;
 }
 
+static uint32_t uAlternativeChannelIsAvailable(
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_transport_channel_id_t eFailedChannelId)
+{
+	rsrx_transport_status_t eTransportStatus;
+	rsrx_transport_channel_state_t xChannelState;
+
+	eTransportStatus = rsrx_transport_adapter_query_channel(
+		&pxContext->pxSession->xTransportAdapter,
+		&xChannelState);
+	if((eTransportStatus != RSRX_TRANSPORT_STATUS_OK) ||
+		(xChannelState.uIsAvailable == 0U))
+	{
+		return 0U;
+	}
+
+	pxContext->xLastReport.xLastChannelState = xChannelState;
+	return (uint32_t)(xChannelState.eChannelId != eFailedChannelId);
+}
+
 static uint32_t uSendFailureBudgetExceeded(
 	rsrx_transport_supervisor_context_t * pxContext)
 {
@@ -357,6 +377,13 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 
 		case RSRX_TRANSPORT_EVENT_CHANNEL_DOWN:
 			vResetSendFailureBudget(pxContext);
+			if(uAlternativeChannelIsAvailable(pxContext, pxFrame->eChannelId) != 0U)
+			{
+				pxContext->xLastReport.eLastDecision =
+					RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED;
+				*ppxReport = &pxContext->xLastReport;
+				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+			}
 			pxContext->xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED;
 			return eProcessSessionEventInternal(
 				pxContext,
