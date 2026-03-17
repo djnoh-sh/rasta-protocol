@@ -38,8 +38,9 @@
 | TC-INT-010 | FR-003, SR-002 | channel failover integration 검증 | active-standby channel manager와 primary/secondary fake transport 준비 | handshake 후 `CHANNEL_DOWN(primary)` 처리, outbound send, secondary inbound data 처리 | failover 후 상태 유지, outbound send가 secondary로 전환되고 secondary inbound data가 처리됨 | supervisor decision, selected channel, outbound send channel, application callback, switch telemetry가 설계와 일치 |
 | TC-INT-011 | FR-003 | preferred recovery integration 검증 | `TC-INT-010` 이후 primary restored 상태 준비 | primary 복구 후 channel query와 outbound send 수행 | preferred primary channel로 복귀하고 primary로 send 수행 | selected channel과 send channel이 preferred recovery policy와 일치 |
 | TC-INT-012 | FR-003 | recovery holdoff integration 검증 | active-standby holdoff `2` config와 failover 완료 상태 준비 | primary 복구 후 query/send를 2회 수행 | 첫 회차는 secondary 유지, 두 번째 회차에서 primary 복귀 | holdoff 이전/이후의 selected channel, send channel, cumulative switch count가 설계와 일치 |
+| TC-INT-013 | FR-003, SR-002 | redundancy flap soak integration 검증 | active-standby holdoff `2` config, handshake 완료 상태, primary up/down 반복 준비 | `CHANNEL_DOWN(primary)`와 recovery query를 반복 수행 | flap 동안 holdoff가 매 회차 다시 적용되고 충분한 안정 관측 후에만 primary로 복귀 | repeated failover/recovery cycle 동안 selected channel, outbound send channel, cumulative switch count, state retention이 설계와 일치 |
 
 ## Notes
 
-- 현재 harness는 real codec과 fake transport를 결합한 happy-path, retransmission recovery, timeout fail-safe, channel-down fail-safe, channel failover, preferred recovery, recovery holdoff, decode failure, send failure budget, send failure budget reset, bounded pump stability, bounded soak smoke test까지 포함하며 redundancy switch telemetry도 함께 검증한다.
+- 현재 harness는 real codec과 fake transport를 결합한 happy-path, retransmission recovery, timeout fail-safe, channel-down fail-safe, channel failover, preferred recovery, recovery holdoff, redundancy flap soak, decode failure, send failure budget, send failure budget reset, bounded pump stability, bounded soak smoke test까지 포함하며 redundancy switch telemetry도 함께 검증한다.
 - long-run과 richer redundancy policy는 후속 integration 단계에서 확장한다.
