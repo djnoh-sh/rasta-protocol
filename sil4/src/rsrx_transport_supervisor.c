@@ -21,10 +21,12 @@ static void vResetSupervisorReport(
 	pxReport->eLastSessionStatus = RSRX_STATUS_OK;
 	pxReport->eLastDecision = RSRX_SUPERVISOR_DECISION_NONE;
 	pxReport->eLastDecisionClass = RSRX_SUPERVISOR_DECISION_CLASS_NONE;
+	pxReport->eLastBudgetUpdate = RSRX_SUPERVISOR_BUDGET_UPDATE_NONE;
 	pxReport->pxLastReport = (const rsrx_orchestrator_report_t *)0;
 	pxReport->uProcessedFrameCount = 0U;
 	pxReport->uPollCount = 0U;
 	pxReport->uConsecutiveSendFailureCount = 0U;
+	pxReport->uSendFailureBudgetResetCount = 0U;
 	pxReport->uAcceptedDecisionCount = 0U;
 	pxReport->uRejectedDecisionCount = 0U;
 	pxReport->uIgnoredDecisionCount = 0U;
@@ -182,9 +184,22 @@ static rsrx_supervisor_status_t eProcessSessionEventInternal(
 }
 
 static void vResetSendFailureBudget(
-	rsrx_transport_supervisor_context_t * pxContext)
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_supervisor_budget_update_t eBudgetUpdate)
 {
-	pxContext->xLastReport.uConsecutiveSendFailureCount = 0U;
+	if(pxContext->xLastReport.uConsecutiveSendFailureCount > 0U)
+	{
+		pxContext->xLastReport.uConsecutiveSendFailureCount = 0U;
+		if(pxContext->xLastReport.uSendFailureBudgetResetCount < UINT32_MAX)
+		{
+			pxContext->xLastReport.uSendFailureBudgetResetCount++;
+		}
+		pxContext->xLastReport.eLastBudgetUpdate = eBudgetUpdate;
+	}
+	else
+	{
+		pxContext->xLastReport.eLastBudgetUpdate = RSRX_SUPERVISOR_BUDGET_UPDATE_NONE;
+	}
 }
 
 static uint32_t uAlternativeChannelIsAvailable(
@@ -235,6 +250,8 @@ static uint32_t uSendFailureBudgetExceeded(
 	{
 		pxContext->xLastReport.uConsecutiveSendFailureCount++;
 	}
+	pxContext->xLastReport.eLastBudgetUpdate =
+		RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED;
 
 	return (uint32_t)(pxContext->xLastReport.uConsecutiveSendFailureCount >=
 		pxContext->uMaxConsecutiveSendFailures);
@@ -270,7 +287,9 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 			&pxContext->xLastReport.xLastMessage);
 	}
 
-	vResetSendFailureBudget(pxContext);
+	vResetSendFailureBudget(
+		pxContext,
+		RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_INBOUND_FRAME);
 
 	eSessionStatus = rsrx_session_process_event(
 		pxContext->pxSession,
@@ -481,7 +500,9 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 	switch(pxFrame->eEventType)
 	{
 		case RSRX_TRANSPORT_EVENT_SEND_COMPLETED:
-			vResetSendFailureBudget(pxContext);
+			vResetSendFailureBudget(
+				pxContext,
+				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_SEND_COMPLETED);
 			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED);
 			*ppxReport = &pxContext->xLastReport;
 			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
@@ -494,14 +515,18 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 			}
 
-			vResetSendFailureBudget(pxContext);
+			vResetSendFailureBudget(
+				pxContext,
+				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION);
 			return eProcessSessionEventInternal(
 				pxContext,
 				RSRX_EVENT_PROTOCOL_ERROR,
 				ppxReport);
 
 		case RSRX_TRANSPORT_EVENT_CHANNEL_DOWN:
-			vResetSendFailureBudget(pxContext);
+			vResetSendFailureBudget(
+				pxContext,
+				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_CHANNEL_DOWN);
 			if(uAlternativeChannelIsAvailable(pxContext, pxFrame->eChannelId) != 0U)
 			{
 				vRecordDecision(

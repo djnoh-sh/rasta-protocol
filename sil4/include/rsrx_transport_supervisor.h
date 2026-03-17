@@ -45,6 +45,16 @@ typedef enum
 	RSRX_SUPERVISOR_DECISION_CLASS_ERROR
 } rsrx_supervisor_decision_class_t;
 
+typedef enum
+{
+	RSRX_SUPERVISOR_BUDGET_UPDATE_NONE = 0,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_INBOUND_FRAME,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_SEND_COMPLETED,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_CHANNEL_DOWN,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION
+} rsrx_supervisor_budget_update_t;
+
 typedef struct
 {
 	rsrx_transport_channel_state_t xLastChannelState;
@@ -54,10 +64,12 @@ typedef struct
 	rsrx_status_t eLastSessionStatus;
 	rsrx_supervisor_decision_t eLastDecision;
 	rsrx_supervisor_decision_class_t eLastDecisionClass;
+	rsrx_supervisor_budget_update_t eLastBudgetUpdate;
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;
 	uint32_t uPollCount;
 	uint32_t uConsecutiveSendFailureCount;
+	uint32_t uSendFailureBudgetResetCount;
 	uint32_t uAcceptedDecisionCount;
 	uint32_t uRejectedDecisionCount;
 	uint32_t uIgnoredDecisionCount;

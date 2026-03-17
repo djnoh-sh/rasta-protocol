@@ -1091,6 +1091,7 @@ static void vTestIntegratedSendFailureBudgetFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failure integration first failure");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "send failure integration state retained after first");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "send failure integration budget count");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "send failure integration budget update");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED, "send failure integration budget decision");
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "send failure integration no lifecycle on first");
 
@@ -1099,6 +1100,8 @@ static void vTestIntegratedSendFailureBudgetFlow(void)
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "send failure integration reason");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_REJECTED, "send failure integration escalation decision");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "send failure integration budget reset");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION, "send failure integration escalation budget update");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "send failure integration reset count");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "send failure integration lifecycle on escalation");
 }
 
@@ -1183,6 +1186,7 @@ static void vTestIntegratedSendFailureBudgetResetFlow(void)
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failure reset integration first failure");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "send failure reset integration budget count one");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "send failure reset integration incremented");
 
 	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransport.axReceiveFrames[0].puPayload = auDataFrame;
@@ -1193,11 +1197,14 @@ static void vTestIntegratedSendFailureBudgetResetFlow(void)
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "send failure reset integration inbound success");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "send failure reset integration budget cleared");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_INBOUND_FRAME, "send failure reset integration inbound reset");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "send failure reset integration reset count");
 	vAssertTrue(xApplication.uCallCount == 1U, "send failure reset integration application callback");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failure reset integration failure after success");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "send failure reset integration state retained");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "send failure reset integration budget restarted");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "send failure reset integration restarted increment");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED, "send failure reset integration budgeted again");
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "send failure reset integration no lifecycle callback");
 }

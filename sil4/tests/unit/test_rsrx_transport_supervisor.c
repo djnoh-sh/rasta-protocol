@@ -739,15 +739,22 @@ static void vTestSupervisorChannelDownUsesFailover(void)
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.puPayload = auPayload;
 	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover budget priming");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "channel failover budget primed");
+
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover ignored");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel failover state retained");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover selected secondary");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "channel failover selected available");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "channel failover budget reset");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_CHANNEL_DOWN, "channel failover budget update");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "channel failover budget reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED, "channel failover decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "channel failover class");
-	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 1U, "channel failover ignored count");
+	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 2U, "channel failover ignored count");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover switch occurred");
 }
@@ -836,6 +843,8 @@ static void vTestSupervisorTransportSendFailed(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failed first status");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "send failed first keeps state");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "send failed first budget");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "send failed first budget update");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 0U, "send failed first reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED, "send failed first decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "send failed first class");
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 1U, "send failed first ignored count");
@@ -843,6 +852,8 @@ static void vTestSupervisorTransportSendFailed(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "send failed safe disconnect");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "send failed reason");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "send failed budget reset");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION, "send failed escalation budget update");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "send failed escalation reset count");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "send failed effective event");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "send failed session status");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_REJECTED, "send failed escalation decision");
@@ -882,6 +893,8 @@ static void vTestSupervisorTransportSendCompletedIgnored(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send complete ignored");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INITIALIZED, "send complete leaves state");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "send complete budget reset");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "send complete no budget change");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 0U, "send complete reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED, "send complete decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "send complete class");
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 1U, "send complete ignored count");

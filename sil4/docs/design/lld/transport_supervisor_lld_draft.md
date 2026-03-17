@@ -33,7 +33,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_supervisor_status_t` | enum | supervisor 결과 코드 | decode/session 오류를 분리 |
-| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, session report, channel switch telemetry 보유 | caller는 읽기 전용 사용 |
+| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, session report, channel switch telemetry 보유 | caller는 읽기 전용 사용 |
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
@@ -74,6 +74,7 @@
   - supervisor는 consecutive send failure budget을 내부적으로 유지한다.
   - `SEND_COMPLETED`와 정상 inbound frame 처리는 send failure budget을 reset한다.
   - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
+  - report는 마지막 budget update 종류(`incremented`, `reset on inbound frame`, `reset on send completed`, `reset on channel down`, `reset on escalation`)와 누적 reset count를 보존한다.
   - `CHANNEL_DOWN`은 transport adapter를 통해 현재 active channel을 다시 조회한다.
   - down된 channel 외에 대체 channel이 available이면 failover를 사용하고 event를 ignored로 처리한다.
   - 대체 channel이 없을 때만 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
@@ -109,6 +110,7 @@
   - report 구조체의 마지막 값 보존 정책
   - report의 effective event / decision / decision class / session status 일관성
   - cumulative decision counter의 단조 증가 보장
+  - send failure budget update/reset telemetry의 일관성
   - report의 channel switch telemetry와 channel manager state 일관성
   - query/receive 순서와 channel availability gate의 결정성
   - transport feedback event의 보수적 매핑 정책

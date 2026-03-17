@@ -88,7 +88,7 @@
 | IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | confirmation validation, sequence gap detail, recovery success semantics, retransmission confirm rules 구현 | richer edge cases 보강 |
-| IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, send failure budget, report observability 강화 구현 | integration-facing runtime event model 반영 |
+| IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, send failure budget, decision telemetry, budget update/reset observability 강화 구현 | integration-facing runtime event model 반영 |
 | IP-005 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
 ## Not-Started Items
