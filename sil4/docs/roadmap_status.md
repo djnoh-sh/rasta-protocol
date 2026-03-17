@@ -85,7 +85,7 @@
 
 | Item ID | Item | Current State | Exit Criteria |
 | --- | --- | --- | --- |
-| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract, bounded `outstanding 1 + deferred 1` queue, outbound telemetry, overflow reject API/diagnostic correlation, repeated reject streak telemetry, threshold-based escalation, escalation hit telemetry 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
+| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract, bounded `outstanding 1 + deferred 1` queue, outbound telemetry, overflow reject API/diagnostic correlation과 integration coverage, repeated reject streak telemetry, threshold-based escalation, escalation hit telemetry 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | confirmation validation, sequence gap detail, recovery success semantics, retransmission confirm rules 구현 | richer edge cases 보강 |
 | IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, outstanding-send correlation, channel-scoped send failure budget, inactive-channel feedback filtering, decision telemetry, budget update/reset observability, deferred queue telemetry exposure 구현 및 integration 검증 진행 | integration-facing runtime event model 반영 |

@@ -45,6 +45,7 @@ typedef struct
 typedef struct
 {
 	uint32_t uCallCount;
+	rsrx_orchestrator_report_t xLastReport;
 } test_counter_t;
 
 static void vAssertTrue(int iCondition, const char * pcMessage)
@@ -144,17 +145,23 @@ static void vApplicationDataNotify(
 static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport)
 {
 	test_counter_t * pxContext = (test_counter_t *)pvContext;
-	(void)pxReport;
 	pxContext->uCallCount++;
+	if(pxReport != (const rsrx_orchestrator_report_t *)0)
+	{
+		pxContext->xLastReport = *pxReport;
+	}
 }
 
 static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport, rsrx_action_t eAction, uint32_t uActionIndex)
 {
 	test_counter_t * pxContext = (test_counter_t *)pvContext;
-	(void)pxReport;
 	(void)eAction;
 	(void)uActionIndex;
 	pxContext->uCallCount++;
+	if(pxReport != (const rsrx_orchestrator_report_t *)0)
+	{
+		pxContext->xLastReport = *pxReport;
+	}
 }
 
 static void vSetReceiveScript(
@@ -460,6 +467,95 @@ static void vTestIntegratedDeferredQueueTelemetryFlow(void)
 	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 1U, "queue telemetry integration report queued");
 	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 1U, "queue telemetry integration report dispatched");
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 0U, "queue telemetry integration report no overflow");
+}
+
+static void vTestIntegratedQueueOverflowRejectFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auOutboundPayload[2] = { 0xD1U, 0xD2U };
+	size_t xHandshakeLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "queue overflow integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue overflow integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue overflow integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "queue overflow integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "queue overflow integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "queue overflow integration established");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue overflow integration first send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue overflow integration deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "queue overflow integration overflow reject");
+
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue overflow integration telemetry available");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "queue overflow integration queued once");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "queue overflow integration overflow count");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "queue overflow integration busy reject count");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "queue overflow integration busy streak");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 0U, "queue overflow integration no escalation");
+	vAssertTrue(xDiagnostics.uCallCount >= 1U, "queue overflow integration diagnostics called");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "queue overflow integration warning diagnostic");
+	vAssertTrue(xDiagnostics.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_WARNING, "queue overflow integration warning severity");
+	vAssertTrue(xApiCounter.uCallCount >= 1U, "queue overflow integration api callback");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "queue overflow integration api diagnostic");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "queue overflow integration api reason");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eStatus == RSRX_STATUS_REJECTED, "queue overflow integration api status");
+	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 0U, "queue overflow integration supervisor unchanged before feedback");
 }
 
 static void vTestIntegratedRetransmissionRecoveryFlow(void)
@@ -1613,6 +1709,7 @@ int main(void)
 {
 	vTestIntegratedSessionSupervisorFlow();
 	vTestIntegratedDeferredQueueTelemetryFlow();
+	vTestIntegratedQueueOverflowRejectFlow();
 	vTestIntegratedRetransmissionRecoveryFlow();
 	vTestIntegratedTimeoutFailSafeFlow();
 	vTestIntegratedChannelDownFailSafeFlow();
