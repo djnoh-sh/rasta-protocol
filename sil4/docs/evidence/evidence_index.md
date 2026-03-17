@@ -39,6 +39,8 @@
 | EVID-CI-004 | `../reviews/RV-008_severity_mapping_review.md` | Draft | severity mapping safety review |
 | EVID-CI-005 | `misra_subset_severity.md` | Draft | MISRA subset severity baseline |
 | EVID-CI-006 | `../reviews/RV-009_misra_subset_severity_review.md` | Draft | MISRA subset severity safety review |
+| EVID-CI-007 | `tool_specific_misra_mapping.md` | Draft | tool-specific MISRA subset mapping baseline |
+| EVID-CI-008 | `../reviews/RV-010_tool_specific_misra_mapping_review.md` | Draft | tool-specific MISRA mapping safety review |
 
 ## Next Expected Additions
 
@@ -47,4 +49,5 @@
 3. second-tool baseline 검토
 4. queue/backpressure policy evidence 추가 확장
 5. MISRA subset severity 세분화
-6. tool-specific MISRA rule ID mapping
+6. second-tool rule taxonomy mapping
+7. CI subset bucket summary

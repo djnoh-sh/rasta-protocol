@@ -89,6 +89,7 @@
 
 세부 tool/version/profile은 `tooling/static_analysis_toolchain_baseline.md`를 기준으로 관리한다.
 severity 해석 기준은 `severity_mapping.md`를 기준으로 관리한다.
+tool-specific subset mapping 기준은 `tool_specific_misra_mapping.md`를 기준으로 관리한다.
 
 후속 단계에서 아래를 추가 확정한다.
 
@@ -136,6 +137,6 @@ severity 해석 기준은 `severity_mapping.md`를 기준으로 관리한다.
 
 | OI ID | Description | Owner | Target |
 | --- | --- | --- | --- |
-| OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | Partially closed by `EVID-CI-003`, MISRA subset 세분화 잔여 |
+| OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | Partially closed by `EVID-CI-003`, `EVID-CI-005`, tool-specific mapping과 second-tool linkage 잔여 |
 | OI-SA-002 | CI에서의 자동 실행 정책 확정 | Project Team | Closed by `EVID-CI-001` baseline |
 | OI-SA-003 | `cppcheck` baseline finding cleanup 및 follow-up report 생성 | Project Team | SA-2 이전 |
