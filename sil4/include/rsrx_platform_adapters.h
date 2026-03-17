@@ -17,6 +17,8 @@ typedef struct
 	uint32_t uBusyRejectedSendCount;
 	uint32_t uConsecutiveBusyRejectedSendCount;
 	uint32_t uMaxConsecutiveBusyRejectedSendCount;
+	uint32_t uBusyRejectEscalationCount;
+	uint32_t uLastBusyRejectEscalated;
 	uint32_t uClearOnInboundCount;
 	uint32_t uClearOnFeedbackCount;
 	uint32_t uClearManualCount;
@@ -97,6 +99,9 @@ void rsrx_transport_adapter_clear_outstanding_send_on_feedback(
 
 const rsrx_outbound_send_telemetry_t * rsrx_transport_adapter_get_outbound_telemetry(
 	const rsrx_transport_adapter_context_t * pxContext);
+
+void rsrx_transport_adapter_note_busy_reject_escalation(
+	rsrx_transport_adapter_context_t * pxContext);
 
 void rsrx_transport_adapter_clear_retransmission_context(
 	rsrx_transport_adapter_context_t * pxContext);

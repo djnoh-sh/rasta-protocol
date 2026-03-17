@@ -503,6 +503,8 @@ static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy reject threshold first diagnostic warning");
 	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy reject threshold first report warning");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy reject threshold streak one");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 0U, "busy reject threshold escalation count before threshold");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy reject threshold escalation latch before threshold");
 
 	vAssertTrue(
 		rsrx_session_send_application_data(
@@ -514,6 +516,8 @@ static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 	vAssertTrue(xDiagnostics.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_ERROR, "busy reject threshold second severity error");
 	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_ERROR_INTERFACE, "busy reject threshold second report error");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy reject threshold streak two");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy reject threshold escalation count after threshold");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy reject threshold escalation latch after threshold");
 }
 
 static void vTestSessionRetransmissionPath(void)

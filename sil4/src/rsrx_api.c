@@ -114,6 +114,11 @@ static void vNotifyDirectReject(
 	}
 
 	vSetDirectReport(pxSession, RSRX_STATUS_REJECTED, eReason, eDiagnostic);
+	if(eDiagnostic == RSRX_DIAG_ERROR_INTERFACE)
+	{
+		rsrx_transport_adapter_note_busy_reject_escalation(
+			&pxSession->xTransportAdapter);
+	}
 	vWriteDirectDiagnostic(pxSession);
 	if(pxSession->pfApiNotification != (rsrx_api_notification_fn)0)
 	{

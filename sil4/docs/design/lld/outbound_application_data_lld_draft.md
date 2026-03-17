@@ -44,7 +44,7 @@
 | `rsrx_session_get_outbound_telemetry` | function | outbound send accept/reject/clear telemetry 조회 | read-only view |
 | `rsrx_transport_adapter_send_application_data` | function | payload를 `DATA` encode/send로 변환 | null payload + nonzero length 금지, outstanding send 존재 시 busy reject |
 | `rsrx_transport_adapter_get_outbound_telemetry` | function | adapter outbound telemetry 조회 | read-only view |
-| `rsrx_outbound_send_telemetry_t` | struct | last send status, accepted count, busy reject count, consecutive/max busy reject streak, clear source count 보유 | cumulative counter는 reset 전까지 유지 |
+| `rsrx_outbound_send_telemetry_t` | struct | last send status, accepted count, busy reject count, consecutive/max busy reject streak, escalation count/latch, clear source count 보유 | cumulative counter는 reset 전까지 유지 |
 | `uBusyRejectErrorThreshold` | config field | repeated busy reject가 warning에서 error diagnostic으로 승격되는 임계치 | `0`이면 escalation 비활성화 |
 | `RSRX_REASON_APPLICATION_DATA_REQUESTED` | reason code | outbound application data 전송 이유 | transport request와 codec header에 기록 |
 
@@ -68,10 +68,11 @@
   - successful direct-send마다 `uAcceptedSendCount`를 증가시킨다.
   - outstanding send 존재로 거부되면 `uBusyRejectedSendCount`를 증가시키고 `eLastSendStatus=UNAVAILABLE`을 기록한다.
   - busy reject가 연속되면 `uConsecutiveBusyRejectedSendCount`를 증가시키고, `uMaxConsecutiveBusyRejectedSendCount`를 갱신한다.
+  - threshold escalation이 발생하면 `uBusyRejectEscalationCount`를 증가시키고 `uLastBusyRejectEscalated=1`을 기록한다.
   - valid inbound message로 outstanding가 해제되면 `uClearOnInboundCount`를 증가시킨다.
   - correlated transport feedback로 outstanding가 해제되면 `uClearOnFeedbackCount`를 증가시킨다.
   - explicit/manual clear는 `uClearManualCount`를 증가시킨다.
-  - successful send 또는 clear가 발생하면 current busy reject streak를 `0`으로 reset한다.
+  - successful send 또는 clear가 발생하면 current busy reject streak를 `0`으로 reset하고 escalation latch를 내린다.
 
 ## Constraints
 
@@ -92,6 +93,7 @@
   - accepted/busy reject/clear source telemetry 누적 검증
   - repeated busy reject streak와 reset/max 유지 검증
   - busy reject threshold 도달 시 warning -> error diagnostic 승격 검증
+  - escalation count/latch telemetry 갱신 검증
   - `INITIALIZED` 또는 `CONNECTING` 상태 send 거부
   - null payload + nonzero length 거부
   - encoded frame이 `DATA`/`APPLICATION_DATA_REQUESTED`/expected sequence를 포함하는지 검증

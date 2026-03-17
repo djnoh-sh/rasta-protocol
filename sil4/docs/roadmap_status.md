@@ -85,7 +85,7 @@
 
 | Item ID | Item | Current State | Exit Criteria |
 | --- | --- | --- | --- |
-| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract, single outstanding send guard, outbound telemetry, busy reject API/diagnostic correlation, repeated busy reject streak telemetry, threshold-based escalation 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
+| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract, single outstanding send guard, outbound telemetry, busy reject API/diagnostic correlation, repeated busy reject streak telemetry, threshold-based escalation, escalation hit telemetry 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | confirmation validation, sequence gap detail, recovery success semantics, retransmission confirm rules 구현 | richer edge cases 보강 |
 | IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, outstanding-send correlation, channel-scoped send failure budget, inactive-channel feedback filtering, decision telemetry, budget update/reset observability 강화 구현 | integration-facing runtime event model 반영 |
@@ -119,7 +119,7 @@
 | R-001 | detailed sequence validation 부분 미완 | retransmission confirm rules는 있으나 richer edge cases와 confirm semantics가 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
 | R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 retry semantics와 runtime feedback policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
-| R-004 | outbound application send가 direct-send 모델에 머묾 | single outstanding send guard, accept/reject telemetry, busy reject correlation, repeated reject streak telemetry, threshold escalation은 들어갔지만 queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
+| R-004 | outbound application send가 direct-send 모델에 머묾 | single outstanding send guard, accept/reject telemetry, busy reject correlation, repeated reject streak telemetry, threshold escalation, escalation hit telemetry는 들어갔지만 queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
 | R-005 | 인증 증빙 자동화 부족 | baseline cleanup은 끝났지만 severity mapping formalization과 CI linkage가 아직 없다 | CI 연계, severity 기준 문서화, second-tool baseline 검토 |
 
 ## Recommended Next Order

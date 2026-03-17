@@ -114,6 +114,7 @@ static void vClearOutstandingSend(
 		}
 	}
 
+	pxContext->xOutboundTelemetry.uLastBusyRejectEscalated = 0U;
 	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 	pxContext->uHasOutstandingSend = 0U;
 	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
@@ -272,6 +273,8 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->xOutboundTelemetry.uBusyRejectedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uMaxConsecutiveBusyRejectedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uBusyRejectEscalationCount = 0U;
+	pxContext->xOutboundTelemetry.uLastBusyRejectEscalated = 0U;
 	pxContext->xOutboundTelemetry.uClearOnInboundCount = 0U;
 	pxContext->xOutboundTelemetry.uClearOnFeedbackCount = 0U;
 	pxContext->xOutboundTelemetry.uClearManualCount = 0U;
@@ -461,6 +464,18 @@ const rsrx_outbound_send_telemetry_t * rsrx_transport_adapter_get_outbound_telem
 	}
 
 	return &pxContext->xOutboundTelemetry;
+}
+
+void rsrx_transport_adapter_note_busy_reject_escalation(
+	rsrx_transport_adapter_context_t * pxContext)
+{
+	if(pxContext == (rsrx_transport_adapter_context_t *)0)
+	{
+		return;
+	}
+
+	pxContext->xOutboundTelemetry.uBusyRejectEscalationCount++;
+	pxContext->xOutboundTelemetry.uLastBusyRejectEscalated = 1U;
 }
 
 void rsrx_transport_adapter_clear_retransmission_context(

@@ -552,6 +552,43 @@ static void vTestPreferredRecoveryHoldoffSelection(void)
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff second recovery send primary");
 }
 
+static void vTestBusyRejectEscalationTelemetry(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	static const uint8_t auFramePayload[2] = { 0x55U, 0xAAU };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject escalation telemetry init");
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 0U, "busy reject escalation count initial");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy reject escalation latch initial");
+
+	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy reject escalation count increment");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy reject escalation latch set");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy reject escalation latch reset on clear");
+}
+
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
@@ -559,6 +596,7 @@ int main(void)
 	vTestApplicationDataSend();
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestPreferredRecoveryHoldoffSelection();
+	vTestBusyRejectEscalationTelemetry();
 
 	(void)printf("rsrx_platform_adapters_test: all tests passed\n");
 
