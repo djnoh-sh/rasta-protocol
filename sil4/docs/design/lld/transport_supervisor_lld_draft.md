@@ -38,6 +38,7 @@
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
 | `rsrx_transport_supervisor_poll_receive` | function | channel query 후 frame 수신 polling 수행 | runtime loop 진입점 |
+| `rsrx_transport_supervisor_pump_receive` | function | bounded polling loop를 supervisor 내부에서 수행 | integration-facing drain entry |
 | `rsrx_transport_supervisor_process_transport_event` | function | send/channel transport event 처리 | outbound/runtime feedback 경계 |
 | `rsrx_transport_supervisor_process_timer_expiry` | function | timer expiry를 session으로 위임 | supervisor-level timer ingress |
 
@@ -60,6 +61,13 @@
   - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
   - `FRAME_RECEIVED` event인 경우에만 `process_frame` 경로로 위임한다.
   - poll count와 마지막 channel state를 report에 남긴다.
+- `rsrx_transport_supervisor_pump_receive`:
+  - 최대 `uMaxPolls`만큼 `poll_receive`를 반복한다.
+  - `OK`는 계속 진행한다.
+  - `NO_FRAME`는 종료 조건으로 사용한다.
+  - 이미 하나 이상의 frame을 처리한 뒤 `NO_FRAME`를 만나면 전체 결과는 `OK`로 정규화한다.
+  - `CHANNEL_DOWN`, `RECEIVE_ERROR`, `DECODE_FAILED`, `SESSION_ERROR`는 즉시 반환한다.
+  - 마지막 pump iteration 수와 이번 pump에서 처리한 frame 수를 report에 남긴다.
 - `rsrx_transport_supervisor_process_transport_event`:
   - supervisor는 consecutive send failure budget을 내부적으로 유지한다.
   - `SEND_COMPLETED`와 정상 inbound frame 처리는 send failure budget을 reset한다.
@@ -82,6 +90,7 @@
   - stale sequence -> protocol error fail-safe 검증
   - poll receive handshake 경로 검증
   - poll receive channel down/no-frame 경로 검증
+  - bounded pump receive drain 검증
   - send failed -> protocol error 검증
   - send completed ignored 검증
   - send failure budget reset 검증

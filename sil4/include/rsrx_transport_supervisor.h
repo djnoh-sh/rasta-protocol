@@ -46,6 +46,8 @@ typedef struct
 	uint32_t uProcessedFrameCount;
 	uint32_t uPollCount;
 	uint32_t uConsecutiveSendFailureCount;
+	uint32_t uLastPumpIterationCount;
+	uint32_t uLastPumpProcessedFrameCount;
 } rsrx_transport_supervisor_report_t;
 
 typedef struct
@@ -69,6 +71,11 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 
 rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_pump_receive(
+	rsrx_transport_supervisor_context_t * pxContext,
+	uint32_t uMaxPolls,
 	const rsrx_transport_supervisor_report_t ** ppxReport);
 
 rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(

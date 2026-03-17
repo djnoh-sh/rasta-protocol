@@ -15,6 +15,10 @@ typedef struct
 	rsrx_transport_frame_t xNextReceiveFrame;
 	rsrx_transport_status_t eReceiveStatus;
 	rsrx_transport_status_t eQueryStatus;
+	rsrx_transport_frame_t axReceiveFrames[4];
+	rsrx_transport_status_t aeReceiveStatuses[4];
+	uint32_t uReceiveScriptCount;
+	uint32_t uReceiveScriptIndex;
 	uint32_t uChannelAvailable;
 	uint32_t uSendCount;
 	uint32_t uReceiveCount;
@@ -44,6 +48,10 @@ typedef struct
 {
 	rsrx_codec_status_t eStatus;
 	rsrx_decoded_message_t xMessage;
+	rsrx_codec_status_t aeStatuses[4];
+	rsrx_decoded_message_t axMessages[4];
+	uint32_t uScriptCount;
+	uint32_t uScriptIndex;
 	uint32_t uCallCount;
 } test_codec_context_t;
 
@@ -100,6 +108,13 @@ static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transpor
 	}
 
 	pxContext->uReceiveCount++;
+	if(pxContext->uReceiveScriptIndex < pxContext->uReceiveScriptCount)
+	{
+		*pxFrame = pxContext->axReceiveFrames[pxContext->uReceiveScriptIndex];
+		pxContext->uReceiveScriptIndex++;
+		return pxContext->aeReceiveStatuses[pxContext->uReceiveScriptIndex - 1U];
+	}
+
 	*pxFrame = pxContext->xNextReceiveFrame;
 	return pxContext->eReceiveStatus;
 }
@@ -160,12 +175,31 @@ static void vSetCodecBehavior(
 {
 	g_xCodecContext.eStatus = eStatus;
 	g_xCodecContext.uCallCount = 0U;
+	g_xCodecContext.uScriptCount = 0U;
+	g_xCodecContext.uScriptIndex = 0U;
 	g_xCodecContext.xMessage.eMessageType = eMessageType;
 	g_xCodecContext.xMessage.eSuggestedEvent = eSuggestedEvent;
 	g_xCodecContext.xMessage.eReason = eReason;
 	g_xCodecContext.xMessage.uSequenceNumber = uSequenceNumber;
 	g_xCodecContext.xMessage.uConfirmationNumber = uConfirmationNumber;
 	g_xCodecContext.xMessage.xPayloadLength = 0U;
+}
+
+static void vSetCodecScript(
+	const rsrx_codec_status_t * peStatuses,
+	const rsrx_decoded_message_t * pxMessages,
+	uint32_t uScriptCount)
+{
+	uint32_t uIndex;
+
+	g_xCodecContext.uCallCount = 0U;
+	g_xCodecContext.uScriptCount = uScriptCount;
+	g_xCodecContext.uScriptIndex = 0U;
+	for(uIndex = 0U; uIndex < uScriptCount; ++uIndex)
+	{
+		g_xCodecContext.aeStatuses[uIndex] = peStatuses[uIndex];
+		g_xCodecContext.axMessages[uIndex] = pxMessages[uIndex];
+	}
 }
 
 static rsrx_codec_status_t eDecodeFrame(const rsrx_transport_frame_t * pxFrame, rsrx_decoded_message_t * pxMessage)
@@ -177,6 +211,14 @@ static rsrx_codec_status_t eDecodeFrame(const rsrx_transport_frame_t * pxFrame, 
 	}
 
 	g_xCodecContext.uCallCount++;
+	if(g_xCodecContext.uScriptIndex < g_xCodecContext.uScriptCount)
+	{
+		*pxMessage = g_xCodecContext.axMessages[g_xCodecContext.uScriptIndex];
+		g_xCodecContext.uScriptIndex++;
+		pxMessage->xPayloadLength = pxFrame->xPayloadLength;
+		return g_xCodecContext.aeStatuses[g_xCodecContext.uScriptIndex - 1U];
+	}
+
 	*pxMessage = g_xCodecContext.xMessage;
 	pxMessage->xPayloadLength = pxFrame->xPayloadLength;
 	return g_xCodecContext.eStatus;
@@ -233,10 +275,29 @@ static void vInitTransportContext(
 	pxTransport->xNextReceiveFrame.eEventType = eEventType;
 	pxTransport->eReceiveStatus = RSRX_TRANSPORT_STATUS_OK;
 	pxTransport->eQueryStatus = RSRX_TRANSPORT_STATUS_OK;
+	pxTransport->uReceiveScriptCount = 0U;
+	pxTransport->uReceiveScriptIndex = 0U;
 	pxTransport->uChannelAvailable = 1U;
 	pxTransport->uSendCount = 0U;
 	pxTransport->uReceiveCount = 0U;
 	pxTransport->uQueryCount = 0U;
+}
+
+static void vSetReceiveScript(
+	test_transport_context_t * pxTransport,
+	const rsrx_transport_frame_t * pxFrames,
+	const rsrx_transport_status_t * peStatuses,
+	uint32_t uScriptCount)
+{
+	uint32_t uIndex;
+
+	pxTransport->uReceiveScriptCount = uScriptCount;
+	pxTransport->uReceiveScriptIndex = 0U;
+	for(uIndex = 0U; uIndex < uScriptCount; ++uIndex)
+	{
+		pxTransport->axReceiveFrames[uIndex] = pxFrames[uIndex];
+		pxTransport->aeReceiveStatuses[uIndex] = peStatuses[uIndex];
+	}
 }
 
 static void vTestSupervisorInboundHandshakePath(void)
@@ -826,6 +887,84 @@ static void vTestSupervisorTimerExpiryDelegation(void)
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_TIMER_DELEGATED, "timer expiry decision");
 }
 
+static void vTestSupervisorPumpReceiveBoundedDrain(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayloadA[1] = { 0x91U };
+	static const uint8_t auPayloadB[1] = { 0x92U };
+	rsrx_transport_frame_t axFrames[3];
+	rsrx_transport_status_t aeStatuses[3];
+	rsrx_codec_status_t aeCodecStatuses[2];
+	rsrx_decoded_message_t axMessages[2];
+
+	vInitTransportContext(&xTransport, auPayloadA, sizeof(auPayloadA), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayloadA, sizeof(auPayloadA));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "pump session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "pump establish");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auPayloadA;
+	axFrames[0].xPayloadLength = sizeof(auPayloadA);
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auPayloadB;
+	axFrames[1].xPayloadLength = sizeof(auPayloadB);
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[2].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[2].puPayload = (const uint8_t *)0;
+	axFrames[2].xPayloadLength = 0U;
+	axFrames[2].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 3U);
+
+	aeCodecStatuses[0] = RSRX_CODEC_STATUS_OK;
+	aeCodecStatuses[1] = RSRX_CODEC_STATUS_OK;
+	axMessages[0].eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	axMessages[0].eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	axMessages[0].eReason = RSRX_REASON_DATA_ACCEPTED;
+	axMessages[0].uSequenceNumber = 1U;
+	axMessages[0].uConfirmationNumber = 0U;
+	axMessages[0].xPayloadLength = 0U;
+	axMessages[1] = axMessages[0];
+	axMessages[1].uSequenceNumber = 2U;
+	vSetCodecScript(aeCodecStatuses, axMessages, 2U);
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "pump supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 4U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump receive status");
+	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 3U, "pump iterations");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 2U, "pump processed frames");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "pump cumulative processed frames");
+	vAssertTrue(pxSupervisorReport->uPollCount == 3U, "pump poll count");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "pump terminal decision");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "pump state remains established");
+}
+
+static void vTestSupervisorPumpReceiveInvalidArguments(void)
+{
+	rsrx_transport_supervisor_context_t xSupervisor = { 0 };
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive((rsrx_transport_supervisor_context_t *)0, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump null context");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 0U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump zero max polls");
+}
+
 int main(void)
 {
 	vTestSupervisorInboundHandshakePath();
@@ -842,6 +981,8 @@ int main(void)
 	vTestSupervisorSendFailureBudgetResetsAfterSuccess();
 	vTestSupervisorTimerExpiryDelegation();
 	vTestSupervisorRecoverySuccessFromRetransmissionPending();
+	vTestSupervisorPumpReceiveBoundedDrain();
+	vTestSupervisorPumpReceiveInvalidArguments();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");
 

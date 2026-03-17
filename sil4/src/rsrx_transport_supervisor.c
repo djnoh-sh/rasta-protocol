@@ -24,6 +24,8 @@ static void vResetSupervisorReport(
 	pxReport->uProcessedFrameCount = 0U;
 	pxReport->uPollCount = 0U;
 	pxReport->uConsecutiveSendFailureCount = 0U;
+	pxReport->uLastPumpIterationCount = 0U;
+	pxReport->uLastPumpProcessedFrameCount = 0U;
 }
 
 static rsrx_event_t eResolveInboundEvent(
@@ -260,6 +262,59 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	}
 
 	return eProcessFrameInternal(pxContext, &xFrame, ppxReport);
+}
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_pump_receive(
+	rsrx_transport_supervisor_context_t * pxContext,
+	uint32_t uMaxPolls,
+	const rsrx_transport_supervisor_report_t ** ppxReport)
+{
+	rsrx_supervisor_status_t eStatus;
+	uint32_t uInitialProcessedCount;
+	uint32_t uIteration;
+
+	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
+		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
+		(pxContext->uInitialized == 0U) ||
+		(uMaxPolls == 0U))
+	{
+		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->xLastReport.uLastPumpIterationCount = 0U;
+	pxContext->xLastReport.uLastPumpProcessedFrameCount = 0U;
+	uInitialProcessedCount = pxContext->xLastReport.uProcessedFrameCount;
+
+	for(uIteration = 0U; uIteration < uMaxPolls; ++uIteration)
+	{
+		eStatus = rsrx_transport_supervisor_poll_receive(pxContext, ppxReport);
+		pxContext->xLastReport.uLastPumpIterationCount++;
+
+		if(eStatus == RSRX_SUPERVISOR_STATUS_OK)
+		{
+			continue;
+		}
+
+		if(eStatus == RSRX_SUPERVISOR_STATUS_NO_FRAME)
+		{
+			pxContext->xLastReport.uLastPumpProcessedFrameCount =
+				pxContext->xLastReport.uProcessedFrameCount - uInitialProcessedCount;
+			*ppxReport = &pxContext->xLastReport;
+			return ((pxContext->xLastReport.uLastPumpProcessedFrameCount > 0U) ?
+				RSRX_SUPERVISOR_STATUS_OK :
+				RSRX_SUPERVISOR_STATUS_NO_FRAME);
+		}
+
+		pxContext->xLastReport.uLastPumpProcessedFrameCount =
+			pxContext->xLastReport.uProcessedFrameCount - uInitialProcessedCount;
+		*ppxReport = &pxContext->xLastReport;
+		return eStatus;
+	}
+
+	pxContext->xLastReport.uLastPumpProcessedFrameCount =
+		pxContext->xLastReport.uProcessedFrameCount - uInitialProcessedCount;
+	*ppxReport = &pxContext->xLastReport;
+	return RSRX_SUPERVISOR_STATUS_OK;
 }
 
 rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
