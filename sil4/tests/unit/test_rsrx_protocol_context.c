@@ -229,6 +229,25 @@ static void vTestDuplicateInboundSequenceRejected(void)
 	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "duplicate data rejected");
 }
 
+static void vTestInitialZeroSequenceRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
+	xMessage.eSuggestedEvent = RSRX_EVENT_HANDSHAKE_SUCCESS;
+	xMessage.eReason = RSRX_REASON_HANDSHAKE_COMPLETED;
+	xMessage.uSequenceNumber = 0U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve zero initial sequence");
+	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "zero initial sequence rejected");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -247,6 +266,7 @@ int main(void)
 	vTestInboundConfirmationValidation();
 	vTestRecoverySuccessResolution();
 	vTestDuplicateInboundSequenceRejected();
+	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_protocol_context_test: all tests passed\n");
