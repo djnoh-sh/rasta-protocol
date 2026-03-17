@@ -96,8 +96,13 @@ style-only finding이라도 실제로 state, timer, redundancy, transport feedba
 ## Current Limits
 
 - 현재 baseline은 `cppcheck`와 compiler warning 중심이다.
-- commercial MISRA analyzer rule number는 아직 연결하지 않았다.
+- commercial MISRA analyzer exact rule number는 아직 연결하지 않았다.
 - subset assignment는 일부 case에서 reviewer judgement를 요구한다.
+
+## Related Draft
+
+- vendor rule ID 확장 draft:
+  - `vendor_rule_id_mapping_draft.md`
 
 ## Follow-up Actions
 
