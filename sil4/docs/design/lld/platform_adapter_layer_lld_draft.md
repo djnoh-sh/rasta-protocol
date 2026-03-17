@@ -26,15 +26,15 @@
 
 | File | Purpose | Public/Internal | Notes |
 | --- | --- | --- | --- |
-| `include/rsrx_platform_adapters.h` | platform-backed executor helper 공개 API | Public | timer/diagnostics executor binding |
-| `src/rsrx_platform_adapters.c` | platform-backed executor 구현 | Internal | transport/timer/diagnostics executor table 조립 |
-| `tests/unit/test_rsrx_platform_adapters.c` | adapter binding 및 dispatch 단위 테스트 | Internal | platform port stub 사용 |
+| `include/rsrx_platform_adapters.h` | platform-backed executor helper 공개 API | Public | timer/diagnostics executor binding, channel-manager-aware transport binding |
+| `src/rsrx_platform_adapters.c` | platform-backed executor 구현 | Internal | transport/timer/diagnostics executor table 조립 및 active channel 선택 |
+| `tests/unit/test_rsrx_platform_adapters.c` | adapter binding 및 dispatch 단위 테스트 | Internal | platform port stub와 channel manager stub 사용 |
 
 ## Types and Interfaces
 
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
-| `rsrx_transport_adapter_context_t` | struct | transport port, codec port, encoded frame buffer, last inbound message cache를 보유 | 동적 메모리 미사용 |
+| `rsrx_transport_adapter_context_t` | struct | transport port, codec port, encoded frame buffer, last inbound message cache, channel manager 참조를 보유 | 동적 메모리 미사용 |
 | `rsrx_platform_adapter_context_t` | struct | platform port와 interval 설정 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_adapter_init` | function | transport adapter context 초기화 | 유효한 transport/codec port 필요 |
 | `rsrx_transport_executor_dispatch` | function | transport action을 encode 후 send request로 변환 | transport action만 처리 |
@@ -49,10 +49,12 @@
 - transport adapter:
   - `START_HANDSHAKE`, `ACCEPT_INBOUND_CONNECT`, `SEND_HEARTBEAT`, `REQUEST_RETRANSMISSION`, `SEND_DISCONNECT`를 message type으로 매핑한다.
   - mapped action은 `protocol context`를 통해 sequence/confirmation이 채워진 `codec encode request`로 변환된다.
+  - channel manager가 구성된 경우 send 직전 active channel을 선택하고, 미구성 시에는 `eDefaultChannelId`를 사용한다.
   - encode 성공 시 encoded wire buffer를 `rsrx_transport_send_request_t`의 payload로 전달한다.
   - inbound decoded message는 protocol context의 confirmation 기준을 갱신하고 마지막 inbound message cache를 보존한다.
   - explicit outbound application send는 `rsrx_transport_adapter_send_application_data`가 담당한다.
   - direct-send helper는 `DATA` frame과 `APPLICATION_DATA_REQUESTED` reason을 사용한다.
+  - `rsrx_transport_adapter_query_channel`은 channel manager가 구성된 경우 모든 configured channel의 runtime state를 조회해 manager context에 반영한 뒤 active channel을 선택한다.
 - application executor support:
   - `DELIVER_DATA`는 transport adapter가 아니라 별도 application executor가 처리한다.
   - transport adapter는 application executor가 참조할 마지막 inbound message만 제공한다.
@@ -73,6 +75,7 @@
 - 필요한 테스트:
   - executor table 조립 검증
   - transport action -> encoded send request 변환 검증
+  - channel manager 기반 failover send selection 검증
   - direct outbound application send 검증
   - inbound message cache 조회 검증
   - timer action -> timer command 변환 검증

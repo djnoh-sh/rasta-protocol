@@ -3,6 +3,30 @@
 static void vSetReport(
 	rsrx_config_validation_report_t * pxReport,
 	rsrx_config_status_t eStatus,
+	rsrx_config_field_t eField);
+
+static uint32_t uChannelManagerConfigIsValid(
+	const rsrx_session_config_t * pxConfig,
+	rsrx_config_validation_report_t * pxReport)
+{
+	rsrx_channel_manager_context_t xContext;
+
+	if(rsrx_channel_manager_init(&xContext, &pxConfig->xChannelManagerConfig) !=
+		RSRX_CHANNEL_MANAGER_STATUS_OK)
+	{
+		vSetReport(
+			pxReport,
+			RSRX_CONFIG_STATUS_INVALID_RANGE,
+			RSRX_CONFIG_FIELD_DEFAULT_CHANNEL);
+		return 0U;
+	}
+
+	return 1U;
+}
+
+static void vSetReport(
+	rsrx_config_validation_report_t * pxReport,
+	rsrx_config_status_t eStatus,
 	rsrx_config_field_t eField)
 {
 	if(pxReport != (rsrx_config_validation_report_t *)0)
@@ -176,6 +200,11 @@ rsrx_config_status_t rsrx_validate_session_config(
 	}
 
 	if(uPayloadIsConsistent(pxConfig, pxReport) == 0U)
+	{
+		return pxReport->eStatus;
+	}
+
+	if(uChannelManagerConfigIsValid(pxConfig, pxReport) == 0U)
 	{
 		return pxReport->eStatus;
 	}

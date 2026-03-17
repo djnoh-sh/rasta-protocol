@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "rsrx_channel_manager.h"
 #include "rsrx_codec.h"
 #include "rsrx_orchestrator.h"
 #include "rsrx_platform.h"
@@ -13,6 +14,7 @@ typedef struct
 {
 	rsrx_transport_port_t xTransportPort;
 	rsrx_codec_port_t xCodecPort;
+	rsrx_channel_manager_context_t * pxChannelManager;
 	rsrx_protocol_context_t xProtocolContext;
 	rsrx_decoded_message_t xLastInboundMessage;
 	rsrx_transport_channel_id_t eDefaultChannelId;
@@ -35,6 +37,7 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	rsrx_transport_adapter_context_t * pxContext,
 	const rsrx_transport_port_t * pxTransportPort,
 	const rsrx_codec_port_t * pxCodecPort,
+	rsrx_channel_manager_context_t * pxChannelManager,
 	rsrx_transport_channel_id_t eDefaultChannelId,
 	const uint8_t * puFramePayload,
 	size_t xFramePayloadLength);

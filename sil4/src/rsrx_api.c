@@ -155,9 +155,17 @@ rsrx_status_t rsrx_session_init(
 		&pxSession->xTransportAdapter,
 		&pxConfig->xTransportPort,
 		&pxConfig->xCodecPort,
+		&pxSession->xChannelManager,
 		pxConfig->eDefaultChannelId,
 		pxConfig->puFramePayload,
 		pxConfig->xFramePayloadLength) != RSRX_TRANSPORT_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_channel_manager_init(
+		&pxSession->xChannelManager,
+		&pxConfig->xChannelManagerConfig) != RSRX_CHANNEL_MANAGER_STATUS_OK)
 	{
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}

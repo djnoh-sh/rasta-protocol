@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "rsrx_channel_manager.h"
 #include "rsrx_config_validator.h"
 #include "rsrx_codec.h"
 
@@ -100,6 +101,15 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, test_context_t * 
 	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pxContext;
 	pxConfig->xPlatformPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
 	pxConfig->eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxConfig->xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
+	pxConfig->xChannelManagerConfig.uChannelCount = 1U;
+	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
+	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxConfig->xChannelManagerConfig.axChannels[1].uIsAvailable = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[1].uPriority = 0U;
 	pxConfig->puFramePayload = auPayload;
 	pxConfig->xFramePayloadLength = sizeof(auPayload);
 	pxConfig->uSupervisionIntervalNs = 100U;

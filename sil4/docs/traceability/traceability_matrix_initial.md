@@ -64,12 +64,12 @@
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPumpReceiveStabilityFlow` | TC-INT-008 |  | Draft |
 | IF-002 | HZ-007 | HLD-001 |  |  |  |  | Draft |
 | IF-002 | HZ-007 | HLD-001, LLD-004 | `sil4/include/rsrx_platform.h` | `rsrx_clock_port_t`, `rsrx_timer_port_t`, `rsrx_diagnostics_port_t`, `rsrx_platform_port_table_t` | TC-PLAT-001, TC-PLAT-002 |  | Draft |
-| IF-002 | HZ-007 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_platform_adapter_init`, `rsrx_platform_adapter_build_executor_table` | TC-PA-001 |  | Draft |
+| IF-002 | HZ-007 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_platform_adapter_init`, `rsrx_platform_adapter_build_executor_table`, `rsrx_transport_adapter_query_channel` | TC-PA-001, TC-PA-006 |  | Draft |
 | IF-002 | HZ-007 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_port_t` | TC-TR-001 |  | Draft |
 | IF-002 | HZ-007 | HLD-001, LLD-014 | `sil4/include/rsrx_channel_manager.h`, `sil4/src/rsrx_channel_manager.c` | `rsrx_channel_manager_config_t`, `rsrx_channel_selection_result_t` | TC-CHM-001 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-004 | `sil4/include/rsrx_platform.h` | `rsrx_timer_command_t`, `rsrx_diagnostic_record_t` | TC-PLAT-002, TC-PLAT-003 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_transport_adapter_init`, `rsrx_transport_executor_dispatch`, `rsrx_platform_timer_executor_dispatch`, `rsrx_platform_adapter_init` | TC-PA-002 |  | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_transport_adapter_record_inbound_message`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_platform_adapter_build_executor_table` | TC-PA-001, TC-PA-004 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_transport_adapter_record_inbound_message`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_transport_adapter_query_channel`, `rsrx_platform_adapter_build_executor_table` | TC-PA-001, TC-PA-004, TC-PA-006 |  | Draft |
 
 ## Notes
 

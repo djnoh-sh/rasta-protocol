@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "rsrx_channel_manager.h"
 #include "rsrx_platform_adapters.h"
 #include "rsrx_codec.h"
 
@@ -26,6 +27,8 @@ typedef struct
 {
 	rsrx_transport_send_request_t xLastRequest;
 	uint32_t uCallCount;
+	uint32_t uPrimaryAvailable;
+	uint32_t uSecondaryAvailable;
 } test_transport_context_t;
 
 typedef struct
@@ -84,11 +87,18 @@ static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transpor
 
 static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
 {
-	(void)pvContext;
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
 	if(pxState != (rsrx_transport_channel_state_t *)0)
 	{
-		pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
-		pxState->uIsAvailable = 1U;
+		if(pxState->eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY)
+		{
+			pxState->uIsAvailable = pxContext->uSecondaryAvailable;
+		}
+		else
+		{
+			pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+			pxState->uIsAvailable = pxContext->uPrimaryAvailable;
+		}
 	}
 	return RSRX_TRANSPORT_STATUS_OK;
 }
@@ -102,14 +112,54 @@ static void vCaptureAction(void * pvContext, const rsrx_transition_result_t * px
 	pxContext->eLastAction = eAction;
 }
 
+static void vInitSingleChannelManager(
+	rsrx_channel_manager_context_t * pxContext,
+	rsrx_transport_channel_id_t eChannelId)
+{
+	rsrx_channel_manager_config_t xConfig;
+
+	xConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
+	xConfig.uChannelCount = 1U;
+	xConfig.uPreferredChannelIndex = 0U;
+	xConfig.axChannels[0].eChannelId = eChannelId;
+	xConfig.axChannels[0].uIsAvailable = 1U;
+	xConfig.axChannels[0].uPriority = 0U;
+	xConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	xConfig.axChannels[1].uIsAvailable = 0U;
+	xConfig.axChannels[1].uPriority = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_init(pxContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"channel manager init");
+}
+
+static void vInitActiveStandbyChannelManager(
+	rsrx_channel_manager_context_t * pxContext)
+{
+	rsrx_channel_manager_config_t xConfig;
+
+	xConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.uChannelCount = 2U;
+	xConfig.uPreferredChannelIndex = 0U;
+	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xConfig.axChannels[0].uIsAvailable = 1U;
+	xConfig.axChannels[0].uPriority = 0U;
+	xConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xConfig.axChannels[1].uIsAvailable = 1U;
+	xConfig.axChannels[1].uPriority = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_init(pxContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active standby channel manager init");
+}
+
 static void vTestPlatformExecutorTableBuild(void)
 {
 	rsrx_platform_adapter_context_t xPlatformContext;
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
 	test_clock_context_t xClockContext = { 100U, 0U };
 	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U };
 	test_action_context_t xApplicationContext = { RSRX_ACTION_NONE, 0U };
 	test_action_context_t xApiContext = { RSRX_ACTION_NONE, 0U };
 	test_action_context_t xLifecycleContext = { RSRX_ACTION_NONE, 0U };
@@ -134,11 +184,13 @@ static void vTestPlatformExecutorTableBuild(void)
 	xTransportPort.pfSend = eTransportSend;
 	xTransportPort.pfReceive = eTransportReceive;
 	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
 	vAssertTrue(
 		rsrx_transport_adapter_init(
 			&xTransportAdapterContext,
 			&xTransportPort,
 			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
 			RSRX_TRANSPORT_CHANNEL_PRIMARY,
 			auPayload,
 			sizeof(auPayload)) == RSRX_TRANSPORT_STATUS_OK,
@@ -169,10 +221,11 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 {
 	rsrx_platform_adapter_context_t xPlatformContext;
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
 	test_clock_context_t xClockContext = { 1000U, 0U };
 	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U };
 	rsrx_platform_port_table_t xPorts;
 	rsrx_transport_port_t xTransportPort;
 	rsrx_transition_result_t xTransition;
@@ -190,10 +243,12 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	xTransportPort.pfSend = eTransportSend;
 	xTransportPort.pfReceive = eTransportReceive;
 	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
 	(void)rsrx_transport_adapter_init(
 		&xTransportAdapterContext,
 		&xTransportPort,
 		rsrx_codec_get_default_port(),
+		&xChannelManagerContext,
 		RSRX_TRANSPORT_CHANNEL_PRIMARY,
 		auPayload,
 		sizeof(auPayload));
@@ -253,7 +308,8 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 static void vTestApplicationDataSend(void)
 {
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
 	static const uint8_t auDataPayload[3] = { 0x31U, 0x32U, 0x33U };
@@ -262,12 +318,14 @@ static void vTestApplicationDataSend(void)
 	xTransportPort.pfSend = eTransportSend;
 	xTransportPort.pfReceive = eTransportReceive;
 	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
 
 	vAssertTrue(
 		rsrx_transport_adapter_init(
 			&xTransportAdapterContext,
 			&xTransportPort,
 			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
 			RSRX_TRANSPORT_CHANNEL_PRIMARY,
 			auFramePayload,
 			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
@@ -289,11 +347,58 @@ static void vTestApplicationDataSend(void)
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auDataPayload[0], "application data payload copied");
 }
 
+static void vTestChannelManagerDrivenFailoverSelection(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 0U, 1U };
+	rsrx_transport_port_t xTransportPort;
+	rsrx_transition_result_t xTransition;
+	rsrx_transport_channel_state_t xChannelState;
+	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitActiveStandbyChannelManager(&xChannelManagerContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter init for failover");
+
+	vAssertTrue(
+		rsrx_transport_adapter_query_channel(
+			&xTransportAdapterContext,
+			&xChannelState) == RSRX_TRANSPORT_STATUS_OK,
+		"query failover channel");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "selected secondary channel");
+
+	xTransition.ePreviousState = RSRX_STATE_INITIALIZED;
+	xTransition.eNextState = RSRX_STATE_CONNECTING;
+	xTransition.eStatus = RSRX_STATUS_OK;
+	xTransition.eReason = RSRX_REASON_CONNECT_REQUESTED;
+	xTransition.eDiagnostic = RSRX_DIAG_INFO_STATE_TRANSITION;
+	xTransition.xActions.uActionCount = 0U;
+
+	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
+	vAssertTrue(xTransportContext.uCallCount == 1U, "failover send called");
+	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover send channel");
+}
+
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
 	vTestTransportTimerAndDiagnosticsDispatch();
 	vTestApplicationDataSend();
+	vTestChannelManagerDrivenFailoverSelection();
 
 	(void)printf("rsrx_platform_adapters_test: all tests passed\n");
 

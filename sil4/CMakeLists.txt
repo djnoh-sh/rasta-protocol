@@ -40,18 +40,19 @@ add_library(rsrx_platform_adapters STATIC
 	src/rsrx_platform_adapters.c)
 
 target_include_directories(rsrx_platform_adapters PUBLIC include)
-target_link_libraries(rsrx_platform_adapters PUBLIC rsrx_orchestrator rsrx_codec rsrx_protocol_context)
+target_link_libraries(rsrx_platform_adapters PUBLIC rsrx_channel_manager rsrx_orchestrator rsrx_codec rsrx_protocol_context)
 
 add_library(rsrx_config_validator STATIC
 	src/rsrx_config_validator.c)
 
 target_include_directories(rsrx_config_validator PUBLIC include)
+target_link_libraries(rsrx_config_validator PUBLIC rsrx_channel_manager)
 
 add_library(rsrx_api STATIC
 	src/rsrx_api.c)
 
 target_include_directories(rsrx_api PUBLIC include)
-target_link_libraries(rsrx_api PUBLIC rsrx_platform_adapters rsrx_config_validator)
+target_link_libraries(rsrx_api PUBLIC rsrx_channel_manager rsrx_platform_adapters rsrx_config_validator)
 
 add_library(rsrx_transport_supervisor STATIC
 	src/rsrx_transport_supervisor.c)

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "rsrx_channel_manager.h"
 #include "rsrx_orchestrator.h"
 #include "rsrx_platform_adapters.h"
 
@@ -47,6 +48,7 @@ typedef struct
 	rsrx_codec_port_t xCodecPort;
 	rsrx_platform_port_table_t xPlatformPorts;
 	rsrx_transport_channel_id_t eDefaultChannelId;
+	rsrx_channel_manager_config_t xChannelManagerConfig;
 	const uint8_t * puFramePayload;
 	size_t xFramePayloadLength;
 	rsrx_monotonic_time_ns_t uSupervisionIntervalNs;
@@ -63,6 +65,7 @@ typedef struct
 struct rsrx_session
 {
 	rsrx_transport_adapter_context_t xTransportAdapter;
+	rsrx_channel_manager_context_t xChannelManager;
 	rsrx_platform_adapter_context_t xPlatformAdapter;
 	rsrx_orchestrator_context_t xOrchestrator;
 	rsrx_action_executor_table_t xExecutors;
