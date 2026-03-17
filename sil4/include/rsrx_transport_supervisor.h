@@ -82,6 +82,11 @@ typedef struct
 	uint32_t uLastChannelSwitchOccurred;
 	uint32_t uLastPumpIterationCount;
 	uint32_t uLastPumpProcessedFrameCount;
+	uint32_t uOutstandingSendPresent;
+	uint32_t uDeferredSendPresent;
+	uint32_t uQueuedSendCount;
+	uint32_t uDeferredDispatchCount;
+	uint32_t uQueueOverflowRejectCount;
 } rsrx_transport_supervisor_report_t;
 
 typedef struct

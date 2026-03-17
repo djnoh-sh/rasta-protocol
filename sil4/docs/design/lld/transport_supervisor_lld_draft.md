@@ -33,7 +33,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_supervisor_status_t` | enum | supervisor 결과 코드 | decode/session 오류를 분리 |
-| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, session report, channel switch telemetry 보유 | caller는 읽기 전용 사용 |
+| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, session report, channel switch telemetry, outbound queue telemetry 보유 | caller는 읽기 전용 사용 |
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
@@ -74,6 +74,7 @@
   - supervisor는 consecutive send failure budget을 내부적으로 유지한다.
   - `SEND_COMPLETED`와 `SEND_FAILED`는 outstanding send correlation이 맞는 경우에만 send feedback으로 인정한다.
   - `SEND_COMPLETED`는 outstanding send와 correlation이 맞는 경우에만 send failure budget을 reset한다.
+  - correlation이 맞는 `SEND_COMPLETED`가 outstanding send를 clear한 직후 deferred send가 존재하면 즉시 재송신되고, report는 refresh된 outstanding/deferred queue 상태를 반영한다.
   - correlation이 없는 `SEND_COMPLETED`/`SEND_FAILED`는 stale transport feedback으로 간주하고 ignored 처리한다.
   - `SEND_FAILED`는 active channel별 budget으로 관리한다. channel이 바뀐 뒤 첫 `SEND_FAILED`는 새 channel의 첫 실패로 취급한다.
   - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
@@ -86,6 +87,7 @@
   - `CHANNEL_UP` refresh가 성공하면 상태 전이 없이 active channel/telemetry만 갱신하고 ignored event로 종료한다.
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.
   - 각 경로는 report에 마지막 decision, decision class, current channel switch count, 이번 처리에서 switch가 발생했는지 여부를 남긴다.
+  - 각 경로는 report에 현재 outstanding send 존재 여부, deferred queue 존재 여부, queued count, deferred dispatch count, overflow reject count를 함께 남긴다.
 - `rsrx_transport_supervisor_process_timer_expiry`:
   - supervisor는 timer source를 해석하지 않고 session timer API로 위임한다.
   - session이 `REJECTED`를 반환해도 supervisor 관점에서는 처리된 fail-safe 전이로 간주한다.
@@ -122,6 +124,7 @@
   - inactive/stale channel transport feedback의 보수적 무시 정책
   - outstanding send correlation과 send feedback 처리 일관성
   - report의 channel switch telemetry와 channel manager state 일관성
+  - report의 outbound queue telemetry와 adapter runtime state 일관성
   - query/receive 순서와 channel availability gate의 결정성
   - transport feedback event의 보수적 매핑 정책
   - transient send failure와 persistent send failure 구분 정책
