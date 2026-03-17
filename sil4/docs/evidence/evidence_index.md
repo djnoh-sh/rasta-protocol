@@ -54,6 +54,8 @@
 | EVID-CI-018 | `vendor_rule_matrix_sample.md` | Draft | exact vendor matrix sample entry |
 | EVID-CI-019 | `../reviews/RV-018_vendor_rule_matrix_sample_review.md` | Draft | vendor matrix sample safety review |
 | EVID-CI-020 | `../reviews/RV-019_pr_annotation_helper_review.md` | Draft | PR annotation helper implementation review |
+| EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
+| EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
 | EVID-SA-017 | `../reviews/RV-012_clang_baseline_review.md` | Draft | clang baseline evidence review |
 
@@ -65,5 +67,5 @@
 4. queue/backpressure policy evidence 추가 확장
 5. MISRA subset severity 세분화
 6. second-tool rule taxonomy mapping
-7. first vendor deviation example
-8. PR comment API linkage
+7. PR comment API linkage
+8. first real vendor finding onboarding
