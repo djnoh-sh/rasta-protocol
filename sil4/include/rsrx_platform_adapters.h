@@ -18,10 +18,12 @@ typedef struct
 	rsrx_protocol_context_t xProtocolContext;
 	rsrx_decoded_message_t xLastInboundMessage;
 	rsrx_transport_channel_id_t eDefaultChannelId;
+	rsrx_transport_channel_id_t eLastOutstandingSendChannelId;
 	const uint8_t * puFramePayload;
 	size_t xFramePayloadLength;
 	uint8_t auEncodedFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
 	uint32_t uHasLastInboundMessage;
+	uint32_t uHasOutstandingSend;
 } rsrx_transport_adapter_context_t;
 
 typedef struct
@@ -67,6 +69,15 @@ rsrx_transport_status_t rsrx_transport_adapter_send_application_data(
 	rsrx_transport_adapter_context_t * pxContext,
 	const uint8_t * puPayload,
 	size_t xPayloadLength);
+
+uint32_t rsrx_transport_adapter_has_outstanding_send(
+	const rsrx_transport_adapter_context_t * pxContext);
+
+rsrx_transport_channel_id_t rsrx_transport_adapter_get_outstanding_send_channel(
+	const rsrx_transport_adapter_context_t * pxContext);
+
+void rsrx_transport_adapter_clear_outstanding_send(
+	rsrx_transport_adapter_context_t * pxContext);
 
 void rsrx_transport_adapter_clear_retransmission_context(
 	rsrx_transport_adapter_context_t * pxContext);

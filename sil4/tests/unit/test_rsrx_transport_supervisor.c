@@ -914,9 +914,46 @@ static void vTestSupervisorTransportSendCompletedIgnored(void)
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "send complete budget reset");
 	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "send complete no budget change");
 	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 0U, "send complete reset count");
-	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED, "send complete decision");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED, "send complete decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "send complete class");
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 1U, "send complete ignored count");
+}
+
+static void vTestSupervisorTransportSendCompletedCorrelated(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[1] = { 0x73U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "send complete correlated session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "send complete correlated session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "send complete correlated session connect");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 1U, "send complete correlated outstanding send set");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "send complete correlated supervisor init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send complete correlated ignored");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 0U, "send complete correlated outstanding cleared");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED, "send complete correlated decision");
+	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "send complete correlated class");
 }
 
 static void vTestSupervisorSendFailureBudgetResetsAfterSuccess(void)
@@ -1157,6 +1194,7 @@ int main(void)
 	vTestSupervisorChannelUpRefreshesSelection();
 	vTestSupervisorTransportSendFailed();
 	vTestSupervisorTransportSendCompletedIgnored();
+	vTestSupervisorTransportSendCompletedCorrelated();
 	vTestSupervisorSendFailureBudgetResetsAfterSuccess();
 	vTestSupervisorTimerExpiryDelegation();
 	vTestSupervisorRecoverySuccessFromRetransmissionPending();

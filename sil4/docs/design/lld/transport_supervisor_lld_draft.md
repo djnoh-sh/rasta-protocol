@@ -72,7 +72,9 @@
   - 마지막 pump iteration 수와 이번 pump에서 처리한 frame 수를 report에 남긴다.
 - `rsrx_transport_supervisor_process_transport_event`:
   - supervisor는 consecutive send failure budget을 내부적으로 유지한다.
-  - `SEND_COMPLETED`와 정상 inbound frame 처리는 send failure budget을 reset한다.
+  - `SEND_COMPLETED`와 `SEND_FAILED`는 outstanding send correlation이 맞는 경우에만 send feedback으로 인정한다.
+  - `SEND_COMPLETED`는 outstanding send와 correlation이 맞는 경우에만 send failure budget을 reset한다.
+  - correlation이 없는 `SEND_COMPLETED`/`SEND_FAILED`는 stale transport feedback으로 간주하고 ignored 처리한다.
   - `SEND_FAILED`는 active channel별 budget으로 관리한다. channel이 바뀐 뒤 첫 `SEND_FAILED`는 새 channel의 첫 실패로 취급한다.
   - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
   - active channel이 아닌 channel에서 도착한 `SEND_FAILED`는 stale transport feedback으로 간주하고 budget을 변경하지 않은 채 ignored 처리한다.
@@ -107,6 +109,7 @@
   - send failure budget reset 검증
   - inactive channel send failure ignore 검증
   - channel switch 후 첫 send failure를 fresh budget으로 처리하는지 검증
+  - correlated/uncorrelated send completed 검증
   - timer expiry delegation 검증
 - 분석 포인트:
   - decode 결과와 supervisor-level event override 일관성
@@ -117,6 +120,7 @@
   - send failure budget update/reset telemetry의 일관성
   - budget channel과 active channel의 일관성
   - inactive/stale channel transport feedback의 보수적 무시 정책
+  - outstanding send correlation과 send feedback 처리 일관성
   - report의 channel switch telemetry와 channel manager state 일관성
   - query/receive 순서와 channel availability gate의 결정성
   - transport feedback event의 보수적 매핑 정책

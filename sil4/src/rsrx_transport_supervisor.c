@@ -52,6 +52,7 @@ static rsrx_supervisor_decision_class_t eMapDecisionClass(
 
 		case RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE:
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED:
+		case RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED:
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED:
 		case RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED:
@@ -269,6 +270,30 @@ static uint32_t uFrameTargetsActiveChannel(
 
 	return (uint32_t)((eActiveChannelId == RSRX_TRANSPORT_CHANNEL_INVALID) ||
 		(eActiveChannelId == eChannelId));
+}
+
+static uint32_t uFrameMatchesOutstandingSend(
+	const rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_transport_channel_id_t eChannelId)
+{
+	rsrx_transport_channel_id_t eOutstandingChannelId;
+
+	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
+		(pxContext->pxSession == (const rsrx_session_t *)0))
+	{
+		return 0U;
+	}
+
+	if(rsrx_transport_adapter_has_outstanding_send(
+		&pxContext->pxSession->xTransportAdapter) == 0U)
+	{
+		return 0U;
+	}
+
+	eOutstandingChannelId = rsrx_transport_adapter_get_outstanding_send_channel(
+		&pxContext->pxSession->xTransportAdapter);
+
+	return (uint32_t)(eOutstandingChannelId == eChannelId);
 }
 
 static uint32_t uSendFailureBudgetExceeded(
@@ -546,6 +571,19 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 	switch(pxFrame->eEventType)
 	{
 		case RSRX_TRANSPORT_EVENT_SEND_COMPLETED:
+			if(uFrameMatchesOutstandingSend(pxContext, pxFrame->eChannelId) == 0U)
+			{
+				pxContext->xLastReport.eLastBudgetUpdate =
+					RSRX_SUPERVISOR_BUDGET_UPDATE_NONE;
+				vRecordDecision(
+					pxContext,
+					RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED);
+				*ppxReport = &pxContext->xLastReport;
+				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+			}
+
+			rsrx_transport_adapter_clear_outstanding_send(
+				&pxContext->pxSession->xTransportAdapter);
 			vResetSendFailureBudget(
 				pxContext,
 				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_SEND_COMPLETED);
@@ -554,6 +592,17 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 
 		case RSRX_TRANSPORT_EVENT_SEND_FAILED:
+			if(uFrameMatchesOutstandingSend(pxContext, pxFrame->eChannelId) == 0U)
+			{
+				pxContext->xLastReport.eLastBudgetUpdate =
+					RSRX_SUPERVISOR_BUDGET_UPDATE_NONE;
+				vRecordDecision(
+					pxContext,
+					RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED);
+				*ppxReport = &pxContext->xLastReport;
+				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+			}
+
 			if(uFrameTargetsActiveChannel(pxContext, pxFrame->eChannelId) == 0U)
 			{
 				pxContext->xLastReport.eLastBudgetUpdate =
@@ -577,6 +626,8 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 			vResetSendFailureBudget(
 				pxContext,
 				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION);
+			rsrx_transport_adapter_clear_outstanding_send(
+				&pxContext->pxSession->xTransportAdapter);
 			return eProcessSessionEventInternal(
 				pxContext,
 				RSRX_EVENT_PROTOCOL_ERROR,
