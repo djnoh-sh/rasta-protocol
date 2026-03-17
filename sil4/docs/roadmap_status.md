@@ -10,9 +10,9 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `50~55%`
-- 현재 단계: `코어 흐름 연결 및 explicit application send contract 반영 단계`
-- 다음 주력 단계: `transport supervisor 고도화`, `integration harness`, `redundancy/channel manager`
+- 현재 전체 진행률 추정: `55~60%`
+- 현재 단계: `transport supervisor runtime loop 및 integration harness 진입 단계`
+- 다음 주력 단계: `integration harness 확장`, `redundancy/channel manager`, `static analysis evidence`
 
 ## Overall Phase Status
 
@@ -21,7 +21,7 @@
 | P1 | 계획/기준선 수립 | 규칙, 문서 구조, 요구사항/HLD/초기 추적성 확립 | Completed | 100% | 작업 규칙과 기본 산출물 체계 정착 |
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
-| P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | Not Started | 0% | 아직 unit 중심 |
+| P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
 | P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | Not Started | 5% | 추적성 초안만 있음 |
 
 ## Workstream Status
@@ -42,7 +42,7 @@
 | Protocol Context | sequence/confirmation/retransmission base 관리 | In Progress | `rsrx_protocol_context.*`, `test_rsrx_protocol_context.c` |
 | Transport Supervisor | inbound frame to session handoff | In Progress | `rsrx_transport_supervisor.*`, `test_rsrx_transport_supervisor.c` |
 | Configuration Validation | startup gate | Completed | `rsrx_config_validator.*`, `test_rsrx_config_validator.c` |
-| Integration Verification | cross-module scenario test | Not Started | 없음 |
+| Integration Verification | cross-module scenario test | In Progress | `tests/integration/test_rsrx_session_supervisor_flow.c`, `integration_harness_test_spec_draft.md` |
 | Safety Evidence | MISRA, static analysis, formal review records | Not Started | 없음 |
 
 ## Completed Milestones
@@ -65,6 +65,7 @@
 | M14 | protocol context 도입 | Completed | sequence/confirmation/retransmission base context, tests |
 | M15 | application data delivery contract 도입 | Completed | application callback contract, tests, traceability |
 | M16 | outbound application send contract 도입 | Completed | explicit session send API, adapter helper, tests |
+| M17 | integration harness 진입 | Completed | session-supervisor-real-codec flow test |
 
 ## In-Progress Items
 
@@ -83,7 +84,7 @@
 | NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | supervisor와 protocol context를 decoded message detail과 결합 |
 | NS-002 | Transport Supervisor Completion | receive loop, send result, channel state 반영 필요 | supervisor contract 확장 |
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | transport abstraction 상위 모듈 추가 |
-| NS-005 | Integration Test Harness | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness 구축 |
+| NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 failure/retransmission/recovery 시나리오로 확장 |
 | NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | toolchain policy와 report template 수립 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
 
@@ -111,7 +112,7 @@
 
 1. `Transport Supervisor Maturation`
 2. `Redundancy and Channel Manager`
-3. `Integration Test Harness`
+3. `Integration Test Harness Expansion`
 4. `Static Analysis and Safety Evidence`
 
 ## Next Gate Definition

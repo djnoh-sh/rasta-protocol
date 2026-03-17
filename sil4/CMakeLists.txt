@@ -102,3 +102,8 @@ add_executable(rsrx_transport_supervisor_test
 	tests/unit/test_rsrx_transport_supervisor.c)
 
 target_link_libraries(rsrx_transport_supervisor_test rsrx_transport_supervisor)
+
+add_executable(rsrx_session_supervisor_flow_test
+	tests/integration/test_rsrx_session_supervisor_flow.c)
+
+target_link_libraries(rsrx_session_supervisor_flow_test rsrx_transport_supervisor rsrx_api rsrx_codec)
