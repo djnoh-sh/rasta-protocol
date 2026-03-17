@@ -80,18 +80,19 @@
 
 ## Tooling Baseline
 
-현재 단계의 최소 분석 기준은 다음과 같다.
+현재 baseline은 다음과 같이 확정한다.
 
-1. compiler warning gate
-2. MISRA-oriented rule checklist review
-3. 정적분석 도구 도입 전 수동 분류 결과
+1. compiler warning gate (`gcc`, `-Wall -Wextra -Werror`)
+2. `cppcheck` baseline scan
+3. MISRA-oriented checklist review
 
-후속 단계에서 아래를 확정한다.
+세부 tool/version/profile은 `tooling/static_analysis_toolchain_baseline.md`를 기준으로 관리한다.
 
-1. 정적분석 도구명과 버전
-2. rule set profile
-3. CI 실행 방식
-4. fail threshold
+후속 단계에서 아래를 추가 확정한다.
+
+1. CI 실행 방식
+2. fail threshold
+3. 전용 MISRA analyzer 도입 여부
 
 ## Required Report Content
 
@@ -127,6 +128,6 @@
 
 | OI ID | Description | Owner | Target |
 | --- | --- | --- | --- |
-| OI-SA-001 | 사용할 정적분석 도구 확정 | Project Team | P5 시작 전 |
-| OI-SA-002 | MISRA rule subset과 severity mapping 정의 | Project Team | P5 시작 전 |
-| OI-SA-003 | CI에서의 자동 실행 정책 확정 | Project Team | SA-2 이전 |
+| OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | P5 진행 중 |
+| OI-SA-002 | CI에서의 자동 실행 정책 확정 | Project Team | SA-2 이전 |
+| OI-SA-003 | `cppcheck` baseline finding cleanup 및 follow-up report 생성 | Project Team | SA-2 이전 |

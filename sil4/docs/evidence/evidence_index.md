@@ -22,9 +22,12 @@
 | EVID-SA-004 | `templates/static_analysis_report_template.md` | Draft | 결과 보고서 템플릿 |
 | EVID-SA-005 | `reports/static_analysis_report_2026-03-17_sa1.md` | Draft | 첫 baseline 실행 결과 |
 | EVID-SA-006 | `../reviews/RV-001_static_analysis_baseline_review.md` | Draft | 첫 evidence review 기록 |
+| EVID-SA-007 | `tooling/static_analysis_toolchain_baseline.md` | Draft | baseline tool/version/profile 결정 |
+| EVID-SA-008 | `reports/static_analysis_report_2026-03-17_sa2_cppcheck.md` | Draft | 첫 cppcheck baseline 결과 |
+| EVID-SA-009 | `../reviews/RV-002_cppcheck_baseline_review.md` | Draft | cppcheck baseline review 기록 |
 
 ## Next Expected Additions
 
-1. 전용 정적분석 도구 기반 보고서 1건
-2. tool/version baseline 확정 기록
-3. rule profile 확정 및 deviation linkage 갱신
+1. `cppcheck` baseline finding cleanup 후 follow-up report
+2. rule severity mapping 확정
+3. CI execution linkage
