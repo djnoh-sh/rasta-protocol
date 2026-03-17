@@ -1,0 +1,30 @@
+name: SIL4 CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'sil4/**'
+      - '.github/workflows/sil4-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'sil4/**'
+      - '.github/workflows/sil4-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  sil4-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake cppcheck
+
+      - name: Run SIL4 Verification
+        run: bash sil4/tools/run_ci_verification.sh

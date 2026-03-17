@@ -33,6 +33,8 @@
 | EVID-SA-015 | `../reviews/RV-005_cppcheck_wider_cleanup_review.md` | Draft | wider cleanup review 기록 |
 | EVID-DES-001 | `reports/outbound_queue_policy_evidence_2026-03-17.md` | Draft | bounded outbound queue policy evidence note |
 | EVID-DES-002 | `../reviews/RV-006_outbound_queue_policy_review.md` | Draft | outbound queue policy safety review |
+| EVID-CI-001 | `ci_execution_linkage.md` | Draft | local verification과 CI workflow linkage 기준 |
+| EVID-CI-002 | `../reviews/RV-007_ci_execution_linkage_review.md` | Draft | CI linkage safety review |
 
 ## Next Expected Additions
 

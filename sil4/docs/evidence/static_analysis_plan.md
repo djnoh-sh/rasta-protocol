@@ -94,6 +94,12 @@
 2. fail threshold
 3. 전용 MISRA analyzer 도입 여부
 
+현재 CI 실행 linkage baseline은 다음 산출물로 연결한다.
+
+- `sil4/tools/run_ci_verification.sh`
+- `.github/workflows/sil4-ci.yml`
+- `sil4/docs/evidence/ci_execution_linkage.md`
+
 ## Required Report Content
 
 각 분석 보고서는 최소 아래 항목을 포함해야 한다.
@@ -129,5 +135,5 @@
 | OI ID | Description | Owner | Target |
 | --- | --- | --- | --- |
 | OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | P5 진행 중 |
-| OI-SA-002 | CI에서의 자동 실행 정책 확정 | Project Team | SA-2 이전 |
+| OI-SA-002 | CI에서의 자동 실행 정책 확정 | Project Team | Closed by `EVID-CI-001` baseline |
 | OI-SA-003 | `cppcheck` baseline finding cleanup 및 follow-up report 생성 | Project Team | SA-2 이전 |
