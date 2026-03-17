@@ -103,6 +103,7 @@ jobs:
             /tmp/rsrx-ci-logs/cppcheck.log
             /tmp/rsrx-ci-logs/summary.md
             /tmp/rsrx-ci-logs/summary.env
+            /tmp/rsrx-ci-logs/baseline_summary.env
             /tmp/rsrx-ci-logs/pr_annotation.md
             /tmp/rsrx-ci-logs/pr_annotation.env
           if-no-files-found: error

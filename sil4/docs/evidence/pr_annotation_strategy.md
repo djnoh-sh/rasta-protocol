@@ -99,6 +99,7 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 1. `summary.env` 기반 helper script를 통해 PR annotation markdown을 생성한다.
 2. workflow는 `pull_request` 이벤트에서 helper를 실행하고 step summary에 그 결과를 게시한다.
 3. workflow는 GitHub API를 사용해 marker 기반 sticky PR comment를 create/update 한다.
+4. helper는 optional baseline file `/tmp/rsrx-ci-logs/baseline_summary.env`를 읽어 delta-aware annotation을 계산할 수 있다.
 
 ## Minimal Implementation Path
 
@@ -120,12 +121,13 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 ## Residual Limits
 
-- sticky PR comment는 구현됐고 delta policy baseline은 정의됐지만 helper는 아직 snapshot-only다.
+- sticky PR comment는 구현됐고 helper는 optional baseline file이 주어지면 delta-aware annotation을 계산한다.
+- baseline persistence source는 아직 workflow 내부에 고정되지 않았다.
 - exact vendor rule matrix가 없어 vendor-level annotation은 불가능하다.
-- trend comparison(이전 PR 대비 bucket 증가)은 아직 구현하지 않았다.
+- trend comparison은 baseline file이 주어질 때만 동작한다.
 
 ## Follow-up Actions
 
 1. `summary.env` 기반 decision logic regression 검증
 2. PR noise threshold 정의
-3. delta-aware helper 구현
+3. baseline persistence source 결정
