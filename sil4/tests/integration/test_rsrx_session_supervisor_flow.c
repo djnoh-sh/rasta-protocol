@@ -1939,6 +1939,123 @@ static void vTestIntegratedReceiveErrorBudgetResetFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "receive error reset integration no lifecycle callback");
 }
 
+static void vTestIntegratedMixedTransientBudgetResetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	rsrx_transport_frame_t xSendFailedFrame;
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auInboundDataPayload[2] = { 0x61U, 0x62U };
+	size_t xHandshakeLength;
+	size_t xDataLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "mixed transient integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "mixed transient integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "mixed transient integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auInboundDataPayload,
+		sizeof(auInboundDataPayload),
+		auDataFrame,
+		sizeof(auDataFrame),
+		&xDataLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "mixed transient integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "mixed transient integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "mixed transient integration established");
+
+	xSendFailedFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xSendFailedFrame.puPayload = (const uint8_t *)0;
+	xSendFailedFrame.xPayloadLength = 0U;
+	xSendFailedFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "mixed transient integration priming send");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "mixed transient integration send failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "mixed transient integration send budget one");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "mixed transient integration receive error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "mixed transient integration receive budget one");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "mixed transient integration state retained after faults");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auDataFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xDataLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "mixed transient integration inbound recovery");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "mixed transient integration state retained after recovery");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "mixed transient integration send budget cleared");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "mixed transient integration receive budget cleared");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "mixed transient integration send reset count");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "mixed transient integration receive reset count");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "mixed transient integration accepted decision");
+	vAssertTrue(xApplication.uCallCount == 1U, "mixed transient integration application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "mixed transient integration no lifecycle callback");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "mixed transient integration second priming send");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "mixed transient integration send failure after recovery");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "mixed transient integration send budget restarted");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "mixed transient integration receive error after recovery");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "mixed transient integration receive budget restarted");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "mixed transient integration final established");
+}
+
 static void vTestIntegratedDuplicateInboundProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -2535,6 +2652,7 @@ int main(void)
 	vTestIntegratedSendFailureBudgetResetFlow();
 	vTestIntegratedReceiveErrorBudgetFlow();
 	vTestIntegratedReceiveErrorBudgetResetFlow();
+	vTestIntegratedMixedTransientBudgetResetFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedRegressingConfirmationProtocolErrorFlow();
