@@ -56,7 +56,7 @@
 | `INITIALIZED` | 설정 검증과 초기화는 끝났지만 연결은 시작되지 않은 상태 | 초기화 성공 | `connect_request`, `valid_inbound_connect`, `shutdown_request` |
 | `CONNECTING` | 핸드셰이크 진행 중 상태 | 연결 요청 시작 또는 inbound connect 수락 | `handshake_success`, `invalid_message`, `version_mismatch`, `timeout`, `shutdown_request` |
 | `ESTABLISHED` | 정상 데이터/heartbeat 교환 상태 | 핸드셰이크 성공 | `seq_gap_detected`, `protocol_error`, `timeout`, `disconnect_request`, `shutdown_request` |
-| `RETRANSMISSION_PENDING` | 재전송 복구가 필요한 상태 | sequence gap 검출 | `recovery_success`, `retransmission_failure`, `timeout`, `invalid_response`, `shutdown_request` |
+| `RETRANSMISSION_PENDING` | 재전송 복구가 필요한 상태 | sequence gap 검출 | `seq_gap_detected`, `recovery_success`, `retransmission_failure`, `timeout`, `invalid_response`, `shutdown_request` |
 | `SAFE_DISCONNECT` | 안전 종료 처리 진행 상태 | 오류 또는 사용자 종료 요청 | `cleanup_complete`, `shutdown_request` |
 | `SHUTDOWN` | 시스템 종료 상태 | 초기화 실패 또는 명시적 종료 | 없음 |
 
@@ -130,6 +130,7 @@
 | `ESTABLISHED` | `protocol_error` | `SAFE_DISCONNECT` | `ACT_SEND_DISCONNECT`, `ACT_ENTER_FAILSAFE`, `ACT_NOTIFY_API`, `ACT_LOG_DIAGNOSTIC` | protocol violation |
 | `ESTABLISHED` | `shutdown_request` | `SHUTDOWN` | `ACT_SEND_DISCONNECT`, `ACT_RELEASE_CONNECTION_RESOURCES`, `ACT_FINALIZE_SHUTDOWN`, `ACT_NOTIFY_API` | 정상 종료 |
 | `ESTABLISHED` | any other event | `SAFE_DISCONNECT` | `ACT_SEND_DISCONNECT`, `ACT_ENTER_FAILSAFE`, `ACT_NOTIFY_API`, `ACT_LOG_DIAGNOSTIC` | 보수적 종료 |
+| `RETRANSMISSION_PENDING` | `seq_gap_detected` | `RETRANSMISSION_PENDING` | `ACT_REQUEST_RETRANSMISSION`, `ACT_NOTIFY_API`, `ACT_LOG_DIAGNOSTIC` | 추가 gap 관측 시 retransmission 요청 갱신 |
 | `RETRANSMISSION_PENDING` | `recovery_success` | `ESTABLISHED` | `ACT_CLEAR_RETRANSMISSION_CONTEXT`, `ACT_RESET_SUPERVISION_TIMER`, `ACT_NOTIFY_API`, `ACT_LOG_DIAGNOSTIC` | 복구 완료 |
 | `RETRANSMISSION_PENDING` | `valid_heartbeat` | `RETRANSMISSION_PENDING` | `ACT_RESET_SUPERVISION_TIMER`, `ACT_LOG_DIAGNOSTIC` | 복구 완료 전 상태 유지 |
 | `RETRANSMISSION_PENDING` | `retransmission_failure` | `SAFE_DISCONNECT` | `ACT_SEND_DISCONNECT`, `ACT_ENTER_FAILSAFE`, `ACT_NOTIFY_API`, `ACT_LOG_DIAGNOSTIC` | 복구 실패 |

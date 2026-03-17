@@ -41,6 +41,7 @@
 | TC-SM-003 | SR-002 | heartbeat timeout 처리 검증 | `ESTABLISHED` 상태 | timeout event | 안전 종료 관련 action 생성 | timeout 후 연결 유지 금지 |
 | TC-SM-004 | FR-004 | retransmission 진입 검증 | `ESTABLISHED` 상태 | sequence gap event | `RETRANSMISSION_PENDING` 전이 | 재전송 action이 생성됨 |
 | TC-SM-005 | FR-004 | retransmission 복구 검증 | `RETRANSMISSION_PENDING` 상태 | recovery success event | `ESTABLISHED` 복귀 | 상태와 action이 설계와 일치 |
+| TC-SM-012 | FR-004 | repeated retransmission gap 검증 | `RETRANSMISSION_PENDING` 상태 | 추가 sequence gap event | `RETRANSMISSION_PENDING` 유지 | repeated gap에서도 retransmission action이 다시 생성됨 |
 | TC-SM-006 | FR-005 | 사용자 disconnect 처리 검증 | `ESTABLISHED` 상태 | disconnect request event | `SAFE_DISCONNECT` 또는 종료 경로 | 연결이 정상 상태로 남지 않음 |
 | TC-SM-007 | SR-003 | 초기화 전 호출 방어 검증 | 미초기화 컨텍스트 | handle_event 호출 | 정의된 오류 또는 안전한 거부 | UB 없이 결과가 결정적 |
 | TC-SM-008 | SR-003 | 잘못된 enum 입력 방어 검증 | 초기화 완료 | invalid event enum | 정의된 오류 처리 | 메모리 손상 없이 종료 |
@@ -62,7 +63,7 @@
 | `INITIALIZED` | `connect_request`, `valid_inbound_connect`, `shutdown_request`, invalid event |
 | `CONNECTING` | `handshake_success`, `timeout`, `invalid_message`, `version_mismatch`, invalid event |
 | `ESTABLISHED` | `valid_heartbeat`, `valid_data`, `seq_gap_detected`, `disconnect_request`, `timeout`, `protocol_error` |
-| `RETRANSMISSION_PENDING` | `recovery_success`, `valid_heartbeat`, `retransmission_failure`, `invalid_response`, `timeout` |
+| `RETRANSMISSION_PENDING` | `seq_gap_detected`, `recovery_success`, `valid_heartbeat`, `retransmission_failure`, `invalid_response`, `timeout` |
 | `SAFE_DISCONNECT` | `cleanup_complete`, `shutdown_request`, ignored event |
 | `SHUTDOWN` | ignored event |
 
@@ -78,7 +79,7 @@
 
 - 동일 상태에서 동일 이벤트가 반복될 때 idempotent 정책 확인
 - `SAFE_DISCONNECT` 이후 `reset` 없이 새 이벤트가 들어오는 경우 처리 규칙 확인
-- `RETRANSMISSION_PENDING` 상태에서 heartbeat와 data event 순서 차이 검증
+- `RETRANSMISSION_PENDING` 상태에서 repeated gap과 recovery event 순서 차이 검증
 - `UNINITIALIZED` 상태에서 shutdown 요청 직후 init 관련 이벤트가 뒤늦게 들어오는 경우 검증
 - `SHUTDOWN` 상태에서 중복 shutdown 요청이 들어오는 경우 검증
 - action array 최대 길이 근접 전이에서 순서와 개수 유지 확인

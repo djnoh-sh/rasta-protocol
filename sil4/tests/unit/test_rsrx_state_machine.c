@@ -338,6 +338,12 @@ static void vTestRetransmissionPath(void)
 	vMoveToRetransmissionPending(&xContext, &xResult);
 	vAssertEqualState(RSRX_STATE_RETRANSMISSION_PENDING, xResult.eNextState, "state after sequence gap");
 	vAssertEqualReason(RSRX_REASON_SEQUENCE_GAP_DETECTED, xResult.eReason, "sequence gap reason");
+	vAssertActionAt(RSRX_ACTION_REQUEST_RETRANSMISSION, &xResult, 0U, "initial retransmission request action");
+
+	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_SEQUENCE_GAP_DETECTED, &xResult);
+	vAssertEqualState(RSRX_STATE_RETRANSMISSION_PENDING, xResult.eNextState, "repeat gap keeps retransmission pending");
+	vAssertEqualReason(RSRX_REASON_SEQUENCE_GAP_DETECTED, xResult.eReason, "repeat gap reason");
+	vAssertActionAt(RSRX_ACTION_REQUEST_RETRANSMISSION, &xResult, 0U, "repeat gap retransmission request action");
 
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_RECOVERY_SUCCESS, &xResult);
 	vAssertEqualState(RSRX_STATE_ESTABLISHED, xResult.eNextState, "recovery returns established");

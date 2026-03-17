@@ -870,6 +870,118 @@ static void vTestIntegratedUnconfirmedRecoveryProtocolErrorFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "unconfirmed recovery integration lifecycle callback count");
 }
 
+static void vTestIntegratedRepeatedGapRetransmissionFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[4];
+	rsrx_transport_status_t aeStatuses[4];
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auGapFrame1[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auGapFrame2[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auGapPayload1[2] = { 0xC1U, 0xC2U };
+	static const uint8_t auGapPayload2[2] = { 0xC3U, 0xC4U };
+	size_t xHandshakeLength;
+	size_t xGapLength1;
+	size_t xGapLength2;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "repeated gap integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "repeated gap integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "repeated gap integration session connect");
+	vAssertTrue(xTransport.uSendCount == 1U, "repeated gap integration connect request sent");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auGapPayload1,
+		sizeof(auGapPayload1),
+		auGapFrame1,
+		sizeof(auGapFrame1),
+		&xGapLength1);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		1U,
+		auGapPayload2,
+		sizeof(auGapPayload2),
+		auGapFrame2,
+		sizeof(auGapFrame2),
+		&xGapLength2);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auGapFrame1;
+	axFrames[1].xPayloadLength = xGapLength1;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[2].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[2].puPayload = auGapFrame2;
+	axFrames[2].xPayloadLength = xGapLength2;
+	axFrames[2].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[3].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[3].puPayload = (const uint8_t *)0;
+	axFrames[3].xPayloadLength = 0U;
+	axFrames[3].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[3] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 4U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "repeated gap integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 6U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "repeated gap integration pump receive");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "repeated gap integration retransmission pending");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 3U, "repeated gap integration processed count");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "repeated gap integration effective gap event");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_OK, "repeated gap integration accepted status");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "repeated gap integration reason");
+	vAssertTrue(xTransport.uSendCount == 3U, "repeated gap integration retransmission resent");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "repeated gap integration retransmission reason");
+	vAssertTrue(xApplication.uCallCount == 0U, "repeated gap integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "repeated gap integration no lifecycle callback");
+}
+
 static void vTestIntegratedStaleRetransmissionProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -3183,6 +3295,7 @@ int main(void)
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
 	vTestIntegratedRetransmissionRecoveryFlow();
 	vTestIntegratedUnconfirmedRecoveryProtocolErrorFlow();
+	vTestIntegratedRepeatedGapRetransmissionFlow();
 	vTestIntegratedStaleRetransmissionProtocolErrorFlow();
 	vTestIntegratedTimeoutFailSafeFlow();
 	vTestIntegratedChannelDownFailSafeFlow();
