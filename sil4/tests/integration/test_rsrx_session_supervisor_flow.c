@@ -707,7 +707,7 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover integration stale primary send failure");
-	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED, "channel failover integration stale send failure decision");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED, "channel failover integration stale send failure decision");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "channel failover integration stale send failure budget unchanged");
 	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "channel failover integration stale send failure budget update");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel failover integration stale send failure state retained");
@@ -756,11 +756,14 @@ static void vTestIntegratedChannelFailoverFlow(void)
 
 	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover integration recovered primary first failure");
-	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "channel failover integration recovered primary budget one");
-	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration recovered primary budget channel");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "channel failover integration recovered primary uncorrelated budget unchanged");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED, "channel failover integration recovered primary uncorrelated decision");
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel failover integration preferred recovery send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration switched back to primary");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover integration correlated primary failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "channel failover integration correlated primary budget one");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration correlated primary budget channel");
 }
 
 static void vTestIntegratedChannelRecoveryHoldoffFlow(void)
@@ -841,6 +844,9 @@ static void vTestIntegratedChannelRecoveryHoldoffFlow(void)
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel holdoff active remains secondary");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel holdoff first recovery send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel holdoff first send secondary");
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel holdoff secondary send completed");
 
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "channel holdoff second recovery query");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel holdoff switches primary");
@@ -930,9 +936,14 @@ static void vTestIntegratedRedundancyFlapSoakFlow(void)
 	vAssertTrue(xSession.xChannelManager.uTotalSwitchCount == 1U, "redundancy flap integration first total switch count");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy flap integration first held send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration first held send secondary");
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration first held send completed");
 
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration flap reset event");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "redundancy flap integration no extra switch on flap");
 
@@ -944,9 +955,13 @@ static void vTestIntegratedRedundancyFlapSoakFlow(void)
 	vAssertTrue(xSession.xChannelManager.uTotalSwitchCount == 2U, "redundancy flap integration second recovery total switch count");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy flap integration second recovery send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy flap integration second recovery send primary");
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration second recovery send completed");
 
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration third failover");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "redundancy flap integration third switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "redundancy flap integration third switch occurred");
@@ -1107,6 +1122,7 @@ static void vTestIntegratedSendFailureBudgetFlow(void)
 	xSendFailedFrame.xPayloadLength = 0U;
 	xSendFailedFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "send failure integration priming send");
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failure integration first failure");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "send failure integration state retained after first");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "send failure integration budget count");
@@ -1203,6 +1219,7 @@ static void vTestIntegratedSendFailureBudgetResetFlow(void)
 	xSendFailedFrame.xPayloadLength = 0U;
 	xSendFailedFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "send failure reset integration priming send");
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failure reset integration first failure");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "send failure reset integration budget count one");
 	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "send failure reset integration incremented");
@@ -1220,6 +1237,7 @@ static void vTestIntegratedSendFailureBudgetResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "send failure reset integration reset count");
 	vAssertTrue(xApplication.uCallCount == 1U, "send failure reset integration application callback");
 
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "send failure reset integration second priming send");
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failure reset integration failure after success");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "send failure reset integration state retained");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "send failure reset integration budget restarted");

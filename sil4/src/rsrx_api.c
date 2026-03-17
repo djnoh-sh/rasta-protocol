@@ -105,6 +105,38 @@ static rsrx_status_t eProcessSessionEvent(
 		eEvent,
 		&pxSession->xLastReport);
 
+	if((eStatus == RSRX_STATUS_OK) || (eStatus == RSRX_STATUS_REJECTED))
+	{
+		switch(eEvent)
+		{
+			case RSRX_EVENT_VALID_INBOUND_CONNECT:
+			case RSRX_EVENT_HANDSHAKE_SUCCESS:
+			case RSRX_EVENT_VALID_HEARTBEAT:
+			case RSRX_EVENT_VALID_DATA:
+			case RSRX_EVENT_RECOVERY_SUCCESS:
+				rsrx_transport_adapter_clear_outstanding_send(
+					&pxSession->xTransportAdapter);
+				break;
+
+			case RSRX_EVENT_INIT_SUCCESS:
+			case RSRX_EVENT_INIT_FAILURE:
+			case RSRX_EVENT_CONNECT_REQUEST:
+			case RSRX_EVENT_SEQUENCE_GAP_DETECTED:
+			case RSRX_EVENT_DISCONNECT_REQUEST:
+			case RSRX_EVENT_TIMEOUT:
+			case RSRX_EVENT_INVALID_MESSAGE:
+			case RSRX_EVENT_VERSION_MISMATCH:
+			case RSRX_EVENT_PROTOCOL_ERROR:
+			case RSRX_EVENT_RETRANSMISSION_FAILURE:
+			case RSRX_EVENT_INVALID_RESPONSE:
+			case RSRX_EVENT_SHUTDOWN_REQUEST:
+			case RSRX_EVENT_CLEANUP_COMPLETE:
+			case RSRX_EVENT_INVALID:
+			default:
+				break;
+		}
+	}
+
 	*ppxReport = &pxSession->xLastReport;
 
 	return eStatus;

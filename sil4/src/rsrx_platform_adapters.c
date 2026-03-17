@@ -107,6 +107,11 @@ static rsrx_transport_status_t eEncodeAndSend(
 		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	}
 
+	if(pxContext->uHasOutstandingSend != 0U)
+	{
+		return RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	}
+
 	if(rsrx_protocol_context_build_encode_request(
 		&pxContext->xProtocolContext,
 		eMessageType,
@@ -267,6 +272,8 @@ void rsrx_transport_adapter_record_inbound_message(
 	(void)rsrx_protocol_context_record_inbound_message(
 		&pxContext->xProtocolContext,
 		pxMessage);
+	pxContext->uHasOutstandingSend = 0U;
+	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxContext->xLastInboundMessage = *pxMessage;
 	pxContext->uHasLastInboundMessage = 1U;
 }

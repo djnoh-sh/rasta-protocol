@@ -739,6 +739,7 @@ static void vTestSupervisorChannelDownUsesFailover(void)
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.puPayload = auPayload;
 	xFrame.xPayloadLength = sizeof(auPayload);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "channel failover priming send");
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover budget priming");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "channel failover budget primed");
@@ -822,6 +823,7 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "channel up refresh stale secondary budget unchanged");
 
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "channel up refresh priming send");
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up refresh primary failure first hit");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "channel up refresh primary failure budget one");
 	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up refresh budget channel primary");
@@ -857,6 +859,7 @@ static void vTestSupervisorTransportSendFailed(void)
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.puPayload = auPayload;
 	xFrame.xPayloadLength = sizeof(auPayload);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "send failed priming send");
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send failed first status");
@@ -985,6 +988,7 @@ static void vTestSupervisorSendFailureBudgetResetsAfterSuccess(void)
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.puPayload = auPayload;
 	xFrame.xPayloadLength = sizeof(auPayload);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "budget reset priming send");
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget reset first failure");
@@ -1001,6 +1005,7 @@ static void vTestSupervisorSendFailureBudgetResetsAfterSuccess(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "budget reset inbound success");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "budget reset cleared by success");
 
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "budget reset second priming send");
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget reset failure after success");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "budget reset state remains established");

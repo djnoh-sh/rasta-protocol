@@ -24,6 +24,7 @@
 
 - 상위 애플리케이션이 application payload를 protocol `DATA` frame으로 제출하는 명시적 경계를 정의한다.
 - 현재 단계에서는 queue 없이 synchronous send API를 사용한다.
+- 현재 단계에서는 `single outstanding send only` 정책을 사용한다.
 - state machine action 확장 전까지 outbound data는 session API가 직접 transport adapter helper를 호출한다.
 
 ## File Structure
@@ -40,7 +41,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
-| `rsrx_transport_adapter_send_application_data` | function | payload를 `DATA` encode/send로 변환 | null payload + nonzero length 금지 |
+| `rsrx_transport_adapter_send_application_data` | function | payload를 `DATA` encode/send로 변환 | null payload + nonzero length 금지, outstanding send 존재 시 busy reject |
 | `RSRX_REASON_APPLICATION_DATA_REQUESTED` | reason code | outbound application data 전송 이유 | transport request와 codec header에 기록 |
 
 ## Functional Behavior
@@ -51,24 +52,29 @@
   - 허용 상태이면 transport adapter send helper를 호출한다.
   - transport helper가 실패하면 `REJECTED`를 반환한다.
 - `rsrx_transport_adapter_send_application_data`:
+  - outstanding send가 이미 있으면 `UNAVAILABLE`을 반환한다.
   - `protocol context`를 통해 sequence/confirmation이 채워진 encode request를 생성한다.
   - message type은 `DATA`로 고정한다.
   - reason은 `APPLICATION_DATA_REQUESTED`로 고정한다.
   - encode 성공 시 transport send request를 바로 하위 transport port로 전달한다.
+  - valid inbound message가 record되거나 correlated transport feedback이 수신되기 전까지 outstanding send를 유지한다.
 
 ## Constraints
 
-- 현재 구현은 synchronous direct-send 모델이다.
+- 현재 구현은 synchronous direct-send + single outstanding send 모델이다.
 - outbound application data는 API callback이나 lifecycle callback을 발생시키지 않는다.
-- queueing, batching, backpressure, retry policy는 후속 단계에서 별도 정의한다.
+- queueing, batching, multi-depth backpressure 정책은 후속 단계에서 별도 정의한다.
 
 ## Verification Notes
 
 - 필요한 테스트:
   - `ESTABLISHED` 상태 outbound application send 성공
+  - outstanding send 존재 시 second send 거부
+  - valid inbound 후 send 재허용
   - `INITIALIZED` 또는 `CONNECTING` 상태 send 거부
   - null payload + nonzero length 거부
   - encoded frame이 `DATA`/`APPLICATION_DATA_REQUESTED`/expected sequence를 포함하는지 검증
 - 분석 포인트:
   - direct-send path가 inbound delivery path와 혼동되지 않는지 검토
   - protocol context sequence 증가가 outbound application send에서도 유지되는지 검토
+  - outstanding send clear 시점이 transport supervisor correlation 정책과 일치하는지 검토

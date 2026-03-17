@@ -369,6 +369,31 @@ static void vTestApplicationDataSend(void)
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_APPLICATION_DATA_REQUESTED, "application data reason encoded");
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[7] == 0x01U, "application data sequence encoded");
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auDataPayload[0], "application data payload copied");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U, "application data outstanding send set");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"application data second send busy");
+
+	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xTransportAdapterContext.xLastInboundMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
+	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
+	xTransportAdapterContext.xLastInboundMessage.xPayloadLength = sizeof(auDataPayload);
+	rsrx_transport_adapter_record_inbound_message(
+		&xTransportAdapterContext,
+		&xTransportAdapterContext.xLastInboundMessage);
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 0U, "application data outstanding cleared by inbound");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data send after inbound clear");
+	vAssertTrue(xTransportContext.uCallCount == 2U, "application data send count after clear");
 }
 
 static void vTestChannelManagerDrivenFailoverSelection(void)
@@ -415,6 +440,7 @@ static void vTestChannelManagerDrivenFailoverSelection(void)
 	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
 	vAssertTrue(xTransportContext.uCallCount == 1U, "failover send called");
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover send channel");
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 
 	xTransportContext.uPrimaryAvailable = 1U;
 	xTransportContext.uSecondaryAvailable = 1U;
@@ -425,8 +451,13 @@ static void vTestChannelManagerDrivenFailoverSelection(void)
 		"query preferred recovery channel");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "recovered preferred channel");
 
-	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
-	vAssertTrue(xTransportContext.uCallCount == 2U, "preferred recovery send called");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"preferred recovery send called");
+	vAssertTrue(xTransportContext.uCallCount == 2U, "preferred recovery send count");
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "preferred recovery send channel");
 }
 
@@ -482,6 +513,7 @@ static void vTestPreferredRecoveryHoldoffSelection(void)
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xChannelManagerContext) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active remains secondary");
 	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff first recovery send secondary");
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 
 	vAssertTrue(
 		rsrx_transport_adapter_query_channel(
@@ -489,7 +521,12 @@ static void vTestPreferredRecoveryHoldoffSelection(void)
 			&xChannelState) == RSRX_TRANSPORT_STATUS_OK,
 		"holdoff second recovery query");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff switches to primary");
-	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"holdoff second recovery send");
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff second recovery send primary");
 }
 
