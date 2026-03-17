@@ -29,6 +29,10 @@ jobs:
       - name: Run SIL4 Verification
         run: bash sil4/tools/run_ci_verification.sh
 
+      - name: Render PR Annotation
+        if: always() && github.event_name == 'pull_request'
+        run: bash sil4/tools/render_pr_annotation.sh
+
       - name: Publish Step Summary
         if: always()
         run: |
@@ -36,6 +40,11 @@ jobs:
             cat /tmp/rsrx-ci-logs/summary.md >> "$GITHUB_STEP_SUMMARY"
           else
             echo "SIL4 CI summary not found" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ -f /tmp/rsrx-ci-logs/pr_annotation.md ]; then
+            printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/rsrx-ci-logs/pr_annotation.md >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload SIL4 CI Logs
@@ -50,4 +59,6 @@ jobs:
             /tmp/rsrx-ci-logs/cppcheck.log
             /tmp/rsrx-ci-logs/summary.md
             /tmp/rsrx-ci-logs/summary.env
+            /tmp/rsrx-ci-logs/pr_annotation.md
+            /tmp/rsrx-ci-logs/pr_annotation.env
           if-no-files-found: error

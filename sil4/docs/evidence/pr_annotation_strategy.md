@@ -96,9 +96,9 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 ## Current Decision
 
-1. 현재 단계에서는 PR-level annotation을 실제 workflow에 아직 연결하지 않는다.
-2. 우선 policy를 문서화하고, CI summary/env가 필요한 입력을 제공하는지 확인한다.
-3. 실제 annotation 구현은 GitHub Actions step 추가로 후속 진행한다.
+1. `summary.env` 기반 helper script를 통해 PR annotation markdown을 생성한다.
+2. workflow는 `pull_request` 이벤트에서 helper를 실행하고 step summary에 그 결과를 게시한다.
+3. 실제 PR comment API 연동은 후속 단계로 남긴다.
 
 ## Minimal Implementation Path
 
@@ -122,6 +122,6 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 ## Follow-up Actions
 
-1. workflow helper script 또는 shell step 초안 작성
-2. `summary.env` 기반 decision logic 검증
+1. 실제 PR comment API 연동 여부 결정
+2. `summary.env` 기반 decision logic regression 검증
 3. PR noise threshold 정의
