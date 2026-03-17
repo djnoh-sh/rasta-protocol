@@ -11,8 +11,8 @@
 ## Summary
 
 - 현재 전체 진행률 추정: `85~88%`
-- 현재 단계: `vendor rule mapping formalization 단계`
-- 다음 주력 단계: `ctest strategy review`, `PR annotation strategy`, `CI-linked evidence expansion`
+- 현재 단계: `verification path strategy formalization 단계`
+- 다음 주력 단계: `PR annotation strategy`, `static analysis report template refinement`, `CI-linked evidence expansion`
 
 ## Overall Phase Status
 
@@ -22,7 +22,7 @@
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
-| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 84% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft 확보 |
+| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 86% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline 확보 |
 
 ## Workstream Status
 
@@ -90,6 +90,7 @@
 | M39 | clang first-run baseline 실행 완료 | Completed | `SA-REP-006`, `RV-012`, second-tool executable baseline 확보 |
 | M40 | CI subset summary baseline 수립 | Completed | `run_ci_verification.sh`, `RV-013`, severity/subset bucket summary artifact 확보 |
 | M41 | vendor rule ID mapping draft 수립 | Completed | `EVID-CI-012`, `RV-014`, future commercial analyzer 확장 구조 고정 |
+| M42 | ctest registration strategy baseline 수립 | Completed | `EVID-CI-014`, `RV-015`, direct-run 유지와 ctest 전환 조건 고정 |
 
 ## In-Progress Items
 
@@ -130,7 +131,7 @@
 | R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 retry semantics와 runtime feedback policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 minimal bounded queue 모델에 머묾 | `outstanding 1 + deferred 1`과 overflow telemetry는 들어갔지만 deeper queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft는 생겼지만 exact vendor matrix와 PR-level reporting이 아직 없다 | exact vendor matrix, PR annotation strategy |
+| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline은 생겼지만 exact vendor matrix와 PR-level reporting이 아직 없다 | exact vendor matrix, PR annotation strategy |
 
 ## Recommended Next Order
 
