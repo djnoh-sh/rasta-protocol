@@ -134,6 +134,11 @@ static analysis report에는 future vendor tool 도입 시 아래 section을 추
 | OI-VM-002 | rule family to exact vendor rule ID mapping | vendor rule matrix 초안 작성 |
 | OI-VM-003 | CI/report integration policy | summary/report에 vendor bucket 반영 |
 
+## Sample Reference
+
+- exact vendor matrix sample:
+  - `vendor_rule_matrix_sample.md`
+
 ## Follow-up Actions
 
 1. vendor tool 선택 시 rule catalog 확보
