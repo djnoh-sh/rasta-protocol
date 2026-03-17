@@ -1,0 +1,127 @@
+# PR Annotation Strategy
+
+## Document Control
+
+- Document ID: `EVID-023`
+- Version: `0.1.0`
+- Status: `Draft`
+- Owner: `Project Team`
+- Last Updated: `2026-03-17`
+
+## Purpose
+
+이 문서는 `sil4` CI 실행 결과를 pull request 수준에서 어떻게 annotation할지 기준을 정의한다.
+
+목적은 다음과 같다.
+
+1. 단순 pass/fail을 넘어 reviewer가 바로 판단할 수 있는 핵심 신호를 제공한다.
+2. severity bucket, MISRA subset bucket, static analysis finding을 annotation policy와 연결한다.
+3. PR noise를 통제하면서 safety-relevant signal만 표면화한다.
+
+## Scope
+
+- 포함:
+  - GitHub PR comment/summary/annotation 정책
+  - severity/subset bucket 기반 표시 규칙
+  - build/test/static analysis failure reporting 기준
+- 제외:
+  - external dashboard
+  - repository-wide non-`sil4` workflow
+
+## Current Baseline Inputs
+
+- CI summary:
+  - `sil4/tools/run_ci_verification.sh`
+- workflow:
+  - `.github/workflows/sil4-ci.yml`
+- severity mapping:
+  - `sil4/docs/evidence/severity_mapping.md`
+- subset mapping:
+  - `sil4/docs/evidence/tool_specific_misra_mapping.md`
+
+## Annotation Levels
+
+| Level | Trigger | Intended Surface |
+| --- | --- | --- |
+| `Blocker` | configure/build/test failure, `Critical` finding, unapproved `High` finding | PR failure + explicit annotation |
+| `Review Required` | `Medium` finding, deviation opened, unexpected bucket increase | PR summary + reviewer attention note |
+| `Informational` | all-zero clean run, stable bucket summary, expected low-risk cleanup | PR summary only |
+
+## Policy Rules
+
+### Rule 1
+
+configure/build/test 단계가 실패하면 반드시 `Blocker`로 기록한다.
+
+### Rule 2
+
+`summary.env`의 severity bucket에서 `Critical > 0`이면 `Blocker`다.
+
+### Rule 3
+
+`High > 0`이면 기본적으로 `Blocker`다. 다만 승인된 deviation과 정확히 연결된 경우에만 `Review Required`로 완화 가능하다.
+
+### Rule 4
+
+`Medium > 0`이고 `High/Critical == 0`이면 `Review Required`다.
+
+### Rule 5
+
+`Low` 또는 `Info`만 존재하면 `Informational`이다.
+
+### Rule 6
+
+subset bucket의 unexpected increase는 severity bucket과 별도로 review note를 남긴다. 특히 아래는 우선순위를 높인다.
+
+- `MISRA-S1`
+- `MISRA-S2`
+- `MISRA-S3`
+- `MISRA-S4`
+
+## Recommended Output Format
+
+### Summary Block
+
+- overall result
+- configure/build/test/static analysis status
+- severity bucket table
+- subset bucket table
+- artifact link
+
+### Annotation Block
+
+- `Blocker`가 있으면 top-level failure reason 한 줄
+- `Review Required`가 있으면 reviewer action 한 줄
+- `Informational`만 있으면 clean baseline confirmation 한 줄
+
+## Current Decision
+
+1. 현재 단계에서는 PR-level annotation을 실제 workflow에 아직 연결하지 않는다.
+2. 우선 policy를 문서화하고, CI summary/env가 필요한 입력을 제공하는지 확인한다.
+3. 실제 annotation 구현은 GitHub Actions step 추가로 후속 진행한다.
+
+## Minimal Implementation Path
+
+### Step A
+
+- `summary.env`를 읽어 level(`Blocker/Review Required/Informational`)을 계산한다.
+
+### Step B
+
+- `pull_request` 이벤트에서 `GITHUB_STEP_SUMMARY`와 별도로 short annotation comment를 생성한다.
+
+### Step C
+
+- noise가 크면 `Blocker`와 `Review Required`만 annotation하고 `Informational`은 summary에만 남긴다.
+
+## Residual Limits
+
+- 현재는 baseline policy만 있고 실제 PR comment step은 없다.
+- exact vendor rule matrix가 없어 vendor-level annotation은 불가능하다.
+- trend comparison(이전 PR 대비 bucket 증가)은 아직 구현하지 않았다.
+
+## Follow-up Actions
+
+1. workflow helper script 또는 shell step 초안 작성
+2. `summary.env` 기반 decision logic 검증
+3. PR noise threshold 정의

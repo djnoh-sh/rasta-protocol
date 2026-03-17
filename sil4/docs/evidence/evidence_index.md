@@ -48,6 +48,8 @@
 | EVID-CI-013 | `../reviews/RV-014_vendor_rule_id_mapping_review.md` | Draft | vendor rule mapping safety review |
 | EVID-CI-014 | `ctest_registration_strategy.md` | Draft | ctest registration strategy baseline |
 | EVID-CI-015 | `../reviews/RV-015_ctest_registration_strategy_review.md` | Draft | ctest strategy safety review |
+| EVID-CI-016 | `pr_annotation_strategy.md` | Draft | PR annotation policy baseline |
+| EVID-CI-017 | `../reviews/RV-016_pr_annotation_strategy_review.md` | Draft | PR annotation strategy safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
 | EVID-SA-017 | `../reviews/RV-012_clang_baseline_review.md` | Draft | clang baseline evidence review |
 
@@ -59,5 +61,5 @@
 4. queue/backpressure policy evidence 추가 확장
 5. MISRA subset severity 세분화
 6. second-tool rule taxonomy mapping
-7. PR annotation strategy
+7. PR annotation workflow helper
 8. exact vendor matrix sample entry

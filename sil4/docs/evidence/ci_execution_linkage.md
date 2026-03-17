@@ -65,13 +65,13 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 ## Residual Limits
 
 - 현재 workflow는 Linux 단일 플랫폼만 사용한다.
-- PR annotation은 아직 없다.
+- PR annotation policy baseline은 정의됐지만 workflow step은 아직 없다.
 - `ctest` registration은 아직 primary path가 아니다.
 - MISRA 전용 analyzer는 CI에 포함되지 않는다.
 
 ## Follow-up Actions
 
-1. subset/severity bucket별 PR annotation 추가
+1. subset/severity bucket별 PR annotation helper 추가
 2. severity mapping 문서와 workflow fail policy 연결 강화
 3. second-tool analyzer 도입 여부 결정
 4. `ctest` 전환 조건 재검토
