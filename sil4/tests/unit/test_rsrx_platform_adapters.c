@@ -379,20 +379,20 @@ static void vTestApplicationDataSend(void)
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auDataPayload,
-			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
-		"application data second send busy");
-	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "application data busy telemetry");
-	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "application data busy streak one");
-	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 1U, "application data busy max one");
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data second send queued");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "application data queued telemetry");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 0U, "application data busy telemetry before overflow");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
-		"application data third send busy");
-	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 2U, "application data busy telemetry two");
-	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "application data busy streak two");
-	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "application data busy max two");
+		"application data third send overflow");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "application data busy telemetry one");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "application data queue overflow telemetry");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "application data busy streak one");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 1U, "application data busy max one");
 	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "application data busy status telemetry");
 
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
@@ -404,18 +404,23 @@ static void vTestApplicationDataSend(void)
 	rsrx_transport_adapter_record_inbound_message(
 		&xTransportAdapterContext,
 		&xTransportAdapterContext.xLastInboundMessage);
-	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 0U, "application data outstanding cleared by inbound");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U, "application data deferred dispatched on inbound");
 	vAssertTrue(pxTelemetry->uClearOnInboundCount == 1U, "application data inbound clear telemetry");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 1U, "application data deferred dispatch telemetry");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "application data busy streak reset by inbound");
+	vAssertTrue(xTransportContext.uCallCount == 2U, "application data deferred send count");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"application data send after inbound clear");
-	vAssertTrue(xTransportContext.uCallCount == 2U, "application data send count after clear");
-	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "application data accepted telemetry after clear");
-	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "application data busy max retained");
+		"application data send queued after dispatch");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "application data queued telemetry after dispatch");
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(xTransportContext.uCallCount == 3U, "application data send count after clear");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 3U, "application data accepted telemetry after clear");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 2U, "application data deferred dispatch telemetry after clear");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 1U, "application data busy max retained");
 }
 
 static void vTestChannelManagerDrivenFailoverSelection(void)

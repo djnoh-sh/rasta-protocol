@@ -14,6 +14,9 @@ typedef struct
 {
 	rsrx_transport_status_t eLastSendStatus;
 	uint32_t uAcceptedSendCount;
+	uint32_t uQueuedSendCount;
+	uint32_t uDeferredDispatchCount;
+	uint32_t uQueueOverflowRejectCount;
 	uint32_t uBusyRejectedSendCount;
 	uint32_t uConsecutiveBusyRejectedSendCount;
 	uint32_t uMaxConsecutiveBusyRejectedSendCount;
@@ -33,12 +36,17 @@ typedef struct
 	rsrx_decoded_message_t xLastInboundMessage;
 	rsrx_transport_channel_id_t eDefaultChannelId;
 	rsrx_transport_channel_id_t eLastOutstandingSendChannelId;
+	rsrx_message_type_t eDeferredMessageType;
+	rsrx_reason_code_t eDeferredReason;
 	const uint8_t * puFramePayload;
 	size_t xFramePayloadLength;
 	uint8_t auEncodedFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auDeferredPayload[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	size_t xDeferredPayloadLength;
 	rsrx_outbound_send_telemetry_t xOutboundTelemetry;
 	uint32_t uHasLastInboundMessage;
 	uint32_t uHasOutstandingSend;
+	uint32_t uHasDeferredSend;
 } rsrx_transport_adapter_context_t;
 
 typedef struct

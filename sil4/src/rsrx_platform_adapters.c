@@ -88,6 +88,37 @@ static const uint8_t * puResolvePayload(
 static rsrx_transport_status_t eRefreshChannelManagerState(
 	rsrx_transport_adapter_context_t * pxContext);
 
+static rsrx_transport_status_t eEncodeAndSend(
+	rsrx_transport_adapter_context_t * pxContext,
+	rsrx_message_type_t eMessageType,
+	rsrx_reason_code_t eReason,
+	const uint8_t * puPayload,
+	size_t xPayloadLength);
+
+static void vDispatchDeferredSendIfPresent(
+	rsrx_transport_adapter_context_t * pxContext)
+{
+	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
+		(pxContext->uHasDeferredSend == 0U))
+	{
+		return;
+	}
+
+	if(eEncodeAndSend(
+		pxContext,
+		pxContext->eDeferredMessageType,
+		pxContext->eDeferredReason,
+		pxContext->auDeferredPayload,
+		pxContext->xDeferredPayloadLength) == RSRX_TRANSPORT_STATUS_OK)
+	{
+		pxContext->uHasDeferredSend = 0U;
+		pxContext->eDeferredMessageType = RSRX_MESSAGE_TYPE_INVALID;
+		pxContext->eDeferredReason = RSRX_REASON_NONE;
+		pxContext->xDeferredPayloadLength = 0U;
+		pxContext->xOutboundTelemetry.uDeferredDispatchCount++;
+	}
+}
+
 static void vClearOutstandingSend(
 	rsrx_transport_adapter_context_t * pxContext,
 	uint32_t uIsFeedbackClear,
@@ -118,6 +149,7 @@ static void vClearOutstandingSend(
 	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 	pxContext->uHasOutstandingSend = 0U;
 	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	vDispatchDeferredSendIfPresent(pxContext);
 }
 
 static rsrx_transport_status_t eEncodeAndSend(
@@ -145,8 +177,29 @@ static rsrx_transport_status_t eEncodeAndSend(
 
 	if(pxContext->uHasOutstandingSend != 0U)
 	{
+		if((eMessageType == RSRX_MESSAGE_TYPE_DATA) &&
+			(pxContext->uHasDeferredSend == 0U) &&
+			(xPayloadLength <= sizeof(pxContext->auDeferredPayload)))
+		{
+			size_t xIndex;
+
+			for(xIndex = 0U; xIndex < xPayloadLength; ++xIndex)
+			{
+				pxContext->auDeferredPayload[xIndex] = puPayload[xIndex];
+			}
+			pxContext->xDeferredPayloadLength = xPayloadLength;
+			pxContext->eDeferredMessageType = eMessageType;
+			pxContext->eDeferredReason = eReason;
+			pxContext->uHasDeferredSend = 1U;
+			pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_OK;
+			pxContext->xOutboundTelemetry.uQueuedSendCount++;
+			pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
+			return RSRX_TRANSPORT_STATUS_OK;
+		}
+
 		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
 		pxContext->xOutboundTelemetry.uBusyRejectedSendCount++;
+		pxContext->xOutboundTelemetry.uQueueOverflowRejectCount++;
 		pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount++;
 		if(pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount >
 			pxContext->xOutboundTelemetry.uMaxConsecutiveBusyRejectedSendCount)
@@ -268,8 +321,15 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->uHasLastInboundMessage = 0U;
 	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxContext->uHasOutstandingSend = 0U;
+	pxContext->eDeferredMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	pxContext->eDeferredReason = RSRX_REASON_NONE;
+	pxContext->xDeferredPayloadLength = 0U;
+	pxContext->uHasDeferredSend = 0U;
 	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	pxContext->xOutboundTelemetry.uAcceptedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uQueuedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uDeferredDispatchCount = 0U;
+	pxContext->xOutboundTelemetry.uQueueOverflowRejectCount = 0U;
 	pxContext->xOutboundTelemetry.uBusyRejectedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uMaxConsecutiveBusyRejectedSendCount = 0U;
