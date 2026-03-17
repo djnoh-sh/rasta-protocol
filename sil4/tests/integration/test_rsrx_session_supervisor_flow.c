@@ -1128,6 +1128,95 @@ static void vTestIntegratedRepeatedGapRecoveryFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "repeated gap recovery integration lifecycle callback count");
 }
 
+static void vTestIntegratedRetransmissionTimeoutFailSafeFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auGapPayload[2] = { 0xE7U, 0xE8U };
+	size_t xHandshakeLength;
+	size_t xGapLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "retransmission timeout integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "retransmission timeout integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "retransmission timeout integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auGapPayload,
+		sizeof(auGapPayload),
+		auGapFrame,
+		sizeof(auGapFrame),
+		&xGapLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auGapFrame;
+	axFrames[1].xPayloadLength = xGapLength;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "retransmission timeout integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retransmission timeout integration initial pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retransmission timeout integration retransmission pending");
+	vAssertTrue(xTransport.uSendCount == 2U, "retransmission timeout integration retransmission request sent");
+
+	vAssertTrue(rsrx_transport_supervisor_process_timer_expiry(&xSupervisor, RSRX_TIMER_EXPIRY_RETRANSMISSION, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retransmission timeout integration timer expiry");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retransmission timeout integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RETRANSMISSION_FAILURE, "retransmission timeout integration failure event");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "retransmission timeout integration rejected status");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_RETRANSMISSION_FAILED, "retransmission timeout integration reason");
+	vAssertTrue(xApplication.uCallCount == 0U, "retransmission timeout integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retransmission timeout integration lifecycle callback");
+}
+
 static void vTestIntegratedStaleRetransmissionProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -3443,6 +3532,7 @@ int main(void)
 	vTestIntegratedUnconfirmedRecoveryProtocolErrorFlow();
 	vTestIntegratedRepeatedGapRetransmissionFlow();
 	vTestIntegratedRepeatedGapRecoveryFlow();
+	vTestIntegratedRetransmissionTimeoutFailSafeFlow();
 	vTestIntegratedStaleRetransmissionProtocolErrorFlow();
 	vTestIntegratedTimeoutFailSafeFlow();
 	vTestIntegratedChannelDownFailSafeFlow();
