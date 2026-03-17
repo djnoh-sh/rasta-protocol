@@ -64,7 +64,8 @@ static analysis report에는 아래처럼 연결한다.
 
 1. 이 문서는 actual vendor finding 이전의 reference example이다.
 2. deviation log format과 report template가 실제로 수용 가능한지 보여주는 목적에 충분하다.
-3. 첫 실제 vendor finding이 생기면 본 예시는 archived example로 전환하고 실제 record로 대체한다.
+3. 첫 실제 vendor finding onboarding 절차는 `first_real_vendor_onboarding.md`를 따른다.
+4. 첫 실제 vendor finding이 생기면 본 예시는 archived example로 전환하고 실제 record로 대체한다.
 
 ## Follow-up Actions
 

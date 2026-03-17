@@ -98,6 +98,7 @@ vendor rule ID draft 기준은 `vendor_rule_id_mapping_draft.md`를 기준으로
 2. fail threshold
 3. second-tool(`clang`) baseline closure
 4. 전용 MISRA analyzer 도입 여부
+5. first real vendor onboarding execution
 
 현재 CI 실행 linkage baseline은 다음 산출물로 연결한다.
 
@@ -139,6 +140,6 @@ vendor rule ID draft 기준은 `vendor_rule_id_mapping_draft.md`를 기준으로
 
 | OI ID | Description | Owner | Target |
 | --- | --- | --- | --- |
-| OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | Partially closed by `EVID-CI-003`, `EVID-CI-005`, `EVID-CI-007`, `EVID-CI-012`; exact vendor matrix와 PR reporting 잔여 |
+| OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | Partially closed by `EVID-CI-003`, `EVID-CI-005`, `EVID-CI-007`, `EVID-CI-012`, `EVID-CI-027`; exact vendor matrix actual entry 잔여 |
 | OI-SA-002 | CI에서의 자동 실행 정책 확정 | Project Team | Closed by `EVID-CI-001` baseline |
 | OI-SA-003 | `cppcheck` baseline finding cleanup 및 follow-up report 생성 | Project Team | SA-2 이전 |

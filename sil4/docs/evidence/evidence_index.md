@@ -58,6 +58,8 @@
 | EVID-CI-024 | `delta_based_annotation_policy.md` | Draft | delta-based PR annotation policy |
 | EVID-CI-025 | `../reviews/RV-022_delta_based_annotation_policy_review.md` | Draft | delta-based annotation policy review |
 | EVID-CI-026 | `../reviews/RV-023_delta_aware_helper_review.md` | Draft | delta-aware helper implementation review |
+| EVID-CI-027 | `first_real_vendor_onboarding.md` | Draft | first real vendor finding onboarding procedure |
+| EVID-CI-028 | `../reviews/RV-024_first_real_vendor_onboarding_review.md` | Draft | first real vendor onboarding procedure review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -71,5 +73,5 @@
 4. queue/backpressure policy evidence 추가 확장
 5. MISRA subset severity 세분화
 6. second-tool rule taxonomy mapping
-7. first real vendor finding onboarding
-8. baseline persistence source selection
+7. baseline persistence source selection
+8. first actual vendor rule entry
