@@ -128,6 +128,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 {
 	uint32_t uSelectedIndex;
 	uint32_t uPreviousIndex;
+	uint32_t uPreferredIndex;
 
 	if((pxContext == (rsrx_channel_manager_context_t *)0) ||
 		(pxResult == (rsrx_channel_selection_result_t *)0) ||
@@ -138,8 +139,17 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 
 	uPreviousIndex = pxContext->uActiveChannelIndex;
 	pxContext->uLastSelectionWasFailover = 0U;
+	uPreferredIndex = pxContext->xConfig.uPreferredChannelIndex;
 
-	if((pxContext->uActiveChannelIndex < pxContext->xConfig.uChannelCount) &&
+	if((pxContext->xConfig.eMode == RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY) &&
+		(uPreferredIndex < pxContext->xConfig.uChannelCount) &&
+		(pxContext->xConfig.axChannels[uPreferredIndex].uIsAvailable != 0U))
+	{
+		uSelectedIndex = uPreferredIndex;
+		pxContext->uLastSelectionWasFailover =
+			(uint32_t)(uSelectedIndex != uPreviousIndex);
+	}
+	else if((pxContext->uActiveChannelIndex < pxContext->xConfig.uChannelCount) &&
 		(pxContext->xConfig.axChannels[pxContext->uActiveChannelIndex].uIsAvailable != 0U))
 	{
 		uSelectedIndex = pxContext->uActiveChannelIndex;

@@ -17,11 +17,12 @@
 | FR-003 | HZ-003 | HLD-001, LLD-012 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_application_data_indication_t`, `vApplicationExecutorDispatch`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_platform_adapter_build_executor_table` | TC-APP-001, TC-APP-002 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_session_send_application_data`, `rsrx_transport_adapter_send_application_data` | TC-OUT-001, TC-OUT-004, TC-API-010, TC-PA-005 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame`, `rsrx_transport_supervisor_poll_receive`, `rsrx_transport_supervisor_process_transport_event` | TC-SUP-001, TC-SUP-004, TC-SUP-007, TC-SUP-010, TC-SUP-015 |  | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-014 | `sil4/include/rsrx_channel_manager.h`, `sil4/src/rsrx_channel_manager.c` | `rsrx_channel_manager_init`, `rsrx_channel_manager_update_channel`, `rsrx_channel_manager_select_channel`, `rsrx_channel_manager_reset` | TC-CHM-001, TC-CHM-002, TC-CHM-004 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-014 | `sil4/include/rsrx_channel_manager.h`, `sil4/src/rsrx_channel_manager.c` | `rsrx_channel_manager_init`, `rsrx_channel_manager_update_channel`, `rsrx_channel_manager_select_channel`, `rsrx_channel_manager_reset` | TC-CHM-001, TC-CHM-002, TC-CHM-004, TC-CHM-005 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSessionSupervisorFlow` | TC-INT-001 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPumpReceiveStabilityFlow` | TC-INT-008 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBoundedSoakPumpFlow` | TC-INT-009 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedChannelFailoverFlow` | TC-INT-010 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedChannelFailoverFlow` | TC-INT-011 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-004, TC-SM-005, TC-SM-011 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-011 | `sil4/include/rsrx_protocol_context.h`, `sil4/src/rsrx_protocol_context.c` | `rsrx_protocol_context_resolve_inbound_event`, `rsrx_protocol_context_build_encode_request`, `rsrx_protocol_context_clear_retransmission` | TC-PC-003, TC-PC-006, TC-PC-007 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_frame_t` | TC-TR-003 |  | Draft |
@@ -68,10 +69,10 @@
 | IF-002 | HZ-007 | HLD-001, LLD-004 | `sil4/include/rsrx_platform.h` | `rsrx_clock_port_t`, `rsrx_timer_port_t`, `rsrx_diagnostics_port_t`, `rsrx_platform_port_table_t` | TC-PLAT-001, TC-PLAT-002 |  | Draft |
 | IF-002 | HZ-007 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_platform_adapter_init`, `rsrx_platform_adapter_build_executor_table`, `rsrx_transport_adapter_query_channel` | TC-PA-001, TC-PA-006 |  | Draft |
 | IF-002 | HZ-007 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_port_t` | TC-TR-001 |  | Draft |
-| IF-002 | HZ-007 | HLD-001, LLD-014 | `sil4/include/rsrx_channel_manager.h`, `sil4/src/rsrx_channel_manager.c` | `rsrx_channel_manager_config_t`, `rsrx_channel_selection_result_t` | TC-CHM-001 |  | Draft |
+| IF-002 | HZ-007 | HLD-001, LLD-014 | `sil4/include/rsrx_channel_manager.h`, `sil4/src/rsrx_channel_manager.c` | `rsrx_channel_manager_config_t`, `rsrx_channel_selection_result_t` | TC-CHM-001, TC-CHM-005 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-004 | `sil4/include/rsrx_platform.h` | `rsrx_timer_command_t`, `rsrx_diagnostic_record_t` | TC-PLAT-002, TC-PLAT-003 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_transport_adapter_init`, `rsrx_transport_executor_dispatch`, `rsrx_platform_timer_executor_dispatch`, `rsrx_platform_adapter_init` | TC-PA-002 |  | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_transport_adapter_record_inbound_message`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_transport_adapter_query_channel`, `rsrx_platform_adapter_build_executor_table` | TC-PA-001, TC-PA-004, TC-PA-006 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-005 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_transport_adapter_record_inbound_message`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_transport_adapter_query_channel`, `rsrx_platform_adapter_build_executor_table` | TC-PA-001, TC-PA-004, TC-PA-006, TC-PA-007 |  | Draft |
 
 ## Notes
 

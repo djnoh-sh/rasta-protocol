@@ -81,6 +81,14 @@ int main(void)
 		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
 		"primary restored");
 	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"select preferred after restore");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after restore");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "channel switch reported on preferred recovery");
+	vAssertTrue(
+		rsrx_channel_manager_get_active_channel(&xContext) == RSRX_TRANSPORT_CHANNEL_PRIMARY,
+		"active primary after restore");
+	vAssertTrue(
 		rsrx_channel_manager_reset(&xContext) == RSRX_CHANNEL_MANAGER_STATUS_OK,
 		"channel manager reset");
 	vAssertTrue(

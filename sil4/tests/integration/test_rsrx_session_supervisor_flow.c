@@ -615,6 +615,7 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	rsrx_transport_supervisor_context_t xSupervisor;
 	const rsrx_orchestrator_report_t * pxSessionReport;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	rsrx_transport_channel_state_t xChannelState;
 	test_transport_context_t xTransport = { 0 };
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
@@ -719,6 +720,13 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 2U, "channel failover integration inbound sequence");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration active channel retained");
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "channel failover integration no lifecycle callback");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "channel failover integration preferred recovery query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration preferred recovery selected primary");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel failover integration preferred recovery send");
+	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration switched back to primary");
 }
 
 static void vTestIntegratedDecodeFailureFlow(void)

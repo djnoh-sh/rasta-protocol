@@ -391,6 +391,19 @@ static void vTestChannelManagerDrivenFailoverSelection(void)
 	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
 	vAssertTrue(xTransportContext.uCallCount == 1U, "failover send called");
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover send channel");
+
+	xTransportContext.uPrimaryAvailable = 1U;
+	xTransportContext.uSecondaryAvailable = 1U;
+	vAssertTrue(
+		rsrx_transport_adapter_query_channel(
+			&xTransportAdapterContext,
+			&xChannelState) == RSRX_TRANSPORT_STATUS_OK,
+		"query preferred recovery channel");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "recovered preferred channel");
+
+	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
+	vAssertTrue(xTransportContext.uCallCount == 2U, "preferred recovery send called");
+	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "preferred recovery send channel");
 }
 
 int main(void)

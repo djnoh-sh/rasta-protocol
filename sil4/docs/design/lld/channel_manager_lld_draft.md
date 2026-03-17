@@ -22,7 +22,7 @@
 | Element | Kind | Responsibility | Notes |
 | --- | --- | --- | --- |
 | `include/rsrx_channel_manager.h` | public contract | redundancy/channel selection contract 정의 | active/standby 초기 범위 |
-| `src/rsrx_channel_manager.c` | implementation | 채널 상태 업데이트와 send channel 결정 | deterministic failover policy |
+| `src/rsrx_channel_manager.c` | implementation | 채널 상태 업데이트와 send channel 결정 | deterministic failover and preferred recovery policy |
 
 ## Data Types
 
@@ -41,7 +41,8 @@
   - preferred channel index는 유효 범위 내여야 한다.
   - 각 channel id는 `INVALID`가 아니어야 한다.
 - 선택 정책:
-  - 현재 active channel이 available이면 그대로 유지한다.
+  - `ACTIVE_STANDBY`에서는 preferred channel이 available이면 preferred channel을 우선 선택한다.
+  - 그 외에는 현재 active channel이 available이면 그대로 유지한다.
   - active channel이 unavailable이면 available channel 중 priority가 가장 높은 channel을 선택한다.
   - 새 channel이 이전 active와 다르면 `uFailoverOccurred`를 `1`로 보고한다.
   - 어떤 channel도 available하지 않으면 `UNAVAILABLE`을 반환한다.
@@ -53,7 +54,8 @@
 
 - channel manager는 동적 메모리를 사용하지 않는다.
 - channel selection은 같은 입력에 대해 같은 출력을 제공해야 한다.
-- auto failback은 현재 단계에서 지원하지 않고, 명시적 `reset` 또는 상위 정책에 의해만 preferred channel로 복귀한다.
+- preferred channel recovery는 `ACTIVE_STANDBY`에서 다음 selection 시 자동 반영된다.
+- channel switch 여부는 `uFailoverOccurred`로 보고되며, 현재 단계에서는 failover와 preferred recovery를 구분하지 않는다.
 
 ## Planned Verification
 
@@ -61,3 +63,4 @@
 - `TC-CHM-002`: failover to secondary
 - `TC-CHM-003`: all channels unavailable
 - `TC-CHM-004`: reset to preferred channel
+- `TC-CHM-005`: preferred channel recovery auto-switch

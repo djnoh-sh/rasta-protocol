@@ -85,6 +85,9 @@ static const uint8_t * puResolvePayload(
 	return (const uint8_t *)0;
 }
 
+static rsrx_transport_status_t eRefreshChannelManagerState(
+	rsrx_transport_adapter_context_t * pxContext);
+
 static rsrx_transport_status_t eEncodeAndSend(
 	rsrx_transport_adapter_context_t * pxContext,
 	rsrx_message_type_t eMessageType,
@@ -123,6 +126,11 @@ static rsrx_transport_status_t eEncodeAndSend(
 		return RSRX_TRANSPORT_STATUS_TX_ERROR;
 	}
 
+	if(eRefreshChannelManagerState(pxContext) != RSRX_TRANSPORT_STATUS_OK)
+	{
+		return RSRX_TRANSPORT_STATUS_RX_ERROR;
+	}
+
 	if((pxContext->pxChannelManager != (rsrx_channel_manager_context_t *)0) &&
 		(rsrx_channel_manager_select_channel(
 			pxContext->pxChannelManager,
@@ -141,6 +149,38 @@ static rsrx_transport_status_t eEncodeAndSend(
 	return pxContext->xTransportPort.pfSend(
 		pxContext->xTransportPort.pvContext,
 		&xRequest);
+}
+
+static rsrx_transport_status_t eRefreshChannelManagerState(
+	rsrx_transport_adapter_context_t * pxContext)
+{
+	rsrx_transport_channel_state_t xProbeState;
+	uint32_t uIndex;
+
+	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
+		(pxContext->pxChannelManager == (rsrx_channel_manager_context_t *)0))
+	{
+		return RSRX_TRANSPORT_STATUS_OK;
+	}
+
+	for(uIndex = 0U; uIndex < pxContext->pxChannelManager->xConfig.uChannelCount; ++uIndex)
+	{
+		xProbeState.eChannelId =
+			pxContext->pxChannelManager->xConfig.axChannels[uIndex].eChannelId;
+		xProbeState.uIsAvailable = 0U;
+		if(pxContext->xTransportPort.pfQueryChannel(
+			pxContext->xTransportPort.pvContext,
+			&xProbeState) != RSRX_TRANSPORT_STATUS_OK)
+		{
+			return RSRX_TRANSPORT_STATUS_RX_ERROR;
+		}
+		(void)rsrx_channel_manager_update_channel(
+			pxContext->pxChannelManager,
+			uIndex,
+			&xProbeState);
+	}
+
+	return RSRX_TRANSPORT_STATUS_OK;
 }
 
 rsrx_transport_status_t rsrx_transport_adapter_init(
@@ -239,9 +279,7 @@ rsrx_transport_status_t rsrx_transport_adapter_query_channel(
 	const rsrx_transport_adapter_context_t * pxContext,
 	rsrx_transport_channel_state_t * pxState)
 {
-	rsrx_transport_channel_state_t xProbeState;
 	rsrx_channel_selection_result_t xSelection;
-	uint32_t uIndex;
 
 	if((pxContext == (const rsrx_transport_adapter_context_t *)0) ||
 		(pxState == (rsrx_transport_channel_state_t *)0))
@@ -259,21 +297,10 @@ rsrx_transport_status_t rsrx_transport_adapter_query_channel(
 			pxState);
 	}
 
-	for(uIndex = 0U; uIndex < pxContext->pxChannelManager->xConfig.uChannelCount; ++uIndex)
+	if(eRefreshChannelManagerState((rsrx_transport_adapter_context_t *)pxContext) !=
+		RSRX_TRANSPORT_STATUS_OK)
 	{
-		xProbeState.eChannelId =
-			pxContext->pxChannelManager->xConfig.axChannels[uIndex].eChannelId;
-		xProbeState.uIsAvailable = 0U;
-		if(pxContext->xTransportPort.pfQueryChannel(
-			pxContext->xTransportPort.pvContext,
-			&xProbeState) != RSRX_TRANSPORT_STATUS_OK)
-		{
-			return RSRX_TRANSPORT_STATUS_RX_ERROR;
-		}
-		(void)rsrx_channel_manager_update_channel(
-			pxContext->pxChannelManager,
-			uIndex,
-			&xProbeState);
+		return RSRX_TRANSPORT_STATUS_RX_ERROR;
 	}
 
 	if(rsrx_channel_manager_select_channel(
