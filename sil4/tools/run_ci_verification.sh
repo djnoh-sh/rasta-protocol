@@ -14,6 +14,16 @@ CPPCHECK_LOG="$LOG_DIR/cppcheck.log"
 SUMMARY_MD="$LOG_DIR/summary.md"
 SUMMARY_ENV="$LOG_DIR/summary.env"
 
+count_matches() {
+  local file="$1"
+  local pattern="$2"
+  if [ ! -f "$file" ]; then
+    echo 0
+    return
+  fi
+  grep -Ec "$pattern" "$file" || true
+}
+
 echo "[1/4] Configure"
 cmake -S "$ROOT_DIR" -B "$BUILD_DIR" >"$CONFIGURE_LOG" 2>&1
 
@@ -51,8 +61,22 @@ cppcheck \
 
 TEST_COUNT="$(grep -c "all tests passed" "$TEST_LOG" || true)"
 CPPCHECK_FINDING_COUNT="$(grep -Evc '^(Checking |[0-9]+/[0-9]+ files checked )' "$CPPCHECK_LOG" || true)"
+COMPILER_WARNING_COUNT="$(count_matches "$BUILD_LOG" 'warning:')"
 
-cat >"$SUMMARY_MD" <<EOF
+SUBSET_S1_COUNT="$(count_matches "$CPPCHECK_LOG" 'nullPointer|memleak|bufferAccessOutOfBounds|outOfBounds|useAfterFree|doubleFree')"
+SUBSET_S2_COUNT="$(count_matches "$CPPCHECK_LOG" 'uninitvar|unassignedVariable')"
+SUBSET_S3_COUNT="$(count_matches "$CPPCHECK_LOG" 'duplicateBreak|switch.*fallthrough|missingError')"
+SUBSET_S4_COUNT="$(count_matches "$CPPCHECK_LOG" 'invalidFunctionArg|invalidPointerCast|mismatch|narrowing')"
+SUBSET_S5_COUNT="$(count_matches "$CPPCHECK_LOG" 'ignoredReturnValue|checkReturnValue|nullPointerRedundantCheck')"
+SUBSET_S6_COUNT="$(count_matches "$CPPCHECK_LOG" 'constParameter|redundantAssignment|variableScope|unreadVariable')"
+
+SEVERITY_CRITICAL_COUNT="$((COMPILER_WARNING_COUNT + SUBSET_S1_COUNT))"
+SEVERITY_HIGH_COUNT="$((SUBSET_S2_COUNT + SUBSET_S3_COUNT + SUBSET_S4_COUNT))"
+SEVERITY_MEDIUM_COUNT="$((SUBSET_S5_COUNT))"
+SEVERITY_LOW_COUNT="$((SUBSET_S6_COUNT))"
+SEVERITY_INFO_COUNT="0"
+
+cat >"$SUMMARY_MD" <<EOF2
 # SIL4 CI Summary
 
 | Item | Result |
@@ -60,8 +84,31 @@ cat >"$SUMMARY_MD" <<EOF
 | Configure | Pass |
 | Build | Pass |
 | Test Executables Passed | ${TEST_COUNT} |
+| Compiler Warning Lines | ${COMPILER_WARNING_COUNT} |
 | Cppcheck Finding Lines | ${CPPCHECK_FINDING_COUNT} |
 | Severity Mapping Reference | \`sil4/docs/evidence/severity_mapping.md\` |
+| Tool-Specific Mapping Reference | \`sil4/docs/evidence/tool_specific_misra_mapping.md\` |
+
+## Severity Buckets
+
+| Severity | Count |
+| --- | --- |
+| Critical | ${SEVERITY_CRITICAL_COUNT} |
+| High | ${SEVERITY_HIGH_COUNT} |
+| Medium | ${SEVERITY_MEDIUM_COUNT} |
+| Low | ${SEVERITY_LOW_COUNT} |
+| Info | ${SEVERITY_INFO_COUNT} |
+
+## MISRA Subset Buckets
+
+| Subset | Count |
+| --- | --- |
+| MISRA-S1 Memory Safety | ${SUBSET_S1_COUNT} |
+| MISRA-S2 Initialization | ${SUBSET_S2_COUNT} |
+| MISRA-S3 Control Flow | ${SUBSET_S3_COUNT} |
+| MISRA-S4 Interface Integrity | ${SUBSET_S4_COUNT} |
+| MISRA-S5 Defensive Robustness | ${SUBSET_S5_COUNT} |
+| MISRA-S6 Maintainability Style | ${SUBSET_S6_COUNT} |
 
 ## Artifact Logs
 
@@ -69,17 +116,29 @@ cat >"$SUMMARY_MD" <<EOF
 - Build: \`$BUILD_LOG\`
 - Tests: \`$TEST_LOG\`
 - Cppcheck: \`$CPPCHECK_LOG\`
-EOF
+EOF2
 
-cat >"$SUMMARY_ENV" <<EOF
+cat >"$SUMMARY_ENV" <<EOF2
 SUMMARY_MD=$SUMMARY_MD
 CONFIGURE_LOG=$CONFIGURE_LOG
 BUILD_LOG=$BUILD_LOG
 TEST_LOG=$TEST_LOG
 CPPCHECK_LOG=$CPPCHECK_LOG
 TEST_COUNT=$TEST_COUNT
+COMPILER_WARNING_COUNT=$COMPILER_WARNING_COUNT
 CPPCHECK_FINDING_COUNT=$CPPCHECK_FINDING_COUNT
-EOF
+SEVERITY_CRITICAL_COUNT=$SEVERITY_CRITICAL_COUNT
+SEVERITY_HIGH_COUNT=$SEVERITY_HIGH_COUNT
+SEVERITY_MEDIUM_COUNT=$SEVERITY_MEDIUM_COUNT
+SEVERITY_LOW_COUNT=$SEVERITY_LOW_COUNT
+SEVERITY_INFO_COUNT=$SEVERITY_INFO_COUNT
+SUBSET_S1_COUNT=$SUBSET_S1_COUNT
+SUBSET_S2_COUNT=$SUBSET_S2_COUNT
+SUBSET_S3_COUNT=$SUBSET_S3_COUNT
+SUBSET_S4_COUNT=$SUBSET_S4_COUNT
+SUBSET_S5_COUNT=$SUBSET_S5_COUNT
+SUBSET_S6_COUNT=$SUBSET_S6_COUNT
+EOF2
 
 echo "Configure log: $CONFIGURE_LOG"
 echo "Build log: $BUILD_LOG"

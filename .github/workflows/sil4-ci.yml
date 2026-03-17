@@ -49,4 +49,5 @@ jobs:
             /tmp/rsrx-ci-logs/tests.log
             /tmp/rsrx-ci-logs/cppcheck.log
             /tmp/rsrx-ci-logs/summary.md
+            /tmp/rsrx-ci-logs/summary.env
           if-no-files-found: error

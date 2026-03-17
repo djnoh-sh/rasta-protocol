@@ -47,12 +47,14 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 ## CI Outputs
 
 - workflow는 `/tmp/rsrx-ci-logs/summary.md`를 step summary로 게시한다.
+- summary는 severity bucket과 MISRA subset bucket 집계를 포함한다.
 - workflow는 아래 로그를 artifact `sil4-ci-logs`로 업로드한다.
   - `configure.log`
   - `build.log`
   - `tests.log`
   - `cppcheck.log`
   - `summary.md`
+  - `summary.env`
 
 ## Rationale
 
@@ -68,6 +70,6 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 
 ## Follow-up Actions
 
-1. severity bucket별 PR annotation 추가
+1. subset/severity bucket별 PR annotation 추가
 2. severity mapping 문서와 workflow fail policy 연결 강화
 3. second-tool analyzer 도입 여부 결정

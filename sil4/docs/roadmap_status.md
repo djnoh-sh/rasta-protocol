@@ -11,8 +11,8 @@
 ## Summary
 
 - 현재 전체 진행률 추정: `85~88%`
-- 현재 단계: `clang second-tool baseline execution 단계`
-- 다음 주력 단계: `CI subset summary`, `vendor rule mapping draft`, `CI-linked evidence expansion`
+- 현재 단계: `CI subset summary linkage 단계`
+- 다음 주력 단계: `vendor rule mapping draft`, `ctest strategy review`, `CI-linked evidence expansion`
 
 ## Overall Phase Status
 
@@ -22,7 +22,7 @@
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
-| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 77% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline 확보 |
+| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 81% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary 확보 |
 
 ## Workstream Status
 
@@ -88,6 +88,7 @@
 | M37 | tool-specific MISRA mapping baseline 수립 | Completed | `EVID-CI-007`, `RV-010`, compiler/cppcheck 출력과 subset mapping 연결 |
 | M38 | second-tool candidate baseline 수립 | Completed | `EVID-CI-009`, `RV-011`, `clang` 우선 도입 후보와 선택 기준 고정 |
 | M39 | clang first-run baseline 실행 완료 | Completed | `SA-REP-006`, `RV-012`, second-tool executable baseline 확보 |
+| M40 | CI subset summary baseline 수립 | Completed | `run_ci_verification.sh`, `RV-013`, severity/subset bucket summary artifact 확보 |
 
 ## In-Progress Items
 
@@ -107,7 +108,7 @@
 | NS-002 | Transport Supervisor Completion | runtime feedback policy와 retry semantics 추가 필요 | channel-up refresh 이후 retry/channel event policy 확장 |
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | richer hysteresis, flap suppression 세분화, switching audit 정책 확장 |
 | NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 richer redundancy와 longer-run 시나리오로 확장 |
-| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | vendor rule ID level mapping과 subset bucket CI linkage 확보 |
+| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | vendor rule ID level mapping과 PR-level reporting 확보 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
 
 ## Readiness Assessment
@@ -128,7 +129,7 @@
 | R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 retry semantics와 runtime feedback policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 minimal bounded queue 모델에 머묾 | `outstanding 1 + deferred 1`과 overflow telemetry는 들어갔지만 deeper queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline은 생겼지만 vendor rule mapping과 subset bucket automation이 아직 없다 | vendor rule ID mapping, CI subset summary 확장 |
+| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary는 생겼지만 vendor rule mapping과 PR-level reporting이 아직 없다 | vendor rule ID mapping, PR annotation strategy |
 
 ## Recommended Next Order
 
