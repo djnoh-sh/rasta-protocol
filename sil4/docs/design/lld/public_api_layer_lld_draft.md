@@ -46,6 +46,7 @@
 | `rsrx_session_disconnect` | function | 연결 종료 요청 | `DISCONNECT_REQUEST` 전달 |
 | `rsrx_session_process_event` | function | 일반 event 전달 | orchestrator wrapper |
 | `rsrx_session_process_timer_expiry` | function | timer expiry source를 protocol event로 변환 후 전달 | 지원 범위 밖 timer source는 거부 |
+| `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
 | `rsrx_session_get_state` | function | session 상태 조회 | 읽기 전용 |
 | `rsrx_session_reset` | function | session 상태 초기화 | bounded 동작 |
 
@@ -68,6 +69,10 @@
   - `SUPERVISION`은 `TIMEOUT`으로 변환한다.
   - `RETRANSMISSION`은 `RETRANSMISSION_FAILURE`로 변환한다.
   - 현재 단계에서 `DIAGNOSTIC_FLUSH`는 상태 머신 이벤트로 연결하지 않고 거부한다.
+- `rsrx_session_send_application_data`:
+  - 현재 단계에서 synchronous direct-send 경로를 제공한다.
+  - `ESTABLISHED` 상태만 허용한다.
+  - transport adapter를 통해 `DATA` frame encode/send를 수행한다.
 
 ## Verification Notes
 
@@ -75,6 +80,7 @@
   - session init/start/connect 경로 검증
   - session disconnect 경로 검증
   - timer expiry ingress 검증
+  - outbound application data send 검증
   - API notification callback 호출 검증
   - application data callback 호출 검증
   - lifecycle callback 호출 검증

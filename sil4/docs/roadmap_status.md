@@ -10,8 +10,8 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `45~50%`
-- 현재 단계: `코어 흐름 연결 및 application data contract 반영 단계`
+- 현재 전체 진행률 추정: `50~55%`
+- 현재 단계: `코어 흐름 연결 및 explicit application send contract 반영 단계`
 - 다음 주력 단계: `transport supervisor 고도화`, `integration harness`, `redundancy/channel manager`
 
 ## Overall Phase Status
@@ -64,12 +64,13 @@
 | M13 | outbound transport encode 경로 연결 | Completed | codec-backed transport adapter, tests |
 | M14 | protocol context 도입 | Completed | sequence/confirmation/retransmission base context, tests |
 | M15 | application data delivery contract 도입 | Completed | application callback contract, tests, traceability |
+| M16 | outbound application send contract 도입 | Completed | explicit session send API, adapter helper, tests |
 
 ## In-Progress Items
 
 | Item ID | Item | Current State | Exit Criteria |
 | --- | --- | --- | --- |
-| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract 포함 | explicit outbound application send API 또는 queue policy 결정 |
+| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | confirmation validation, sequence gap detail, recovery success semantics, retransmission confirm rules 구현 | richer edge cases 보강 |
 | IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, channel state gate, send result/timer delegation, send failure budget 구현 | richer runtime event model 반영 |
@@ -103,16 +104,15 @@
 | R-001 | detailed sequence validation 부분 미완 | retransmission confirm rules는 있으나 richer edge cases와 confirm semantics가 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
 | R-002 | transport supervisor 운영 루프 부분 미완 | send failure budget은 있으나 richer runtime feedback model과 retry semantics가 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy 미구현 | 실제 SIL4 과제 범위 대응 부족 | channel manager 별도 workstream 시작 |
-| R-004 | outbound application data API 부재 | inbound delivery는 정리됐지만 상위 계층의 명시적 data send contract는 아직 없다 | public API에 outbound data submission contract 추가 |
+| R-004 | outbound application send가 direct-send 모델에 머묾 | 현재는 queue/backpressure/retry semantics가 없다 | queueing policy와 runtime feedback contract 설계 |
 | R-005 | 인증 증빙 부족 | 코드가 있어도 심사 대응 불가 | MISRA/static analysis/review records 병행 시작 |
 
 ## Recommended Next Order
 
 1. `Transport Supervisor Maturation`
-2. `Outbound Application Data Send Contract`
-3. `Redundancy and Channel Manager`
-4. `Integration Test Harness`
-5. `Static Analysis and Safety Evidence`
+2. `Redundancy and Channel Manager`
+3. `Integration Test Harness`
+4. `Static Analysis and Safety Evidence`
 
 ## Next Gate Definition
 

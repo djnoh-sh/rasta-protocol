@@ -347,6 +347,52 @@ static void vTestSessionInboundDataPath(void)
 	vAssertTrue(xApiCounter.uCallCount == 3U, "data no api notify");
 }
 
+static void vTestSessionOutboundApplicationDataPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 850U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[3] = { 0x21U, 0x22U, 0x23U };
+	static const uint8_t auDataPayload[4] = { 0x61U, 0x62U, 0x63U, 0x64U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"application data send");
+	vAssertTrue(xTransport.uSendCount == 2U, "outbound application send count");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application send reason");
+	vAssertTrue(xTransport.xLastRequest.xPayloadLength == (D_RSRX_CODEC_HEADER_BYTES + sizeof(auDataPayload)), "outbound application encoded length");
+	vAssertTrue(xTransport.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_DATA, "outbound application message type");
+	vAssertTrue(xTransport.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application encoded reason");
+	vAssertTrue(xTransport.xLastRequest.puPayload[7] == 0x02U, "outbound application sequence");
+	vAssertTrue(xTransport.xLastRequest.puPayload[11] == 0x00U, "outbound application confirmation");
+	vAssertTrue(xTransport.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auDataPayload[0], "outbound application payload copied");
+	vAssertTrue(xApplication.uCallCount == 0U, "outbound application send does not trigger inbound callback");
+}
+
 static void vTestSessionRetransmissionPath(void)
 {
 	rsrx_session_t xSession;
@@ -492,10 +538,35 @@ static void vTestInvalidArguments(void)
 	vAssertTrue(rsrx_session_init((rsrx_session_t *)0, (const rsrx_session_config_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null session init");
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "invalid config rejected");
 	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "start before init");
+	vAssertTrue(rsrx_session_send_application_data((rsrx_session_t *)0, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "null session send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "send before init");
 	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_INVALID, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "invalid timer source");
 	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_DIAGNOSTIC_FLUSH, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "unsupported timer source");
 	vAssertTrue(rsrx_session_get_state((const rsrx_session_t *)0) == RSRX_STATE_INVALID, "get state null");
 	vAssertTrue(rsrx_session_reset((rsrx_session_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "reset null");
+}
+
+static void vTestSessionOutboundApplicationDataStateGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1200U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x71U, 0x72U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "send guard session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK, "send guard session start");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_STATE, "send guard invalid state");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "send guard session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport) == RSRX_STATUS_OK, "send guard establish");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, (const uint8_t *)0, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "send guard null payload");
 }
 
 int main(void)
@@ -504,10 +575,12 @@ int main(void)
 	vTestSessionDisconnectPath();
 	vTestSessionInboundHeartbeatPath();
 	vTestSessionInboundDataPath();
+	vTestSessionOutboundApplicationDataPath();
 	vTestSessionRetransmissionPath();
 	vTestSessionSupervisionTimerExpiry();
 	vTestSessionRetransmissionTimerExpiry();
 	vTestInvalidArguments();
+	vTestSessionOutboundApplicationDataStateGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
 

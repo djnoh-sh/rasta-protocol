@@ -258,6 +258,34 @@ rsrx_status_t rsrx_session_process_timer_expiry(
 	return eProcessSessionEvent(pxSession, eEvent, ppxReport);
 }
 
+rsrx_status_t rsrx_session_send_application_data(
+	rsrx_session_t * pxSession,
+	const uint8_t * puPayload,
+	size_t xPayloadLength)
+{
+	if((pxSession == (rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U) ||
+		((puPayload == (const uint8_t *)0) && (xPayloadLength > 0U)))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_session_get_state(pxSession) != RSRX_STATE_ESTABLISHED)
+	{
+		return RSRX_STATUS_INVALID_STATE;
+	}
+
+	if(rsrx_transport_adapter_send_application_data(
+		&pxSession->xTransportAdapter,
+		puPayload,
+		xPayloadLength) != RSRX_TRANSPORT_STATUS_OK)
+	{
+		return RSRX_STATUS_REJECTED;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession)
 {

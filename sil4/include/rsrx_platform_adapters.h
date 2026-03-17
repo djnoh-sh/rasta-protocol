@@ -60,6 +60,11 @@ rsrx_transport_status_t rsrx_transport_adapter_receive_frame(
 	const rsrx_transport_adapter_context_t * pxContext,
 	rsrx_transport_frame_t * pxFrame);
 
+rsrx_transport_status_t rsrx_transport_adapter_send_application_data(
+	rsrx_transport_adapter_context_t * pxContext,
+	const uint8_t * puPayload,
+	size_t xPayloadLength);
+
 void rsrx_transport_adapter_clear_retransmission_context(
 	rsrx_transport_adapter_context_t * pxContext);
 

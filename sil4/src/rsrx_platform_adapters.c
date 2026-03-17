@@ -85,6 +85,53 @@ static const uint8_t * puResolvePayload(
 	return (const uint8_t *)0;
 }
 
+static rsrx_transport_status_t eEncodeAndSend(
+	rsrx_transport_adapter_context_t * pxContext,
+	rsrx_message_type_t eMessageType,
+	rsrx_reason_code_t eReason,
+	const uint8_t * puPayload,
+	size_t xPayloadLength)
+{
+	rsrx_transport_send_request_t xRequest;
+	rsrx_encode_request_t xEncodeRequest;
+	rsrx_encode_buffer_t xEncodeBuffer;
+
+	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
+		((puPayload == (const uint8_t *)0) && (xPayloadLength > 0U)))
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_protocol_context_build_encode_request(
+		&pxContext->xProtocolContext,
+		eMessageType,
+		eReason,
+		puPayload,
+		xPayloadLength,
+		&xEncodeRequest) != RSRX_STATUS_OK)
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	xEncodeBuffer.puBuffer = pxContext->auEncodedFrame;
+	xEncodeBuffer.xBufferCapacity = sizeof(pxContext->auEncodedFrame);
+	xEncodeBuffer.xEncodedLength = 0U;
+
+	if(pxContext->xCodecPort.pfEncode(&xEncodeRequest, &xEncodeBuffer) != RSRX_CODEC_STATUS_OK)
+	{
+		return RSRX_TRANSPORT_STATUS_TX_ERROR;
+	}
+
+	xRequest.eChannelId = pxContext->eDefaultChannelId;
+	xRequest.puPayload = pxContext->auEncodedFrame;
+	xRequest.xPayloadLength = xEncodeBuffer.xEncodedLength;
+	xRequest.eReason = eReason;
+
+	return pxContext->xTransportPort.pfSend(
+		pxContext->xTransportPort.pvContext,
+		&xRequest);
+}
+
 rsrx_transport_status_t rsrx_transport_adapter_init(
 	rsrx_transport_adapter_context_t * pxContext,
 	const rsrx_transport_port_t * pxTransportPort,
@@ -119,9 +166,6 @@ void rsrx_transport_executor_dispatch(
 {
 	rsrx_transport_adapter_context_t * pxContext =
 		(rsrx_transport_adapter_context_t *)pvContext;
-	rsrx_transport_send_request_t xRequest;
-	rsrx_encode_request_t xEncodeRequest;
-	rsrx_encode_buffer_t xEncodeBuffer;
 	rsrx_message_type_t eMessageType;
 	size_t xPayloadLength;
 	const uint8_t * puPayload;
@@ -141,33 +185,12 @@ void rsrx_transport_executor_dispatch(
 	}
 
 	puPayload = puResolvePayload(pxContext, eAction, &xPayloadLength);
-	if(rsrx_protocol_context_build_encode_request(
-		&pxContext->xProtocolContext,
+	(void)eEncodeAndSend(
+		pxContext,
 		eMessageType,
 		pxTransition->eReason,
 		puPayload,
-		xPayloadLength,
-		&xEncodeRequest) != RSRX_STATUS_OK)
-	{
-		return;
-	}
-	xEncodeBuffer.puBuffer = pxContext->auEncodedFrame;
-	xEncodeBuffer.xBufferCapacity = sizeof(pxContext->auEncodedFrame);
-	xEncodeBuffer.xEncodedLength = 0U;
-
-	if(pxContext->xCodecPort.pfEncode(&xEncodeRequest, &xEncodeBuffer) != RSRX_CODEC_STATUS_OK)
-	{
-		return;
-	}
-
-	xRequest.eChannelId = pxContext->eDefaultChannelId;
-	xRequest.puPayload = pxContext->auEncodedFrame;
-	xRequest.xPayloadLength = xEncodeBuffer.xEncodedLength;
-	xRequest.eReason = pxTransition->eReason;
-
-	(void)pxContext->xTransportPort.pfSend(
-		pxContext->xTransportPort.pvContext,
-		&xRequest);
+		xPayloadLength);
 }
 
 void rsrx_transport_adapter_record_inbound_message(
@@ -230,6 +253,19 @@ rsrx_transport_status_t rsrx_transport_adapter_receive_frame(
 	return pxContext->xTransportPort.pfReceive(
 		pxContext->xTransportPort.pvContext,
 		pxFrame);
+}
+
+rsrx_transport_status_t rsrx_transport_adapter_send_application_data(
+	rsrx_transport_adapter_context_t * pxContext,
+	const uint8_t * puPayload,
+	size_t xPayloadLength)
+{
+	return eEncodeAndSend(
+		pxContext,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_APPLICATION_DATA_REQUESTED,
+		puPayload,
+		xPayloadLength);
 }
 
 void rsrx_transport_adapter_clear_retransmission_context(

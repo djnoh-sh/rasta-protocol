@@ -164,6 +164,7 @@ SHUTDOWN --> [*]
 | `rsrx_session_disconnect` | In | 연결 종료 절차를 시작 |
 | `rsrx_session_process_event` | In | 일반 event를 session에 전달 |
 | `rsrx_session_process_timer_expiry` | In | timer expiry source를 protocol event로 변환해 전달 |
+| `rsrx_session_send_application_data` | In | 상위 application payload를 outbound protocol `DATA` frame으로 제출 |
 | `rsrx_session_get_state` | Out | 현재 session 상태 조회 |
 | `rsrx_session_reset` | In | session 상태 초기화 |
 | `application data callback` | Out | 수용된 inbound data payload와 reason/sequence/confirmation 전달 |

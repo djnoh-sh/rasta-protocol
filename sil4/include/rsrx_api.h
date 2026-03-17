@@ -102,6 +102,11 @@ rsrx_status_t rsrx_session_process_timer_expiry(
 	rsrx_timer_expiry_source_t eTimerSource,
 	const rsrx_orchestrator_report_t ** ppxReport);
 
+rsrx_status_t rsrx_session_send_application_data(
+	rsrx_session_t * pxSession,
+	const uint8_t * puPayload,
+	size_t xPayloadLength);
+
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession);
 

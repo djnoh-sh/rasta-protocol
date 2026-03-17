@@ -1,0 +1,74 @@
+# Low-Level Design Draft - Outbound Application Data Send Contract
+
+## Document Control
+
+- Document ID: `LLD-013`
+- Version: `0.1.0`
+- Status: `Draft`
+- Owner: `Project Team`
+- Reviewers: `TBD`
+- Last Updated: `2026-03-17`
+
+## Scope
+
+- 대상 모듈:
+  - `MOD-001 Public API Layer`
+  - `MOD-009 Platform Adapter Layer`
+- 관련 HLD:
+  - `HLD-001`
+- 관련 요구사항:
+  - `FR-003`
+  - `IF-001`
+
+## Purpose
+
+- 상위 애플리케이션이 application payload를 protocol `DATA` frame으로 제출하는 명시적 경계를 정의한다.
+- 현재 단계에서는 queue 없이 synchronous send API를 사용한다.
+- state machine action 확장 전까지 outbound data는 session API가 직접 transport adapter helper를 호출한다.
+
+## File Structure
+
+| File | Purpose | Public/Internal | Notes |
+| --- | --- | --- | --- |
+| `include/rsrx_api.h` | outbound application send API 선언 | Public | 상위 애플리케이션 진입점 |
+| `src/rsrx_api.c` | 상태 확인 후 transport adapter로 위임 | Internal | `ESTABLISHED` 상태만 허용 |
+| `include/rsrx_platform_adapters.h` | application data send helper 선언 | Public | adapter 경계 |
+| `src/rsrx_platform_adapters.c` | payload encode 후 transport send 수행 | Internal | protocol context 사용 |
+
+## Types and Interfaces
+
+| Element | Kind | Description | Constraints |
+| --- | --- | --- | --- |
+| `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
+| `rsrx_transport_adapter_send_application_data` | function | payload를 `DATA` encode/send로 변환 | null payload + nonzero length 금지 |
+| `RSRX_REASON_APPLICATION_DATA_REQUESTED` | reason code | outbound application data 전송 이유 | transport request와 codec header에 기록 |
+
+## Functional Behavior
+
+- `rsrx_session_send_application_data`:
+  - session null, 미초기화 session, invalid payload 조합을 거부한다.
+  - 현재 상태가 `ESTABLISHED`가 아니면 `INVALID_STATE`를 반환한다.
+  - 허용 상태이면 transport adapter send helper를 호출한다.
+  - transport helper가 실패하면 `REJECTED`를 반환한다.
+- `rsrx_transport_adapter_send_application_data`:
+  - `protocol context`를 통해 sequence/confirmation이 채워진 encode request를 생성한다.
+  - message type은 `DATA`로 고정한다.
+  - reason은 `APPLICATION_DATA_REQUESTED`로 고정한다.
+  - encode 성공 시 transport send request를 바로 하위 transport port로 전달한다.
+
+## Constraints
+
+- 현재 구현은 synchronous direct-send 모델이다.
+- outbound application data는 API callback이나 lifecycle callback을 발생시키지 않는다.
+- queueing, batching, backpressure, retry policy는 후속 단계에서 별도 정의한다.
+
+## Verification Notes
+
+- 필요한 테스트:
+  - `ESTABLISHED` 상태 outbound application send 성공
+  - `INITIALIZED` 또는 `CONNECTING` 상태 send 거부
+  - null payload + nonzero length 거부
+  - encoded frame이 `DATA`/`APPLICATION_DATA_REQUESTED`/expected sequence를 포함하는지 검증
+- 분석 포인트:
+  - direct-send path가 inbound delivery path와 혼동되지 않는지 검토
+  - protocol context sequence 증가가 outbound application send에서도 유지되는지 검토

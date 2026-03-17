@@ -250,10 +250,50 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	vAssertTrue(xDiagnosticsContext.xLastRecord.uEventCounter == 1U, "diagnostic event counter incremented");
 }
 
+static void vTestApplicationDataSend(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	rsrx_transport_port_t xTransportPort;
+	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
+	static const uint8_t auDataPayload[3] = { 0x31U, 0x32U, 0x33U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter init for application send");
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data send");
+	vAssertTrue(xTransportContext.uCallCount == 1U, "application data send count");
+	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "application data channel");
+	vAssertTrue(xTransportContext.xLastRequest.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "application data reason");
+	vAssertTrue(xTransportContext.xLastRequest.xPayloadLength == (D_RSRX_CODEC_HEADER_BYTES + sizeof(auDataPayload)), "application data encoded length");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_DATA, "application data message type");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_APPLICATION_DATA_REQUESTED, "application data reason encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[7] == 0x01U, "application data sequence encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auDataPayload[0], "application data payload copied");
+}
+
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
 	vTestTransportTimerAndDiagnosticsDispatch();
+	vTestApplicationDataSend();
 
 	(void)printf("rsrx_platform_adapters_test: all tests passed\n");
 
