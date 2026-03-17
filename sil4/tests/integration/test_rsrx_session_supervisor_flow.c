@@ -371,6 +371,97 @@ static void vTestIntegratedSessionSupervisorFlow(void)
 	vAssertTrue(xTransport.xLastRequest.xPayloadLength == (D_RSRX_CODEC_HEADER_BYTES + sizeof(auOutboundPayload)), "integration outbound length");
 }
 
+static void vTestIntegratedDeferredQueueTelemetryFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	rsrx_transport_frame_t xSendCompletedFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auOutboundPayload[2] = { 0xC1U, 0xC2U };
+	size_t xHandshakeLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "queue telemetry integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue telemetry integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue telemetry integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "queue telemetry integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "queue telemetry integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "queue telemetry integration established");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue telemetry integration first send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue telemetry integration deferred send");
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue telemetry integration telemetry available");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "queue telemetry integration queued count");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 1U, "queue telemetry integration outstanding present");
+	vAssertTrue(xSession.xTransportAdapter.uHasDeferredSend == 1U, "queue telemetry integration deferred present");
+
+	xSendCompletedFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xSendCompletedFrame.puPayload = auFramePayload;
+	xSendCompletedFrame.xPayloadLength = sizeof(auFramePayload);
+	xSendCompletedFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendCompletedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue telemetry integration send completed");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED, "queue telemetry integration decision");
+	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 1U, "queue telemetry integration report outstanding");
+	vAssertTrue(pxSupervisorReport->uDeferredSendPresent == 0U, "queue telemetry integration report deferred cleared");
+	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 1U, "queue telemetry integration report queued");
+	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 1U, "queue telemetry integration report dispatched");
+	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 0U, "queue telemetry integration report no overflow");
+}
+
 static void vTestIntegratedRetransmissionRecoveryFlow(void)
 {
 	rsrx_session_t xSession;
@@ -1521,6 +1612,7 @@ static void vTestIntegratedBoundedSoakPumpFlow(void)
 int main(void)
 {
 	vTestIntegratedSessionSupervisorFlow();
+	vTestIntegratedDeferredQueueTelemetryFlow();
 	vTestIntegratedRetransmissionRecoveryFlow();
 	vTestIntegratedTimeoutFailSafeFlow();
 	vTestIntegratedChannelDownFailSafeFlow();
