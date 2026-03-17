@@ -28,3 +28,25 @@ jobs:
 
       - name: Run SIL4 Verification
         run: bash sil4/tools/run_ci_verification.sh
+
+      - name: Publish Step Summary
+        if: always()
+        run: |
+          if [ -f /tmp/rsrx-ci-logs/summary.md ]; then
+            cat /tmp/rsrx-ci-logs/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "SIL4 CI summary not found" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload SIL4 CI Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sil4-ci-logs
+          path: |
+            /tmp/rsrx-ci-logs/configure.log
+            /tmp/rsrx-ci-logs/build.log
+            /tmp/rsrx-ci-logs/tests.log
+            /tmp/rsrx-ci-logs/cppcheck.log
+            /tmp/rsrx-ci-logs/summary.md
+          if-no-files-found: error

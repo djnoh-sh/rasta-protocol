@@ -44,6 +44,16 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 
 현재 severity 해석 기준은 `sil4/docs/evidence/severity_mapping.md`를 참조한다.
 
+## CI Outputs
+
+- workflow는 `/tmp/rsrx-ci-logs/summary.md`를 step summary로 게시한다.
+- workflow는 아래 로그를 artifact `sil4-ci-logs`로 업로드한다.
+  - `configure.log`
+  - `build.log`
+  - `tests.log`
+  - `cppcheck.log`
+  - `summary.md`
+
 ## Rationale
 
 - 로컬과 CI 사이 절차 차이를 줄인다.
@@ -53,11 +63,11 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 ## Residual Limits
 
 - 현재 workflow는 Linux 단일 플랫폼만 사용한다.
-- 결과 요약 업로드, artifact 보관, PR annotation은 아직 없다.
+- PR annotation은 아직 없다.
 - MISRA 전용 analyzer는 CI에 포함되지 않는다.
 
 ## Follow-up Actions
 
-1. CI artifact upload 추가
-2. severity mapping 문서와 workflow fail policy 연결
+1. severity bucket별 PR annotation 추가
+2. severity mapping 문서와 workflow fail policy 연결 강화
 3. second-tool analyzer 도입 여부 결정

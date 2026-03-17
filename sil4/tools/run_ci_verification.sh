@@ -11,6 +11,8 @@ CONFIGURE_LOG="$LOG_DIR/configure.log"
 BUILD_LOG="$LOG_DIR/build.log"
 TEST_LOG="$LOG_DIR/tests.log"
 CPPCHECK_LOG="$LOG_DIR/cppcheck.log"
+SUMMARY_MD="$LOG_DIR/summary.md"
+SUMMARY_ENV="$LOG_DIR/summary.env"
 
 echo "[1/4] Configure"
 cmake -S "$ROOT_DIR" -B "$BUILD_DIR" >"$CONFIGURE_LOG" 2>&1
@@ -47,7 +49,40 @@ cppcheck \
   "$ROOT_DIR/tests/integration" \
   >"$CPPCHECK_LOG" 2>&1
 
+TEST_COUNT="$(grep -c "all tests passed" "$TEST_LOG" || true)"
+CPPCHECK_FINDING_COUNT="$(grep -Evc '^(Checking |[0-9]+/[0-9]+ files checked )' "$CPPCHECK_LOG" || true)"
+
+cat >"$SUMMARY_MD" <<EOF
+# SIL4 CI Summary
+
+| Item | Result |
+| --- | --- |
+| Configure | Pass |
+| Build | Pass |
+| Test Executables Passed | ${TEST_COUNT} |
+| Cppcheck Finding Lines | ${CPPCHECK_FINDING_COUNT} |
+| Severity Mapping Reference | \`sil4/docs/evidence/severity_mapping.md\` |
+
+## Artifact Logs
+
+- Configure: \`$CONFIGURE_LOG\`
+- Build: \`$BUILD_LOG\`
+- Tests: \`$TEST_LOG\`
+- Cppcheck: \`$CPPCHECK_LOG\`
+EOF
+
+cat >"$SUMMARY_ENV" <<EOF
+SUMMARY_MD=$SUMMARY_MD
+CONFIGURE_LOG=$CONFIGURE_LOG
+BUILD_LOG=$BUILD_LOG
+TEST_LOG=$TEST_LOG
+CPPCHECK_LOG=$CPPCHECK_LOG
+TEST_COUNT=$TEST_COUNT
+CPPCHECK_FINDING_COUNT=$CPPCHECK_FINDING_COUNT
+EOF
+
 echo "Configure log: $CONFIGURE_LOG"
 echo "Build log: $BUILD_LOG"
 echo "Test log: $TEST_LOG"
 echo "Cppcheck log: $CPPCHECK_LOG"
+echo "Summary: $SUMMARY_MD"
