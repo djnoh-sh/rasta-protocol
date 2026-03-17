@@ -34,6 +34,7 @@ typedef struct
 	rsrx_channel_descriptor_t axChannels[D_RSRX_CHANNEL_MANAGER_MAX_CHANNELS];
 	uint32_t uChannelCount;
 	uint32_t uPreferredChannelIndex;
+	uint32_t uPreferredRecoveryHoldoffSelections;
 } rsrx_channel_manager_config_t;
 
 typedef struct
@@ -49,6 +50,7 @@ typedef struct
 	rsrx_channel_manager_config_t xConfig;
 	uint32_t uActiveChannelIndex;
 	uint32_t uLastSelectionWasFailover;
+	uint32_t uPreferredRecoveryStableSelectionCount;
 	uint32_t uInitialized;
 } rsrx_channel_manager_context_t;
 

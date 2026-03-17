@@ -121,6 +121,7 @@ static void vInitSingleChannelManager(
 	xConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
 	xConfig.uChannelCount = 1U;
 	xConfig.uPreferredChannelIndex = 0U;
+	xConfig.uPreferredRecoveryHoldoffSelections = 0U;
 	xConfig.axChannels[0].eChannelId = eChannelId;
 	xConfig.axChannels[0].uIsAvailable = 1U;
 	xConfig.axChannels[0].uPriority = 0U;
@@ -140,6 +141,7 @@ static void vInitActiveStandbyChannelManager(
 	xConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
 	xConfig.uChannelCount = 2U;
 	xConfig.uPreferredChannelIndex = 0U;
+	xConfig.uPreferredRecoveryHoldoffSelections = 0U;
 	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xConfig.axChannels[0].uIsAvailable = 1U;
 	xConfig.axChannels[0].uPriority = 0U;
@@ -149,6 +151,27 @@ static void vInitActiveStandbyChannelManager(
 	vAssertTrue(
 		rsrx_channel_manager_init(pxContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
 		"active standby channel manager init");
+}
+
+static void vInitActiveStandbyHoldoffChannelManager(
+	rsrx_channel_manager_context_t * pxContext,
+	uint32_t uHoldoffSelections)
+{
+	rsrx_channel_manager_config_t xConfig;
+
+	xConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.uChannelCount = 2U;
+	xConfig.uPreferredChannelIndex = 0U;
+	xConfig.uPreferredRecoveryHoldoffSelections = uHoldoffSelections;
+	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xConfig.axChannels[0].uIsAvailable = 1U;
+	xConfig.axChannels[0].uPriority = 0U;
+	xConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xConfig.axChannels[1].uIsAvailable = 1U;
+	xConfig.axChannels[1].uPriority = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_init(pxContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active standby holdoff channel manager init");
 }
 
 static void vTestPlatformExecutorTableBuild(void)
@@ -406,12 +429,76 @@ static void vTestChannelManagerDrivenFailoverSelection(void)
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "preferred recovery send channel");
 }
 
+static void vTestPreferredRecoveryHoldoffSelection(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 0U, 1U };
+	rsrx_transport_port_t xTransportPort;
+	rsrx_transition_result_t xTransition;
+	rsrx_transport_channel_state_t xChannelState;
+	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitActiveStandbyHoldoffChannelManager(&xChannelManagerContext, 2U);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter init for holdoff");
+
+	vAssertTrue(
+		rsrx_transport_adapter_query_channel(
+			&xTransportAdapterContext,
+			&xChannelState) == RSRX_TRANSPORT_STATUS_OK,
+		"holdoff failover query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff failover secondary");
+
+	xTransition.ePreviousState = RSRX_STATE_INITIALIZED;
+	xTransition.eNextState = RSRX_STATE_CONNECTING;
+	xTransition.eStatus = RSRX_STATUS_OK;
+	xTransition.eReason = RSRX_REASON_CONNECT_REQUESTED;
+	xTransition.eDiagnostic = RSRX_DIAG_INFO_STATE_TRANSITION;
+	xTransition.xActions.uActionCount = 0U;
+
+	xTransportContext.uPrimaryAvailable = 1U;
+	xTransportContext.uSecondaryAvailable = 1U;
+	vAssertTrue(
+		rsrx_transport_adapter_query_channel(
+			&xTransportAdapterContext,
+			&xChannelState) == RSRX_TRANSPORT_STATUS_OK,
+		"holdoff first recovery query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff retains secondary");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xChannelManagerContext) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active remains secondary");
+	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
+	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff first recovery send secondary");
+
+	vAssertTrue(
+		rsrx_transport_adapter_query_channel(
+			&xTransportAdapterContext,
+			&xChannelState) == RSRX_TRANSPORT_STATUS_OK,
+		"holdoff second recovery query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff switches to primary");
+	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_START_HANDSHAKE, 0U);
+	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff second recovery send primary");
+}
+
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
 	vTestTransportTimerAndDiagnosticsDispatch();
 	vTestApplicationDataSend();
 	vTestChannelManagerDrivenFailoverSelection();
+	vTestPreferredRecoveryHoldoffSelection();
 
 	(void)printf("rsrx_platform_adapters_test: all tests passed\n");
 

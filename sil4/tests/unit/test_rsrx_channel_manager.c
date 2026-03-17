@@ -19,6 +19,7 @@ static rsrx_channel_manager_config_t xBuildConfig(void)
 	xConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
 	xConfig.uChannelCount = 2U;
 	xConfig.uPreferredChannelIndex = 0U;
+	xConfig.uPreferredRecoveryHoldoffSelections = 0U;
 	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xConfig.axChannels[0].uIsAvailable = 1U;
 	xConfig.axChannels[0].uPriority = 0U;
@@ -27,6 +28,47 @@ static rsrx_channel_manager_config_t xBuildConfig(void)
 	xConfig.axChannels[1].uPriority = 1U;
 
 	return xConfig;
+}
+
+static void vTestPreferredRecoveryHoldoff(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 2U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff mark primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff failover select");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff failover secondary");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff restore primary");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff first stable select");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff remains secondary");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff no switch on first stable select");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff second stable select");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff switches to primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff switch reported");
 }
 
 int main(void)
@@ -95,6 +137,8 @@ int main(void)
 		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
 		"select primary after reset");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after reset");
+
+	vTestPreferredRecoveryHoldoff();
 
 	(void)printf("rsrx_channel_manager_test: all tests passed\n");
 	return EXIT_SUCCESS;

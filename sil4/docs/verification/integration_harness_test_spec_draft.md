@@ -37,8 +37,9 @@
 | TC-INT-009 | FR-001, FR-003 | bounded soak-style pump 검증 | handshake와 연속 data 5개, trailing no-frame scripted frame 준비 | `supervisor_pump_receive`를 충분한 bound로 1회 호출 | 연속 frame들이 모두 처리되고 trailing idle에서 정상 종료 | local/total processed count, iteration count, callback count, last sequence가 설계와 일치 |
 | TC-INT-010 | FR-003, SR-002 | channel failover integration 검증 | active-standby channel manager와 primary/secondary fake transport 준비 | handshake 후 `CHANNEL_DOWN(primary)` 처리, outbound send, secondary inbound data 처리 | failover 후 상태 유지, outbound send가 secondary로 전환되고 secondary inbound data가 처리됨 | supervisor decision, selected channel, outbound send channel, application callback이 설계와 일치 |
 | TC-INT-011 | FR-003 | preferred recovery integration 검증 | `TC-INT-010` 이후 primary restored 상태 준비 | primary 복구 후 channel query와 outbound send 수행 | preferred primary channel로 복귀하고 primary로 send 수행 | selected channel과 send channel이 preferred recovery policy와 일치 |
+| TC-INT-012 | FR-003 | recovery holdoff integration 검증 | active-standby holdoff `2` config와 failover 완료 상태 준비 | primary 복구 후 query/send를 2회 수행 | 첫 회차는 secondary 유지, 두 번째 회차에서 primary 복귀 | holdoff 이전/이후의 selected channel과 send channel이 설계와 일치 |
 
 ## Notes
 
-- 현재 harness는 real codec과 fake transport를 결합한 happy-path, retransmission recovery, timeout fail-safe, channel-down fail-safe, channel failover, preferred recovery, decode failure, send failure budget, send failure budget reset, bounded pump stability, bounded soak smoke test까지 포함한다.
+- 현재 harness는 real codec과 fake transport를 결합한 happy-path, retransmission recovery, timeout fail-safe, channel-down fail-safe, channel failover, preferred recovery, recovery holdoff, decode failure, send failure budget, send failure budget reset, bounded pump stability, bounded soak smoke test까지 포함한다.
 - long-run과 richer redundancy policy는 후속 integration 단계에서 확장한다.

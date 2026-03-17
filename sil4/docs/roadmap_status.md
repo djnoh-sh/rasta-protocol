@@ -10,9 +10,9 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `70~72%`
-- 현재 단계: `redundancy/channel manager recovery policy 통합 단계`
-- 다음 주력 단계: `redundancy policy 심화`, `long-run redundancy integration`, `static analysis evidence`
+- 현재 전체 진행률 추정: `72~75%`
+- 현재 단계: `redundancy/channel manager flap suppression 기초 단계`
+- 다음 주력 단계: `redundancy telemetry`, `long-run redundancy integration`, `static analysis evidence`
 
 ## Overall Phase Status
 
@@ -69,6 +69,7 @@
 | M18 | channel manager wiring 진입 | Completed | session config wiring, validator gate, adapter failover selection test |
 | M19 | supervisor failover runtime flow 도입 | Completed | channel-down failover decision, unit/integration failover tests |
 | M20 | preferred recovery policy 도입 | Completed | channel manager auto-switch, adapter recovery selection, integration preferred recovery test |
+| M21 | recovery holdoff policy 도입 | Completed | channel manager holdoff config, adapter holdoff selection, integration holdoff recovery test |
 
 ## In-Progress Items
 
@@ -86,7 +87,7 @@
 | --- | --- | --- | --- |
 | NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | supervisor와 protocol context를 decoded message detail과 결합 |
 | NS-002 | Transport Supervisor Completion | runtime feedback policy와 richer channel event semantics 추가 필요 | supervisor contract와 event policy 확장 |
-| NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | preferred recovery 이후 hysteresis/back-switch guard와 long-run integration 확장 |
+| NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | holdoff 이후 richer hysteresis, switching telemetry, long-run integration 확장 |
 | NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 long-run, redundancy 시나리오로 확장 |
 | NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | toolchain policy와 report template 수립 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
@@ -107,7 +108,7 @@
 | --- | --- | --- | --- |
 | R-001 | detailed sequence validation 부분 미완 | retransmission confirm rules는 있으나 richer edge cases와 confirm semantics가 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
 | R-002 | transport supervisor 운영 루프 부분 미완 | report observability는 강화됐으나 runtime feedback policy와 retry semantics가 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
-| R-003 | redundancy policy 미완 | preferred recovery까지는 있으나 hysteresis, flap suppression, long-run stability 규칙이 없다 | redundancy policy 세분화와 long-run integration 확장 |
+| R-003 | redundancy policy 미완 | holdoff까지는 있으나 richer hysteresis, channel telemetry, long-run stability 규칙이 없다 | redundancy policy 세분화와 long-run integration 확장 |
 | R-004 | outbound application send가 direct-send 모델에 머묾 | 현재는 queue/backpressure/retry semantics가 없다 | queueing policy와 runtime feedback contract 설계 |
 | R-005 | 인증 증빙 부족 | 코드가 있어도 심사 대응 불가 | MISRA/static analysis/review records 병행 시작 |
 

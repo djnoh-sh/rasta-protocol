@@ -98,7 +98,7 @@ static rsrx_transport_status_t eEncodeAndSend(
 	rsrx_transport_send_request_t xRequest;
 	rsrx_encode_request_t xEncodeRequest;
 	rsrx_encode_buffer_t xEncodeBuffer;
-	rsrx_channel_selection_result_t xSelection;
+	rsrx_transport_channel_id_t eSelectedChannelId;
 
 	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
 		((puPayload == (const uint8_t *)0) && (xPayloadLength > 0U)))
@@ -126,17 +126,13 @@ static rsrx_transport_status_t eEncodeAndSend(
 		return RSRX_TRANSPORT_STATUS_TX_ERROR;
 	}
 
-	if(eRefreshChannelManagerState(pxContext) != RSRX_TRANSPORT_STATUS_OK)
+	if(pxContext->pxChannelManager != (rsrx_channel_manager_context_t *)0)
 	{
-		return RSRX_TRANSPORT_STATUS_RX_ERROR;
-	}
-
-	if((pxContext->pxChannelManager != (rsrx_channel_manager_context_t *)0) &&
-		(rsrx_channel_manager_select_channel(
-			pxContext->pxChannelManager,
-			&xSelection) == RSRX_CHANNEL_MANAGER_STATUS_OK))
-	{
-		xRequest.eChannelId = xSelection.eSelectedChannelId;
+		eSelectedChannelId = rsrx_channel_manager_get_active_channel(
+			pxContext->pxChannelManager);
+		xRequest.eChannelId = (eSelectedChannelId != RSRX_TRANSPORT_CHANNEL_INVALID) ?
+			eSelectedChannelId :
+			pxContext->eDefaultChannelId;
 	}
 	else
 	{
