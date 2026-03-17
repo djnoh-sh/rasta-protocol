@@ -12,6 +12,7 @@
 - `docs/design/hld`: 상위 설계 문서
 - `docs/design/lld`: 상세 설계 문서
 - `docs/verification`: 테스트 명세, 검증 기록, 커버리지, 정적분석 결과
+- `docs/evidence`: 정적분석 계획, MISRA 편차, 품질 증빙 인덱스
 - `docs/safety`: hazard log, safety case 입력 자료, FMEA/FTA 초안
 - `docs/traceability`: 요구사항-설계-코드-테스트 추적 자료
 - `docs/reviews`: 설계 리뷰, 코드 리뷰, 독립 검토 기록
@@ -38,4 +39,3 @@
 3. `docs/design/hld`에 아키텍처 초안 작성
 4. `docs/traceability`에 추적성 매트릭스 시작
 5. 이후 `src`, `include`, `tests`에 점진 구현
-
