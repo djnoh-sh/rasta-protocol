@@ -120,7 +120,7 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 ## Residual Limits
 
-- sticky PR comment는 구현됐지만 noise threshold와 delta logic은 아직 없다.
+- sticky PR comment는 구현됐고 delta policy baseline은 정의됐지만 helper는 아직 snapshot-only다.
 - exact vendor rule matrix가 없어 vendor-level annotation은 불가능하다.
 - trend comparison(이전 PR 대비 bucket 증가)은 아직 구현하지 않았다.
 
@@ -128,4 +128,4 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 1. `summary.env` 기반 decision logic regression 검증
 2. PR noise threshold 정의
-3. delta-based increase 판단 규칙 정의
+3. delta-aware helper 구현
