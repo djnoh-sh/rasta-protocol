@@ -113,11 +113,11 @@ delta는 아래처럼 정의한다.
 ## Current Decision
 
 1. delta policy는 문서로 먼저 고정한다.
-2. 실제 helper 구현은 baseline persistence 경로가 정해진 뒤 추가한다.
+2. helper는 구현됐고, baseline persistence source는 `baseline_persistence_source.md` 기준을 따른다.
 3. baseline이 없는 경우 snapshot-only annotation을 정상 fallback으로 허용한다.
 
 ## Follow-up Actions
 
-1. baseline persistence source 결정
-2. helper script에 delta 계산 추가
-3. sticky comment format에 delta section 반영
+1. workflow의 baseline artifact fetch step 설계
+2. PR previous-success baseline lookup 구현
+3. sticky comment format과 baseline source evidence 연결

@@ -68,7 +68,7 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 
 - 현재 workflow는 Linux 단일 플랫폼만 사용한다.
 - PR annotation helper와 sticky PR comment publication은 존재하고, helper는 optional baseline file이 있으면 delta-aware annotation을 계산한다.
-- baseline persistence source는 아직 workflow 내부에 고정되지 않았다.
+- baseline persistence source policy는 `baseline_persistence_source.md`로 고정됐지만, workflow fetch step은 아직 구현되지 않았다.
 - `ctest` registration은 아직 primary path가 아니다.
 - MISRA 전용 analyzer는 CI에 포함되지 않는다.
 
@@ -77,4 +77,4 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 1. severity mapping 문서와 workflow fail policy 연결 강화
 2. second-tool analyzer 도입 여부 결정
 3. `ctest` 전환 조건 재검토
-4. baseline persistence source 결정
+4. baseline artifact fetch step 구현
