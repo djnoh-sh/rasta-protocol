@@ -28,4 +28,5 @@
 | TC-PC-005 | FR-003 | inbound confirmation validity 검증 | outbound sequence가 일부 생성된 protocol context | confirmation이 sent-high-watermark를 넘거나 regress하는 inbound message 판정 | `PROTOCOL_ERROR`로 분류 | confirmation monotonicity와 upper bound를 강제 |
 | TC-PC-006 | FR-004 | recovery success resolution 검증 | retransmission pending 상태의 protocol context | base sequence와 일치하는 inbound message 판정 | `RECOVERY_SUCCESS`로 분류 | retransmission recovery completion이 결정적으로 판정 |
 | TC-PC-007 | FR-004 | unconfirmed recovery rejection 검증 | retransmission pending 상태의 protocol context | base sequence와 일치하지만 retransmission request confirmation이 부족한 inbound message 판정 | `PROTOCOL_ERROR`로 분류 | recovery success는 retransmission request가 remote에 반영된 경우에만 허용 |
+| TC-PC-008 | FR-003, SR-003 | duplicate inbound sequence rejection 검증 | handshake와 첫 data가 기록된 protocol context | 동일 sequence의 data message를 다시 판정 | `PROTOCOL_ERROR`로 분류 | stale/duplicate inbound data는 정상 data로 재수용되지 않는다 |
 | TC-PC-004 | SR-003 | invalid argument 검증 | null context 또는 null request | context API 호출 | `INVALID_ARGUMENT` 반환 | UB 없이 명시적 오류 반환 |

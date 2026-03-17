@@ -197,6 +197,38 @@ static void vTestRecoverySuccessResolution(void)
 	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "lower sequence during retransmission is protocol error");
 }
 
+static void vTestDuplicateInboundSequenceRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
+	xMessage.eSuggestedEvent = RSRX_EVENT_HANDSHAKE_SUCCESS;
+	xMessage.eReason = RSRX_REASON_HANDSHAKE_COMPLETED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record handshake");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 2U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 1U;
+
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve first data");
+	vAssertTrue(eEvent == RSRX_EVENT_VALID_DATA, "first data accepted");
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record first data");
+
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve duplicate data");
+	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "duplicate data rejected");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -214,6 +246,7 @@ int main(void)
 	vTestRetransmissionRequestPayload();
 	vTestInboundConfirmationValidation();
 	vTestRecoverySuccessResolution();
+	vTestDuplicateInboundSequenceRejected();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_protocol_context_test: all tests passed\n");
