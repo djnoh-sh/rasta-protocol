@@ -77,6 +77,7 @@
   - 분석 일시, 커밋 ID, 대상 경로, 툴 버전, 옵션을 기록한다.
   - 결과는 요약과 상세 로그를 분리한다.
   - 보고서에는 “총 경고 수”보다 “신규/잔존/승인 편차”를 우선 기록한다.
+  - 결과는 severity bucket 기준으로 `Critical/High/Medium/Low/Info` 중 하나로 분류한다.
 
 ## Tooling Baseline
 
@@ -87,6 +88,7 @@
 3. MISRA-oriented checklist review
 
 세부 tool/version/profile은 `tooling/static_analysis_toolchain_baseline.md`를 기준으로 관리한다.
+severity 해석 기준은 `severity_mapping.md`를 기준으로 관리한다.
 
 후속 단계에서 아래를 추가 확정한다.
 
@@ -134,6 +136,6 @@
 
 | OI ID | Description | Owner | Target |
 | --- | --- | --- | --- |
-| OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | P5 진행 중 |
+| OI-SA-001 | MISRA rule subset과 severity mapping 정의 | Project Team | Partially closed by `EVID-CI-003`, MISRA subset 세분화 잔여 |
 | OI-SA-002 | CI에서의 자동 실행 정책 확정 | Project Team | Closed by `EVID-CI-001` baseline |
 | OI-SA-003 | `cppcheck` baseline finding cleanup 및 follow-up report 생성 | Project Team | SA-2 이전 |

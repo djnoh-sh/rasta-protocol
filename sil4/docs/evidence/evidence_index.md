@@ -35,6 +35,8 @@
 | EVID-DES-002 | `../reviews/RV-006_outbound_queue_policy_review.md` | Draft | outbound queue policy safety review |
 | EVID-CI-001 | `ci_execution_linkage.md` | Draft | local verification과 CI workflow linkage 기준 |
 | EVID-CI-002 | `../reviews/RV-007_ci_execution_linkage_review.md` | Draft | CI linkage safety review |
+| EVID-CI-003 | `severity_mapping.md` | Draft | compiler/static-analysis/diagnostic severity 기준 |
+| EVID-CI-004 | `../reviews/RV-008_severity_mapping_review.md` | Draft | severity mapping safety review |
 
 ## Next Expected Additions
 
@@ -42,3 +44,4 @@
 2. CI execution linkage
 3. second-tool baseline 검토
 4. queue/backpressure policy evidence 추가 확장
+5. MISRA subset severity 세분화

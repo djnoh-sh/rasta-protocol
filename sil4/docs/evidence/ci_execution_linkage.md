@@ -42,6 +42,8 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 | Test | named test executables | any executable non-zero exit |
 | Static Analysis | `cppcheck --enable=warning,style,performance,portability ...` | non-zero exit |
 
+현재 severity 해석 기준은 `sil4/docs/evidence/severity_mapping.md`를 참조한다.
+
 ## Rationale
 
 - 로컬과 CI 사이 절차 차이를 줄인다.
