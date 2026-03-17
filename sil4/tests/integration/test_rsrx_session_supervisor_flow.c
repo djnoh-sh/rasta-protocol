@@ -1901,6 +1901,128 @@ static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "invalid confirmation integration lifecycle callback");
 }
 
+static void vTestIntegratedRegressingConfirmationProtocolErrorFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auValidConfirmationFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRegressingConfirmationFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0x50U, 0x60U, 0x70U, 0x80U, 0U, 0U, 0U, 0U };
+	static const uint8_t auValidPayload[2] = { 0x81U, 0x82U };
+	static const uint8_t auRegressingPayload[2] = { 0x91U, 0x92U };
+	size_t xHandshakeLength;
+	size_t xValidConfirmationLength;
+	size_t xRegressingConfirmationLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "regressing confirmation integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "regressing confirmation integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "regressing confirmation integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "regressing confirmation integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "regressing confirmation integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "regressing confirmation integration established");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "regressing confirmation integration outbound send one");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(
+		&xSupervisor,
+		&(rsrx_transport_frame_t){ RSRX_TRANSPORT_CHANNEL_PRIMARY, (const uint8_t *)0, 0U, RSRX_TRANSPORT_EVENT_SEND_COMPLETED },
+		&pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "regressing confirmation integration clear first outstanding");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "regressing confirmation integration outbound send two");
+	vAssertTrue(xTransport.uSendCount == 3U, "regressing confirmation integration outbound count");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		2U,
+		auValidPayload,
+		sizeof(auValidPayload),
+		auValidConfirmationFrame,
+		sizeof(auValidConfirmationFrame),
+		&xValidConfirmationLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auRegressingPayload,
+		sizeof(auRegressingPayload),
+		auRegressingConfirmationFrame,
+		sizeof(auRegressingConfirmationFrame),
+		&xRegressingConfirmationLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auValidConfirmationFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xValidConfirmationLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "regressing confirmation integration valid confirmation poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "regressing confirmation integration state retained after valid");
+	vAssertTrue(xApplication.uCallCount == 1U, "regressing confirmation integration valid application callback");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRegressingConfirmationFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRegressingConfirmationLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "regressing confirmation integration regressing poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "regressing confirmation integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "regressing confirmation integration effective protocol error");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "regressing confirmation integration rejected status");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "regressing confirmation integration reason");
+	vAssertTrue(xApplication.uCallCount == 1U, "regressing confirmation integration no second application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "regressing confirmation integration lifecycle callback");
+}
+
 static void vTestIntegratedPumpReceiveStabilityFlow(void)
 {
 	rsrx_session_t xSession;
@@ -2191,6 +2313,7 @@ int main(void)
 	vTestIntegratedReceiveErrorBudgetResetFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
+	vTestIntegratedRegressingConfirmationProtocolErrorFlow();
 	vTestIntegratedPumpReceiveStabilityFlow();
 	vTestIntegratedBoundedSoakPumpFlow();
 
