@@ -699,6 +699,8 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover integration channel down");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED, "channel failover integration decision");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration selected secondary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover integration switch count");
+	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover integration switch occurred");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel failover integration state retained");
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel failover integration outbound send");
@@ -736,6 +738,7 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	xTransport.uSecondaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "channel failover integration preferred recovery query");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration preferred recovery selected primary");
+	vAssertTrue(xSession.xChannelManager.uTotalSwitchCount == 2U, "channel failover integration recovery switch count");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel failover integration preferred recovery send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration switched back to primary");
 }
@@ -810,6 +813,7 @@ static void vTestIntegratedChannelRecoveryHoldoffFlow(void)
 	xChannelDownFrame.xPayloadLength = 0U;
 	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel holdoff integration failover event");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel holdoff integration failover switch count");
 
 	xTransport.uPrimaryAvailable = 1U;
 	xTransport.uSecondaryAvailable = 1U;
@@ -821,6 +825,7 @@ static void vTestIntegratedChannelRecoveryHoldoffFlow(void)
 
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "channel holdoff second recovery query");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel holdoff switches primary");
+	vAssertTrue(xSession.xChannelManager.uTotalSwitchCount == 2U, "channel holdoff integration total switch count");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel holdoff second recovery send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel holdoff second send primary");
 }

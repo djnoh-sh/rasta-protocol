@@ -741,6 +741,8 @@ static void vTestSupervisorChannelDownUsesFailover(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover selected secondary");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "channel failover selected available");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED, "channel failover decision");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover switch count");
+	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover switch occurred");
 }
 
 static void vTestSupervisorTransportSendFailed(void)

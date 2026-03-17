@@ -24,8 +24,25 @@ static void vResetSupervisorReport(
 	pxReport->uProcessedFrameCount = 0U;
 	pxReport->uPollCount = 0U;
 	pxReport->uConsecutiveSendFailureCount = 0U;
+	pxReport->uChannelSwitchCount = 0U;
+	pxReport->uLastChannelSwitchOccurred = 0U;
 	pxReport->uLastPumpIterationCount = 0U;
 	pxReport->uLastPumpProcessedFrameCount = 0U;
+}
+
+static void vRefreshChannelSwitchTelemetry(
+	rsrx_transport_supervisor_context_t * pxContext)
+{
+	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
+		(pxContext->pxSession == (rsrx_session_t *)0))
+	{
+		return;
+	}
+
+	pxContext->xLastReport.uChannelSwitchCount =
+		pxContext->pxSession->xChannelManager.uTotalSwitchCount;
+	pxContext->xLastReport.uLastChannelSwitchOccurred =
+		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
 }
 
 static rsrx_event_t eResolveInboundEvent(
@@ -74,6 +91,7 @@ static rsrx_supervisor_status_t eProcessSessionEventInternal(
 		(eSessionStatus == RSRX_STATUS_REJECTED) ?
 			RSRX_SUPERVISOR_DECISION_SESSION_REJECTED :
 			RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED;
+	vRefreshChannelSwitchTelemetry(pxContext);
 
 	*ppxReport = &pxContext->xLastReport;
 	return RSRX_SUPERVISOR_STATUS_OK;
@@ -102,6 +120,7 @@ static uint32_t uAlternativeChannelIsAvailable(
 	}
 
 	pxContext->xLastReport.xLastChannelState = xChannelState;
+	vRefreshChannelSwitchTelemetry(pxContext);
 	return (uint32_t)(xChannelState.eChannelId != eFailedChannelId);
 }
 
@@ -163,6 +182,7 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 		(eSessionStatus == RSRX_STATUS_REJECTED) ?
 			RSRX_SUPERVISOR_DECISION_SESSION_REJECTED :
 			RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED;
+	vRefreshChannelSwitchTelemetry(pxContext);
 
 	pxContext->xLastReport.uProcessedFrameCount++;
 	*ppxReport = &pxContext->xLastReport;
@@ -225,6 +245,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	eTransportStatus = rsrx_transport_adapter_query_channel(
 		&pxContext->pxSession->xTransportAdapter,
 		&pxContext->xLastReport.xLastChannelState);
+	vRefreshChannelSwitchTelemetry(pxContext);
 	pxContext->xLastReport.uPollCount++;
 	if(eTransportStatus != RSRX_TRANSPORT_STATUS_OK)
 	{

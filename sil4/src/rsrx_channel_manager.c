@@ -99,6 +99,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_init(
 	pxContext->uActiveChannelIndex = pxConfig->uPreferredChannelIndex;
 	pxContext->uLastSelectionWasFailover = 0U;
 	pxContext->uPreferredRecoveryStableSelectionCount = 0U;
+	pxContext->uTotalSwitchCount = 0U;
 	pxContext->uInitialized = 1U;
 
 	return RSRX_CHANNEL_MANAGER_STATUS_OK;
@@ -201,8 +202,15 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 		pxResult->uActiveChannelIndex = pxContext->uActiveChannelIndex;
 		pxResult->uAvailableChannelCount = 0U;
 		pxResult->uFailoverOccurred = 0U;
+		pxResult->uTotalSwitchCount = pxContext->uTotalSwitchCount;
 		pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 		return RSRX_CHANNEL_MANAGER_STATUS_UNAVAILABLE;
+	}
+
+	if((pxContext->uLastSelectionWasFailover != 0U) &&
+		(pxContext->uTotalSwitchCount < UINT32_MAX))
+	{
+		pxContext->uTotalSwitchCount++;
 	}
 
 	pxContext->uActiveChannelIndex = uSelectedIndex;
@@ -211,6 +219,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 	pxResult->uActiveChannelIndex = uSelectedIndex;
 	pxResult->uAvailableChannelCount = uCountAvailableChannels(pxContext);
 	pxResult->uFailoverOccurred = pxContext->uLastSelectionWasFailover;
+	pxResult->uTotalSwitchCount = pxContext->uTotalSwitchCount;
 
 	return RSRX_CHANNEL_MANAGER_STATUS_OK;
 }

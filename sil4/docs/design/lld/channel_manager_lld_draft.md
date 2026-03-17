@@ -31,8 +31,8 @@
 | `rsrx_redundancy_mode_t` | enum | redundancy mode 식별 | single, active-standby |
 | `rsrx_channel_descriptor_t` | struct | channel id, availability, priority 보관 | config-owned descriptor |
 | `rsrx_channel_manager_config_t` | struct | 채널 구성과 선호 채널 보관 | startup validated input |
-| `rsrx_channel_selection_result_t` | struct | 선택 결과와 failover 여부 보고 | caller-visible decision |
-| `rsrx_channel_manager_context_t` | struct | runtime active channel과 config 보관 | no dynamic memory |
+| `rsrx_channel_selection_result_t` | struct | 선택 결과, failover 여부, cumulative switch telemetry 보고 | caller-visible decision |
+| `rsrx_channel_manager_context_t` | struct | runtime active channel, holdoff 상태, cumulative switch count 보관 | no dynamic memory |
 
 ## Behavioral Rules
 
@@ -47,6 +47,7 @@
   - 그 외에는 현재 active channel이 available이면 그대로 유지한다.
   - active channel이 unavailable이면 available channel 중 priority가 가장 높은 channel을 선택한다.
   - 새 channel이 이전 active와 다르면 `uFailoverOccurred`를 `1`로 보고한다.
+  - 새 channel이 이전 active와 다를 때마다 `uTotalSwitchCount`를 증가시키고 selection result에도 현재 누적값을 복사한다.
   - 어떤 channel도 available하지 않으면 `UNAVAILABLE`을 반환한다.
 - reset 정책:
   - runtime active channel을 preferred channel로 되돌린다.
@@ -58,6 +59,7 @@
 - channel selection은 같은 입력에 대해 같은 출력을 제공해야 한다.
 - preferred channel recovery는 `ACTIVE_STANDBY`에서 holdoff 규칙을 만족한 뒤 자동 반영된다.
 - channel switch 여부는 `uFailoverOccurred`로 보고되며, 현재 단계에서는 failover와 preferred recovery를 구분하지 않는다.
+- cumulative switch telemetry는 reset 이후에도 유지되며, runtime 동안 발생한 failover/recovery 전환 횟수를 audit용으로 제공한다.
 
 ## Planned Verification
 

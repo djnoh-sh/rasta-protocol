@@ -53,6 +53,7 @@ static void vTestPreferredRecoveryHoldoff(void)
 		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
 		"holdoff failover select");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff failover secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff switch count after failover");
 
 	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xState.uIsAvailable = 1U;
@@ -69,6 +70,7 @@ static void vTestPreferredRecoveryHoldoff(void)
 		"holdoff second stable select");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff switches to primary");
 	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff switch count after recovery");
 }
 
 int main(void)
@@ -103,6 +105,7 @@ int main(void)
 		"select failover channel");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "selected secondary");
 	vAssertTrue(xResult.uFailoverOccurred == 1U, "failover detected");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "switch count after failover");
 	vAssertTrue(
 		rsrx_channel_manager_get_active_channel(&xContext) == RSRX_TRANSPORT_CHANNEL_SECONDARY,
 		"active secondary after failover");
@@ -127,6 +130,7 @@ int main(void)
 		"select preferred after restore");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after restore");
 	vAssertTrue(xResult.uFailoverOccurred == 1U, "channel switch reported on preferred recovery");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "switch count after preferred recovery");
 	vAssertTrue(
 		rsrx_channel_manager_get_active_channel(&xContext) == RSRX_TRANSPORT_CHANNEL_PRIMARY,
 		"active primary after restore");
