@@ -67,6 +67,7 @@
 | MOD-007 | Platform Abstraction | timer, socket, memory, synchronization 등 플랫폼 의존 기능을 격리한다 | module requests | platform services | IF-002, SR-003 |
 | MOD-008 | Connection Orchestrator | 상태 머신 입력, action dispatch, 외부 adapter 경계를 조정한다 | api events, decoded events, timer events | action dispatch, transition report | FR-001, FR-005, IF-001, SR-004 |
 | MOD-009 | Platform Adapter Layer | orchestrator executor와 platform/application/transport port를 연결한다 | transition result, platform ports | timer commands, diagnostic records, executor table, inbound message cache | IF-002, FR-003, FR-007, SR-004 |
+| MOD-010 | Channel Manager | redundant transport channel의 active/standby 선택과 failover를 결정한다 | channel state updates, policy config | selected channel, failover result | FR-003, IF-002, SR-003 |
 
 ## Data Flow
 
@@ -245,6 +246,7 @@ SHUTDOWN --> [*]
 | DD-011 | protocol codec은 encode/decode port contract로 정의한다 | transport frame과 state machine event 사이의 변환 책임을 명확히 분리 | transport supervisor 내부 ad-hoc parsing | 검증성과 수신 경로 시험성 향상 |
 | DD-012 | inbound frame 처리는 transport supervisor가 담당한다 | codec과 session 사이 handoff 책임을 분리하기 위함 | public API가 직접 decode 결과를 처리 | 수신 경로 구조화와 시험성 향상 |
 | DD-013 | session config 검증은 별도 validator 모듈에서 수행한다 | startup gate와 API 조립 로직을 분리해 추적성을 높이기 위함 | `rsrx_session_init` 내부 ad-hoc 검사 | 설정 오류 검증의 독립성과 시험성 향상 |
+| DD-014 | redundancy 정책의 첫 단계는 독립된 channel manager contract로 분리한다 | session/supervisor와 failover policy를 느슨하게 결합하기 위함 | transport supervisor 내부에 failover 분기 직접 구현 | 시험성 및 정책 교체 용이성 향상 |
 
 ## Verification Impact
 

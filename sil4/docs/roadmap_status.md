@@ -83,7 +83,7 @@
 | --- | --- | --- | --- |
 | NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | supervisor와 protocol context를 decoded message detail과 결합 |
 | NS-002 | Transport Supervisor Completion | receive loop, send result, channel state 반영 필요 | supervisor contract 확장 |
-| NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | transport abstraction 상위 모듈 추가 |
+| NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | channel manager contract/skeleton 후 session/supervisor 연결 |
 | NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 long-run, redundancy 시나리오로 확장 |
 | NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | toolchain policy와 report template 수립 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |

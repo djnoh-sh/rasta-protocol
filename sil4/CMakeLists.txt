@@ -31,6 +31,11 @@ add_library(rsrx_protocol_context STATIC
 target_include_directories(rsrx_protocol_context PUBLIC include)
 target_link_libraries(rsrx_protocol_context PUBLIC rsrx_codec)
 
+add_library(rsrx_channel_manager STATIC
+	src/rsrx_channel_manager.c)
+
+target_include_directories(rsrx_channel_manager PUBLIC include)
+
 add_library(rsrx_platform_adapters STATIC
 	src/rsrx_platform_adapters.c)
 
@@ -74,6 +79,11 @@ target_link_libraries(rsrx_platform_adapters_test rsrx_platform_adapters)
 
 add_executable(rsrx_transport_contract_test
 	tests/unit/test_rsrx_transport_contract.c)
+
+add_executable(rsrx_channel_manager_test
+	tests/unit/test_rsrx_channel_manager.c)
+
+target_link_libraries(rsrx_channel_manager_test rsrx_channel_manager)
 
 add_executable(rsrx_api_test
 	tests/unit/test_rsrx_api.c)
