@@ -26,6 +26,8 @@ typedef enum
 	RSRX_SUPERVISOR_DECISION_SESSION_REJECTED,
 	RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN,
 	RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE,
+	RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED,
+	RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED,
 	RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED,
 	RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED,
 	RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED,
@@ -74,6 +76,8 @@ typedef struct
 	uint32_t uPollCount;
 	uint32_t uConsecutiveSendFailureCount;
 	uint32_t uSendFailureBudgetResetCount;
+	uint32_t uConsecutiveReceiveErrorCount;
+	uint32_t uReceiveErrorBudgetResetCount;
 	uint32_t uAcceptedDecisionCount;
 	uint32_t uRejectedDecisionCount;
 	uint32_t uIgnoredDecisionCount;
@@ -95,6 +99,7 @@ typedef struct
 	rsrx_codec_port_t xCodec;
 	rsrx_transport_supervisor_report_t xLastReport;
 	uint32_t uMaxConsecutiveSendFailures;
+	uint32_t uMaxConsecutiveReceiveErrors;
 	uint32_t uInitialized;
 } rsrx_transport_supervisor_context_t;
 

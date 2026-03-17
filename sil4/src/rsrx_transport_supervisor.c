@@ -1,6 +1,7 @@
 #include "rsrx_transport_supervisor.h"
 
 #define D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET (2U)
+#define D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET (2U)
 
 static void vResetSupervisorReport(
 	rsrx_transport_supervisor_report_t * pxReport)
@@ -28,6 +29,8 @@ static void vResetSupervisorReport(
 	pxReport->uPollCount = 0U;
 	pxReport->uConsecutiveSendFailureCount = 0U;
 	pxReport->uSendFailureBudgetResetCount = 0U;
+	pxReport->uConsecutiveReceiveErrorCount = 0U;
+	pxReport->uReceiveErrorBudgetResetCount = 0U;
 	pxReport->uAcceptedDecisionCount = 0U;
 	pxReport->uRejectedDecisionCount = 0U;
 	pxReport->uIgnoredDecisionCount = 0U;
@@ -56,6 +59,7 @@ static rsrx_supervisor_decision_class_t eMapDecisionClass(
 			return RSRX_SUPERVISOR_DECISION_CLASS_REJECTED;
 
 		case RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE:
+		case RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED:
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED:
 		case RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED:
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED:
@@ -66,6 +70,7 @@ static rsrx_supervisor_decision_class_t eMapDecisionClass(
 			return RSRX_SUPERVISOR_DECISION_CLASS_IGNORED;
 
 		case RSRX_SUPERVISOR_DECISION_DECODE_FAILED:
+		case RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN:
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED:
@@ -257,6 +262,57 @@ static void vResetSendFailureBudget(
 	}
 }
 
+static void vResetReceiveErrorBudget(
+	rsrx_transport_supervisor_context_t * pxContext)
+{
+	if(pxContext->xLastReport.uConsecutiveReceiveErrorCount > 0U)
+	{
+		pxContext->xLastReport.uConsecutiveReceiveErrorCount = 0U;
+		if(pxContext->xLastReport.uReceiveErrorBudgetResetCount < UINT32_MAX)
+		{
+			pxContext->xLastReport.uReceiveErrorBudgetResetCount++;
+		}
+	}
+}
+
+static uint32_t uReceiveErrorBudgetExceeded(
+	rsrx_transport_supervisor_context_t * pxContext)
+{
+	if(pxContext->xLastReport.uConsecutiveReceiveErrorCount < UINT32_MAX)
+	{
+		pxContext->xLastReport.uConsecutiveReceiveErrorCount++;
+	}
+
+	return (uint32_t)(pxContext->xLastReport.uConsecutiveReceiveErrorCount >=
+		pxContext->uMaxConsecutiveReceiveErrors);
+}
+
+static rsrx_supervisor_status_t eEscalateToProtocolError(
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_supervisor_decision_t eDecision,
+	const rsrx_transport_supervisor_report_t ** ppxReport)
+{
+	rsrx_status_t eSessionStatus;
+
+	eSessionStatus = rsrx_session_process_event(
+		pxContext->pxSession,
+		RSRX_EVENT_PROTOCOL_ERROR,
+		&pxContext->xLastReport.pxLastReport);
+	pxContext->xLastReport.eLastEffectiveEvent = RSRX_EVENT_PROTOCOL_ERROR;
+	pxContext->xLastReport.eLastSessionStatus = eSessionStatus;
+	vRecordDecision(pxContext, eDecision);
+	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshOutboundQueueTelemetry(pxContext);
+	*ppxReport = &pxContext->xLastReport;
+
+	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
+	{
+		return RSRX_SUPERVISOR_STATUS_SESSION_ERROR;
+	}
+
+	return RSRX_SUPERVISOR_STATUS_OK;
+}
+
 static uint32_t uAlternativeChannelIsAvailable(
 	rsrx_transport_supervisor_context_t * pxContext,
 	rsrx_transport_channel_id_t eFailedChannelId)
@@ -399,6 +455,7 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 	vResetSendFailureBudget(
 		pxContext,
 		RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_INBOUND_FRAME);
+	vResetReceiveErrorBudget(pxContext);
 
 	eSessionStatus = rsrx_session_process_event(
 		pxContext->pxSession,
@@ -441,6 +498,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_init(
 	pxContext->xCodec = *pxCodec;
 	vResetSupervisorReport(&pxContext->xLastReport);
 	pxContext->uMaxConsecutiveSendFailures = D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET;
+	pxContext->uMaxConsecutiveReceiveErrors = D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET;
 	pxContext->uInitialized = 1U;
 	vRefreshChannelSwitchTelemetry(pxContext);
 	vRefreshOutboundQueueTelemetry(pxContext);
@@ -486,19 +544,32 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	pxContext->xLastReport.uPollCount++;
 	if(eTransportStatus != RSRX_TRANSPORT_STATUS_OK)
 	{
-		vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN);
-		*ppxReport = &pxContext->xLastReport;
 		if((eTransportStatus == RSRX_TRANSPORT_STATUS_CHANNEL_DOWN) ||
 			(eTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE))
 		{
+			vResetReceiveErrorBudget(pxContext);
+			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN);
+			*ppxReport = &pxContext->xLastReport;
 			return RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN;
 		}
 
-		return RSRX_SUPERVISOR_STATUS_RECEIVE_ERROR;
+		if(uReceiveErrorBudgetExceeded(pxContext) == 0U)
+		{
+			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED);
+			*ppxReport = &pxContext->xLastReport;
+			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+		}
+
+		vResetReceiveErrorBudget(pxContext);
+		return eEscalateToProtocolError(
+			pxContext,
+			RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED,
+			ppxReport);
 	}
 
 	if(pxContext->xLastReport.xLastChannelState.uIsAvailable == 0U)
 	{
+		vResetReceiveErrorBudget(pxContext);
 		vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN);
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN;
@@ -514,6 +585,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 		&xFrame);
 	if(eTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE)
 	{
+		vResetReceiveErrorBudget(pxContext);
 		vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE);
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_NO_FRAME;
@@ -521,18 +593,31 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 
 	if(eTransportStatus != RSRX_TRANSPORT_STATUS_OK)
 	{
-		vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN);
-		*ppxReport = &pxContext->xLastReport;
 		if(eTransportStatus == RSRX_TRANSPORT_STATUS_CHANNEL_DOWN)
 		{
+			vResetReceiveErrorBudget(pxContext);
+			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN);
+			*ppxReport = &pxContext->xLastReport;
 			return RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN;
 		}
 
-		return RSRX_SUPERVISOR_STATUS_RECEIVE_ERROR;
+		if(uReceiveErrorBudgetExceeded(pxContext) == 0U)
+		{
+			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED);
+			*ppxReport = &pxContext->xLastReport;
+			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+		}
+
+		vResetReceiveErrorBudget(pxContext);
+		return eEscalateToProtocolError(
+			pxContext,
+			RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED,
+			ppxReport);
 	}
 
 	if(xFrame.eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
 	{
+		vResetReceiveErrorBudget(pxContext);
 		pxContext->xLastReport.xLastFrame = xFrame;
 		vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE);
 		*ppxReport = &pxContext->xLastReport;

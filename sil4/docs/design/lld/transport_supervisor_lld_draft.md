@@ -33,7 +33,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_supervisor_status_t` | enum | supervisor 결과 코드 | decode/session 오류를 분리 |
-| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, session report, channel switch telemetry, outbound queue telemetry 보유 | caller는 읽기 전용 사용 |
+| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, receive error budget telemetry, session report, channel switch telemetry, outbound queue telemetry 보유 | caller는 읽기 전용 사용 |
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
@@ -60,9 +60,13 @@
   - channel이 unavailable이면 `CHANNEL_DOWN`을 반환하고 receive는 수행하지 않는다.
   - channel이 available이면 frame 수신을 시도한다.
   - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
+  - query 또는 receive의 generic error는 내부 receive error budget으로 관리한다.
+  - 임계치 미만의 receive error는 ignored event로 처리하고 상태를 유지한다.
+  - 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달해 fail-safe 전이를 유발한다.
+  - successful frame, no-frame, channel-down은 receive error budget을 reset한다.
   - `FRAME_RECEIVED` event인 경우에만 `process_frame` 경로로 위임한다.
   - poll count, 마지막 channel state, channel manager의 누적 switch count를 report에 남긴다.
-  - channel gate와 no-frame도 decision class/counter에 반영한다.
+  - channel gate, no-frame, receive error budget path도 decision class/counter에 반영한다.
 - `rsrx_transport_supervisor_pump_receive`:
   - 최대 `uMaxPolls`만큼 `poll_receive`를 반복한다.
   - `OK`는 계속 진행한다.
@@ -120,6 +124,7 @@
   - report의 effective event / decision / decision class / session status 일관성
   - cumulative decision counter의 단조 증가 보장
   - send failure budget update/reset telemetry의 일관성
+  - receive error budget increment/reset/escalation 일관성
   - budget channel과 active channel의 일관성
   - inactive/stale channel transport feedback의 보수적 무시 정책
   - outstanding send correlation과 send feedback 처리 일관성

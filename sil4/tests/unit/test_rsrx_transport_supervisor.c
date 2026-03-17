@@ -705,6 +705,77 @@ static void vTestSupervisorPollReceiveNoFrame(void)
 	vAssertTrue(xTransport.uReceiveCount == 1U, "poll idle receive count");
 }
 
+static void vTestSupervisorPollReceiveErrorBudgeted(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x62U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	xTransport.eReceiveStatus = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll receive error session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll receive error session start");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll receive error supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll receive error budgeted status");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll receive error count one");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "poll receive error reset count zero");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "poll receive error budgeted decision");
+	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "poll receive error budgeted class");
+}
+
+static void vTestSupervisorPollReceiveErrorEscalatesAndResets(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x64U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	xTransport.eReceiveStatus = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll receive escalate session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll receive escalate session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll receive escalate session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "poll receive escalate establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll receive escalate supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll receive escalate first status");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll receive escalate count one");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "poll receive escalate second status");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "poll receive escalate safe disconnect");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll receive escalate reset count");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "poll receive escalate reset telemetry");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "poll receive escalate effective event");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "poll receive escalate session status");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED, "poll receive escalate decision");
+	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_ERROR, "poll receive escalate class");
+	vAssertTrue(pxSupervisorReport->uErrorDecisionCount == 1U, "poll receive escalate error count");
+}
+
 static void vTestSupervisorChannelDownUsesFailover(void)
 {
 	rsrx_session_t xSession;
@@ -1210,6 +1281,8 @@ int main(void)
 	vTestSupervisorPollReceiveHandshake();
 	vTestSupervisorPollReceiveChannelDown();
 	vTestSupervisorPollReceiveNoFrame();
+	vTestSupervisorPollReceiveErrorBudgeted();
+	vTestSupervisorPollReceiveErrorEscalatesAndResets();
 	vTestSupervisorChannelDownUsesFailover();
 	vTestSupervisorChannelUpRefreshesSelection();
 	vTestSupervisorTransportSendFailed();
