@@ -930,6 +930,7 @@ static void vTestSupervisorTransportSendCompletedCorrelated(void)
 	rsrx_codec_port_t xCodec;
 	const rsrx_orchestrator_report_t * pxSessionReport;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
 	test_transport_context_t xTransport = { 0 };
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
@@ -944,6 +945,8 @@ static void vTestSupervisorTransportSendCompletedCorrelated(void)
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "send complete correlated session start");
 	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "send complete correlated session connect");
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 1U, "send complete correlated outstanding send set");
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "send complete correlated telemetry available");
 	xCodec.pfEncode = (rsrx_encode_message_fn)0;
 	xCodec.pfDecode = eDecodeFrame;
 	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "send complete correlated supervisor init");
@@ -955,6 +958,7 @@ static void vTestSupervisorTransportSendCompletedCorrelated(void)
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "send complete correlated ignored");
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 0U, "send complete correlated outstanding cleared");
+	vAssertTrue(pxTelemetry->uClearOnFeedbackCount == 1U, "send complete correlated feedback clear telemetry");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED, "send complete correlated decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "send complete correlated class");
 }

@@ -28,3 +28,4 @@
 | TC-OUT-003 | IF-001 | invalid payload guard 검증 | `ESTABLISHED` 상태 session | null payload + nonzero length로 send 호출 | `INVALID_ARGUMENT` 반환 | 잘못된 payload 조합을 결정적으로 거부한다 |
 | TC-OUT-004 | FR-003 | transport adapter direct-send encode 검증 | transport adapter 초기화 완료 | `rsrx_transport_adapter_send_application_data` 호출 | `DATA` frame encode 후 transport send 수행 | reason=`APPLICATION_DATA_REQUESTED`, payload copy, encoded length가 설계와 일치 |
 | TC-OUT-006 | FR-003 | transport adapter outstanding clear 검증 | transport adapter 초기화 완료, 첫 outbound send 수행됨 | second send 시도 후 valid inbound record, 다시 send | second send는 `UNAVAILABLE`, inbound 후 send 재허용 | adapter outstanding send state가 direct-send policy와 일치한다 |
+| TC-OUT-007 | FR-003 | outbound telemetry 누적 검증 | session/adapter 초기화 완료 | success, busy reject, inbound clear, feedback clear 경로 수행 | accepted/busy/clear telemetry가 기대값으로 누적된다 | direct-send backpressure policy가 관찰 가능한 counter로 남는다 |

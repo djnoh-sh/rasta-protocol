@@ -333,6 +333,7 @@ static void vTestApplicationDataSend(void)
 {
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
 	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
@@ -354,6 +355,8 @@ static void vTestApplicationDataSend(void)
 			auFramePayload,
 			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"transport adapter init for application send");
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "application data telemetry available");
 
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
@@ -370,12 +373,16 @@ static void vTestApplicationDataSend(void)
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[7] == 0x01U, "application data sequence encoded");
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auDataPayload[0], "application data payload copied");
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U, "application data outstanding send set");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 1U, "application data accepted telemetry");
+	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "application data last send telemetry");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"application data second send busy");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "application data busy telemetry");
+	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "application data busy status telemetry");
 
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -387,6 +394,7 @@ static void vTestApplicationDataSend(void)
 		&xTransportAdapterContext,
 		&xTransportAdapterContext.xLastInboundMessage);
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 0U, "application data outstanding cleared by inbound");
+	vAssertTrue(pxTelemetry->uClearOnInboundCount == 1U, "application data inbound clear telemetry");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
@@ -394,6 +402,7 @@ static void vTestApplicationDataSend(void)
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data send after inbound clear");
 	vAssertTrue(xTransportContext.uCallCount == 2U, "application data send count after clear");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "application data accepted telemetry after clear");
 }
 
 static void vTestChannelManagerDrivenFailoverSelection(void)

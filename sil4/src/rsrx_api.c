@@ -326,6 +326,19 @@ rsrx_status_t rsrx_session_send_application_data(
 	return RSRX_STATUS_OK;
 }
 
+const rsrx_outbound_send_telemetry_t * rsrx_session_get_outbound_telemetry(
+	const rsrx_session_t * pxSession)
+{
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U))
+	{
+		return (const rsrx_outbound_send_telemetry_t *)0;
+	}
+
+	return rsrx_transport_adapter_get_outbound_telemetry(
+		&pxSession->xTransportAdapter);
+}
+
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession)
 {

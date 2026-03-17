@@ -370,6 +370,7 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
 	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
 	test_clock_context_t xClock = { 850U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
@@ -393,6 +394,8 @@ static void vTestSessionOutboundApplicationDataPath(void)
 		&xLifecycleCounter,
 		auFramePayload,
 		sizeof(auFramePayload));
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "outbound application telemetry available");
 
 	vAssertTrue(
 		rsrx_session_send_application_data(
@@ -409,12 +412,16 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	vAssertTrue(xTransport.xLastRequest.puPayload[11] == 0x00U, "outbound application confirmation");
 	vAssertTrue(xTransport.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auDataPayload[0], "outbound application payload copied");
 	vAssertTrue(xApplication.uCallCount == 0U, "outbound application send does not trigger inbound callback");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "outbound application accepted telemetry");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 0U, "outbound application busy telemetry before reject");
 	vAssertTrue(
 		rsrx_session_send_application_data(
 			&xSession,
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
 		"application data send busy guard");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "outbound application busy telemetry after reject");
+	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "outbound application last send status telemetry");
 }
 
 static void vTestSessionRetransmissionPath(void)

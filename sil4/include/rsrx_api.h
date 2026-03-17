@@ -110,6 +110,9 @@ rsrx_status_t rsrx_session_send_application_data(
 	const uint8_t * puPayload,
 	size_t xPayloadLength);
 
+const rsrx_outbound_send_telemetry_t * rsrx_session_get_outbound_telemetry(
+	const rsrx_session_t * pxSession);
+
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession);
 

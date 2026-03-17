@@ -88,6 +88,36 @@ static const uint8_t * puResolvePayload(
 static rsrx_transport_status_t eRefreshChannelManagerState(
 	rsrx_transport_adapter_context_t * pxContext);
 
+static void vClearOutstandingSend(
+	rsrx_transport_adapter_context_t * pxContext,
+	uint32_t uIsFeedbackClear,
+	uint32_t uIsInboundClear)
+{
+	if(pxContext == (rsrx_transport_adapter_context_t *)0)
+	{
+		return;
+	}
+
+	if(pxContext->uHasOutstandingSend != 0U)
+	{
+		if(uIsInboundClear != 0U)
+		{
+			pxContext->xOutboundTelemetry.uClearOnInboundCount++;
+		}
+		else if(uIsFeedbackClear != 0U)
+		{
+			pxContext->xOutboundTelemetry.uClearOnFeedbackCount++;
+		}
+		else
+		{
+			pxContext->xOutboundTelemetry.uClearManualCount++;
+		}
+	}
+
+	pxContext->uHasOutstandingSend = 0U;
+	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+}
+
 static rsrx_transport_status_t eEncodeAndSend(
 	rsrx_transport_adapter_context_t * pxContext,
 	rsrx_message_type_t eMessageType,
@@ -104,11 +134,17 @@ static rsrx_transport_status_t eEncodeAndSend(
 	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
 		((puPayload == (const uint8_t *)0) && (xPayloadLength > 0U)))
 	{
+		if(pxContext != (rsrx_transport_adapter_context_t *)0)
+		{
+			pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+		}
 		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	}
 
 	if(pxContext->uHasOutstandingSend != 0U)
 	{
+		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+		pxContext->xOutboundTelemetry.uBusyRejectedSendCount++;
 		return RSRX_TRANSPORT_STATUS_UNAVAILABLE;
 	}
 
@@ -120,6 +156,7 @@ static rsrx_transport_status_t eEncodeAndSend(
 		xPayloadLength,
 		&xEncodeRequest) != RSRX_STATUS_OK)
 	{
+		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	}
 
@@ -129,6 +166,7 @@ static rsrx_transport_status_t eEncodeAndSend(
 
 	if(pxContext->xCodecPort.pfEncode(&xEncodeRequest, &xEncodeBuffer) != RSRX_CODEC_STATUS_OK)
 	{
+		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_TX_ERROR;
 		return RSRX_TRANSPORT_STATUS_TX_ERROR;
 	}
 
@@ -153,11 +191,14 @@ static rsrx_transport_status_t eEncodeAndSend(
 		&xRequest);
 	if(eSendStatus != RSRX_TRANSPORT_STATUS_OK)
 	{
+		pxContext->xOutboundTelemetry.eLastSendStatus = eSendStatus;
 		return eSendStatus;
 	}
 
 	pxContext->eLastOutstandingSendChannelId = xRequest.eChannelId;
 	pxContext->uHasOutstandingSend = 1U;
+	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_OK;
+	pxContext->xOutboundTelemetry.uAcceptedSendCount++;
 
 	return RSRX_TRANSPORT_STATUS_OK;
 }
@@ -217,6 +258,12 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->uHasLastInboundMessage = 0U;
 	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxContext->uHasOutstandingSend = 0U;
+	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	pxContext->xOutboundTelemetry.uAcceptedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uBusyRejectedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uClearOnInboundCount = 0U;
+	pxContext->xOutboundTelemetry.uClearOnFeedbackCount = 0U;
+	pxContext->xOutboundTelemetry.uClearManualCount = 0U;
 	pxContext->eDefaultChannelId = eDefaultChannelId;
 	pxContext->puFramePayload = puFramePayload;
 	pxContext->xFramePayloadLength = xFramePayloadLength;
@@ -272,8 +319,7 @@ void rsrx_transport_adapter_record_inbound_message(
 	(void)rsrx_protocol_context_record_inbound_message(
 		&pxContext->xProtocolContext,
 		pxMessage);
-	pxContext->uHasOutstandingSend = 0U;
-	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	vClearOutstandingSend(pxContext, 0U, 1U);
 	pxContext->xLastInboundMessage = *pxMessage;
 	pxContext->uHasLastInboundMessage = 1U;
 }
@@ -386,13 +432,24 @@ rsrx_transport_channel_id_t rsrx_transport_adapter_get_outstanding_send_channel(
 void rsrx_transport_adapter_clear_outstanding_send(
 	rsrx_transport_adapter_context_t * pxContext)
 {
-	if(pxContext == (rsrx_transport_adapter_context_t *)0)
+	vClearOutstandingSend(pxContext, 0U, 0U);
+}
+
+void rsrx_transport_adapter_clear_outstanding_send_on_feedback(
+	rsrx_transport_adapter_context_t * pxContext)
+{
+	vClearOutstandingSend(pxContext, 1U, 0U);
+}
+
+const rsrx_outbound_send_telemetry_t * rsrx_transport_adapter_get_outbound_telemetry(
+	const rsrx_transport_adapter_context_t * pxContext)
+{
+	if(pxContext == (const rsrx_transport_adapter_context_t *)0)
 	{
-		return;
+		return (const rsrx_outbound_send_telemetry_t *)0;
 	}
 
-	pxContext->uHasOutstandingSend = 0U;
-	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	return &pxContext->xOutboundTelemetry;
 }
 
 void rsrx_transport_adapter_clear_retransmission_context(
