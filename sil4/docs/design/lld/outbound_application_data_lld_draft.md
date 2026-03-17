@@ -45,6 +45,7 @@
 | `rsrx_transport_adapter_send_application_data` | function | payload를 `DATA` encode/send로 변환 | null payload + nonzero length 금지, outstanding send 존재 시 busy reject |
 | `rsrx_transport_adapter_get_outbound_telemetry` | function | adapter outbound telemetry 조회 | read-only view |
 | `rsrx_outbound_send_telemetry_t` | struct | last send status, accepted count, busy reject count, consecutive/max busy reject streak, clear source count 보유 | cumulative counter는 reset 전까지 유지 |
+| `uBusyRejectErrorThreshold` | config field | repeated busy reject가 warning에서 error diagnostic으로 승격되는 임계치 | `0`이면 escalation 비활성화 |
 | `RSRX_REASON_APPLICATION_DATA_REQUESTED` | reason code | outbound application data 전송 이유 | transport request와 codec header에 기록 |
 
 ## Functional Behavior
@@ -55,6 +56,7 @@
   - 허용 상태이면 transport adapter send helper를 호출한다.
   - transport helper가 실패하면 `REJECTED`를 반환한다.
   - direct-send reject가 발생하면 session은 same-state synthetic report를 구성하고 API callback과 diagnostics port에 rejection을 기록한다.
+  - `uBusyRejectErrorThreshold > 0` 이고 current busy reject streak가 threshold 이상이면 synthetic diagnostic를 `ERROR_INTERFACE`로 승격한다.
 - `rsrx_transport_adapter_send_application_data`:
   - outstanding send가 이미 있으면 `UNAVAILABLE`을 반환한다.
   - `protocol context`를 통해 sequence/confirmation이 채워진 encode request를 생성한다.
@@ -77,6 +79,7 @@
 - outbound application data는 API callback이나 lifecycle callback을 발생시키지 않는다.
 - busy reject는 queue overflow가 아니라 `single outstanding send only` 정책 위반으로 해석한다.
 - busy reject의 synthetic report는 `status=REJECTED`, `reason=APPLICATION_DATA_REQUESTED`, `diagnostic=WARN_REJECTED_EVENT`를 사용한다.
+- threshold가 활성화되고 repeated busy reject streak가 임계치 이상이면 synthetic report의 diagnostic는 `ERROR_INTERFACE`를 사용한다.
 - queueing, batching, multi-depth backpressure 정책은 후속 단계에서 별도 정의한다.
 
 ## Verification Notes
@@ -88,6 +91,7 @@
   - valid inbound 후 send 재허용
   - accepted/busy reject/clear source telemetry 누적 검증
   - repeated busy reject streak와 reset/max 유지 검증
+  - busy reject threshold 도달 시 warning -> error diagnostic 승격 검증
   - `INITIALIZED` 또는 `CONNECTING` 상태 send 거부
   - null payload + nonzero length 거부
   - encoded frame이 `DATA`/`APPLICATION_DATA_REQUESTED`/expected sequence를 포함하는지 검증

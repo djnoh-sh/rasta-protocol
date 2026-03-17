@@ -54,6 +54,7 @@ typedef struct
 	rsrx_monotonic_time_ns_t uSupervisionIntervalNs;
 	rsrx_monotonic_time_ns_t uRetransmissionIntervalNs;
 	rsrx_monotonic_time_ns_t uDiagnosticFlushIntervalNs;
+	uint32_t uBusyRejectErrorThreshold;
 	void * pvApplicationDataContext;
 	rsrx_application_data_fn pfApplicationData;
 	void * pvApiCallbackContext;
@@ -76,6 +77,7 @@ struct rsrx_session
 	rsrx_api_notification_fn pfApiNotification;
 	void * pvLifecycleCallbackContext;
 	rsrx_lifecycle_notification_fn pfLifecycleNotification;
+	uint32_t uBusyRejectErrorThreshold;
 	uint32_t uInitialized;
 };
 

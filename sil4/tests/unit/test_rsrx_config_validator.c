@@ -111,6 +111,7 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, void * pvContext)
 	pxConfig->uSupervisionIntervalNs = 100U;
 	pxConfig->uRetransmissionIntervalNs = 200U;
 	pxConfig->uDiagnosticFlushIntervalNs = 300U;
+	pxConfig->uBusyRejectErrorThreshold = 0U;
 	pxConfig->pvApplicationDataContext = pvContext;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pvContext;

@@ -29,6 +29,53 @@ static void vSetDirectReport(
 	pxSession->xLastReport.uDispatchedActionCount = 0U;
 }
 
+static rsrx_diagnostic_code_t eResolveBusyRejectDiagnostic(
+	const rsrx_session_t * pxSession)
+{
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+
+	if(pxSession == (const rsrx_session_t *)0)
+	{
+		return RSRX_DIAG_WARN_REJECTED_EVENT;
+	}
+
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(
+		&pxSession->xTransportAdapter);
+	if((pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0) &&
+		(pxSession->uBusyRejectErrorThreshold > 0U) &&
+		(pxTelemetry->uConsecutiveBusyRejectedSendCount >=
+			pxSession->uBusyRejectErrorThreshold))
+	{
+		return RSRX_DIAG_ERROR_INTERFACE;
+	}
+
+	return RSRX_DIAG_WARN_REJECTED_EVENT;
+}
+
+static rsrx_log_severity_t eMapDirectDiagnosticSeverity(
+	rsrx_diagnostic_code_t eDiagnostic)
+{
+	switch(eDiagnostic)
+	{
+		case RSRX_DIAG_ERROR_TIMEOUT:
+		case RSRX_DIAG_ERROR_PROTOCOL:
+		case RSRX_DIAG_ERROR_CONFIGURATION:
+		case RSRX_DIAG_ERROR_INTERFACE:
+		case RSRX_DIAG_ERROR_INTERNAL_STATE:
+			return RSRX_LOG_SEVERITY_ERROR;
+
+		case RSRX_DIAG_WARN_REJECTED_EVENT:
+		case RSRX_DIAG_WARN_IGNORED_EVENT:
+			return RSRX_LOG_SEVERITY_WARNING;
+
+		case RSRX_DIAG_INFO_STATE_TRANSITION:
+		case RSRX_DIAG_INFO_OPERATIONAL_EVENT:
+		case RSRX_DIAG_NONE:
+		default:
+			return RSRX_LOG_SEVERITY_INFO;
+	}
+}
+
 static void vWriteDirectDiagnostic(
 	rsrx_session_t * pxSession)
 {
@@ -42,7 +89,8 @@ static void vWriteDirectDiagnostic(
 	}
 
 	pxSession->xPlatformAdapter.uEventCounter++;
-	xRecord.eSeverity = RSRX_LOG_SEVERITY_WARNING;
+	xRecord.eSeverity = eMapDirectDiagnosticSeverity(
+		pxSession->xLastReport.xTransition.eDiagnostic);
 	xRecord.ePreviousState = pxSession->xLastReport.xTransition.ePreviousState;
 	xRecord.eNextState = pxSession->xLastReport.xTransition.eNextState;
 	xRecord.eStatus = pxSession->xLastReport.xTransition.eStatus;
@@ -292,6 +340,7 @@ rsrx_status_t rsrx_session_init(
 	pxSession->pfApplicationData = pxConfig->pfApplicationData;
 	pxSession->pvLifecycleCallbackContext = pxConfig->pvLifecycleCallbackContext;
 	pxSession->pfLifecycleNotification = pxConfig->pfLifecycleNotification;
+	pxSession->uBusyRejectErrorThreshold = pxConfig->uBusyRejectErrorThreshold;
 
 	xApplicationExecutor.pvContext = pxSession;
 	xApplicationExecutor.pfDispatch = vApplicationExecutorDispatch;
@@ -400,7 +449,7 @@ rsrx_status_t rsrx_session_send_application_data(
 		vNotifyDirectReject(
 			pxSession,
 			RSRX_REASON_APPLICATION_DATA_REQUESTED,
-			RSRX_DIAG_WARN_REJECTED_EVENT);
+			eResolveBusyRejectDiagnostic(pxSession));
 		return RSRX_STATUS_REJECTED;
 	}
 

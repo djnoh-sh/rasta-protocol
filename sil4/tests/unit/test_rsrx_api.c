@@ -171,6 +171,7 @@ static void vFillConfig(
 	pxConfig->uSupervisionIntervalNs = 200U;
 	pxConfig->uRetransmissionIntervalNs = 300U;
 	pxConfig->uDiagnosticFlushIntervalNs = 400U;
+	pxConfig->uBusyRejectErrorThreshold = 0U;
 	pxConfig->pvApplicationDataContext = pxApplication;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pxApiCounter;
@@ -454,6 +455,67 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	vAssertTrue(xDiagnostics.uCallCount == 4U, "outbound application diagnostic count after second reject");
 }
 
+static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 860U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[3] = { 0x24U, 0x25U, 0x26U };
+	static const uint8_t auDataPayload[2] = { 0x71U, 0x72U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	xConfig.uBusyRejectErrorThreshold = 2U;
+	xSession.uBusyRejectErrorThreshold = 2U;
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"busy reject threshold priming send");
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
+		"busy reject threshold first reject");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy reject threshold first diagnostic warning");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy reject threshold first report warning");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy reject threshold streak one");
+
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
+		"busy reject threshold second reject");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_ERROR_INTERFACE, "busy reject threshold second diagnostic error");
+	vAssertTrue(xDiagnostics.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_ERROR, "busy reject threshold second severity error");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_ERROR_INTERFACE, "busy reject threshold second report error");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy reject threshold streak two");
+}
+
 static void vTestSessionRetransmissionPath(void)
 {
 	rsrx_session_t xSession;
@@ -639,6 +701,7 @@ int main(void)
 	vTestSessionInboundHeartbeatPath();
 	vTestSessionInboundDataPath();
 	vTestSessionOutboundApplicationDataPath();
+	vTestSessionOutboundApplicationBusyRejectThreshold();
 	vTestSessionRetransmissionPath();
 	vTestSessionSupervisionTimerExpiry();
 	vTestSessionRetransmissionTimerExpiry();

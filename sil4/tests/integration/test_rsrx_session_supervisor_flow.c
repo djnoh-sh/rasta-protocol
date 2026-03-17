@@ -241,6 +241,7 @@ static void vFillConfig(
 	pxConfig->uSupervisionIntervalNs = 100U;
 	pxConfig->uRetransmissionIntervalNs = 200U;
 	pxConfig->uDiagnosticFlushIntervalNs = 300U;
+	pxConfig->uBusyRejectErrorThreshold = 0U;
 	pxConfig->pvApplicationDataContext = pxApplication;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pxApiCounter;
