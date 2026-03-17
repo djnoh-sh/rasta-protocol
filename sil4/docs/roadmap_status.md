@@ -10,9 +10,9 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `82~85%`
-- 현재 단계: `static analysis baseline cleanup 완료 단계`
-- 다음 주력 단계: `richer redundancy hysteresis`, `transport supervisor completion`, `integration harness expansion`
+- 현재 전체 진행률 추정: `84~87%`
+- 현재 단계: `wider static analysis baseline cleanup 완료 단계`
+- 다음 주력 단계: `transport supervisor completion`, `redundancy policy refinement`, `CI-linked evidence expansion`
 
 ## Overall Phase Status
 
@@ -22,7 +22,7 @@
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
-| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 15% | 정적분석/MISRA 증빙 템플릿과 계획 수립 |
+| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 35% | baseline 증빙 체계와 cppcheck cleanup 완료, CI linkage는 미완 |
 
 ## Workstream Status
 
@@ -79,6 +79,7 @@
 | M28 | static analysis toolchain baseline 확정 | Completed | gcc warning gate, cppcheck baseline, toolchain doc, reusable script, SA-REP-002 |
 | M29 | static analysis follow-up cleanup 1차 | Completed | targeted redundant assignment cleanup, SA-REP-003, RV-003 |
 | M30 | static analysis residual cleanup 완료 | Completed | targeted residual cleanup, SA-REP-004, RV-004 |
+| M31 | wider static analysis baseline cleanup 완료 | Completed | broader style finding triage, SA-REP-005, RV-005 |
 
 ## In-Progress Items
 
@@ -98,7 +99,7 @@
 | NS-002 | Transport Supervisor Completion | runtime feedback policy와 retry semantics 추가 필요 | channel-up refresh 이후 retry/channel event policy 확장 |
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | richer hysteresis, flap suppression 세분화, switching audit 정책 확장 |
 | NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 richer redundancy와 longer-run 시나리오로 확장 |
-| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | baseline finding cleanup과 CI linkage 확보 |
+| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | severity mapping formalization과 CI linkage 확보 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
 
 ## Readiness Assessment
@@ -119,14 +120,14 @@
 | R-002 | transport supervisor 운영 루프 부분 미완 | channel event semantics는 강화됐으나 runtime feedback policy와 retry semantics가 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 direct-send 모델에 머묾 | 현재는 queue/backpressure/retry semantics가 없다 | queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙 부족 | targeted cleanup은 끝났지만 wider baseline style finding triage와 CI linkage가 아직 남아 있다 | severity mapping, wider triage, CI 연계 |
+| R-005 | 인증 증빙 자동화 부족 | baseline cleanup은 끝났지만 severity mapping formalization과 CI linkage가 아직 없다 | CI 연계, severity 기준 문서화, second-tool baseline 검토 |
 
 ## Recommended Next Order
 
-1. `Static Analysis and Safety Evidence`
-2. `Transport Supervisor Maturation`
-3. `Redundancy and Channel Manager`
-4. `Integration Test Harness Expansion`
+1. `Transport Supervisor Maturation`
+2. `Redundancy and Channel Manager`
+3. `Integration Test Harness Expansion`
+4. `Static Analysis and Safety Evidence`
 
 ## Next Gate Definition
 

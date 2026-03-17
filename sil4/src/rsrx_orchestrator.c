@@ -98,7 +98,6 @@ rsrx_status_t rsrx_orchestrator_process_event(
 {
 	rsrx_status_t eStatus;
 	uint32_t uIndex;
-	const rsrx_action_executor_t * pxExecutor;
 
 	if((pxContext == (rsrx_orchestrator_context_t *)0) ||
 		(pxReport == (rsrx_orchestrator_report_t *)0) ||
@@ -121,6 +120,8 @@ rsrx_status_t rsrx_orchestrator_process_event(
 
 	for(uIndex = 0U; uIndex < pxReport->xTransition.xActions.uActionCount; ++uIndex)
 	{
+		const rsrx_action_executor_t * pxExecutor;
+
 		pxExecutor = pxSelectExecutor(
 			pxContext,
 			pxReport->xTransition.xActions.eActions[uIndex]);

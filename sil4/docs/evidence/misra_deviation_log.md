@@ -21,6 +21,7 @@
 
 참고:
 - `SA-REP-002`의 finding은 모두 minor cleanup 항목으로 분류됐고, 현재 단계에서는 deviation으로 승격하지 않았다.
+- `SA-REP-005`까지의 cppcheck baseline cleanup 결과, active deviation으로 승격할 항목은 없다.
 
 | Deviation ID | Rule ID | Severity | File | Location | Justification | Risk Assessment | Mitigation | Review ID | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

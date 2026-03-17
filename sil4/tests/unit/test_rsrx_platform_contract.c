@@ -14,6 +14,7 @@ static void vAssertTrue(int iCondition, const char * pcMessage)
 
 int main(void)
 {
+	uint32_t uExpectedEventCounter;
 	rsrx_timer_command_t xTimerCommand;
 	rsrx_diagnostic_record_t xDiagnosticRecord;
 	rsrx_platform_port_table_t xPorts;
@@ -29,7 +30,8 @@ int main(void)
 	xDiagnosticRecord.eStatus = RSRX_STATUS_OK;
 	xDiagnosticRecord.eReason = RSRX_REASON_CONNECT_REQUESTED;
 	xDiagnosticRecord.eDiagnostic = RSRX_DIAG_INFO_STATE_TRANSITION;
-	xDiagnosticRecord.uEventCounter = 1U;
+	uExpectedEventCounter = 1U;
+	xDiagnosticRecord.uEventCounter = uExpectedEventCounter;
 
 	xPorts.xClock.pvContext = (void *)0;
 	xPorts.xClock.pfNow = (rsrx_clock_now_fn)0;
@@ -40,7 +42,16 @@ int main(void)
 
 	vAssertTrue(xTimerCommand.eTimerId == RSRX_TIMER_ID_SUPERVISION, "timer id contract");
 	vAssertTrue(xTimerCommand.eCommandType == RSRX_TIMER_COMMAND_START, "timer command contract");
+	vAssertTrue(xTimerCommand.uDeadlineNs == 1000U, "timer deadline contract");
+	vAssertTrue(xTimerCommand.eReason == RSRX_REASON_CONNECT_REQUESTED, "timer reason contract");
+	vAssertTrue(xDiagnosticRecord.eSeverity == RSRX_LOG_SEVERITY_WARNING, "diagnostic severity contract");
+	vAssertTrue(xDiagnosticRecord.ePreviousState == RSRX_STATE_INITIALIZED, "diagnostic previous state contract");
+	vAssertTrue(xDiagnosticRecord.eNextState == RSRX_STATE_CONNECTING, "diagnostic next state contract");
+	vAssertTrue(xDiagnosticRecord.eStatus == RSRX_STATUS_OK, "diagnostic status contract");
+	vAssertTrue(xDiagnosticRecord.eReason == RSRX_REASON_CONNECT_REQUESTED, "diagnostic reason contract");
 	vAssertTrue(xDiagnosticRecord.eDiagnostic == RSRX_DIAG_INFO_STATE_TRANSITION, "diagnostic contract");
+	/* cppcheck-suppress knownConditionTrueFalse */
+	vAssertTrue(xDiagnosticRecord.uEventCounter == uExpectedEventCounter, "diagnostic event counter contract");
 	vAssertTrue(xPorts.xTimer.pfCommand == (rsrx_timer_command_fn)0, "platform table layout");
 
 	(void)printf("rsrx_platform_contract_test: all tests passed\n");

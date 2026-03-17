@@ -48,9 +48,10 @@ static void vAssertTrue(int iCondition, const char * pcMessage)
 	}
 }
 
+/* cppcheck-suppress constParameterCallback */
 static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
 {
-	test_clock_context_t * pxContext = (test_clock_context_t *)pvContext;
+	const test_clock_context_t * pxContext = (const test_clock_context_t *)pvContext;
 	*puNowNs = pxContext->uNowNs;
 	return RSRX_PLATFORM_STATUS_OK;
 }

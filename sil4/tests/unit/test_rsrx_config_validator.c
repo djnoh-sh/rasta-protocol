@@ -5,11 +5,6 @@
 #include "rsrx_config_validator.h"
 #include "rsrx_codec.h"
 
-typedef struct
-{
-	uint32_t uUnused;
-} test_context_t;
-
 static void vAssertTrue(int iCondition, const char * pcMessage)
 {
 	if(iCondition == 0)
@@ -85,20 +80,20 @@ static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t 
 	(void)uActionIndex;
 }
 
-static void vFillValidConfig(rsrx_session_config_t * pxConfig, test_context_t * pxContext)
+static void vFillValidConfig(rsrx_session_config_t * pxConfig, void * pvContext)
 {
 	static const uint8_t auPayload[2] = { 0x01U, 0x02U };
 
-	pxConfig->xTransportPort.pvContext = pxContext;
+	pxConfig->xTransportPort.pvContext = pvContext;
 	pxConfig->xTransportPort.pfSend = eTransportSend;
 	pxConfig->xTransportPort.pfReceive = eTransportReceive;
 	pxConfig->xTransportPort.pfQueryChannel = eTransportQuery;
 	pxConfig->xCodecPort = *rsrx_codec_get_default_port();
-	pxConfig->xPlatformPorts.xClock.pvContext = pxContext;
+	pxConfig->xPlatformPorts.xClock.pvContext = pvContext;
 	pxConfig->xPlatformPorts.xClock.pfNow = eClockNow;
-	pxConfig->xPlatformPorts.xTimer.pvContext = pxContext;
+	pxConfig->xPlatformPorts.xTimer.pvContext = pvContext;
 	pxConfig->xPlatformPorts.xTimer.pfCommand = eTimerCommand;
-	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pxContext;
+	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pvContext;
 	pxConfig->xPlatformPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
 	pxConfig->eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
@@ -116,11 +111,11 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, test_context_t * 
 	pxConfig->uSupervisionIntervalNs = 100U;
 	pxConfig->uRetransmissionIntervalNs = 200U;
 	pxConfig->uDiagnosticFlushIntervalNs = 300U;
-	pxConfig->pvApplicationDataContext = pxContext;
+	pxConfig->pvApplicationDataContext = pvContext;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
-	pxConfig->pvApiCallbackContext = pxContext;
+	pxConfig->pvApiCallbackContext = pvContext;
 	pxConfig->pfApiNotification = vApiNotify;
-	pxConfig->pvLifecycleCallbackContext = pxContext;
+	pxConfig->pvLifecycleCallbackContext = pvContext;
 	pxConfig->pfLifecycleNotification = vLifecycleNotify;
 }
 
@@ -128,9 +123,9 @@ static void vTestValidConfiguration(void)
 {
 	rsrx_session_config_t xConfig;
 	rsrx_config_validation_report_t xReport;
-	test_context_t xContext = { 0U };
+	uint32_t uContext = 0U;
 
-	vFillValidConfig(&xConfig, &xContext);
+	vFillValidConfig(&xConfig, &uContext);
 	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_OK, "valid config");
 	vAssertTrue(xReport.eStatus == RSRX_CONFIG_STATUS_OK, "valid report status");
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "valid report field");
@@ -140,9 +135,9 @@ static void vTestMissingTransportPort(void)
 {
 	rsrx_session_config_t xConfig;
 	rsrx_config_validation_report_t xReport;
-	test_context_t xContext = { 0U };
+	uint32_t uContext = 0U;
 
-	vFillValidConfig(&xConfig, &xContext);
+	vFillValidConfig(&xConfig, &uContext);
 	xConfig.xTransportPort.pfSend = (rsrx_transport_send_fn)0;
 
 	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing transport status");
@@ -153,9 +148,9 @@ static void vTestMissingCodecPort(void)
 {
 	rsrx_session_config_t xConfig;
 	rsrx_config_validation_report_t xReport;
-	test_context_t xContext = { 0U };
+	uint32_t uContext = 0U;
 
-	vFillValidConfig(&xConfig, &xContext);
+	vFillValidConfig(&xConfig, &uContext);
 	xConfig.xCodecPort.pfEncode = (rsrx_encode_message_fn)0;
 
 	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing codec status");
@@ -166,9 +161,9 @@ static void vTestInvalidIntervals(void)
 {
 	rsrx_session_config_t xConfig;
 	rsrx_config_validation_report_t xReport;
-	test_context_t xContext = { 0U };
+	uint32_t uContext = 0U;
 
-	vFillValidConfig(&xConfig, &xContext);
+	vFillValidConfig(&xConfig, &uContext);
 	xConfig.uSupervisionIntervalNs = 0U;
 
 	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INVALID_RANGE, "invalid interval status");
@@ -179,9 +174,9 @@ static void vTestMissingApplicationCallback(void)
 {
 	rsrx_session_config_t xConfig;
 	rsrx_config_validation_report_t xReport;
-	test_context_t xContext = { 0U };
+	uint32_t uContext = 0U;
 
-	vFillValidConfig(&xConfig, &xContext);
+	vFillValidConfig(&xConfig, &uContext);
 	xConfig.pfApplicationData = (rsrx_application_data_fn)0;
 
 	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing application callback status");
@@ -192,9 +187,9 @@ static void vTestInconsistentPayload(void)
 {
 	rsrx_session_config_t xConfig;
 	rsrx_config_validation_report_t xReport;
-	test_context_t xContext = { 0U };
+	uint32_t uContext = 0U;
 
-	vFillValidConfig(&xConfig, &xContext);
+	vFillValidConfig(&xConfig, &uContext);
 	xConfig.puFramePayload = (const uint8_t *)0;
 	xConfig.xFramePayloadLength = 4U;
 

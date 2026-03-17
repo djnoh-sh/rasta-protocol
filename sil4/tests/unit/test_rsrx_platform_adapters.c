@@ -85,9 +85,10 @@ static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transpor
 	return RSRX_TRANSPORT_STATUS_OK;
 }
 
+/* cppcheck-suppress constParameterCallback */
 static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
 {
-	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+	const test_transport_context_t * pxContext = (const test_transport_context_t *)pvContext;
 	if(pxState != (rsrx_transport_channel_state_t *)0)
 	{
 		if(pxState->eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY)
