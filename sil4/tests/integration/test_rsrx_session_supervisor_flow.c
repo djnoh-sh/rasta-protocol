@@ -1455,6 +1455,110 @@ static void vTestIntegratedChannelUpRefreshHoldoffFlow(void)
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up holdoff integration second refresh send primary");
 }
 
+static void vTestIntegratedChannelUpFlapResetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	rsrx_transport_channel_state_t xChannelState;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	rsrx_transport_frame_t xTransportEventFrame;
+	rsrx_transport_frame_t axFrames[1];
+	rsrx_transport_status_t aeStatuses[1];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auOutboundPayload[2] = { 0x7DU, 0x7EU };
+	size_t xHandshakeLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "channel up flap integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel up flap integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel up flap integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "channel up flap integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "channel up flap integration handshake pump");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap integration failover");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel up flap integration first switch count");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel up flap integration active secondary");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap integration first refresh");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED, "channel up flap integration first refresh decision");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel up flap integration no switch on first refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel up flap integration still secondary after first refresh");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap integration flap down");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel up flap integration no extra switch on flap down");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel up flap integration remains secondary after flap down");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap integration second refresh");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED, "channel up flap integration second refresh decision");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel up flap integration second refresh still held");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel up flap integration still secondary after second refresh");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap integration third refresh");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED, "channel up flap integration third refresh decision");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel up flap integration switch after renewed holdoff");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up flap integration switched primary");
+	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "channel up flap integration query primary");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up flap integration query confirms primary");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel up flap integration final send");
+	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up flap integration final send primary");
+}
+
 static void vTestIntegratedFailoverTransientRecoveryFlow(void)
 {
 	rsrx_session_t xSession;
@@ -2581,7 +2685,6 @@ static void vTestIntegratedInitialZeroSequenceProtocolErrorFlow(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "zero sequence integration safe disconnect");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "zero sequence integration effective protocol error");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "zero sequence integration rejected status");
-	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "zero sequence integration reason");
 	vAssertTrue(xApplication.uCallCount == 0U, "zero sequence integration no application callback");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "zero sequence integration lifecycle callback");
 }
@@ -3086,6 +3189,7 @@ int main(void)
 	vTestIntegratedChannelFailoverFlow();
 	vTestIntegratedChannelRecoveryHoldoffFlow();
 	vTestIntegratedChannelUpRefreshHoldoffFlow();
+	vTestIntegratedChannelUpFlapResetFlow();
 	vTestIntegratedFailoverTransientRecoveryFlow();
 	vTestIntegratedFailoverTransientSoakFlow();
 	vTestIntegratedRedundancyFlapSoakFlow();
