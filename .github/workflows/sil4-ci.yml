@@ -14,6 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
 
@@ -32,6 +33,92 @@ jobs:
 
       - name: Run SIL4 Verification
         run: bash sil4/tools/run_ci_verification.sh
+
+      - name: Resolve Baseline Artifact
+        if: always() && github.event_name == 'pull_request'
+        id: baseline_artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowId = 'sil4-ci.yml';
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.pull_request.number;
+            const branch = context.payload.pull_request.head.ref;
+            const currentRunId = context.runId;
+
+            async function findArtifactForRuns(params, matcher) {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner,
+                repo,
+                workflow_id: workflowId,
+                per_page: 100,
+                ...params
+              });
+
+              for (const run of runs) {
+                if (run.id === currentRunId || run.conclusion !== 'success') {
+                  continue;
+                }
+                if (!matcher(run)) {
+                  continue;
+                }
+
+                const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+                  owner,
+                  repo,
+                  run_id: run.id,
+                  per_page: 100
+                });
+                const artifact = artifacts.find((item) => item.name === 'sil4-ci-logs' && item.expired === false);
+                if (artifact) {
+                  return {
+                    found: true,
+                    source: run.event === 'pull_request' ? 'same-pr' : 'main-branch',
+                    url: artifact.archive_download_url,
+                    runId: String(run.id)
+                  };
+                }
+              }
+              return { found: false, source: 'none', url: '', runId: '' };
+            }
+
+            const samePrResult = await findArtifactForRuns(
+              { event: 'pull_request', branch, status: 'completed' },
+              (run) => Array.isArray(run.pull_requests) && run.pull_requests.some((pr) => pr.number === issueNumber)
+            );
+
+            let result = samePrResult;
+            if (!result.found) {
+              result = await findArtifactForRuns(
+                { event: 'push', branch: 'main', status: 'completed' },
+                () => true
+              );
+            }
+
+            core.setOutput('found', result.found ? 'true' : 'false');
+            core.setOutput('source', result.source);
+            core.setOutput('url', result.url);
+            core.setOutput('run_id', result.runId);
+
+      - name: Download Baseline Artifact
+        if: always() && github.event_name == 'pull_request' && steps.baseline_artifact.outputs.found == 'true'
+        env:
+          BASELINE_ARTIFACT_URL: ${{ steps.baseline_artifact.outputs.url }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/rsrx-ci-logs
+          curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "$BASELINE_ARTIFACT_URL" \
+            -o /tmp/rsrx-ci-logs/baseline_artifact.zip
+
+      - name: Materialize Baseline Summary
+        if: always() && github.event_name == 'pull_request' && steps.baseline_artifact.outputs.found == 'true'
+        run: |
+          bash sil4/tools/materialize_baseline_summary.sh \
+            /tmp/rsrx-ci-logs/baseline_artifact.zip \
+            /tmp/rsrx-ci-logs/baseline_summary.env
 
       - name: Render PR Annotation
         if: always() && github.event_name == 'pull_request'
@@ -103,6 +190,7 @@ jobs:
             /tmp/rsrx-ci-logs/cppcheck.log
             /tmp/rsrx-ci-logs/summary.md
             /tmp/rsrx-ci-logs/summary.env
+            /tmp/rsrx-ci-logs/baseline_artifact.zip
             /tmp/rsrx-ci-logs/baseline_summary.env
             /tmp/rsrx-ci-logs/pr_annotation.md
             /tmp/rsrx-ci-logs/pr_annotation.env

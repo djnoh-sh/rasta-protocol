@@ -137,6 +137,6 @@ delta-aware annotation은 아래 순서로 baseline을 선택한다.
 
 ## Follow-up Actions
 
-1. workflow에 baseline artifact fetch step 추가 여부 결정
-2. PR previous-success lookup 구현 가능성 검토
-3. first actual baseline fetch run evidence 생성
+1. first workflow baseline fetch success evidence 생성
+2. PR previous-success lookup failure path 관찰
+3. artifact retention 기간과 baseline availability 관계 점검

@@ -49,6 +49,7 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 - workflow는 `/tmp/rsrx-ci-logs/summary.md`를 step summary로 게시한다.
 - summary는 severity bucket과 MISRA subset bucket 집계를 포함한다.
 - PR helper는 optional baseline file `/tmp/rsrx-ci-logs/baseline_summary.env`가 존재하면 delta-aware annotation을 계산한다.
+- workflow는 prior `sil4-ci-logs` artifact에서 baseline zip을 내려받아 `baseline_summary.env`를 materialize 하도록 확장됐다.
 - workflow는 아래 로그를 artifact `sil4-ci-logs`로 업로드한다.
   - `configure.log`
   - `build.log`
@@ -56,6 +57,7 @@ CI workflow는 위 스크립트를 그대로 호출한다.
   - `cppcheck.log`
   - `summary.md`
   - `summary.env`
+  - `baseline_artifact.zip` (optional)
   - `baseline_summary.env` (optional)
 
 ## Rationale
@@ -68,7 +70,7 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 
 - 현재 workflow는 Linux 단일 플랫폼만 사용한다.
 - PR annotation helper와 sticky PR comment publication은 존재하고, helper는 optional baseline file이 있으면 delta-aware annotation을 계산한다.
-- baseline persistence source policy는 `baseline_persistence_source.md`로 고정됐지만, workflow fetch step은 아직 구현되지 않았다.
+- baseline persistence source policy와 workflow fetch step은 구현됐지만, runtime success evidence는 아직 충분하지 않다.
 - `ctest` registration은 아직 primary path가 아니다.
 - MISRA 전용 analyzer는 CI에 포함되지 않는다.
 
@@ -77,4 +79,4 @@ CI workflow는 위 스크립트를 그대로 호출한다.
 1. severity mapping 문서와 workflow fail policy 연결 강화
 2. second-tool analyzer 도입 여부 결정
 3. `ctest` 전환 조건 재검토
-4. baseline artifact fetch step 구현
+4. first workflow baseline fetch success evidence 확보

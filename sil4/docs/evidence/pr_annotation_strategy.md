@@ -101,6 +101,7 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 3. workflow는 GitHub API를 사용해 marker 기반 sticky PR comment를 create/update 한다.
 4. helper는 optional baseline file `/tmp/rsrx-ci-logs/baseline_summary.env`를 읽어 delta-aware annotation을 계산할 수 있다.
 5. baseline source 우선순위는 `baseline_persistence_source.md`를 따른다.
+6. workflow는 prior artifact fetch를 시도하고, 성공 시 baseline file을 materialize 한다.
 
 ## Minimal Implementation Path
 
@@ -123,7 +124,7 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 ## Residual Limits
 
 - sticky PR comment는 구현됐고 helper는 optional baseline file이 주어지면 delta-aware annotation을 계산한다.
-- baseline persistence source policy는 정의됐지만 workflow fetch step은 아직 구현되지 않았다.
+- baseline persistence source policy와 workflow fetch step은 구현됐지만 runtime success evidence는 아직 제한적이다.
 - exact vendor rule matrix가 없어 vendor-level annotation은 불가능하다.
 - trend comparison은 baseline file이 주어질 때만 동작한다.
 
@@ -131,4 +132,4 @@ subset bucket의 unexpected increase는 severity bucket과 별도로 review note
 
 1. `summary.env` 기반 decision logic regression 검증
 2. PR noise threshold 정의
-3. baseline artifact fetch step 구현
+3. first workflow baseline fetch success evidence 확보

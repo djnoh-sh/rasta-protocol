@@ -62,6 +62,7 @@
 | EVID-CI-028 | `../reviews/RV-024_first_real_vendor_onboarding_review.md` | Draft | first real vendor onboarding procedure review |
 | EVID-CI-029 | `baseline_persistence_source.md` | Draft | baseline summary persistence source policy |
 | EVID-CI-030 | `../reviews/RV-025_baseline_persistence_source_review.md` | Draft | baseline persistence source review |
+| EVID-CI-031 | `../reviews/RV-026_baseline_artifact_fetch_review.md` | Draft | baseline artifact fetch implementation review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -75,5 +76,5 @@
 4. queue/backpressure policy evidence 추가 확장
 5. MISRA subset severity 세분화
 6. second-tool rule taxonomy mapping
-7. baseline artifact fetch implementation
+7. first workflow baseline fetch success evidence
 8. first actual vendor rule entry
