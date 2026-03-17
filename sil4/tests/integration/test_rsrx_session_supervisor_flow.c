@@ -959,6 +959,145 @@ static void vTestIntegratedPumpReceiveStabilityFlow(void)
 	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 3U, "pump stability integration last sequence");
 }
 
+static void vTestIntegratedBoundedSoakPumpFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[4];
+	rsrx_transport_status_t aeStatuses[4];
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auDataFrames[5][D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auPayload0[2] = { 0x51U, 0x52U };
+	static const uint8_t auPayload1[2] = { 0x53U, 0x54U };
+	static const uint8_t auPayload2[2] = { 0x55U, 0x56U };
+	static const uint8_t auPayload3[2] = { 0x57U, 0x58U };
+	static const uint8_t auPayload4[2] = { 0x59U, 0x5AU };
+	const uint8_t * apuPayloads[5] = { auPayload0, auPayload1, auPayload2, auPayload3, auPayload4 };
+	size_t axDataLengths[5];
+	size_t xHandshakeLength;
+	uint32_t uIndex;
+
+	xTransport.uChannelAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "soak integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "soak integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "soak integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	for(uIndex = 0U; uIndex < 5U; ++uIndex)
+	{
+		vEncodeFrame(
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			uIndex + 2U,
+			1U,
+			apuPayloads[uIndex],
+			2U,
+			auDataFrames[uIndex],
+			sizeof(auDataFrames[uIndex]),
+			&axDataLengths[uIndex]);
+	}
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "soak integration supervisor init");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auDataFrames[0];
+	axFrames[1].xPayloadLength = axDataLengths[0];
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[2].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[2].puPayload = auDataFrames[1];
+	axFrames[2].xPayloadLength = axDataLengths[1];
+	axFrames[2].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[3].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[3].puPayload = (const uint8_t *)0;
+	axFrames[3].xPayloadLength = 0U;
+	axFrames[3].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[3] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 4U);
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 5U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "soak integration first pump");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 3U, "soak integration first local processed count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 3U, "soak integration first total processed count");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auDataFrames[2];
+	axFrames[0].xPayloadLength = axDataLengths[2];
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auDataFrames[3];
+	axFrames[1].xPayloadLength = axDataLengths[3];
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[2].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[2].puPayload = (const uint8_t *)0;
+	axFrames[2].xPayloadLength = 0U;
+	axFrames[2].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 3U);
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 4U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "soak integration second pump");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 2U, "soak integration second local processed count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 5U, "soak integration second total processed count");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auDataFrames[4];
+	axFrames[0].xPayloadLength = axDataLengths[4];
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "soak integration third pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "soak integration established");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "soak integration third local processed count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 6U, "soak integration total processed count");
+	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 2U, "soak integration third iteration count");
+	vAssertTrue(xApplication.uCallCount == 5U, "soak integration application callbacks");
+	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 6U, "soak integration last sequence");
+}
+
 int main(void)
 {
 	vTestIntegratedSessionSupervisorFlow();
@@ -969,6 +1108,7 @@ int main(void)
 	vTestIntegratedSendFailureBudgetFlow();
 	vTestIntegratedSendFailureBudgetResetFlow();
 	vTestIntegratedPumpReceiveStabilityFlow();
+	vTestIntegratedBoundedSoakPumpFlow();
 
 	(void)printf("rsrx_session_supervisor_flow_test: all tests passed\n");
 	return EXIT_SUCCESS;
