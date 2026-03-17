@@ -85,3 +85,4 @@ report template에서 아래와 같이 연결한다.
 1. selected vendor 기준 exact matrix 초안 작성
 2. sample deviation entry를 실제 deviation log 예시와 연결
 3. sample report linkage를 첫 vendor baseline report에 반영
+4. first actual 운영형 샘플은 `first_actual_vendor_rule_entry_sample.md`를 참조

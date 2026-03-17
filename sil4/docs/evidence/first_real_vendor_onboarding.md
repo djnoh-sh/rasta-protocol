@@ -135,6 +135,10 @@ review는 아래를 반드시 포함한다.
 4. vendor rule matrix의 실제 entry 1건 이상
 5. roadmap/evidence index 갱신
 
+현재 pre-onboarding sample reference:
+
+- `first_actual_vendor_rule_entry_sample.md`
+
 ## Exit Criteria
 
 - 첫 실제 vendor finding이 `rule -> subset -> severity -> report -> review` 체인에 연결됐다.
