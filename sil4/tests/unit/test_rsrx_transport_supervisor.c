@@ -815,6 +815,17 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 2U, "channel up refresh ignored count");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel up refresh switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel up refresh switch occurred");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up refresh stale secondary failure ignored");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "channel up refresh stale secondary budget unchanged");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up refresh primary failure first hit");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "channel up refresh primary failure budget one");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up refresh budget channel primary");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "channel up refresh primary budget update");
 }
 
 static void vTestSupervisorTransportSendFailed(void)

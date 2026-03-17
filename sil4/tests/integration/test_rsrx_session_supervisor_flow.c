@@ -748,6 +748,17 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "channel failover integration preferred recovery query");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration preferred recovery selected primary");
 	vAssertTrue(xSession.xChannelManager.uTotalSwitchCount == 2U, "channel failover integration recovery switch count");
+
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover integration stale secondary send failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "channel failover integration stale secondary budget unchanged");
+
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel failover integration recovered primary first failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "channel failover integration recovered primary budget one");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration recovered primary budget channel");
+
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel failover integration preferred recovery send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration switched back to primary");
 }

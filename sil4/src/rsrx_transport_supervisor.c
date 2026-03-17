@@ -22,6 +22,7 @@ static void vResetSupervisorReport(
 	pxReport->eLastDecision = RSRX_SUPERVISOR_DECISION_NONE;
 	pxReport->eLastDecisionClass = RSRX_SUPERVISOR_DECISION_CLASS_NONE;
 	pxReport->eLastBudgetUpdate = RSRX_SUPERVISOR_BUDGET_UPDATE_NONE;
+	pxReport->eBudgetChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxReport->pxLastReport = (const rsrx_orchestrator_report_t *)0;
 	pxReport->uProcessedFrameCount = 0U;
 	pxReport->uPollCount = 0U;
@@ -131,6 +132,19 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
 }
 
+static rsrx_transport_channel_id_t eGetActiveChannelId(
+	const rsrx_transport_supervisor_context_t * pxContext)
+{
+	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
+		(pxContext->pxSession == (const rsrx_session_t *)0))
+	{
+		return RSRX_TRANSPORT_CHANNEL_INVALID;
+	}
+
+	return rsrx_channel_manager_get_active_channel(
+		&pxContext->pxSession->xChannelManager);
+}
+
 static rsrx_event_t eResolveInboundEvent(
 	rsrx_transport_supervisor_context_t * pxContext,
 	const rsrx_decoded_message_t * pxMessage)
@@ -196,6 +210,7 @@ static void vResetSendFailureBudget(
 			pxContext->xLastReport.uSendFailureBudgetResetCount++;
 		}
 		pxContext->xLastReport.eLastBudgetUpdate = eBudgetUpdate;
+		pxContext->xLastReport.eBudgetChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	}
 	else
 	{
@@ -250,28 +265,39 @@ static uint32_t uFrameTargetsActiveChannel(
 {
 	rsrx_transport_channel_id_t eActiveChannelId;
 
-	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
-		(pxContext->pxSession == (const rsrx_session_t *)0))
-	{
-		return 0U;
-	}
-
-	eActiveChannelId = rsrx_channel_manager_get_active_channel(
-		&pxContext->pxSession->xChannelManager);
+	eActiveChannelId = eGetActiveChannelId(pxContext);
 
 	return (uint32_t)((eActiveChannelId == RSRX_TRANSPORT_CHANNEL_INVALID) ||
 		(eActiveChannelId == eChannelId));
 }
 
 static uint32_t uSendFailureBudgetExceeded(
-	rsrx_transport_supervisor_context_t * pxContext)
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_transport_channel_id_t eActiveChannelId)
 {
+	if((pxContext->xLastReport.eBudgetChannelId != RSRX_TRANSPORT_CHANNEL_INVALID) &&
+		(pxContext->xLastReport.eBudgetChannelId != eActiveChannelId) &&
+		(pxContext->xLastReport.uConsecutiveSendFailureCount > 0U))
+	{
+		pxContext->xLastReport.uConsecutiveSendFailureCount = 0U;
+		if(pxContext->xLastReport.uSendFailureBudgetResetCount < UINT32_MAX)
+		{
+			pxContext->xLastReport.uSendFailureBudgetResetCount++;
+		}
+		pxContext->xLastReport.eLastBudgetUpdate =
+			RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_AND_INCREMENT_ON_CHANNEL_SWITCH;
+	}
+	else
+	{
+		pxContext->xLastReport.eLastBudgetUpdate =
+			RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED;
+	}
+
 	if(pxContext->xLastReport.uConsecutiveSendFailureCount < UINT32_MAX)
 	{
 		pxContext->xLastReport.uConsecutiveSendFailureCount++;
 	}
-	pxContext->xLastReport.eLastBudgetUpdate =
-		RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED;
+	pxContext->xLastReport.eBudgetChannelId = eActiveChannelId;
 
 	return (uint32_t)(pxContext->xLastReport.uConsecutiveSendFailureCount >=
 		pxContext->uMaxConsecutiveSendFailures);
@@ -539,7 +565,9 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 			}
 
-			if(uSendFailureBudgetExceeded(pxContext) == 0U)
+			if(uSendFailureBudgetExceeded(
+				pxContext,
+				eGetActiveChannelId(pxContext)) == 0U)
 			{
 				vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED);
 				*ppxReport = &pxContext->xLastReport;

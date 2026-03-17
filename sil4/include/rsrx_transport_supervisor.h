@@ -50,6 +50,7 @@ typedef enum
 {
 	RSRX_SUPERVISOR_BUDGET_UPDATE_NONE = 0,
 	RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_AND_INCREMENT_ON_CHANNEL_SWITCH,
 	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_INBOUND_FRAME,
 	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_SEND_COMPLETED,
 	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_CHANNEL_DOWN,
@@ -66,6 +67,7 @@ typedef struct
 	rsrx_supervisor_decision_t eLastDecision;
 	rsrx_supervisor_decision_class_t eLastDecisionClass;
 	rsrx_supervisor_budget_update_t eLastBudgetUpdate;
+	rsrx_transport_channel_id_t eBudgetChannelId;
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;
 	uint32_t uPollCount;
