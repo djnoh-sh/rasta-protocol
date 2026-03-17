@@ -15,6 +15,8 @@ typedef struct
 	rsrx_transport_status_t eLastSendStatus;
 	uint32_t uAcceptedSendCount;
 	uint32_t uBusyRejectedSendCount;
+	uint32_t uConsecutiveBusyRejectedSendCount;
+	uint32_t uMaxConsecutiveBusyRejectedSendCount;
 	uint32_t uClearOnInboundCount;
 	uint32_t uClearOnFeedbackCount;
 	uint32_t uClearManualCount;

@@ -439,6 +439,19 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	vAssertTrue(xApiCounter.xLastReport.xTransition.eStatus == RSRX_STATUS_REJECTED, "outbound application reject report status");
 	vAssertTrue(xApiCounter.xLastReport.xTransition.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application reject report reason");
 	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "outbound application reject report diagnostic");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "outbound application busy streak one");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 1U, "outbound application busy max one");
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
+		"application data second busy guard");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 2U, "outbound application busy telemetry after second reject");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "outbound application busy streak two");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "outbound application busy max two");
+	vAssertTrue(xApiCounter.uCallCount == 5U, "outbound application api count after second reject");
+	vAssertTrue(xDiagnostics.uCallCount == 4U, "outbound application diagnostic count after second reject");
 }
 
 static void vTestSessionRetransmissionPath(void)

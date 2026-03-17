@@ -382,6 +382,17 @@ static void vTestApplicationDataSend(void)
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"application data second send busy");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "application data busy telemetry");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "application data busy streak one");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 1U, "application data busy max one");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"application data third send busy");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 2U, "application data busy telemetry two");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "application data busy streak two");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "application data busy max two");
 	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "application data busy status telemetry");
 
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
@@ -395,6 +406,7 @@ static void vTestApplicationDataSend(void)
 		&xTransportAdapterContext.xLastInboundMessage);
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 0U, "application data outstanding cleared by inbound");
 	vAssertTrue(pxTelemetry->uClearOnInboundCount == 1U, "application data inbound clear telemetry");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "application data busy streak reset by inbound");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
@@ -403,6 +415,7 @@ static void vTestApplicationDataSend(void)
 		"application data send after inbound clear");
 	vAssertTrue(xTransportContext.uCallCount == 2U, "application data send count after clear");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "application data accepted telemetry after clear");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "application data busy max retained");
 }
 
 static void vTestChannelManagerDrivenFailoverSelection(void)

@@ -114,6 +114,7 @@ static void vClearOutstandingSend(
 		}
 	}
 
+	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 	pxContext->uHasOutstandingSend = 0U;
 	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 }
@@ -145,6 +146,13 @@ static rsrx_transport_status_t eEncodeAndSend(
 	{
 		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
 		pxContext->xOutboundTelemetry.uBusyRejectedSendCount++;
+		pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount++;
+		if(pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount >
+			pxContext->xOutboundTelemetry.uMaxConsecutiveBusyRejectedSendCount)
+		{
+			pxContext->xOutboundTelemetry.uMaxConsecutiveBusyRejectedSendCount =
+				pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount;
+		}
 		return RSRX_TRANSPORT_STATUS_UNAVAILABLE;
 	}
 
@@ -199,6 +207,7 @@ static rsrx_transport_status_t eEncodeAndSend(
 	pxContext->uHasOutstandingSend = 1U;
 	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_OK;
 	pxContext->xOutboundTelemetry.uAcceptedSendCount++;
+	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 
 	return RSRX_TRANSPORT_STATUS_OK;
 }
@@ -261,6 +270,8 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	pxContext->xOutboundTelemetry.uAcceptedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uBusyRejectedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uMaxConsecutiveBusyRejectedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uClearOnInboundCount = 0U;
 	pxContext->xOutboundTelemetry.uClearOnFeedbackCount = 0U;
 	pxContext->xOutboundTelemetry.uClearManualCount = 0U;
