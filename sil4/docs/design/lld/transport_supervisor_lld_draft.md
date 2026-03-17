@@ -77,6 +77,8 @@
   - `CHANNEL_DOWN`은 transport adapter를 통해 현재 active channel을 다시 조회한다.
   - down된 channel 외에 대체 channel이 available이면 failover를 사용하고 event를 ignored로 처리한다.
   - 대체 channel이 없을 때만 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
+  - `CHANNEL_UP`은 transport adapter를 통해 channel manager selection을 refresh하는 trigger로 사용한다.
+  - `CHANNEL_UP` refresh가 성공하면 상태 전이 없이 active channel/telemetry만 갱신하고 ignored event로 종료한다.
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.
   - 각 경로는 report에 마지막 decision, decision class, current channel switch count, 이번 처리에서 switch가 발생했는지 여부를 남긴다.
 - `rsrx_transport_supervisor_process_timer_expiry`:
@@ -98,6 +100,7 @@
   - send failed -> protocol error 검증
   - send completed ignored 검증
   - channel down failover ignored 검증
+  - channel up refresh 검증
   - send failure budget reset 검증
   - timer expiry delegation 검증
 - 분석 포인트:

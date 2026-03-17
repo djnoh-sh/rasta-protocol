@@ -51,6 +51,7 @@ static rsrx_supervisor_decision_class_t eMapDecisionClass(
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED:
 		case RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED:
+		case RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED:
 		case RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED:
 			return RSRX_SUPERVISOR_DECISION_CLASS_IGNORED;
 
@@ -205,6 +206,26 @@ static uint32_t uAlternativeChannelIsAvailable(
 	pxContext->xLastReport.xLastChannelState = xChannelState;
 	vRefreshChannelSwitchTelemetry(pxContext);
 	return (uint32_t)(xChannelState.eChannelId != eFailedChannelId);
+}
+
+static uint32_t uRefreshAvailableChannelState(
+	rsrx_transport_supervisor_context_t * pxContext)
+{
+	rsrx_transport_status_t eTransportStatus;
+	rsrx_transport_channel_state_t xChannelState;
+
+	eTransportStatus = rsrx_transport_adapter_query_channel(
+		&pxContext->pxSession->xTransportAdapter,
+		&xChannelState);
+	if((eTransportStatus != RSRX_TRANSPORT_STATUS_OK) ||
+		(xChannelState.uIsAvailable == 0U))
+	{
+		return 0U;
+	}
+
+	pxContext->xLastReport.xLastChannelState = xChannelState;
+	vRefreshChannelSwitchTelemetry(pxContext);
+	return 1U;
 }
 
 static uint32_t uSendFailureBudgetExceeded(
@@ -494,10 +515,20 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 				RSRX_EVENT_PROTOCOL_ERROR,
 				ppxReport);
 
+		case RSRX_TRANSPORT_EVENT_CHANNEL_UP:
+			if(uRefreshAvailableChannelState(pxContext) != 0U)
+			{
+				vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED);
+				*ppxReport = &pxContext->xLastReport;
+				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+			}
+			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED);
+			*ppxReport = &pxContext->xLastReport;
+			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
+
 		case RSRX_TRANSPORT_EVENT_FRAME_RECEIVED:
 			return eProcessFrameInternal(pxContext, pxFrame, ppxReport);
 
-		case RSRX_TRANSPORT_EVENT_CHANNEL_UP:
 		case RSRX_TRANSPORT_EVENT_NONE:
 		default:
 			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED);
