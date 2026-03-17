@@ -22,7 +22,7 @@
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
-| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 35% | baseline 증빙 체계와 cppcheck cleanup 완료, CI linkage는 미완 |
+| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 40% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review 확보, CI linkage는 미완 |
 
 ## Workstream Status
 
@@ -80,6 +80,7 @@
 | M29 | static analysis follow-up cleanup 1차 | Completed | targeted redundant assignment cleanup, SA-REP-003, RV-003 |
 | M30 | static analysis residual cleanup 완료 | Completed | targeted residual cleanup, SA-REP-004, RV-004 |
 | M31 | wider static analysis baseline cleanup 완료 | Completed | broader style finding triage, SA-REP-005, RV-005 |
+| M32 | outbound queue policy evidence baseline 수립 | Completed | `EVID-OUT-001`, `RV-006`, queue/backpressure policy rationale와 verification linkage |
 
 ## In-Progress Items
 

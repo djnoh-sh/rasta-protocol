@@ -31,9 +31,12 @@
 | EVID-SA-013 | `../reviews/RV-004_cppcheck_residual_cleanup_review.md` | Draft | residual cleanup review 기록 |
 | EVID-SA-014 | `reports/static_analysis_report_2026-03-17_sa5_wider_cleanup.md` | Draft | wider baseline style finding 정리 결과 |
 | EVID-SA-015 | `../reviews/RV-005_cppcheck_wider_cleanup_review.md` | Draft | wider cleanup review 기록 |
+| EVID-DES-001 | `reports/outbound_queue_policy_evidence_2026-03-17.md` | Draft | bounded outbound queue policy evidence note |
+| EVID-DES-002 | `../reviews/RV-006_outbound_queue_policy_review.md` | Draft | outbound queue policy safety review |
 
 ## Next Expected Additions
 
 1. rule severity mapping 확정
 2. CI execution linkage
 3. second-tool baseline 검토
+4. queue/backpressure policy evidence 추가 확장
