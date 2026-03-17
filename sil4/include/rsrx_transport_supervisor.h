@@ -35,6 +35,15 @@ typedef enum
 	RSRX_SUPERVISOR_DECISION_TIMER_DELEGATED
 } rsrx_supervisor_decision_t;
 
+typedef enum
+{
+	RSRX_SUPERVISOR_DECISION_CLASS_NONE = 0,
+	RSRX_SUPERVISOR_DECISION_CLASS_ACCEPTED,
+	RSRX_SUPERVISOR_DECISION_CLASS_REJECTED,
+	RSRX_SUPERVISOR_DECISION_CLASS_IGNORED,
+	RSRX_SUPERVISOR_DECISION_CLASS_ERROR
+} rsrx_supervisor_decision_class_t;
+
 typedef struct
 {
 	rsrx_transport_channel_state_t xLastChannelState;
@@ -43,10 +52,15 @@ typedef struct
 	rsrx_event_t eLastEffectiveEvent;
 	rsrx_status_t eLastSessionStatus;
 	rsrx_supervisor_decision_t eLastDecision;
+	rsrx_supervisor_decision_class_t eLastDecisionClass;
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;
 	uint32_t uPollCount;
 	uint32_t uConsecutiveSendFailureCount;
+	uint32_t uAcceptedDecisionCount;
+	uint32_t uRejectedDecisionCount;
+	uint32_t uIgnoredDecisionCount;
+	uint32_t uErrorDecisionCount;
 	uint32_t uChannelSwitchCount;
 	uint32_t uLastChannelSwitchOccurred;
 	uint32_t uLastPumpIterationCount;
