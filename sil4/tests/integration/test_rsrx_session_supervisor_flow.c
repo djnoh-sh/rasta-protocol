@@ -829,6 +829,136 @@ static void vTestIntegratedSendFailureBudgetResetFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "send failure reset integration no lifecycle callback");
 }
 
+static void vTestIntegratedPumpReceiveStabilityFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[3];
+	rsrx_transport_status_t aeStatuses[3];
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auFirstDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auFirstDataPayload[2] = { 0x31U, 0x32U };
+	static const uint8_t auSecondDataPayload[2] = { 0x41U, 0x42U };
+	size_t xHandshakeLength;
+	size_t xFirstDataLength;
+	size_t xSecondDataLength;
+
+	xTransport.uChannelAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "pump stability integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump stability integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump stability integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auFirstDataPayload,
+		sizeof(auFirstDataPayload),
+		auFirstDataFrame,
+		sizeof(auFirstDataFrame),
+		&xFirstDataLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auSecondDataPayload,
+		sizeof(auSecondDataPayload),
+		auSecondDataFrame,
+		sizeof(auSecondDataFrame),
+		&xSecondDataLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auFirstDataFrame;
+	axFrames[1].xPayloadLength = xFirstDataLength;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[2].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[2].puPayload = (const uint8_t *)0;
+	axFrames[2].xPayloadLength = 0U;
+	axFrames[2].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 3U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "pump stability integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 4U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump stability integration first pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "pump stability integration established");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 2U, "pump stability integration first pump local count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "pump stability integration first pump total count");
+	vAssertTrue(xApplication.uCallCount == 1U, "pump stability integration first callback");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = (const uint8_t *)0;
+	axFrames[0].xPayloadLength = 0U;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "pump stability integration idle pump");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 0U, "pump stability integration idle local count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "pump stability integration idle total count");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "pump stability integration idle state");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auSecondDataFrame;
+	axFrames[0].xPayloadLength = xSecondDataLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump stability integration second pump");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "pump stability integration second pump local count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 3U, "pump stability integration second pump total count");
+	vAssertTrue(xApplication.uCallCount == 2U, "pump stability integration second callback");
+	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 3U, "pump stability integration last sequence");
+}
+
 int main(void)
 {
 	vTestIntegratedSessionSupervisorFlow();
@@ -838,6 +968,7 @@ int main(void)
 	vTestIntegratedDecodeFailureFlow();
 	vTestIntegratedSendFailureBudgetFlow();
 	vTestIntegratedSendFailureBudgetResetFlow();
+	vTestIntegratedPumpReceiveStabilityFlow();
 
 	(void)printf("rsrx_session_supervisor_flow_test: all tests passed\n");
 	return EXIT_SUCCESS;

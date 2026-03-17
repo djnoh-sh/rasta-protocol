@@ -65,7 +65,7 @@
 | M14 | protocol context 도입 | Completed | sequence/confirmation/retransmission base context, tests |
 | M15 | application data delivery contract 도입 | Completed | application callback contract, tests, traceability |
 | M16 | outbound application send contract 도입 | Completed | explicit session send API, adapter helper, tests |
-| M17 | integration harness 진입 | Completed | happy path, retransmission recovery, timeout fail-safe, channel-down fail-safe, decode failure, send failure budget, budget reset tests |
+| M17 | integration harness 진입 | Completed | happy path, retransmission recovery, timeout fail-safe, channel-down fail-safe, decode failure, send failure budget, budget reset, bounded pump stability tests |
 
 ## In-Progress Items
 
