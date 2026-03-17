@@ -1,6 +1,80 @@
 #include "rsrx_api.h"
 #include "rsrx_config_validator.h"
 
+static void vSetDirectReport(
+	rsrx_session_t * pxSession,
+	rsrx_status_t eStatus,
+	rsrx_reason_code_t eReason,
+	rsrx_diagnostic_code_t eDiagnostic)
+{
+	rsrx_state_t eCurrentState;
+	uint32_t uIndex;
+
+	if(pxSession == (rsrx_session_t *)0)
+	{
+		return;
+	}
+
+	eCurrentState = rsrx_orchestrator_get_state(&pxSession->xOrchestrator);
+	pxSession->xLastReport.xTransition.ePreviousState = eCurrentState;
+	pxSession->xLastReport.xTransition.eNextState = eCurrentState;
+	pxSession->xLastReport.xTransition.eStatus = eStatus;
+	pxSession->xLastReport.xTransition.eReason = eReason;
+	pxSession->xLastReport.xTransition.eDiagnostic = eDiagnostic;
+	pxSession->xLastReport.xTransition.xActions.uActionCount = 0U;
+	for(uIndex = 0U; uIndex < D_RSRX_ACTION_CAPACITY; ++uIndex)
+	{
+		pxSession->xLastReport.xTransition.xActions.eActions[uIndex] = RSRX_ACTION_NONE;
+	}
+	pxSession->xLastReport.uDispatchedActionCount = 0U;
+}
+
+static void vWriteDirectDiagnostic(
+	rsrx_session_t * pxSession)
+{
+	rsrx_diagnostic_record_t xRecord;
+
+	if((pxSession == (rsrx_session_t *)0) ||
+		(pxSession->xPlatformAdapter.xPlatformPorts.xDiagnostics.pfWrite ==
+			(rsrx_diagnostic_write_fn)0))
+	{
+		return;
+	}
+
+	pxSession->xPlatformAdapter.uEventCounter++;
+	xRecord.eSeverity = RSRX_LOG_SEVERITY_WARNING;
+	xRecord.ePreviousState = pxSession->xLastReport.xTransition.ePreviousState;
+	xRecord.eNextState = pxSession->xLastReport.xTransition.eNextState;
+	xRecord.eStatus = pxSession->xLastReport.xTransition.eStatus;
+	xRecord.eReason = pxSession->xLastReport.xTransition.eReason;
+	xRecord.eDiagnostic = pxSession->xLastReport.xTransition.eDiagnostic;
+	xRecord.uEventCounter = pxSession->xPlatformAdapter.uEventCounter;
+
+	(void)pxSession->xPlatformAdapter.xPlatformPorts.xDiagnostics.pfWrite(
+		pxSession->xPlatformAdapter.xPlatformPorts.xDiagnostics.pvContext,
+		&xRecord);
+}
+
+static void vNotifyDirectReject(
+	rsrx_session_t * pxSession,
+	rsrx_reason_code_t eReason,
+	rsrx_diagnostic_code_t eDiagnostic)
+{
+	if(pxSession == (rsrx_session_t *)0)
+	{
+		return;
+	}
+
+	vSetDirectReport(pxSession, RSRX_STATUS_REJECTED, eReason, eDiagnostic);
+	vWriteDirectDiagnostic(pxSession);
+	if(pxSession->pfApiNotification != (rsrx_api_notification_fn)0)
+	{
+		pxSession->pfApiNotification(
+			pxSession->pvApiCallbackContext,
+			&pxSession->xLastReport);
+	}
+}
+
 static void vApiExecutorDispatch(
 	void * pvContext,
 	const rsrx_transition_result_t * pxTransition,
@@ -303,6 +377,8 @@ rsrx_status_t rsrx_session_send_application_data(
 	const uint8_t * puPayload,
 	size_t xPayloadLength)
 {
+	rsrx_transport_status_t eSendStatus;
+
 	if((pxSession == (rsrx_session_t *)0) ||
 		(pxSession->uInitialized == 0U) ||
 		((puPayload == (const uint8_t *)0) && (xPayloadLength > 0U)))
@@ -315,11 +391,16 @@ rsrx_status_t rsrx_session_send_application_data(
 		return RSRX_STATUS_INVALID_STATE;
 	}
 
-	if(rsrx_transport_adapter_send_application_data(
+	eSendStatus = rsrx_transport_adapter_send_application_data(
 		&pxSession->xTransportAdapter,
 		puPayload,
-		xPayloadLength) != RSRX_TRANSPORT_STATUS_OK)
+		xPayloadLength);
+	if(eSendStatus != RSRX_TRANSPORT_STATUS_OK)
 	{
+		vNotifyDirectReject(
+			pxSession,
+			RSRX_REASON_APPLICATION_DATA_REQUESTED,
+			RSRX_DIAG_WARN_REJECTED_EVENT);
 		return RSRX_STATUS_REJECTED;
 	}
 

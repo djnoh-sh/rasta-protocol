@@ -13,6 +13,7 @@ typedef struct
 typedef struct
 {
 	uint32_t uCallCount;
+	rsrx_orchestrator_report_t xLastReport;
 } test_counter_t;
 
 typedef struct
@@ -101,8 +102,11 @@ static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_
 static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport)
 {
 	test_counter_t * pxContext = (test_counter_t *)pvContext;
-	(void)pxReport;
 	pxContext->uCallCount++;
+	if(pxReport != (const rsrx_orchestrator_report_t *)0)
+	{
+		pxContext->xLastReport = *pxReport;
+	}
 }
 
 static void vApplicationDataNotify(
@@ -119,10 +123,13 @@ static void vApplicationDataNotify(
 static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport, rsrx_action_t eAction, uint32_t uActionIndex)
 {
 	test_counter_t * pxContext = (test_counter_t *)pvContext;
-	(void)pxReport;
 	(void)eAction;
 	(void)uActionIndex;
 	pxContext->uCallCount++;
+	if(pxReport != (const rsrx_orchestrator_report_t *)0)
+	{
+		pxContext->xLastReport = *pxReport;
+	}
 }
 
 static void vFillConfig(
@@ -414,6 +421,8 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	vAssertTrue(xApplication.uCallCount == 0U, "outbound application send does not trigger inbound callback");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "outbound application accepted telemetry");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 0U, "outbound application busy telemetry before reject");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count before reject");
+	vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count before reject");
 	vAssertTrue(
 		rsrx_session_send_application_data(
 			&xSession,
@@ -422,6 +431,14 @@ static void vTestSessionOutboundApplicationDataPath(void)
 		"application data send busy guard");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "outbound application busy telemetry after reject");
 	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "outbound application last send status telemetry");
+	vAssertTrue(xApiCounter.uCallCount == 4U, "outbound application api count after reject");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "outbound application diagnostic count after reject");
+	vAssertTrue(xDiagnostics.xLastRecord.eStatus == RSRX_STATUS_REJECTED, "outbound application reject diagnostic status");
+	vAssertTrue(xDiagnostics.xLastRecord.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application reject diagnostic reason");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "outbound application reject diagnostic code");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eStatus == RSRX_STATUS_REJECTED, "outbound application reject report status");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application reject report reason");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "outbound application reject report diagnostic");
 }
 
 static void vTestSessionRetransmissionPath(void)

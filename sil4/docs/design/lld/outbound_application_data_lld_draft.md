@@ -54,6 +54,7 @@
   - 현재 상태가 `ESTABLISHED`가 아니면 `INVALID_STATE`를 반환한다.
   - 허용 상태이면 transport adapter send helper를 호출한다.
   - transport helper가 실패하면 `REJECTED`를 반환한다.
+  - direct-send reject가 발생하면 session은 same-state synthetic report를 구성하고 API callback과 diagnostics port에 rejection을 기록한다.
 - `rsrx_transport_adapter_send_application_data`:
   - outstanding send가 이미 있으면 `UNAVAILABLE`을 반환한다.
   - `protocol context`를 통해 sequence/confirmation이 채워진 encode request를 생성한다.
@@ -73,6 +74,7 @@
 - 현재 구현은 synchronous direct-send + single outstanding send 모델이다.
 - outbound application data는 API callback이나 lifecycle callback을 발생시키지 않는다.
 - busy reject는 queue overflow가 아니라 `single outstanding send only` 정책 위반으로 해석한다.
+- busy reject의 synthetic report는 `status=REJECTED`, `reason=APPLICATION_DATA_REQUESTED`, `diagnostic=WARN_REJECTED_EVENT`를 사용한다.
 - queueing, batching, multi-depth backpressure 정책은 후속 단계에서 별도 정의한다.
 
 ## Verification Notes
@@ -80,6 +82,7 @@
 - 필요한 테스트:
   - `ESTABLISHED` 상태 outbound application send 성공
   - outstanding send 존재 시 second send 거부
+  - second send reject 시 API callback/diagnostic correlation 검증
   - valid inbound 후 send 재허용
   - accepted/busy reject/clear source telemetry 누적 검증
   - `INITIALIZED` 또는 `CONNECTING` 상태 send 거부
