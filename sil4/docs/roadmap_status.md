@@ -65,7 +65,7 @@
 | M14 | protocol context 도입 | Completed | sequence/confirmation/retransmission base context, tests |
 | M15 | application data delivery contract 도입 | Completed | application callback contract, tests, traceability |
 | M16 | outbound application send contract 도입 | Completed | explicit session send API, adapter helper, tests |
-| M17 | integration harness 진입 | Completed | session-supervisor-real-codec flow test |
+| M17 | integration harness 진입 | Completed | session-supervisor-real-codec happy path and retransmission recovery tests |
 
 ## In-Progress Items
 
@@ -84,7 +84,7 @@
 | NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | supervisor와 protocol context를 decoded message detail과 결합 |
 | NS-002 | Transport Supervisor Completion | receive loop, send result, channel state 반영 필요 | supervisor contract 확장 |
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | transport abstraction 상위 모듈 추가 |
-| NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 failure/retransmission/recovery 시나리오로 확장 |
+| NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 failure/timeout/channel-down 시나리오로 확장 |
 | NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | toolchain policy와 report template 수립 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
 
