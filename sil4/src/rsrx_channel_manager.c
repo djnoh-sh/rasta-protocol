@@ -191,7 +191,6 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 	}
 	else if(uFindBestAvailableChannel(pxContext, &uSelectedIndex) != 0U)
 	{
-		pxContext->uActiveChannelIndex = uSelectedIndex;
 		pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 		pxContext->uLastSelectionWasFailover =
 			(uint32_t)(uSelectedIndex != uPreviousIndex);

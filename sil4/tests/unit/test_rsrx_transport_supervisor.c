@@ -70,7 +70,7 @@ static void vAssertTrue(int iCondition, const char * pcMessage)
 
 static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
 {
-	test_clock_context_t * pxContext = (test_clock_context_t *)pvContext;
+	const test_clock_context_t * pxContext = (const test_clock_context_t *)pvContext;
 	*puNowNs = pxContext->uNowNs;
 	return RSRX_PLATFORM_STATUS_OK;
 }
@@ -790,7 +790,6 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel up refresh secondary selected");
 
 	xTransport.uPrimaryAvailable = 1U;
-	xTransport.uSecondaryAvailable = 1U;
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up refresh ignored");

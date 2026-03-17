@@ -108,7 +108,7 @@ static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_
 
 static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
 {
-	test_clock_context_t * pxContext = (test_clock_context_t *)pvContext;
+	const test_clock_context_t * pxContext = (const test_clock_context_t *)pvContext;
 	*puNowNs = pxContext->uNowNs;
 	return RSRX_PLATFORM_STATUS_OK;
 }
@@ -816,7 +816,6 @@ static void vTestIntegratedChannelRecoveryHoldoffFlow(void)
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel holdoff integration failover switch count");
 
 	xTransport.uPrimaryAvailable = 1U;
-	xTransport.uSecondaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "channel holdoff first recovery query");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel holdoff stays secondary");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel holdoff active remains secondary");
@@ -906,7 +905,6 @@ static void vTestIntegratedRedundancyFlapSoakFlow(void)
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration first active secondary");
 
 	xTransport.uPrimaryAvailable = 1U;
-	xTransport.uSecondaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "redundancy flap integration first recovery query one");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration first recovery held");
 	vAssertTrue(xSession.xChannelManager.uTotalSwitchCount == 1U, "redundancy flap integration first total switch count");
@@ -914,12 +912,10 @@ static void vTestIntegratedRedundancyFlapSoakFlow(void)
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration first held send secondary");
 
 	xTransport.uPrimaryAvailable = 0U;
-	xTransport.uSecondaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration flap reset event");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "redundancy flap integration no extra switch on flap");
 
 	xTransport.uPrimaryAvailable = 1U;
-	xTransport.uSecondaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "redundancy flap integration second recovery query one");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration second recovery still held");
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "redundancy flap integration second recovery query two");
@@ -929,14 +925,12 @@ static void vTestIntegratedRedundancyFlapSoakFlow(void)
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy flap integration second recovery send primary");
 
 	xTransport.uPrimaryAvailable = 0U;
-	xTransport.uSecondaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap integration third failover");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "redundancy flap integration third switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "redundancy flap integration third switch occurred");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration third active secondary");
 
 	xTransport.uPrimaryAvailable = 1U;
-	xTransport.uSecondaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "redundancy flap integration final recovery query one");
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap integration final recovery held");
 	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "redundancy flap integration final recovery query two");
@@ -1014,7 +1008,6 @@ static void vTestIntegratedDecodeFailureFlow(void)
 	xTransport.axReceiveFrames[0].xPayloadLength = sizeof(auCorruptFrame);
 	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
-	xTransport.uReceiveScriptCount = 1U;
 	xTransport.uReceiveScriptIndex = 0U;
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "decode failure integration poll");
@@ -1193,7 +1186,6 @@ static void vTestIntegratedSendFailureBudgetResetFlow(void)
 	xTransport.axReceiveFrames[0].xPayloadLength = xDataLength;
 	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
-	xTransport.uReceiveScriptCount = 1U;
 	xTransport.uReceiveScriptIndex = 0U;
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "send failure reset integration inbound success");

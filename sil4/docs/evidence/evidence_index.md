@@ -25,9 +25,11 @@
 | EVID-SA-007 | `tooling/static_analysis_toolchain_baseline.md` | Draft | baseline tool/version/profile 결정 |
 | EVID-SA-008 | `reports/static_analysis_report_2026-03-17_sa2_cppcheck.md` | Draft | 첫 cppcheck baseline 결과 |
 | EVID-SA-009 | `../reviews/RV-002_cppcheck_baseline_review.md` | Draft | cppcheck baseline review 기록 |
+| EVID-SA-010 | `reports/static_analysis_report_2026-03-17_sa3_followup.md` | Draft | targeted cleanup follow-up 결과 |
+| EVID-SA-011 | `../reviews/RV-003_cppcheck_followup_review.md` | Draft | follow-up review 기록 |
 
 ## Next Expected Additions
 
-1. `cppcheck` baseline finding cleanup 후 follow-up report
+1. residual minor finding cleanup
 2. rule severity mapping 확정
 3. CI execution linkage
