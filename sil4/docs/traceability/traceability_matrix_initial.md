@@ -42,6 +42,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionRecoveryFlow` | TC-INT-002 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedTimeoutFailSafeFlow`, `vTestIntegratedChannelDownFailSafeFlow` | TC-INT-003, TC-INT-004 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSendFailureBudgetFlow` | TC-INT-006 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSendFailureBudgetResetFlow` | TC-INT-007 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-002 | `sil4/include/rsrx_state_machine.h`, `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_init`, `rsrx_state_machine_handle_event`, `rsrx_state_machine_get_state`, `rsrx_state_machine_reset` | TC-SM-007, TC-SM-008, TC-SM-012, TC-SM-015, TC-SM-017 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-010 | `sil4/include/rsrx_config_validator.h`, `sil4/src/rsrx_config_validator.c` | `rsrx_validate_session_config` | TC-CFG-005, TC-CFG-006 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-011 | `sil4/include/rsrx_protocol_context.h`, `sil4/src/rsrx_protocol_context.c` | `rsrx_protocol_context_init`, `rsrx_protocol_context_build_encode_request` | TC-PC-004 |  | Draft |

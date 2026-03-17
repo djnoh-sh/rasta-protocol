@@ -32,8 +32,9 @@
 | TC-INT-004 | SR-002 | channel down fail-safe integration 검증 | handshake 완료된 session-supervisor 준비 | `process_transport_event(CHANNEL_DOWN)` 호출 | `SAFE_DISCONNECT` 전이 | protocol error reason, supervisor decision, lifecycle callback이 설계와 일치 |
 | TC-INT-005 | SR-001 | decode failure integration 검증 | handshake 완료된 session-supervisor와 손상 프레임 준비 | `supervisor_poll_receive`로 malformed frame 처리 | `DECODE_FAILED` 반환, session state 유지 | supervisor decision, processed count, callback 부재가 설계와 일치 |
 | TC-INT-006 | SR-002 | send failure budget integration 검증 | handshake 완료된 session-supervisor 준비 | `process_transport_event(SEND_FAILED)`를 2회 호출 | 1회차는 budget 처리, 2회차는 `SAFE_DISCONNECT` 전이 | send failure counter, escalation reason, lifecycle callback이 설계와 일치 |
+| TC-INT-007 | SR-002 | send failure budget reset integration 검증 | handshake 완료된 session-supervisor와 정상 inbound data frame 준비 | `SEND_FAILED` 후 `supervisor_poll_receive`로 정상 frame 처리 후 다시 `SEND_FAILED` 호출 | 정상 수신으로 budget reset 후 다음 실패가 다시 budget 처리됨 | budget counter reset/restart, application callback, state retention이 설계와 일치 |
 
 ## Notes
 
-- 현재 harness는 real codec과 fake transport를 결합한 happy-path, retransmission recovery, timeout fail-safe, channel-down fail-safe, decode failure, send failure budget smoke test까지 포함한다.
+- 현재 harness는 real codec과 fake transport를 결합한 happy-path, retransmission recovery, timeout fail-safe, channel-down fail-safe, decode failure, send failure budget, send failure budget reset smoke test까지 포함한다.
 - long-run, redundancy 시나리오는 후속 integration 단계에서 확장한다.
