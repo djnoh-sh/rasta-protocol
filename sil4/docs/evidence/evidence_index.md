@@ -65,6 +65,8 @@
 | EVID-CI-031 | `../reviews/RV-026_baseline_artifact_fetch_review.md` | Draft | baseline artifact fetch implementation review |
 | EVID-CI-032 | `first_actual_vendor_rule_entry_sample.md` | Draft | first actual vendor rule entry sample |
 | EVID-CI-033 | `../reviews/RV-027_first_actual_vendor_rule_entry_review.md` | Draft | first actual vendor rule entry sample review |
+| EVID-CI-034 | `audit_trail_closeout.md` | Draft | evidence package audit trail closeout baseline |
+| EVID-CI-035 | `../reviews/RV-028_audit_trail_closeout_review.md` | Draft | audit trail closeout review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -79,4 +81,4 @@
 5. MISRA subset severity 세분화
 6. second-tool rule taxonomy mapping
 7. first workflow baseline fetch success evidence
-8. audit trail closure review
+8. first actual vendor evidence set

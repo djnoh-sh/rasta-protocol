@@ -11,8 +11,8 @@
 ## Summary
 
 - 현재 전체 진행률 추정: `85~88%`
-- 현재 단계: `vendor entry evidence closure 단계`
-- 다음 주력 단계: `review/audit trail expansion`, `first baseline fetch success evidence`, `evidence closeout`
+- 현재 단계: `audit trail closeout 단계`
+- 다음 주력 단계: `first baseline fetch success evidence`, `first actual vendor evidence`, `evidence maintenance`
 
 ## Overall Phase Status
 
@@ -22,7 +22,7 @@
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 35% | timer ingress, outbound encode, protocol context 초기 단계 완료 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 15% | 첫 integration harness 추가 |
-| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 100% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch 구현, first actual vendor rule entry sample 확보 |
+| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 100% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch 구현, first actual vendor rule entry sample, audit trail closeout baseline 확보 |
 
 ## Workstream Status
 
@@ -103,6 +103,7 @@
 | M52 | baseline persistence source policy 수립 | Completed | `EVID-CI-029`, `RV-025`, PR/branch baseline source priority와 fallback 기준 고정 |
 | M53 | baseline artifact fetch implementation 수립 | Completed | `sil4-ci.yml`, `materialize_baseline_summary.sh`, `RV-026`, prior artifact fetch/materialize 경로 구현 |
 | M54 | first actual vendor rule entry sample 수립 | Completed | `EVID-CI-032`, `RV-027`, first operational vendor entry/report/review sample 확보 |
+| M55 | audit trail closeout baseline 수립 | Completed | `EVID-CI-034`, `RV-028`, 초기 evidence package 종료 기준 고정 |
 
 ## In-Progress Items
 
@@ -122,7 +123,7 @@
 | NS-002 | Transport Supervisor Completion | runtime feedback policy와 retry semantics 추가 필요 | channel-up refresh 이후 retry/channel event policy 확장 |
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | richer hysteresis, flap suppression 세분화, switching audit 정책 확장 |
 | NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 richer redundancy와 longer-run 시나리오로 확장 |
-| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | first workflow baseline fetch success evidence와 audit trail closeout 확보 |
+| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | first workflow baseline fetch success evidence와 first actual vendor evidence set 확보 |
 | NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
 
 ## Readiness Assessment
@@ -143,7 +144,7 @@
 | R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 retry semantics와 runtime feedback policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 minimal bounded queue 모델에 머묾 | `outstanding 1 + deferred 1`과 overflow telemetry는 들어갔지만 deeper queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch, first actual vendor rule entry sample은 생겼지만 first workflow baseline fetch success evidence와 final audit trail closeout이 아직 없다 | first workflow baseline fetch success evidence 확보, final audit trail closeout |
+| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch, first actual vendor rule entry sample, audit trail closeout baseline은 생겼지만 first workflow baseline fetch success evidence와 first actual vendor evidence set이 아직 없다 | first workflow baseline fetch success evidence 확보, first actual vendor evidence set 확보 |
 
 ## Recommended Next Order
 
