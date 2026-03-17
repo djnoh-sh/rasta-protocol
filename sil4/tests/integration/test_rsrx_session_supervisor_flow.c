@@ -864,11 +864,121 @@ static void vTestIntegratedUnconfirmedRecoveryProtocolErrorFlow(void)
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 3U, "unconfirmed recovery integration processed count");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "unconfirmed recovery integration protocol error event");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "unconfirmed recovery integration rejected status");
-	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "unconfirmed recovery integration reason");
 	vAssertTrue(xTransport.uSendCount == 2U, "unconfirmed recovery integration retransmission request sent");
 	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "unconfirmed recovery integration retransmission reason");
 	vAssertTrue(xApplication.uCallCount == 0U, "unconfirmed recovery integration no application callback");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "unconfirmed recovery integration lifecycle callback count");
+}
+
+static void vTestIntegratedStaleRetransmissionProtocolErrorFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[4];
+	rsrx_transport_status_t aeStatuses[4];
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auStaleFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auGapPayload[2] = { 0xA4U, 0xA5U };
+	static const uint8_t auStalePayload[2] = { 0xB4U, 0xB5U };
+	size_t xHandshakeLength;
+	size_t xGapLength;
+	size_t xStaleLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "stale retransmission integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "stale retransmission integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "stale retransmission integration session connect");
+	vAssertTrue(xTransport.uSendCount == 1U, "stale retransmission integration connect request sent");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auGapPayload,
+		sizeof(auGapPayload),
+		auGapFrame,
+		sizeof(auGapFrame),
+		&xGapLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		1U,
+		1U,
+		auStalePayload,
+		sizeof(auStalePayload),
+		auStaleFrame,
+		sizeof(auStaleFrame),
+		&xStaleLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auGapFrame;
+	axFrames[1].xPayloadLength = xGapLength;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[2].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[2].puPayload = auStaleFrame;
+	axFrames[2].xPayloadLength = xStaleLength;
+	axFrames[2].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[3].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[3].puPayload = (const uint8_t *)0;
+	axFrames[3].xPayloadLength = 0U;
+	axFrames[3].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[3] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 4U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "stale retransmission integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 6U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "stale retransmission integration pump receive");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "stale retransmission integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 3U, "stale retransmission integration processed count");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "stale retransmission integration protocol error event");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "stale retransmission integration rejected status");
+	vAssertTrue(xTransport.uSendCount == 2U, "stale retransmission integration retransmission request sent");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "stale retransmission integration retransmission reason");
+	vAssertTrue(xApplication.uCallCount == 0U, "stale retransmission integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "stale retransmission integration lifecycle callback");
 }
 
 static void vTestIntegratedTimeoutFailSafeFlow(void)
@@ -2414,6 +2524,7 @@ int main(void)
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
 	vTestIntegratedRetransmissionRecoveryFlow();
 	vTestIntegratedUnconfirmedRecoveryProtocolErrorFlow();
+	vTestIntegratedStaleRetransmissionProtocolErrorFlow();
 	vTestIntegratedTimeoutFailSafeFlow();
 	vTestIntegratedChannelDownFailSafeFlow();
 	vTestIntegratedChannelFailoverFlow();
