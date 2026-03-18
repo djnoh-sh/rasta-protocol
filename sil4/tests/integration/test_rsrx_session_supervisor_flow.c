@@ -1311,6 +1311,7 @@ static void vTestIntegratedRetransmissionFailoverRecoveryFlow(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retrans failover recovery integration retrans pending");
 	vAssertTrue(xTransport.uSendCount == 2U, "retrans failover recovery integration retrans request sent");
 
+	// cppcheck-suppress redundantAssignment
 	xTransport.uPrimaryAvailable = 0U;
 	xTransport.uSecondaryAvailable = 1U;
 	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
@@ -3676,6 +3677,154 @@ static void vTestIntegratedHoldoffMixedTransientResetFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "holdoff mixed transient integration no lifecycle callback");
 }
 
+static void vTestIntegratedHoldoffFlapTransientAsymmetryFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0xA1U, 0xA2U, 0xA3U, 0xA4U, 0U, 0U, 0U, 0U };
+	static const uint8_t auInboundDataPayload[2] = { 0xB1U, 0xB2U };
+	size_t xHandshakeLength;
+	size_t xDataLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "holdoff flap transient integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "holdoff flap transient integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "holdoff flap transient integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auInboundDataPayload,
+		sizeof(auInboundDataPayload),
+		auDataFrame,
+		sizeof(auDataFrame),
+		&xDataLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "holdoff flap transient integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "holdoff flap transient integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "holdoff flap transient integration established");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff flap transient integration active secondary");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "holdoff flap transient integration secondary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration secondary send failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "holdoff flap transient integration send budget one");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration secondary receive error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "holdoff flap transient integration receive budget one");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration first refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff flap transient integration still secondary after first refresh");
+	// cppcheck-suppress knownConditionTrueFalse
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "holdoff flap transient integration primary available before flap");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "holdoff flap transient integration send budget retained after first refresh");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "holdoff flap transient integration receive budget retained after first refresh");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration flap down");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff flap transient integration still secondary after flap");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "holdoff flap transient integration send budget reset on flap");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "holdoff flap transient integration send reset count after flap");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "holdoff flap transient integration receive budget retained after flap");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration second refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff flap transient integration still secondary after second refresh");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration third refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff flap transient integration switched primary");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auDataFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xDataLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "holdoff flap transient integration inbound success");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "holdoff flap transient integration state retained");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "holdoff flap transient integration send budget remains clear");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "holdoff flap transient integration receive budget cleared");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "holdoff flap transient integration send reset count retained");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "holdoff flap transient integration receive reset count");
+	vAssertTrue(xApplication.uCallCount == 1U, "holdoff flap transient integration application callback");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "holdoff flap transient integration primary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration primary send failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "holdoff flap transient integration send budget restarted");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff flap transient integration primary receive error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "holdoff flap transient integration receive budget restarted");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "holdoff flap transient integration no lifecycle callback");
+}
+
 static void vTestIntegratedRedundancyFlapSoakFlow(void)
 {
 	rsrx_session_t xSession;
@@ -5384,6 +5533,7 @@ int main(void)
 	vTestIntegratedHoldoffSendBudgetIsolationFlow();
 	vTestIntegratedHoldoffReceiveErrorCarryoverFlow();
 	vTestIntegratedHoldoffMixedTransientResetFlow();
+	vTestIntegratedHoldoffFlapTransientAsymmetryFlow();
 	vTestIntegratedRedundancyFlapSoakFlow();
 	vTestIntegratedDecodeFailureFlow();
 	vTestIntegratedSendFailureBudgetFlow();
