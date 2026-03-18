@@ -10,7 +10,7 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `92~93%`
+- 현재 전체 진행률 추정: `92~94%`
 - 현재 단계: `P3/P4 protocol hardening 단계`
 - 다음 주력 단계: `detailed sequence validation`, `runtime fault integration`, `evidence maintenance`
 
@@ -20,8 +20,8 @@
 | --- | --- | --- | --- | --- | --- |
 | P1 | 계획/기준선 수립 | 규칙, 문서 구조, 요구사항/HLD/초기 추적성 확립 | Completed | 100% | 작업 규칙과 기본 산출물 체계 정착 |
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
-| P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 78% | timer ingress, outbound encode, protocol context edge case, repeated gap/recovery, retransmission timeout, failover recovery/timeout ordering 경로까지 반영 |
-| P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 67% | mixed transient, failover/recovery/holdoff, channel-up flap reset, repeated gap/retransmission timeout, failover recovery/timeout, receive-error failover reset integration까지 확보 |
+| P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 80% | timer ingress, outbound encode, protocol context edge case, repeated gap/recovery, retransmission timeout, failover recovery/timeout, failover repeated-gap recovery ordering 경로까지 반영 |
+| P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 69% | mixed transient, failover/recovery/holdoff, channel-up flap reset, repeated gap/retransmission timeout, failover recovery/timeout, receive-error failover carryover, failover repeated-gap recovery integration까지 확보 |
 | P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 100% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch 구현, first actual vendor rule entry sample, audit trail closeout baseline 확보 |
 
 ## Workstream Status
@@ -111,8 +111,8 @@
 | --- | --- | --- | --- |
 | IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract, bounded `outstanding 1 + deferred 1` queue, outbound telemetry, overflow reject API/diagnostic correlation과 integration coverage, repeated reject streak telemetry, threshold-based escalation, escalation hit telemetry 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
-| IP-003 | Protocol context maturation | confirmation validation, invalid/regressing confirmation integration, initial zero sequence rejection integration, sequence gap detail, repeated gap retransmission/recovery integration, retransmission timeout fail-safe integration, failover recovery/timeout ordering integration, recovery success semantics, unconfirmed/stale retransmission rejection integration, retransmission confirm rules, duplicate inbound rejection 구현 | richer edge cases 보강 |
-| IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, outstanding-send correlation, channel-scoped send failure budget, receive error budget/reset/failover-reset integration, mixed transient budget reset integration, channel-up refresh holdoff/flap-reset integration, failover transient recovery/soak integration, retransmission timeout/failover recovery/failover timeout integration, inactive-channel feedback filtering, decision telemetry, budget update/reset observability, deferred queue telemetry exposure 구현 및 integration 검증 진행 | integration-facing runtime event model 반영 |
+| IP-003 | Protocol context maturation | confirmation validation, invalid/regressing confirmation integration, initial zero sequence rejection integration, sequence gap detail, repeated gap retransmission/recovery integration, retransmission timeout fail-safe integration, failover recovery/timeout/repeated-gap recovery ordering integration, recovery success semantics, unconfirmed/stale retransmission rejection integration, retransmission confirm rules, duplicate inbound rejection 구현 | richer edge cases 보강 |
+| IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, outstanding-send correlation, channel-scoped send failure budget, receive error budget/reset/failover-carryover integration, mixed transient budget reset integration, channel-up refresh holdoff/flap-reset integration, failover transient recovery/soak integration, retransmission timeout/failover recovery/failover timeout/failover repeated-gap recovery integration, inactive-channel feedback filtering, decision telemetry, budget update/reset observability, deferred queue telemetry exposure 구현 및 integration 검증 진행 | integration-facing runtime event model 반영 |
 | IP-005 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
 ## Not-Started Items
