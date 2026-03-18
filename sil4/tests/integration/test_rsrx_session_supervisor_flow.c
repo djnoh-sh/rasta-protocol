@@ -2077,10 +2077,164 @@ static void vTestIntegratedRetransmissionFailoverUnconfirmedRecoveryProtocolErro
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "retrans failover unconfirmed integration switch count retained");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "retrans failover unconfirmed integration protocol error event");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "retrans failover unconfirmed integration rejected status");
-	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "retrans failover unconfirmed integration reason");
-	vAssertTrue(xTransport.uSendCount == 2U, "retrans failover unconfirmed integration no extra retransmission send");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_REJECTED, "retrans failover unconfirmed integration decision");
+	vAssertTrue(xTransport.uSendCount == 3U, "retrans failover unconfirmed integration final fail-safe send");
 	vAssertTrue(xApplication.uCallCount == 0U, "retrans failover unconfirmed integration no application callback");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retrans failover unconfirmed integration lifecycle callback");
+}
+
+static void vTestIntegratedRetransmissionFailoverRepeatedGapUnconfirmedRecoveryProtocolErrorFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	rsrx_transport_frame_t xTransportEventFrame = { RSRX_TRANSPORT_CHANNEL_PRIMARY, (const uint8_t *)0, 0U, RSRX_TRANSPORT_EVENT_NONE };
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auFirstGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auUnconfirmedRecoveryFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auFirstGapPayload[2] = { 0xAFU, 0xB0U };
+	static const uint8_t auSecondGapPayload[2] = { 0xB1U, 0xB2U };
+	static const uint8_t auRecoveryPayload[2] = { 0xB3U, 0xB4U };
+	size_t xHandshakeLength;
+	size_t xFirstGapLength;
+	size_t xSecondGapLength;
+	size_t xRecoveryLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyConfig(&xConfig);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "retrans failover repeated unconfirmed integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "retrans failover repeated unconfirmed integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "retrans failover repeated unconfirmed integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auFirstGapPayload,
+		sizeof(auFirstGapPayload),
+		auFirstGapFrame,
+		sizeof(auFirstGapFrame),
+		&xFirstGapLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		1U,
+		auSecondGapPayload,
+		sizeof(auSecondGapPayload),
+		auSecondGapFrame,
+		sizeof(auSecondGapFrame),
+		&xSecondGapLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		0U,
+		auRecoveryPayload,
+		sizeof(auRecoveryPayload),
+		auUnconfirmedRecoveryFrame,
+		sizeof(auUnconfirmedRecoveryFrame),
+		&xRecoveryLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auFirstGapFrame;
+	axFrames[1].xPayloadLength = xFirstGapLength;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "retrans failover repeated unconfirmed integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retrans failover repeated unconfirmed integration initial pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retrans failover repeated unconfirmed integration retrans pending");
+	vAssertTrue(xTransport.uSendCount == 2U, "retrans failover repeated unconfirmed integration first retrans request sent");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans failover repeated unconfirmed integration failover event");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "retrans failover repeated unconfirmed integration active secondary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "retrans failover repeated unconfirmed integration switch count");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans failover repeated unconfirmed integration clear first outstanding");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	axFrames[0].puPayload = auSecondGapFrame;
+	axFrames[0].xPayloadLength = xSecondGapLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retrans failover repeated unconfirmed integration second gap poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retrans failover repeated unconfirmed integration still retrans pending");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "retrans failover repeated unconfirmed integration second gap event");
+	vAssertTrue(xTransport.uSendCount == 3U, "retrans failover repeated unconfirmed integration second retrans request sent");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans failover repeated unconfirmed integration clear second outstanding");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	axFrames[0].puPayload = auUnconfirmedRecoveryFrame;
+	axFrames[0].xPayloadLength = xRecoveryLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retrans failover repeated unconfirmed integration recovery poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retrans failover repeated unconfirmed integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "retrans failover repeated unconfirmed integration switch count retained");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "retrans failover repeated unconfirmed integration protocol error event");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "retrans failover repeated unconfirmed integration rejected status");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_REJECTED, "retrans failover repeated unconfirmed integration decision");
+	vAssertTrue(xTransport.uSendCount == 4U, "retrans failover repeated unconfirmed integration final fail-safe send");
+	vAssertTrue(xApplication.uCallCount == 0U, "retrans failover repeated unconfirmed integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retrans failover repeated unconfirmed integration lifecycle callback");
 }
 
 static void vTestIntegratedTimeoutFailSafeFlow(void)
@@ -5643,6 +5797,7 @@ int main(void)
 	vTestIntegratedStaleRetransmissionProtocolErrorFlow();
 	vTestIntegratedRetransmissionFailoverStaleProtocolErrorFlow();
 	vTestIntegratedRetransmissionFailoverUnconfirmedRecoveryProtocolErrorFlow();
+	vTestIntegratedRetransmissionFailoverRepeatedGapUnconfirmedRecoveryProtocolErrorFlow();
 	vTestIntegratedTimeoutFailSafeFlow();
 	vTestIntegratedChannelDownFailSafeFlow();
 	vTestIntegratedChannelFailoverFlow();
