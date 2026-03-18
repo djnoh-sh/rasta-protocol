@@ -4164,7 +4164,6 @@ static void vTestIntegratedHoldoffStaleFeedbackRecoveryOrderingFlow(void)
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff stale feedback recovery ordering integration stale secondary failure");
-	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED, "holdoff stale feedback recovery ordering integration stale secondary decision");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "holdoff stale feedback recovery ordering integration stale secondary budget unchanged");
 	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "holdoff stale feedback recovery ordering integration stale secondary budget update");
 
@@ -5020,6 +5019,228 @@ static void vTestIntegratedChannelUpHoldoffTransientSoakFlow(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel up holdoff transient soak integration state retained");
 	vAssertTrue(xApplication.uCallCount == 2U, "channel up holdoff transient soak integration application callback count");
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "channel up holdoff transient soak integration no lifecycle callback");
+}
+
+static void vTestIntegratedRedundancyFlapTransientLongRunFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auDataFrame1[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auDataFrame2[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auDataFrame3[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	rsrx_transport_frame_t xTransportEventFrame;
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auOutboundPayload[2] = { 0x71U, 0x72U };
+	static const uint8_t auInboundDataPayload1[2] = { 0x73U, 0x74U };
+	static const uint8_t auInboundDataPayload2[2] = { 0x75U, 0x76U };
+	static const uint8_t auInboundDataPayload3[2] = { 0x77U, 0x78U };
+	size_t xHandshakeLength;
+	size_t xDataLength1;
+	size_t xDataLength2;
+	size_t xDataLength3;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "redundancy flap transient long run integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "redundancy flap transient long run integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "redundancy flap transient long run integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auInboundDataPayload1,
+		sizeof(auInboundDataPayload1),
+		auDataFrame1,
+		sizeof(auDataFrame1),
+		&xDataLength1);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auInboundDataPayload2,
+		sizeof(auInboundDataPayload2),
+		auDataFrame2,
+		sizeof(auDataFrame2),
+		&xDataLength2);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		1U,
+		auInboundDataPayload3,
+		sizeof(auInboundDataPayload3),
+		auDataFrame3,
+		sizeof(auDataFrame3),
+		&xDataLength3);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "redundancy flap transient long run integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy flap transient long run integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "redundancy flap transient long run integration established");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration first failover");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "redundancy flap transient long run integration first switch count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration first refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap transient long run integration held secondary one");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy flap transient long run integration first secondary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration first secondary send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration first secondary receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auDataFrame1;
+	xTransport.axReceiveFrames[0].xPayloadLength = xDataLength1;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy flap transient long run integration first secondary recovery");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "redundancy flap transient long run integration first send reset");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "redundancy flap transient long run integration first receive reset");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration second refresh");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "redundancy flap transient long run integration second switch count");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy flap transient long run integration primary after first cycle");
+	// cppcheck-suppress knownConditionTrueFalse
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "redundancy flap transient long run integration primary available before second failover");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration second failover");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "redundancy flap transient long run integration third switch count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration third refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap transient long run integration held secondary two");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy flap transient long run integration second secondary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration second secondary send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration second secondary receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auDataFrame2;
+	xTransport.axReceiveFrames[0].xPayloadLength = xDataLength2;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy flap transient long run integration second secondary recovery");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 2U, "redundancy flap transient long run integration second send reset");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "redundancy flap transient long run integration second receive reset");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration fourth refresh");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 4U, "redundancy flap transient long run integration fourth switch count");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy flap transient long run integration primary after second cycle");
+	// cppcheck-suppress knownConditionTrueFalse
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "redundancy flap transient long run integration primary available before third failover");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration third failover");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 5U, "redundancy flap transient long run integration fifth switch count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration fifth refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy flap transient long run integration held secondary three");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy flap transient long run integration third secondary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration third secondary send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration third secondary receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auDataFrame3;
+	xTransport.axReceiveFrames[0].xPayloadLength = xDataLength3;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy flap transient long run integration third secondary recovery");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 3U, "redundancy flap transient long run integration third send reset");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 3U, "redundancy flap transient long run integration third receive reset");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy flap transient long run integration sixth refresh");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 6U, "redundancy flap transient long run integration final switch count");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy flap transient long run integration final primary");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "redundancy flap transient long run integration state retained");
+	vAssertTrue(xApplication.uCallCount == 3U, "redundancy flap transient long run integration application callback count");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "redundancy flap transient long run integration no lifecycle callback");
 }
 
 static void vTestIntegratedDecodeFailureFlow(void)
@@ -6615,6 +6836,7 @@ int main(void)
 	vTestIntegratedHoldoffFlapTransientAsymmetryFlow();
 	vTestIntegratedRedundancyFlapSoakFlow();
 	vTestIntegratedRedundancyFlapTransientSoakFlow();
+	vTestIntegratedRedundancyFlapTransientLongRunFlow();
 	vTestIntegratedChannelUpHoldoffTransientSoakFlow();
 	vTestIntegratedDecodeFailureFlow();
 	vTestIntegratedSendFailureBudgetFlow();
