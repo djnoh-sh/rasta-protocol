@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-17`
+- Last Updated: `2026-03-18`
 
 ## Summary
 
@@ -22,7 +22,7 @@
 | P2 | 코어 구조 설계/구현 | 상태 머신, orchestrator, API, abstraction, validator 뼈대 구현 | Completed | 100% | 주요 모듈 골격과 단위 테스트 확보 |
 | P3 | 프로토콜 동작 구체화 | timer, sequencing, retransmission, outbound/inbound complete flow 구현 | In Progress | 86% | timer ingress, outbound encode, protocol context edge case, repeated gap/recovery, retransmission timeout, failover recovery/timeout, failover repeated-gap recovery, failover stale rejection, failover invalid/regressing confirmation ordering 경로까지 반영 |
 | P4 | 통합/강건성 검증 | integration harness, 장시간/경계/고장주입 시험 | In Progress | 75% | mixed transient, failover/recovery/holdoff, channel-up flap reset, repeated gap/retransmission timeout, failover recovery/timeout, receive-error failover carryover, failover repeated-gap recovery, failover stale rejection, failover invalid/regressing confirmation integration까지 확보 |
-| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 100% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch 구현, first actual vendor rule entry sample, audit trail closeout baseline 확보 |
+| P5 | 인증 증빙 강화 | static analysis, MISRA evidence, review record, safety case 입력 생성 | In Progress | 97% | baseline 증빙 체계, cppcheck cleanup, outbound queue policy review, CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate와 clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch 구현, first actual vendor rule entry sample, audit trail closeout baseline 확보. 다만 first workflow baseline fetch success evidence와 first actual vendor evidence set은 아직 미완 |
 
 ## Workstream Status
 
@@ -30,7 +30,7 @@
 | --- | --- | --- | --- |
 | Rules and Governance | 과제 운영 규칙, 코딩 규칙, 작업공간 기준 | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` |
 | Requirements and HLD | SRS, hazard, architecture | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` |
-| Traceability | 요구사항-설계-코드-테스트 매핑 | In Progress | `traceability_matrix_initial.md` |
+| Traceability | 요구사항-설계-코드-테스트 매핑 | In Progress | `traceability_matrix_initial.md`, `docs/reviews/RV-030_p3_p4_traceability_alignment_review.md` |
 | State Machine | 연결 상태와 전이 규칙 | In Progress | `rsrx_state_machine.*`, `test_rsrx_state_machine.c` |
 | Orchestrator | 상태 결정과 side effect dispatch 경계 | In Progress | `rsrx_orchestrator.*`, `test_rsrx_orchestrator.c` |
 | Platform Abstraction | clock/timer/diagnostics 계약 | Completed | `rsrx_platform.h`, `test_rsrx_platform_contract.c` |
@@ -43,7 +43,7 @@
 | Transport Supervisor | inbound frame to session handoff | In Progress | `rsrx_transport_supervisor.*`, `test_rsrx_transport_supervisor.c` |
 | Configuration Validation | startup gate | Completed | `rsrx_config_validator.*`, `test_rsrx_config_validator.c` |
 | Integration Verification | cross-module scenario test | In Progress | `tests/integration/test_rsrx_session_supervisor_flow.c`, `integration_harness_test_spec_draft.md` |
-| Safety Evidence | MISRA, static analysis, formal review records | In Progress | `docs/evidence/tooling/static_analysis_toolchain_baseline.md`, `docs/evidence/reports/static_analysis_report_2026-03-17_sa2_cppcheck.md`, `docs/reviews/RV-002_cppcheck_baseline_review.md` |
+| Safety Evidence | MISRA, static analysis, formal review records | In Progress | `docs/evidence/tooling/static_analysis_toolchain_baseline.md`, `docs/evidence/reports/static_analysis_report_2026-03-17_sa2_cppcheck.md`, `docs/reviews/RV-002_cppcheck_baseline_review.md`, `docs/reviews/RV-030_p3_p4_traceability_alignment_review.md` |
 
 ## Completed Milestones
 
@@ -104,6 +104,7 @@
 | M53 | baseline artifact fetch implementation 수립 | Completed | `sil4-ci.yml`, `materialize_baseline_summary.sh`, `RV-026`, prior artifact fetch/materialize 경로 구현 |
 | M54 | first actual vendor rule entry sample 수립 | Completed | `EVID-CI-032`, `RV-027`, first operational vendor entry/report/review sample 확보 |
 | M55 | audit trail closeout baseline 수립 | Completed | `EVID-CI-034`, `RV-028`, 초기 evidence package 종료 기준 고정 |
+| M56 | P3/P4 traceability and roadmap alignment review | Completed | `RV-030`, recent `TC-INT-017~039` traceability backfill, roadmap metadata/status 정합화 |
 
 ## In-Progress Items
 
@@ -113,7 +114,7 @@
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | confirmation validation, invalid/regressing confirmation integration, initial zero sequence rejection integration, sequence gap detail, repeated gap retransmission/recovery integration, retransmission timeout fail-safe integration, failover recovery/timeout/repeated-gap recovery/stale rejection/invalid-confirmation/regressing-confirmation ordering integration, recovery success semantics, unconfirmed/stale retransmission rejection integration, retransmission confirm rules, duplicate inbound rejection 구현 | richer edge cases 보강 |
 | IP-004 | Transport supervisor maturation | inbound decode handoff, sequence gate, poll receive, bounded pump loop, channel state gate, send result/timer delegation, outstanding-send correlation, channel-scoped send failure budget, receive error budget/reset/failover-carryover integration, mixed transient budget reset integration, channel-up refresh holdoff/flap-reset integration, failover transient recovery/soak integration, retransmission timeout/failover recovery/failover timeout/failover repeated-gap recovery/failover stale rejection/failover invalid confirmation/failover regressing confirmation integration, inactive-channel feedback filtering, decision telemetry, budget update/reset observability, deferred queue telemetry exposure 구현 및 integration 검증 진행 | integration-facing runtime event model 반영 |
-| IP-005 | Traceability enrichment | 초기 매트릭스 존재 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
+| IP-005 | Traceability enrichment | 최근 `TC-INT-017~039` integration 항목과 `RV-030` review linkage까지 backfill 완료 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
 ## Not-Started Items
 
@@ -124,7 +125,7 @@
 | NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | richer hysteresis, flap suppression 세분화, switching audit 정책 확장 |
 | NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 richer redundancy와 longer-run 시나리오로 확장 |
 | NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | first workflow baseline fetch success evidence와 first actual vendor evidence set 확보 |
-| NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | review templates와 audit trail 채우기 |
+| NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | actual vendor finding review와 runtime CI evidence를 audit trail에 연결 |
 
 ## Readiness Assessment
 
@@ -134,7 +135,7 @@
 | 단위 테스트 기반 | Medium | 핵심 skeleton coverage는 있으나 protocol complete 수준은 아님 |
 | 프로토콜 완성도 | Medium | timer ingress, outbound encode, repeated gap/recovery 경로는 연결됐지만 richer sequencing과 redundancy는 미완 |
 | 통합 가능성 | Medium-High | 주요 경계와 다수의 fault-integration path는 연결됐지만 long-run과 일부 ordering 규칙은 미완 |
-| 인증 증빙 준비 | Low | 초안 중심이며 formal evidence는 거의 없음 |
+| 인증 증빙 준비 | Medium | baseline policy/evidence는 많이 정리됐지만 actual runtime/vendor evidence는 아직 부족 |
 
 ## Current Risks
 
@@ -144,7 +145,7 @@
 | R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering은 추가됐지만 runtime ordering과 retry policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
 | R-003 | redundancy policy 미완 | holdoff와 flap soak/refresh reset 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 없다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 minimal bounded queue 모델에 머묾 | `outstanding 1 + deferred 1`과 overflow telemetry는 들어갔지만 deeper queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙 자동화 부족 | CI linkage, severity mapping, artifact retention, MISRA subset severity, tool-specific mapping, second-tool candidate, clang first-run baseline, CI subset summary, vendor rule mapping draft, ctest strategy baseline, PR annotation policy, vendor-aware report template, vendor matrix sample, PR annotation helper, vendor deviation example, PR comment API linkage, delta policy baseline, delta-aware helper, first real vendor onboarding procedure, baseline persistence source policy, baseline artifact fetch, first actual vendor rule entry sample, audit trail closeout baseline, baseline-fetch success report template은 생겼지만 first workflow baseline fetch success evidence와 first actual vendor evidence set이 아직 없다 | first workflow baseline fetch success evidence 확보, first actual vendor evidence set 확보 |
+| R-005 | 인증 증빙 자동화 부족 | baseline policy와 review 묶음은 정리됐지만 actual CI runtime evidence와 actual vendor evidence set이 아직 없다 | first workflow baseline fetch success evidence 확보, first actual vendor evidence set 확보 |
 
 ## Recommended Next Order
 
