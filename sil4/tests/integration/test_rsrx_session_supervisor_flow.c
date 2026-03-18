@@ -2988,6 +2988,105 @@ static void vTestIntegratedReceiveErrorBudgetResetFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "receive error reset integration no lifecycle callback");
 }
 
+static void vTestIntegratedReceiveErrorFailoverResetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xChannelDownFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	size_t xHandshakeLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyConfig(&xConfig);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "receive error failover integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "receive error failover integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "receive error failover integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "receive error failover integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "receive error failover integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "receive error failover integration established");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "receive error failover integration primary first error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "receive error failover integration primary budget one");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "receive error failover integration no reset before failover");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xChannelDownFrame.puPayload = (const uint8_t *)0;
+	xChannelDownFrame.xPayloadLength = 0U;
+	xChannelDownFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "receive error failover integration failover event");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "receive error failover integration active secondary");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "receive error failover integration budget cleared on failover");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "receive error failover integration reset count on failover");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_CHANNEL_DOWN, "receive error failover integration budget update");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "receive error failover integration secondary first error");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "receive error failover integration state retained after secondary first");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "receive error failover integration secondary budget restarted");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "receive error failover integration secondary budgeted decision");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "receive error failover integration secondary second error");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "receive error failover integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "receive error failover integration budget reset after escalation");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "receive error failover integration cumulative reset count");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "receive error failover integration protocol error event");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "receive error failover integration reason");
+	vAssertTrue(xApplication.uCallCount == 0U, "receive error failover integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "receive error failover integration lifecycle callback");
+}
+
 static void vTestIntegratedMixedTransientBudgetResetFlow(void)
 {
 	rsrx_session_t xSession;
@@ -3775,6 +3874,7 @@ int main(void)
 	vTestIntegratedSendFailureBudgetResetFlow();
 	vTestIntegratedReceiveErrorBudgetFlow();
 	vTestIntegratedReceiveErrorBudgetResetFlow();
+	vTestIntegratedReceiveErrorFailoverResetFlow();
 	vTestIntegratedMixedTransientBudgetResetFlow();
 	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
