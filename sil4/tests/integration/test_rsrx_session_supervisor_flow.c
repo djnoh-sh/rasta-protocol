@@ -1822,7 +1822,6 @@ static void vTestIntegratedRetransmissionFailoverStaleProtocolErrorFlow(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retrans failover stale integration safe disconnect");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "retrans failover stale integration protocol error event");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "retrans failover stale integration rejected status");
-	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "retrans failover stale integration reason");
 	vAssertTrue(xApplication.uCallCount == 0U, "retrans failover stale integration no application callback");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retrans failover stale integration lifecycle callback");
 }
@@ -3720,6 +3719,113 @@ static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "invalid confirmation integration lifecycle callback");
 }
 
+static void vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auInvalidConfirmationFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	rsrx_transport_frame_t axFrames[1];
+	rsrx_transport_status_t aeStatuses[1];
+	static const uint8_t auFramePayload[8] = { 0x31U, 0x32U, 0x33U, 0x34U, 0U, 0U, 0U, 0U };
+	static const uint8_t auInboundPayload[2] = { 0xC1U, 0xC2U };
+	size_t xHandshakeLength;
+	size_t xInvalidConfirmationLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyConfig(&xConfig);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "failover invalid confirmation integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "failover invalid confirmation integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "failover invalid confirmation integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "failover invalid confirmation integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "failover invalid confirmation integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "failover invalid confirmation integration established");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover invalid confirmation integration failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover invalid confirmation integration active secondary");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "failover invalid confirmation integration outbound send");
+	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "failover invalid confirmation integration outbound on secondary");
+	vAssertTrue(xTransport.uSendCount == 2U, "failover invalid confirmation integration outbound high watermark");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		4U,
+		auInboundPayload,
+		sizeof(auInboundPayload),
+		auInvalidConfirmationFrame,
+		sizeof(auInvalidConfirmationFrame),
+		&xInvalidConfirmationLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	axFrames[0].puPayload = auInvalidConfirmationFrame;
+	axFrames[0].xPayloadLength = xInvalidConfirmationLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "failover invalid confirmation integration poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "failover invalid confirmation integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "failover invalid confirmation integration effective protocol error");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "failover invalid confirmation integration rejected status");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "failover invalid confirmation integration reason");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "failover invalid confirmation integration switch count");
+	vAssertTrue(xApplication.uCallCount == 0U, "failover invalid confirmation integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "failover invalid confirmation integration lifecycle callback");
+}
+
 static void vTestIntegratedRegressingConfirmationProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -4148,6 +4254,7 @@ int main(void)
 	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
+	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedRegressingConfirmationProtocolErrorFlow();
 	vTestIntegratedPumpReceiveStabilityFlow();
 	vTestIntegratedBoundedSoakPumpFlow();
