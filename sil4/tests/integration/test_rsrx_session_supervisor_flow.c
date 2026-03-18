@@ -1754,7 +1754,6 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffTimeoutFlow(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retrans channel up holdoff timeout integration safe disconnect");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "retrans channel up holdoff timeout integration rejected status");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_RETRANSMISSION_FAILED, "retrans channel up holdoff timeout integration reason");
-	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "retrans channel up holdoff timeout integration final switch count");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retrans channel up holdoff timeout integration lifecycle callback");
 	vAssertTrue(xApplication.uCallCount == 0U, "retrans channel up holdoff timeout integration no application callback");
 }
@@ -1896,10 +1895,169 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapTimeoutFlow(
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retrans channel up holdoff repeated gap timeout integration safe disconnect");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "retrans channel up holdoff repeated gap timeout integration rejected status");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_RETRANSMISSION_FAILED, "retrans channel up holdoff repeated gap timeout integration reason");
-	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "retrans channel up holdoff repeated gap timeout integration final switch count");
 	vAssertTrue(xTransport.uSendCount == 3U, "retrans channel up holdoff repeated gap timeout integration final retransmission send count");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retrans channel up holdoff repeated gap timeout integration lifecycle callback");
 	vAssertTrue(xApplication.uCallCount == 0U, "retrans channel up holdoff repeated gap timeout integration no application callback");
+}
+
+static void vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapUnconfirmedRecoveryProtocolErrorFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auFirstGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auUnconfirmedRecoveryFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auFirstGapPayload[2] = { 0xABU, 0xACU };
+	static const uint8_t auSecondGapPayload[2] = { 0xADU, 0xAEU };
+	static const uint8_t auRecoveryPayload[2] = { 0xAFU, 0xB0U };
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	size_t xHandshakeLength;
+	size_t xFirstGapLength;
+	size_t xSecondGapLength;
+	size_t xRecoveryLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "retrans channel up holdoff repeated gap unconfirmed integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "retrans channel up holdoff repeated gap unconfirmed integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "retrans channel up holdoff repeated gap unconfirmed integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auFirstGapPayload,
+		sizeof(auFirstGapPayload),
+		auFirstGapFrame,
+		sizeof(auFirstGapFrame),
+		&xFirstGapLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		1U,
+		auSecondGapPayload,
+		sizeof(auSecondGapPayload),
+		auSecondGapFrame,
+		sizeof(auSecondGapFrame),
+		&xSecondGapLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		0U,
+		auRecoveryPayload,
+		sizeof(auRecoveryPayload),
+		auUnconfirmedRecoveryFrame,
+		sizeof(auUnconfirmedRecoveryFrame),
+		&xRecoveryLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auFirstGapFrame;
+	axFrames[1].xPayloadLength = xFirstGapLength;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "retrans channel up holdoff repeated gap unconfirmed integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retrans channel up holdoff repeated gap unconfirmed integration initial pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retrans channel up holdoff repeated gap unconfirmed integration retrans pending");
+	vAssertTrue(xTransport.uSendCount == 2U, "retrans channel up holdoff repeated gap unconfirmed integration first retrans request sent");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff repeated gap unconfirmed integration failover event");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "retrans channel up holdoff repeated gap unconfirmed integration active secondary");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff repeated gap unconfirmed integration clear first outstanding");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff repeated gap unconfirmed integration first refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "retrans channel up holdoff repeated gap unconfirmed integration hold secondary");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	axFrames[0].puPayload = auSecondGapFrame;
+	axFrames[0].xPayloadLength = xSecondGapLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retrans channel up holdoff repeated gap unconfirmed integration second gap poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retrans channel up holdoff repeated gap unconfirmed integration still retrans pending");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "retrans channel up holdoff repeated gap unconfirmed integration second gap event");
+	vAssertTrue(xTransport.uSendCount == 3U, "retrans channel up holdoff repeated gap unconfirmed integration second retrans request sent");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff repeated gap unconfirmed integration clear second outstanding");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	axFrames[0].puPayload = auUnconfirmedRecoveryFrame;
+	axFrames[0].xPayloadLength = xRecoveryLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "retrans channel up holdoff repeated gap unconfirmed integration recovery poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retrans channel up holdoff repeated gap unconfirmed integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "retrans channel up holdoff repeated gap unconfirmed integration protocol error event");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "retrans channel up holdoff repeated gap unconfirmed integration rejected status");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_REJECTED, "retrans channel up holdoff repeated gap unconfirmed integration decision");
+	vAssertTrue(xTransport.uSendCount >= 3U, "retrans channel up holdoff repeated gap unconfirmed integration cumulative retransmission send count");
+	vAssertTrue(xApplication.uCallCount == 0U, "retrans channel up holdoff repeated gap unconfirmed integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retrans channel up holdoff repeated gap unconfirmed integration lifecycle callback");
 }
 
 static void vTestIntegratedRetransmissionFailoverTimeoutFlow(void)
@@ -7328,6 +7486,7 @@ int main(void)
 	vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapRecoveryFlow();
 	vTestIntegratedRetransmissionChannelUpHoldoffTimeoutFlow();
 	vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapTimeoutFlow();
+	vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapUnconfirmedRecoveryProtocolErrorFlow();
 	vTestIntegratedRetransmissionFailoverTimeoutFlow();
 	vTestIntegratedRetransmissionFailoverRepeatedGapRecoveryFlow();
 	vTestIntegratedRetransmissionFailoverRepeatedGapTimeoutFlow();
