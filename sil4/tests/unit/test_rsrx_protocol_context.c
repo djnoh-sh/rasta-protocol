@@ -204,7 +204,6 @@ static void vTestRetransmissionOrderingMatrix(void)
 		uint32_t uSequenceNumber;
 		uint32_t uConfirmationNumber;
 		rsrx_event_t eExpectedEvent;
-		const char * pcMessage;
 	} test_case_t;
 
 	rsrx_protocol_context_t xContext;
@@ -214,11 +213,11 @@ static void vTestRetransmissionOrderingMatrix(void)
 	uint32_t uIndex;
 	static const test_case_t axCases[] =
 	{
-		{ 4U, 1U, RSRX_EVENT_RECOVERY_SUCCESS, "base sequence with confirmed retransmission resolves recovery" },
-		{ 4U, 0U, RSRX_EVENT_PROTOCOL_ERROR, "base sequence without retransmission confirmation is rejected" },
-		{ 4U, 2U, RSRX_EVENT_PROTOCOL_ERROR, "base sequence above sent high-watermark is rejected" },
-		{ 5U, 1U, RSRX_EVENT_SEQUENCE_GAP_DETECTED, "higher sequence during retransmission remains gap" },
-		{ 3U, 1U, RSRX_EVENT_PROTOCOL_ERROR, "lower sequence during retransmission is rejected" }
+		{ 4U, 1U, RSRX_EVENT_RECOVERY_SUCCESS },
+		{ 4U, 0U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 4U, 2U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 5U, 1U, RSRX_EVENT_SEQUENCE_GAP_DETECTED },
+		{ 3U, 1U, RSRX_EVENT_PROTOCOL_ERROR }
 	};
 
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
@@ -248,6 +247,56 @@ static void vTestRetransmissionOrderingMatrix(void)
 	{
 		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
 		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+		vAssertTrue(
+			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+			"retransmission ordering matrix resolve");
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "retransmission ordering matrix event");
+	}
+}
+
+static void vTestSteadyStateOrderingMatrix(void)
+{
+	typedef struct
+	{
+		uint32_t uNextTxSequenceNumber;
+		uint32_t uLastRxSequenceNumber;
+		uint32_t uLastRemoteConfirmationNumber;
+		uint32_t uSequenceNumber;
+		uint32_t uConfirmationNumber;
+		rsrx_event_t eExpectedEvent;
+		const char * pcMessage;
+	} test_case_t;
+
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{ 3U, 1U, 0U, 2U, 0U, RSRX_EVENT_VALID_DATA, "next sequence with monotonic confirmation is accepted" },
+		{ 3U, 1U, 0U, 3U, 0U, RSRX_EVENT_SEQUENCE_GAP_DETECTED, "higher sequence in steady state is gap" },
+		{ 3U, 1U, 0U, 1U, 0U, RSRX_EVENT_PROTOCOL_ERROR, "duplicate or lower sequence in steady state is rejected" },
+		{ 3U, 1U, 0U, 2U, 3U, RSRX_EVENT_PROTOCOL_ERROR, "confirmation above sent high-watermark is rejected" },
+		{ 4U, 2U, 2U, 3U, 1U, RSRX_EVENT_PROTOCOL_ERROR, "regressing confirmation is rejected" },
+		{ 4U, 2U, 2U, 3U, 2U, RSRX_EVENT_VALID_DATA, "equal confirmation after prior progress is accepted" }
+	};
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.xPayloadLength = 0U;
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+		xContext.uNextTxSequenceNumber = axCases[uIndex].uNextTxSequenceNumber;
+		xContext.uLastRxSequenceNumber = axCases[uIndex].uLastRxSequenceNumber;
+		xContext.uLastTxConfirmationNumber = axCases[uIndex].uLastRxSequenceNumber;
+		xContext.uLastRemoteConfirmationNumber = axCases[uIndex].uLastRemoteConfirmationNumber;
+
+		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
+		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+
 		vAssertTrue(
 			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
 			axCases[uIndex].pcMessage);
@@ -324,6 +373,7 @@ int main(void)
 	vTestInboundConfirmationValidation();
 	vTestRecoverySuccessResolution();
 	vTestRetransmissionOrderingMatrix();
+	vTestSteadyStateOrderingMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();
