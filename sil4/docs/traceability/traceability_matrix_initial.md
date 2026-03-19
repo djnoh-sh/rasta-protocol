@@ -55,6 +55,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunFlow` | TC-INT-058 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunStaleCompletionFlow` | TC-INT-080 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunStaleFeedbackFlow` | TC-INT-081 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunStaleMixedFeedbackFlow` | TC-INT-082 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedChannelUpHoldoffTransientSoakFlow` | TC-INT-053 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleFeedbackSoakFlow` | TC-INT-059 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionSoakFlow` | TC-INT-079 |  | Draft |
@@ -142,6 +143,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunFlow` | TC-INT-058 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunStaleCompletionFlow` | TC-INT-080 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunStaleFeedbackFlow` | TC-INT-081 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapTransientLongRunStaleMixedFeedbackFlow` | TC-INT-082 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedChannelUpHoldoffTransientSoakFlow` | TC-INT-053 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleFeedbackSoakFlow` | TC-INT-059 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapRecoveryFlow` | TC-INT-060 |  | Draft |
