@@ -197,6 +197,64 @@ static void vTestRecoverySuccessResolution(void)
 	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "lower sequence during retransmission is protocol error");
 }
 
+static void vTestRetransmissionOrderingMatrix(void)
+{
+	typedef struct
+	{
+		uint32_t uSequenceNumber;
+		uint32_t uConfirmationNumber;
+		rsrx_event_t eExpectedEvent;
+		const char * pcMessage;
+	} test_case_t;
+
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+	rsrx_encode_request_t xRequest;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{ 4U, 1U, RSRX_EVENT_RECOVERY_SUCCESS, "base sequence with confirmed retransmission resolves recovery" },
+		{ 4U, 0U, RSRX_EVENT_PROTOCOL_ERROR, "base sequence without retransmission confirmation is rejected" },
+		{ 4U, 2U, RSRX_EVENT_PROTOCOL_ERROR, "base sequence above sent high-watermark is rejected" },
+		{ 5U, 1U, RSRX_EVENT_SEQUENCE_GAP_DETECTED, "higher sequence during retransmission remains gap" },
+		{ 3U, 1U, RSRX_EVENT_PROTOCOL_ERROR, "lower sequence during retransmission is rejected" }
+	};
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 3U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+		RSRX_REASON_SEQUENCE_GAP_DETECTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "start retransmission pending");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.xPayloadLength = 0U;
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
+		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+		vAssertTrue(
+			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+			axCases[uIndex].pcMessage);
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, axCases[uIndex].pcMessage);
+	}
+}
+
 static void vTestDuplicateInboundSequenceRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -265,6 +323,7 @@ int main(void)
 	vTestRetransmissionRequestPayload();
 	vTestInboundConfirmationValidation();
 	vTestRecoverySuccessResolution();
+	vTestRetransmissionOrderingMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();
