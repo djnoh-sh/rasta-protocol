@@ -1454,7 +1454,6 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff recovery integration clear outstanding");
 
 	// cppcheck-suppress redundantAssignment
-	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff recovery integration first refresh");
@@ -1474,7 +1473,6 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_RECOVERY_COMPLETED, "retrans channel up holdoff recovery integration recovery reason");
 
 	// cppcheck-suppress redundantAssignment
-	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff recovery integration second refresh");
@@ -9588,6 +9586,241 @@ static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetFlow(v
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "redundancy recovery stale mixed reset integration no lifecycle callback");
 }
 
+static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRunFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondaryDataFrame1[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPrimaryDataFrame1[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondaryDataFrame2[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPrimaryDataFrame2[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondaryDataFrame3[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPrimaryDataFrame3[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auOutboundPayload[4] = { 0x61U, 0x62U, 0x63U, 0x64U };
+	static const uint8_t auSecondaryPayload1[2] = { 0xA1U, 0xA2U };
+	static const uint8_t auPrimaryPayload1[2] = { 0xA3U, 0xA4U };
+	static const uint8_t auSecondaryPayload2[2] = { 0xA5U, 0xA6U };
+	static const uint8_t auPrimaryPayload2[2] = { 0xA7U, 0xA8U };
+	static const uint8_t auSecondaryPayload3[2] = { 0xA9U, 0xAAU };
+	static const uint8_t auPrimaryPayload3[2] = { 0xABU, 0xACU };
+	size_t xHandshakeLength;
+	size_t xSecondaryDataLength1;
+	size_t xPrimaryDataLength1;
+	size_t xSecondaryDataLength2;
+	size_t xPrimaryDataLength2;
+	size_t xSecondaryDataLength3;
+	size_t xPrimaryDataLength3;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auOutboundPayload,
+		sizeof(auOutboundPayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration session connect");
+
+	vEncodeFrame(RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, RSRX_REASON_HANDSHAKE_COMPLETED, 1U, 1U, (const uint8_t *)0, 0U, auHandshakeFrame, sizeof(auHandshakeFrame), &xHandshakeLength);
+	vEncodeFrame(RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, 2U, 1U, auSecondaryPayload1, sizeof(auSecondaryPayload1), auSecondaryDataFrame1, sizeof(auSecondaryDataFrame1), &xSecondaryDataLength1);
+	vEncodeFrame(RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, 3U, 1U, auPrimaryPayload1, sizeof(auPrimaryPayload1), auPrimaryDataFrame1, sizeof(auPrimaryDataFrame1), &xPrimaryDataLength1);
+	vEncodeFrame(RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, 4U, 1U, auSecondaryPayload2, sizeof(auSecondaryPayload2), auSecondaryDataFrame2, sizeof(auSecondaryDataFrame2), &xSecondaryDataLength2);
+	vEncodeFrame(RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, 5U, 1U, auPrimaryPayload2, sizeof(auPrimaryPayload2), auPrimaryDataFrame2, sizeof(auPrimaryDataFrame2), &xPrimaryDataLength2);
+	vEncodeFrame(RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, 6U, 1U, auSecondaryPayload3, sizeof(auSecondaryPayload3), auSecondaryDataFrame3, sizeof(auSecondaryDataFrame3), &xSecondaryDataLength3);
+	vEncodeFrame(RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, 7U, 1U, auPrimaryPayload3, sizeof(auPrimaryPayload3), auPrimaryDataFrame3, sizeof(auPrimaryDataFrame3), &xPrimaryDataLength3);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "redundancy recovery stale mixed reset long run integration established");
+
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+
+	/* cycle 1 */
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first failover");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first refresh");
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration first secondary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first stale primary completion");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first stale primary failure");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first secondary send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first secondary receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auSecondaryDataFrame1;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSecondaryDataLength1;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration first secondary success");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second refresh");
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration first primary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first stale secondary completion");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first stale secondary failure");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first primary failure");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame1;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPrimaryDataLength1;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration first primary success");
+
+	/* cycle 2 */
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second failover");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third refresh");
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration second secondary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second stale primary completion");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second stale primary failure");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second secondary send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second secondary receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auSecondaryDataFrame2;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSecondaryDataLength2;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration second secondary success");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration fourth refresh");
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration second primary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second stale secondary completion");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second stale secondary failure");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second primary failure");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame2;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPrimaryDataLength2;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration second primary success");
+
+	/* cycle 3 */
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third failover");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration fifth refresh");
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration third secondary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third stale primary completion");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third stale primary failure");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third secondary send failure");
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third secondary receive error");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auSecondaryDataFrame3;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSecondaryDataLength3;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration third secondary success");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration sixth refresh");
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration third primary send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third stale secondary completion");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third stale secondary failure");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third primary failure");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame3;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPrimaryDataLength3;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration third primary success");
+
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 6U, "redundancy recovery stale mixed reset long run integration final switch count");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 6U, "redundancy recovery stale mixed reset long run integration final send reset");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 3U, "redundancy recovery stale mixed reset long run integration final receive reset");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy recovery stale mixed reset long run integration final primary");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "redundancy recovery stale mixed reset long run integration state retained");
+	vAssertTrue(xApplication.uCallCount == 6U, "redundancy recovery stale mixed reset long run integration application callback count");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "redundancy recovery stale mixed reset long run integration no lifecycle callback");
+}
+
 static void vTestIntegratedDecodeFailureFlow(void)
 {
 	rsrx_session_t xSession;
@@ -11201,6 +11434,7 @@ int main(void)
 	vTestIntegratedRedundancyFlapTransientLongRunStaleMixedFeedbackFlow();
 	vTestIntegratedRedundancyFlapTransientLongRunRecoveryStaleMixedFeedbackFlow();
 	vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetFlow();
+	vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRunFlow();
 	vTestIntegratedChannelUpHoldoffTransientSoakFlow();
 	vTestIntegratedDecodeFailureFlow();
 	vTestIntegratedSendFailureBudgetFlow();
