@@ -577,6 +577,106 @@ static void vTestRepeatedGapPostRecoveryOrderingMatrix(void)
 	}
 }
 
+static void vTestSequencedMessageFamilyOrderingMatrix(void)
+{
+	typedef struct
+	{
+		rsrx_message_type_t eMessageType;
+		rsrx_event_t eSuggestedEvent;
+		uint32_t uNextTxSequenceNumber;
+		uint32_t uLastRxSequenceNumber;
+		uint32_t uLastRemoteConfirmationNumber;
+		uint32_t uRetransmissionPending;
+		uint32_t uRetransmissionBaseSequenceNumber;
+		uint32_t uLastRetransmissionRequestTxSequenceNumber;
+		uint32_t uSequenceNumber;
+		uint32_t uConfirmationNumber;
+		rsrx_event_t eExpectedEvent;
+	} test_case_t;
+
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{
+			RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+			RSRX_EVENT_HANDSHAKE_SUCCESS,
+			1U, 0U, 0U, 0U, 0U, 0U,
+			1U, 0U, RSRX_EVENT_HANDSHAKE_SUCCESS
+		},
+		{
+			RSRX_MESSAGE_TYPE_HEARTBEAT,
+			RSRX_EVENT_VALID_HEARTBEAT,
+			1U, 0U, 0U, 0U, 0U, 0U,
+			2U, 0U, RSRX_EVENT_SEQUENCE_GAP_DETECTED
+		},
+		{
+			RSRX_MESSAGE_TYPE_HEARTBEAT,
+			RSRX_EVENT_VALID_HEARTBEAT,
+			3U, 1U, 0U, 0U, 0U, 0U,
+			2U, 0U, RSRX_EVENT_VALID_HEARTBEAT
+		},
+		{
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			3U, 1U, 0U, 0U, 0U, 0U,
+			1U, 0U, RSRX_EVENT_PROTOCOL_ERROR
+		},
+		{
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_EVENT_SEQUENCE_GAP_DETECTED,
+			3U, 1U, 0U, 0U, 0U, 0U,
+			2U, 0U, RSRX_EVENT_SEQUENCE_GAP_DETECTED
+		},
+		{
+			RSRX_MESSAGE_TYPE_HEARTBEAT,
+			RSRX_EVENT_VALID_HEARTBEAT,
+			2U, 3U, 0U, 1U, 4U, 1U,
+			4U, 1U, RSRX_EVENT_RECOVERY_SUCCESS
+		},
+		{
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_EVENT_SEQUENCE_GAP_DETECTED,
+			2U, 3U, 0U, 1U, 4U, 1U,
+			4U, 0U, RSRX_EVENT_PROTOCOL_ERROR
+		},
+		{
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			2U, 3U, 0U, 1U, 4U, 1U,
+			5U, 1U, RSRX_EVENT_SEQUENCE_GAP_DETECTED
+		}
+	};
+
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.xPayloadLength = 0U;
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+		xContext.uNextTxSequenceNumber = axCases[uIndex].uNextTxSequenceNumber;
+		xContext.uLastRxSequenceNumber = axCases[uIndex].uLastRxSequenceNumber;
+		xContext.uLastTxConfirmationNumber = axCases[uIndex].uLastRxSequenceNumber;
+		xContext.uLastRemoteConfirmationNumber = axCases[uIndex].uLastRemoteConfirmationNumber;
+		xContext.uRetransmissionPending = axCases[uIndex].uRetransmissionPending;
+		xContext.uRetransmissionBaseSequenceNumber = axCases[uIndex].uRetransmissionBaseSequenceNumber;
+		xContext.uLastRetransmissionRequestTxSequenceNumber =
+			axCases[uIndex].uLastRetransmissionRequestTxSequenceNumber;
+
+		xMessage.eMessageType = axCases[uIndex].eMessageType;
+		xMessage.eSuggestedEvent = axCases[uIndex].eSuggestedEvent;
+		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
+		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+
+		vAssertTrue(
+			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+			"sequenced message family ordering matrix resolve");
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "sequenced message family ordering matrix event");
+	}
+}
+
 static void vTestDuplicateInboundSequenceRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -651,6 +751,7 @@ int main(void)
 	vTestRepeatedGapRetransmissionProgression();
 	vTestRepeatedGapRecoveryOrderingMatrix();
 	vTestRepeatedGapPostRecoveryOrderingMatrix();
+	vTestSequencedMessageFamilyOrderingMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();
