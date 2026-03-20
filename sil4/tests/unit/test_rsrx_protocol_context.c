@@ -425,6 +425,71 @@ static void vTestRepeatedGapRetransmissionProgression(void)
 	vAssertTrue(eEvent == RSRX_EVENT_RECOVERY_SUCCESS, "confirmed recovery after repeated gap succeeds");
 }
 
+static void vTestRepeatedGapRecoveryOrderingMatrix(void)
+{
+	typedef struct
+	{
+		uint32_t uSequenceNumber;
+		uint32_t uConfirmationNumber;
+		rsrx_event_t eExpectedEvent;
+	} test_case_t;
+
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_encode_request_t xRequest;
+	rsrx_event_t eEvent;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{ 4U, 1U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 4U, 2U, RSRX_EVENT_RECOVERY_SUCCESS },
+		{ 4U, 3U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 5U, 2U, RSRX_EVENT_SEQUENCE_GAP_DETECTED },
+		{ 3U, 2U, RSRX_EVENT_PROTOCOL_ERROR }
+	};
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+
+		xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+		xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+		xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+		xMessage.uSequenceNumber = 3U;
+		xMessage.uConfirmationNumber = 0U;
+		xMessage.xPayloadLength = 0U;
+		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_REASON_SEQUENCE_GAP_DETECTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "first retransmission request");
+
+		xMessage.uSequenceNumber = 5U;
+		xMessage.uConfirmationNumber = 1U;
+		vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve repeated gap");
+		vAssertTrue(eEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "repeated gap remains gap");
+
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_REASON_SEQUENCE_GAP_DETECTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "second retransmission request");
+
+		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
+		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+		vAssertTrue(
+			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+			"repeated-gap recovery ordering matrix resolve");
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "repeated-gap recovery ordering matrix event");
+	}
+}
+
 static void vTestDuplicateInboundSequenceRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -497,6 +562,7 @@ int main(void)
 	vTestSteadyStateOrderingMatrix();
 	vTestPostRecoveryOrderingMatrix();
 	vTestRepeatedGapRetransmissionProgression();
+	vTestRepeatedGapRecoveryOrderingMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();
