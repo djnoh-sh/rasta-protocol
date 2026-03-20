@@ -805,8 +805,8 @@ static void vTestSupervisorChannelDownUsesFailover(void)
 	xCodec.pfDecode = eDecodeFrame;
 	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "channel failover supervisor init");
 
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "budget scope primary available before second failover");
 	xTransport.uPrimaryAvailable = 0U;
-	xTransport.uSecondaryAvailable = 1U;
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.puPayload = auPayload;
 	xFrame.xPayloadLength = sizeof(auPayload);
@@ -868,8 +868,9 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	xCodec.pfDecode = eDecodeFrame;
 	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "channel up refresh supervisor init");
 
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "budget scope primary available before second failover");
+	vAssertTrue(xTransport.uSecondaryAvailable == 1U, "budget scope secondary available before second failover");
 	xTransport.uPrimaryAvailable = 0U;
-	xTransport.uSecondaryAvailable = 1U;
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.puPayload = auPayload;
 	xFrame.xPayloadLength = sizeof(auPayload);
@@ -1097,6 +1098,98 @@ static void vTestSupervisorSendFailureBudgetResetsAfterSuccess(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "budget reset state remains established");
 }
 
+static void vTestSupervisorBudgetScopeMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[2] = { 0x76U, 0x77U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vSetActiveStandbyConfig(&xConfig);
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "budget scope session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "budget scope session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "budget scope session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "budget scope establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "budget scope supervisor init");
+
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "budget scope primary available before second failover");
+	vAssertTrue(xTransport.uSecondaryAvailable == 1U, "budget scope secondary available before second failover");
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope first failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope active secondary");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "budget scope secondary send");
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope secondary failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "budget scope secondary send budget one");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope secondary budget channel");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "budget scope secondary budget update");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope primary refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "budget scope active primary");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope stale secondary failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "budget scope stale failure leaves send budget");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope stale failure leaves budget channel");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "budget scope stale failure budget update none");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "budget scope primary send");
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope primary failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "budget scope primary send budget one after channel switch");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "budget scope primary budget channel");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_AND_INCREMENT_ON_CHANNEL_SWITCH, "budget scope primary budget update");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "budget scope send reset count one");
+
+	xTransport.eReceiveStatus = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.eQueryStatus = RSRX_TRANSPORT_STATUS_OK;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope primary receive error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "budget scope receive budget one");
+
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "budget scope primary available before second failover");
+	vAssertTrue(xTransport.uSecondaryAvailable == 1U, "budget scope secondary available before second failover");
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope second failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope active secondary again");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "budget scope channel down resets send budget");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "budget scope receive budget carryover");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "budget scope receive escalation");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "budget scope receive escalation event");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED, "budget scope receive escalation decision");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "budget scope receive escalation reset");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "budget scope safe disconnect");
+}
+
 static void vTestSupervisorRecoverySuccessFromRetransmissionPending(void)
 {
 	rsrx_session_t xSession;
@@ -1289,6 +1382,7 @@ int main(void)
 	vTestSupervisorTransportSendCompletedIgnored();
 	vTestSupervisorTransportSendCompletedCorrelated();
 	vTestSupervisorSendFailureBudgetResetsAfterSuccess();
+	vTestSupervisorBudgetScopeMatrix();
 	vTestSupervisorTimerExpiryDelegation();
 	vTestSupervisorRecoverySuccessFromRetransmissionPending();
 	vTestSupervisorPumpReceiveBoundedDrain();

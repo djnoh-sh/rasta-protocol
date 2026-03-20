@@ -7,6 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Last Updated: `2026-03-17`
+ - Last Updated: `2026-03-20`
 
 ## Scope
 
@@ -41,5 +42,6 @@
 | TC-SUP-015 | FR-003, SR-002 | channel down failover 검증 | `ESTABLISHED` 상태 session, active-standby channel manager, primary down/secondary up 상태 준비 | `CHANNEL_DOWN(primary)` transport event 처리 후 inactive primary의 `SEND_FAILED` 처리 | `IGNORED_EVENT` 반환, active channel이 secondary로 전환되고 stale primary failure는 budget에 반영되지 않음 | session state 유지, selected channel, failover decision, stale send failure ignore policy, send failure budget reset telemetry, supervisor channel switch telemetry가 설계와 일치 |
 | TC-SUP-017 | FR-003, SR-002 | channel up refresh 검증 | `ESTABLISHED` 상태 session, failover로 secondary active 상태, primary restored 상태 준비 | `CHANNEL_UP(primary)` transport event 처리 후 stale secondary `SEND_FAILED`, recovered primary `SEND_FAILED` 처리 | `IGNORED_EVENT` 반환, active selection이 refresh되어 primary 복귀하고 recovered primary failure는 fresh budget으로 처리됨 | session state 유지, selected channel, decision telemetry, switch telemetry, budget channel telemetry가 설계와 일치 |
 | TC-SUP-012 | SR-002 | send failure budget reset 검증 | `ESTABLISHED` 상태 session 준비 | send failure 후 정상 inbound frame 처리, 다시 send failure 처리 | budget이 reset되어 다시 ignored 처리 | 정상 traffic이 누적 send failure를 해소하고 budget reset telemetry가 설계와 일치 |
+| TC-SUP-022 | FR-003, SR-002 | budget scope matrix 검증 | `ESTABLISHED` 상태 active-standby session, secondary failover/primary recovery 가능 상태 준비 | secondary correlated `SEND_FAILED`, primary recovery, stale secondary `SEND_FAILED`, primary correlated `SEND_FAILED`, primary `RX_ERROR`, secondary failover, secondary `RX_ERROR`를 순차 처리 | send failure budget은 channel-scoped로 stale inactive-channel feedback에 영향받지 않고 channel switch 시 reset-and-increment 되며, receive error budget은 channel switch를 넘어 carry-over되어 다음 오류에서 escalation된다 | budget channel/update telemetry, send/receive counter reset, receive escalation decision, final fail-safe state가 설계와 일치 |
 | TC-SUP-011 | SR-002 | timer expiry delegation 검증 | `CONNECTING` 상태 session 준비 | supervision timer expiry 처리 | `SAFE_DISCONNECT` 전이 | timer ingress가 supervisor 경계를 통해 session으로 전달되고 session status가 보고된다 |
 | TC-SUP-016 | FR-003, SR-002 | decision class telemetry 검증 | representative accepted/error/ignored/rejected path 준비 | handshake, decode failure, failover ignored, channel up refresh, send failure escalation, timer delegation 경로 수행 | 각 경로가 expected decision class와 cumulative counter를 보고 | decision class mapping과 누적 카운터가 설계와 일치 |
