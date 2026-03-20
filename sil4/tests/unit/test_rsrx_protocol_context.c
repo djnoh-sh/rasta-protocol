@@ -264,7 +264,6 @@ static void vTestSteadyStateOrderingMatrix(void)
 		uint32_t uSequenceNumber;
 		uint32_t uConfirmationNumber;
 		rsrx_event_t eExpectedEvent;
-		const char * pcMessage;
 	} test_case_t;
 
 	rsrx_protocol_context_t xContext;
@@ -273,12 +272,12 @@ static void vTestSteadyStateOrderingMatrix(void)
 	uint32_t uIndex;
 	static const test_case_t axCases[] =
 	{
-		{ 3U, 1U, 0U, 2U, 0U, RSRX_EVENT_VALID_DATA, "next sequence with monotonic confirmation is accepted" },
-		{ 3U, 1U, 0U, 3U, 0U, RSRX_EVENT_SEQUENCE_GAP_DETECTED, "higher sequence in steady state is gap" },
-		{ 3U, 1U, 0U, 1U, 0U, RSRX_EVENT_PROTOCOL_ERROR, "duplicate or lower sequence in steady state is rejected" },
-		{ 3U, 1U, 0U, 2U, 3U, RSRX_EVENT_PROTOCOL_ERROR, "confirmation above sent high-watermark is rejected" },
-		{ 4U, 2U, 2U, 3U, 1U, RSRX_EVENT_PROTOCOL_ERROR, "regressing confirmation is rejected" },
-		{ 4U, 2U, 2U, 3U, 2U, RSRX_EVENT_VALID_DATA, "equal confirmation after prior progress is accepted" }
+		{ 3U, 1U, 0U, 2U, 0U, RSRX_EVENT_VALID_DATA },
+		{ 3U, 1U, 0U, 3U, 0U, RSRX_EVENT_SEQUENCE_GAP_DETECTED },
+		{ 3U, 1U, 0U, 1U, 0U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 3U, 1U, 0U, 2U, 3U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 4U, 2U, 2U, 3U, 1U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 4U, 2U, 2U, 3U, 2U, RSRX_EVENT_VALID_DATA }
 	};
 
 	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
@@ -299,8 +298,82 @@ static void vTestSteadyStateOrderingMatrix(void)
 
 		vAssertTrue(
 			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
-			axCases[uIndex].pcMessage);
-		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, axCases[uIndex].pcMessage);
+			"steady-state ordering matrix resolve");
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "steady-state ordering matrix event");
+	}
+}
+
+static void vTestPostRecoveryOrderingMatrix(void)
+{
+	typedef struct
+	{
+		uint32_t uSequenceNumber;
+		uint32_t uConfirmationNumber;
+		rsrx_event_t eExpectedEvent;
+	} test_case_t;
+
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_encode_request_t xRequest;
+	rsrx_event_t eEvent;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{ 5U, 1U, RSRX_EVENT_VALID_DATA },
+		{ 5U, 3U, RSRX_EVENT_VALID_DATA },
+		{ 5U, 0U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 5U, 4U, RSRX_EVENT_PROTOCOL_ERROR },
+		{ 6U, 1U, RSRX_EVENT_SEQUENCE_GAP_DETECTED }
+	};
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+
+		xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+		xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+		xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+		xMessage.uSequenceNumber = 3U;
+		xMessage.uConfirmationNumber = 0U;
+		xMessage.xPayloadLength = 0U;
+		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_REASON_SEQUENCE_GAP_DETECTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "start retransmission pending");
+
+		xMessage.uSequenceNumber = 4U;
+		xMessage.uConfirmationNumber = 1U;
+		vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve recovery success");
+		vAssertTrue(eEvent == RSRX_EVENT_RECOVERY_SUCCESS, "recovery success accepted");
+		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record recovery success");
+		vAssertTrue(rsrx_protocol_context_clear_retransmission(&xContext) == RSRX_STATUS_OK, "clear retransmission");
+
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "first outbound after recovery");
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "second outbound after recovery");
+
+		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
+		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+		vAssertTrue(
+			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+			"post-recovery ordering matrix resolve");
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "post-recovery ordering matrix event");
 	}
 }
 
@@ -374,6 +447,7 @@ int main(void)
 	vTestRecoverySuccessResolution();
 	vTestRetransmissionOrderingMatrix();
 	vTestSteadyStateOrderingMatrix();
+	vTestPostRecoveryOrderingMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();
