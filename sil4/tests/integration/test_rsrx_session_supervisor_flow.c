@@ -11786,6 +11786,11 @@ static void vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "holdoff flap runtime ordering integration no lifecycle callback");
 }
 
+static void vTestIntegratedRedundancyPolicyCloseoutFlow(void)
+{
+	vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetFlow();
+}
+
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -12591,6 +12596,7 @@ int main(void)
 	vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow();
 	vTestIntegratedRuntimeOrderingCloseoutFlow();
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
+	vTestIntegratedRedundancyPolicyCloseoutFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
