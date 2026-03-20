@@ -10854,6 +10854,180 @@ static void vTestIntegratedProtocolOrderingCloseoutFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 2U, "ordering closeout integration lifecycle callback");
 }
 
+static void vTestIntegratedPostRecoveryOrderingCloseoutFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRecoveryFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPostRecoveryValidFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPostRecoveryInvalidFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0x31U, 0x32U, 0x33U, 0x34U, 0U, 0U, 0U, 0U };
+	static const uint8_t auGapPayload[2] = { 0x41U, 0x42U };
+	static const uint8_t auRecoveryPayload[2] = { 0x51U, 0x52U };
+	static const uint8_t auPostRecoveryValidPayload[2] = { 0x61U, 0x62U };
+	static const uint8_t auPostRecoveryInvalidPayload[2] = { 0x71U, 0x72U };
+	rsrx_transport_frame_t xTransportEventFrame;
+	size_t xHandshakeLength;
+	size_t xGapLength;
+	size_t xRecoveryLength;
+	size_t xPostRecoveryValidLength;
+	size_t xPostRecoveryInvalidLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "post-recovery ordering integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "post-recovery ordering integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "post-recovery ordering integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery ordering integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery ordering integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "post-recovery ordering integration established");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auGapPayload,
+		sizeof(auGapPayload),
+		auGapFrame,
+		sizeof(auGapFrame),
+		&xGapLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auGapFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xGapLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery ordering integration gap poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "post-recovery ordering integration retransmission pending");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "post-recovery ordering integration gap event");
+	vAssertTrue(xTransport.uSendCount == 2U, "post-recovery ordering integration retransmission request sent");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		2U,
+		auRecoveryPayload,
+		sizeof(auRecoveryPayload),
+		auRecoveryFrame,
+		sizeof(auRecoveryFrame),
+		&xRecoveryLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRecoveryFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRecoveryLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery ordering integration recovery poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "post-recovery ordering integration recovery established");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RECOVERY_SUCCESS, "post-recovery ordering integration recovery event");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "post-recovery ordering integration outbound send one");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "post-recovery ordering integration clear first outstanding");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "post-recovery ordering integration outbound send two");
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "post-recovery ordering integration clear second outstanding");
+	vAssertTrue(xTransport.uSendCount == 4U, "post-recovery ordering integration cumulative outbound count");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		3U,
+		auPostRecoveryValidPayload,
+		sizeof(auPostRecoveryValidPayload),
+		auPostRecoveryValidFrame,
+		sizeof(auPostRecoveryValidFrame),
+		&xPostRecoveryValidLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPostRecoveryValidFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPostRecoveryValidLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery ordering integration valid poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "post-recovery ordering integration valid retained");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_VALID_DATA, "post-recovery ordering integration valid event");
+	vAssertTrue(xApplication.uCallCount == 1U, "post-recovery ordering integration valid callback");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		5U,
+		auPostRecoveryInvalidPayload,
+		sizeof(auPostRecoveryInvalidPayload),
+		auPostRecoveryInvalidFrame,
+		sizeof(auPostRecoveryInvalidFrame),
+		&xPostRecoveryInvalidLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPostRecoveryInvalidFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPostRecoveryInvalidLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery ordering integration invalid poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "post-recovery ordering integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "post-recovery ordering integration protocol error");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "post-recovery ordering integration rejected status");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "post-recovery ordering integration reason");
+	vAssertTrue(xApplication.uCallCount == 1U, "post-recovery ordering integration no extra callback after rejection");
+	vAssertTrue(xLifecycleCounter.uCallCount == 2U, "post-recovery ordering integration lifecycle callback");
+}
+
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -11654,6 +11828,7 @@ int main(void)
 	vTestIntegratedMixedTransientBudgetResetFlow();
 	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
 	vTestIntegratedProtocolOrderingCloseoutFlow();
+	vTestIntegratedPostRecoveryOrderingCloseoutFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
