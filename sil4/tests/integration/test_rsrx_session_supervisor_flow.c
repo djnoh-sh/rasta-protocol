@@ -1366,6 +1366,7 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_transport_channel_state_t xChannelState;
 	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
 	size_t xHandshakeLength;
 	size_t xGapLength;
@@ -1453,6 +1454,7 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff recovery integration clear outstanding");
 
+	xTransport.uPrimaryAvailable = 1U;
 	// cppcheck-suppress redundantAssignment
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
@@ -1476,6 +1478,8 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff recovery integration second refresh");
+	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "retrans channel up holdoff recovery integration final recovery query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "retrans channel up holdoff recovery integration queried primary");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "retrans channel up holdoff recovery integration final primary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "retrans channel up holdoff recovery integration final switch count");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "retrans channel up holdoff recovery integration state retained");
@@ -9674,6 +9678,7 @@ static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRu
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first failover");
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	xTransport.uPrimaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration first refresh");
 	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration first secondary send");
@@ -9697,6 +9702,8 @@ static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRu
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration first secondary success");
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second refresh");
 	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration first primary send");
@@ -9719,9 +9726,11 @@ static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRu
 	/* cycle 2 */
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration second failover");
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	xTransport.uPrimaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third refresh");
 	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration second secondary send");
@@ -9745,6 +9754,8 @@ static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRu
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration second secondary success");
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration fourth refresh");
 	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration second primary send");
@@ -9767,9 +9778,11 @@ static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRu
 	/* cycle 3 */
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration third failover");
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	xTransport.uPrimaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration fifth refresh");
 	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration third secondary send");
@@ -9793,6 +9806,8 @@ static void vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRu
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy recovery stale mixed reset long run integration third secondary success");
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 1U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy recovery stale mixed reset long run integration sixth refresh");
 	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "redundancy recovery stale mixed reset long run integration third primary send");
@@ -10645,6 +10660,200 @@ static void vTestIntegratedInitialZeroSequenceProtocolErrorFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "zero sequence integration lifecycle callback");
 }
 
+static void vTestIntegratedProtocolOrderingCloseoutFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auValidSteadyStateFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRecoveryFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auValidConfirmationFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRegressingConfirmationFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0x11U, 0x22U, 0x33U, 0x44U, 0U, 0U, 0U, 0U };
+	static const uint8_t auValidSteadyStatePayload[2] = { 0x51U, 0x52U };
+	static const uint8_t auGapPayload[2] = { 0x61U, 0x62U };
+	static const uint8_t auRecoveryPayload[2] = { 0x71U, 0x72U };
+	static const uint8_t auValidConfirmationPayload[2] = { 0x81U, 0x82U };
+	static const uint8_t auRegressingConfirmationPayload[2] = { 0x91U, 0x92U };
+	rsrx_transport_frame_t xTransportEventFrame;
+	size_t xHandshakeLength;
+	size_t xValidSteadyStateLength;
+	size_t xGapLength;
+	size_t xRecoveryLength;
+	size_t xValidConfirmationLength;
+	size_t xRegressingConfirmationLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "ordering closeout integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "ordering closeout integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "ordering closeout integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "ordering closeout integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "ordering closeout integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "ordering closeout integration established");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auValidSteadyStatePayload,
+		sizeof(auValidSteadyStatePayload),
+		auValidSteadyStateFrame,
+		sizeof(auValidSteadyStateFrame),
+		&xValidSteadyStateLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auValidSteadyStateFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xValidSteadyStateLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "ordering closeout integration steady-state poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "ordering closeout integration steady-state retained");
+	vAssertTrue(xApplication.uCallCount == 1U, "ordering closeout integration steady-state callback");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "ordering closeout integration outbound send");
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "ordering closeout integration clear outstanding");
+	vAssertTrue(xTransport.uSendCount == 2U, "ordering closeout integration outbound count");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		2U,
+		auGapPayload,
+		sizeof(auGapPayload),
+		auGapFrame,
+		sizeof(auGapFrame),
+		&xGapLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auGapFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xGapLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "ordering closeout integration gap poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "ordering closeout integration retransmission pending");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "ordering closeout integration gap event");
+	vAssertTrue(xTransport.uSendCount == 3U, "ordering closeout integration retransmission request sent");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		3U,
+		auRecoveryPayload,
+		sizeof(auRecoveryPayload),
+		auRecoveryFrame,
+		sizeof(auRecoveryFrame),
+		&xRecoveryLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRecoveryFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRecoveryLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "ordering closeout integration recovery poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "ordering closeout integration recovery established");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RECOVERY_SUCCESS, "ordering closeout integration recovery event");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		3U,
+		auValidConfirmationPayload,
+		sizeof(auValidConfirmationPayload),
+		auValidConfirmationFrame,
+		sizeof(auValidConfirmationFrame),
+		&xValidConfirmationLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auValidConfirmationFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xValidConfirmationLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "ordering closeout integration valid confirmation poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "ordering closeout integration valid confirmation retained");
+	vAssertTrue(xApplication.uCallCount == 2U, "ordering closeout integration valid confirmation callback");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		5U,
+		2U,
+		auRegressingConfirmationPayload,
+		sizeof(auRegressingConfirmationPayload),
+		auRegressingConfirmationFrame,
+		sizeof(auRegressingConfirmationFrame),
+		&xRegressingConfirmationLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRegressingConfirmationFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRegressingConfirmationLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "ordering closeout integration regressing poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "ordering closeout integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "ordering closeout integration protocol error");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "ordering closeout integration rejected status");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "ordering closeout integration reason");
+	vAssertTrue(xApplication.uCallCount == 2U, "ordering closeout integration no extra callback after rejection");
+	vAssertTrue(xLifecycleCounter.uCallCount == 2U, "ordering closeout integration lifecycle callback");
+}
+
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -11444,6 +11653,7 @@ int main(void)
 	vTestIntegratedReceiveErrorFailoverCarryoverFlow();
 	vTestIntegratedMixedTransientBudgetResetFlow();
 	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
+	vTestIntegratedProtocolOrderingCloseoutFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
