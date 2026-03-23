@@ -841,13 +841,8 @@ static void vTestInvalidArguments(void)
 	vAssertTrue(rsrx_protocol_context_build_encode_request(&xContext, RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, (const uint8_t *)0, 0U, (rsrx_encode_request_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null request");
 }
 
-int main(void)
+static void vTestProtocolOrderingCloseoutMatrix(void)
 {
-	vTestOutboundSequenceProgression();
-	vTestInboundConfirmationTracking();
-	vTestRetransmissionRequestPayload();
-	vTestInboundConfirmationValidation();
-	vTestRecoverySuccessResolution();
 	vTestRetransmissionOrderingMatrix();
 	vTestSteadyStateOrderingMatrix();
 	vTestPostRecoveryOrderingMatrix();
@@ -856,6 +851,16 @@ int main(void)
 	vTestRepeatedGapPostRecoveryOrderingMatrix();
 	vTestSequencedMessageFamilyOrderingMatrix();
 	vTestPostRecoveryMessageFamilyOrderingMatrix();
+}
+
+int main(void)
+{
+	vTestOutboundSequenceProgression();
+	vTestInboundConfirmationTracking();
+	vTestRetransmissionRequestPayload();
+	vTestInboundConfirmationValidation();
+	vTestRecoverySuccessResolution();
+	vTestProtocolOrderingCloseoutMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();

@@ -12502,6 +12502,16 @@ static void vTestIntegratedRedundancyLongRunCloseoutFlow(void)
 	vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRunFlow();
 }
 
+static void vTestIntegratedProtocolVariantCloseoutFlow(void)
+{
+	vTestIntegratedProtocolOrderingCloseoutFlow();
+	vTestIntegratedPostRecoveryOrderingCloseoutFlow();
+	vTestIntegratedRepeatedGapPostRecoveryOrderingFlow();
+	vTestIntegratedPostRecoveryHeartbeatOrderingFlow();
+	vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow();
+	vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow();
+}
+
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -13302,12 +13312,7 @@ int main(void)
 	vTestIntegratedReceiveErrorFailoverCarryoverFlow();
 	vTestIntegratedMixedTransientBudgetResetFlow();
 	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
-	vTestIntegratedProtocolOrderingCloseoutFlow();
-	vTestIntegratedPostRecoveryOrderingCloseoutFlow();
-	vTestIntegratedRepeatedGapPostRecoveryOrderingFlow();
-	vTestIntegratedPostRecoveryHeartbeatOrderingFlow();
-	vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow();
-	vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow();
+	vTestIntegratedProtocolVariantCloseoutFlow();
 	vTestIntegratedRuntimeOrderingCloseoutFlow();
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
 	vTestIntegratedRedundancyPolicyCloseoutFlow();
