@@ -93,6 +93,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorBudgetScopeMatrix` | TC-SUP-022 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSendFeedbackOrderingMatrix` | TC-SUP-023 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorChannelEventOrderingMatrix` | TC-SUP-024 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorRuntimeOrderingCloseoutMatrix` | TC-SUP-032 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionIsolationFlow` | TC-INT-073 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionRecoveryOrderingFlow` | TC-INT-074 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionBudgetResetFlow` | TC-INT-075 |  | Draft |
@@ -151,6 +152,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveIgnoredOrderingMatrix` | TC-SUP-029 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveEscalationOrderingMatrix` | TC-SUP-030 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveMaxPollOrderingMatrix` | TC-SUP-031 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorRuntimeOrderingCloseoutMatrix` | TC-SUP-032 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionRecoveryFlow` | TC-INT-002 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedTimeoutFailSafeFlow`, `vTestIntegratedChannelDownFailSafeFlow` | TC-INT-003, TC-INT-004 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSendFailureBudgetFlow` | TC-INT-006 |  | Draft |

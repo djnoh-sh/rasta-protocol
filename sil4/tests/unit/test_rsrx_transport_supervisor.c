@@ -2001,6 +2001,20 @@ static void vTestSupervisorPumpReceiveInvalidArguments(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 0U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump zero max polls");
 }
 
+static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
+{
+	vTestSupervisorBudgetScopeMatrix();
+	vTestSupervisorSendFeedbackOrderingMatrix();
+	vTestSupervisorChannelEventOrderingMatrix();
+	vTestSupervisorTimerDelegationMatrix();
+	vTestSupervisorPollReceiveRetryOrderingMatrix();
+	vTestSupervisorPumpReceiveTerminalOrderingMatrix();
+	vTestSupervisorPumpReceiveErrorOrderingMatrix();
+	vTestSupervisorPumpReceiveIgnoredOrderingMatrix();
+	vTestSupervisorPumpReceiveEscalationOrderingMatrix();
+	vTestSupervisorPumpReceiveMaxPollOrderingMatrix();
+}
+
 int main(void)
 {
 	vTestSupervisorInboundHandshakePath();
@@ -2014,25 +2028,16 @@ int main(void)
 	vTestSupervisorPollReceiveNoFrame();
 	vTestSupervisorPollReceiveErrorBudgeted();
 	vTestSupervisorPollReceiveErrorEscalatesAndResets();
-	vTestSupervisorPollReceiveRetryOrderingMatrix();
 	vTestSupervisorChannelDownUsesFailover();
 	vTestSupervisorChannelUpRefreshesSelection();
 	vTestSupervisorTransportSendFailed();
 	vTestSupervisorTransportSendCompletedIgnored();
 	vTestSupervisorTransportSendCompletedCorrelated();
 	vTestSupervisorSendFailureBudgetResetsAfterSuccess();
-	vTestSupervisorBudgetScopeMatrix();
-	vTestSupervisorSendFeedbackOrderingMatrix();
-	vTestSupervisorChannelEventOrderingMatrix();
-	vTestSupervisorTimerDelegationMatrix();
 	vTestSupervisorTimerExpiryDelegation();
 	vTestSupervisorRecoverySuccessFromRetransmissionPending();
 	vTestSupervisorPumpReceiveBoundedDrain();
-	vTestSupervisorPumpReceiveTerminalOrderingMatrix();
-	vTestSupervisorPumpReceiveErrorOrderingMatrix();
-	vTestSupervisorPumpReceiveIgnoredOrderingMatrix();
-	vTestSupervisorPumpReceiveEscalationOrderingMatrix();
-	vTestSupervisorPumpReceiveMaxPollOrderingMatrix();
+	vTestSupervisorRuntimeOrderingCloseoutMatrix();
 	vTestSupervisorPumpReceiveInvalidArguments();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");
