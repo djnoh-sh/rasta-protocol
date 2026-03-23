@@ -11949,7 +11949,7 @@ static void vTestIntegratedPostRecoveryRetransmissionRequestOrderingFlow(void)
 	vEncodeFrame(
 		RSRX_MESSAGE_TYPE_DATA,
 		RSRX_REASON_DATA_ACCEPTED,
-		3U,
+		4U,
 		5U,
 		auRetransmissionRecoveryPayload,
 		sizeof(auRetransmissionRecoveryPayload),
@@ -11966,8 +11966,8 @@ static void vTestIntegratedPostRecoveryRetransmissionRequestOrderingFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery retrans request integration follow-up recovery poll");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "post-recovery retrans request integration final established");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RECOVERY_SUCCESS, "post-recovery retrans request integration follow-up recovery event");
-	vAssertTrue(xApplication.uCallCount == 1U, "post-recovery retrans request integration only recovery data callback");
-	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "post-recovery retrans request integration no lifecycle callback");
+	vAssertTrue(xApplication.uCallCount == 0U, "post-recovery retrans request integration no application callbacks");
+	vAssertTrue(xLifecycleCounter.uCallCount == 2U, "post-recovery retrans request integration lifecycle callbacks on recovery");
 }
 
 static void vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow(void)
@@ -12687,6 +12687,13 @@ static void vTestIntegratedProtocolVariantCloseoutFlow(void)
 	vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow();
 	vTestIntegratedPostRecoveryRetransmissionRequestOrderingFlow();
 	vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow();
+}
+
+static void vTestIntegratedQueueBackpressureCloseoutFlow(void)
+{
+	vTestIntegratedDeferredQueueTelemetryFlow();
+	vTestIntegratedQueueOverflowRejectFlow();
+	vTestIntegratedBusyRejectThresholdEscalationFlow();
 }
 
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
@@ -13490,6 +13497,7 @@ int main(void)
 	vTestIntegratedMixedTransientBudgetResetFlow();
 	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
 	vTestIntegratedProtocolVariantCloseoutFlow();
+	vTestIntegratedQueueBackpressureCloseoutFlow();
 	vTestIntegratedRuntimeOrderingCloseoutFlow();
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
 	vTestIntegratedRedundancyPolicyCloseoutFlow();
