@@ -1924,6 +1924,74 @@ static void vTestSupervisorPumpReceiveEscalationOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "pump escalation matrix immediate event");
 }
 
+static void vTestSupervisorPumpReceiveMaxPollOrderingMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayloadA[1] = { 0x9aU };
+	static const uint8_t auPayloadB[1] = { 0x9bU };
+	rsrx_transport_frame_t axFrames[3];
+	rsrx_transport_status_t aeStatuses[3];
+	rsrx_codec_status_t aeCodecStatuses[3];
+	rsrx_decoded_message_t axMessages[3];
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+
+	vInitTransportContext(&xTransport, auPayloadA, sizeof(auPayloadA), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayloadA, sizeof(auPayloadA));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "pump max matrix session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump max matrix session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump max matrix session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "pump max matrix establish");
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "pump max matrix supervisor init");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auPayloadA;
+	axFrames[0].xPayloadLength = sizeof(auPayloadA);
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = auPayloadB;
+	axFrames[1].xPayloadLength = sizeof(auPayloadB);
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[2] = axFrames[1];
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 3U);
+
+	aeCodecStatuses[0] = RSRX_CODEC_STATUS_OK;
+	aeCodecStatuses[1] = RSRX_CODEC_STATUS_OK;
+	aeCodecStatuses[2] = RSRX_CODEC_STATUS_OK;
+	axMessages[0].eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	axMessages[0].eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	axMessages[0].eReason = RSRX_REASON_DATA_ACCEPTED;
+	axMessages[0].uSequenceNumber = 1U;
+	axMessages[0].uConfirmationNumber = 0U;
+	axMessages[0].xPayloadLength = 0U;
+	axMessages[1] = axMessages[0];
+	axMessages[1].uSequenceNumber = 2U;
+	axMessages[2] = axMessages[1];
+	axMessages[2].uSequenceNumber = 3U;
+	vSetCodecScript(aeCodecStatuses, axMessages, 3U);
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump max matrix status");
+	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 2U, "pump max matrix iterations");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 2U, "pump max matrix processed");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "pump max matrix cumulative processed");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "pump max matrix last decision");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "pump max matrix established");
+}
+
 static void vTestSupervisorPumpReceiveInvalidArguments(void)
 {
 	rsrx_transport_supervisor_context_t xSupervisor = { 0 };
@@ -1964,6 +2032,7 @@ int main(void)
 	vTestSupervisorPumpReceiveErrorOrderingMatrix();
 	vTestSupervisorPumpReceiveIgnoredOrderingMatrix();
 	vTestSupervisorPumpReceiveEscalationOrderingMatrix();
+	vTestSupervisorPumpReceiveMaxPollOrderingMatrix();
 	vTestSupervisorPumpReceiveInvalidArguments();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");
