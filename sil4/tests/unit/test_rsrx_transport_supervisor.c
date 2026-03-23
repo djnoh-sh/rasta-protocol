@@ -776,6 +776,82 @@ static void vTestSupervisorPollReceiveErrorEscalatesAndResets(void)
 	vAssertTrue(pxSupervisorReport->uErrorDecisionCount == 1U, "poll receive escalate error count");
 }
 
+static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x65U };
+	rsrx_transport_frame_t axFrames[4];
+	rsrx_transport_status_t aeStatuses[4];
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll retry matrix session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll retry matrix session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll retry matrix session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "poll retry matrix establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll retry matrix supervisor init");
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auPayload;
+	axFrames[0].xPayloadLength = sizeof(auPayload);
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1] = axFrames[0];
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	axFrames[2] = axFrames[0];
+	axFrames[3] = axFrames[0];
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	aeStatuses[2] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	aeStatuses[3] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 4U);
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll retry matrix first error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll retry matrix first error count");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "poll retry matrix first error reset count");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "poll retry matrix first error decision");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "poll retry matrix no frame reset");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix no frame clears count");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "poll retry matrix no frame reset count");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "poll retry matrix no frame decision");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll retry matrix second error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll retry matrix second error count");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "poll retry matrix second error reset count stable");
+
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		1U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "poll retry matrix success reset");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix success clears count");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "poll retry matrix success reset count");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "poll retry matrix success decision");
+	vAssertTrue(xCallbacks.uApplicationCount == 1U, "poll retry matrix success callback");
+
+	xTransport.eQueryStatus = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "poll retry matrix channel gated");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix channel gated count zero");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "poll retry matrix channel gated no extra reset");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "poll retry matrix channel gated decision");
+}
+
 static void vTestSupervisorChannelDownUsesFailover(void)
 {
 	rsrx_session_t xSession;
@@ -1601,6 +1677,7 @@ int main(void)
 	vTestSupervisorPollReceiveNoFrame();
 	vTestSupervisorPollReceiveErrorBudgeted();
 	vTestSupervisorPollReceiveErrorEscalatesAndResets();
+	vTestSupervisorPollReceiveRetryOrderingMatrix();
 	vTestSupervisorChannelDownUsesFailover();
 	vTestSupervisorChannelUpRefreshesSelection();
 	vTestSupervisorTransportSendFailed();
