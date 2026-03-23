@@ -1458,6 +1458,9 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retrans channel up holdoff recovery integration retrans pending");
 	vAssertTrue(xTransport.uSendCount == 2U, "retrans channel up holdoff recovery integration retrans request sent");
 
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "redundancy hysteresis closeout integration primary available before flap reset");
+	/* cppcheck-suppress redundantAssignment */
+	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	xTransport.uSecondaryAvailable = 1U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
@@ -5585,6 +5588,7 @@ static void vTestIntegratedFailoverTransientRecoveryFlow(void)
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "failover transient integration receive budget one");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "failover transient integration state retained after faults");
 
+	xTransport.uPrimaryAvailable = 0U;
 	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
 	xTransport.axReceiveFrames[0].puPayload = auSecondaryDataFrame;
 	xTransport.axReceiveFrames[0].xPayloadLength = xSecondaryDataLength;
@@ -5704,6 +5708,7 @@ static void vTestIntegratedFailoverTransientSoakFlow(void)
 	xSendFailedFrame.xPayloadLength = 0U;
 	xSendFailedFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
 
+	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "redundancy hysteresis closeout integration primary available before second failover");
 	xTransport.uPrimaryAvailable = 0U;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "failover soak integration first failover");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "failover soak integration first switch");
@@ -12304,9 +12309,191 @@ static void vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "holdoff flap runtime ordering integration no lifecycle callback");
 }
 
+static void vTestIntegratedRedundancyHysteresisCloseoutFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondaryDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPrimaryDataFrameA[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPrimaryDataFrameB[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auOutboundPayload[4] = { 0xA1U, 0xA2U, 0xA3U, 0xA4U };
+	static const uint8_t auSecondaryPayload[2] = { 0xB1U, 0xB2U };
+	static const uint8_t auPrimaryPayloadA[2] = { 0xC1U, 0xC2U };
+	static const uint8_t auPrimaryPayloadB[2] = { 0xD1U, 0xD2U };
+	size_t xHandshakeLength;
+	size_t xSecondaryDataLength;
+	size_t xPrimaryDataLengthA;
+	size_t xPrimaryDataLengthB;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auOutboundPayload,
+		sizeof(auOutboundPayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "redundancy hysteresis closeout integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "redundancy hysteresis closeout integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "redundancy hysteresis closeout integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auSecondaryPayload,
+		sizeof(auSecondaryPayload),
+		auSecondaryDataFrame,
+		sizeof(auSecondaryDataFrame),
+		&xSecondaryDataLength);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auPrimaryPayloadA,
+		sizeof(auPrimaryPayloadA),
+		auPrimaryDataFrameA,
+		sizeof(auPrimaryDataFrameA),
+		&xPrimaryDataLengthA);
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		1U,
+		auPrimaryPayloadB,
+		sizeof(auPrimaryPayloadB),
+		auPrimaryDataFrameB,
+		sizeof(auPrimaryDataFrameB),
+		&xPrimaryDataLengthB);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "redundancy hysteresis closeout integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy hysteresis closeout integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "redundancy hysteresis closeout integration established");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration first failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy hysteresis closeout integration first secondary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "redundancy hysteresis closeout integration first switch count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration first hold");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy hysteresis closeout integration held secondary");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration flap reset");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy hysteresis closeout integration retained secondary after flap");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "redundancy hysteresis closeout integration flap no extra switch");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration renewed hold");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy hysteresis closeout integration renewed held secondary");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransport.axReceiveFrames[0].puPayload = auSecondaryDataFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSecondaryDataLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy hysteresis closeout integration secondary success");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy hysteresis closeout integration recovered primary after traffic");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "redundancy hysteresis closeout integration traffic recovery switch count");
+
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration post-traffic refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy hysteresis closeout integration retained primary after refresh");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "redundancy hysteresis closeout integration refresh switch count");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrameA;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPrimaryDataLengthA;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy hysteresis closeout integration primary success A");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration second failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy hysteresis closeout integration second secondary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "redundancy hysteresis closeout integration second failover switch count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration second hold");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "redundancy hysteresis closeout integration second held secondary");
+
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "redundancy hysteresis closeout integration second recovery");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "redundancy hysteresis closeout integration final primary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 4U, "redundancy hysteresis closeout integration final switch count");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrameB;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPrimaryDataLengthB;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "redundancy hysteresis closeout integration primary success B");
+
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "redundancy hysteresis closeout integration final established");
+	vAssertTrue(xApplication.uCallCount == 3U, "redundancy hysteresis closeout integration application callback count");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "redundancy hysteresis closeout integration no lifecycle callback");
+}
+
 static void vTestIntegratedRedundancyPolicyCloseoutFlow(void)
 {
 	vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetFlow();
+	vTestIntegratedRedundancyHysteresisCloseoutFlow();
 }
 
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
