@@ -11794,6 +11794,182 @@ static void vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 2U, "repeated-gap post-recovery heartbeat integration lifecycle callback");
 }
 
+static void vTestIntegratedPostRecoveryRetransmissionRequestOrderingFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRecoveryFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRetransmissionRequestFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRetransmissionRecoveryFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0xA1U, 0xA2U, 0xA3U, 0xA4U, 0U, 0U, 0U, 0U };
+	static const uint8_t auGapPayload[2] = { 0xB1U, 0xB2U };
+	static const uint8_t auRecoveryPayload[2] = { 0xC1U, 0xC2U };
+	static const uint8_t auInboundRetransmissionPayload[4] = { 0x00U, 0x00U, 0x00U, 0x03U };
+	static const uint8_t auRetransmissionRecoveryPayload[2] = { 0xD1U, 0xD2U };
+	rsrx_transport_frame_t xTransportEventFrame;
+	size_t xHandshakeLength;
+	size_t xGapLength;
+	size_t xRecoveryLength;
+	size_t xRetransmissionRequestLength;
+	size_t xRetransmissionRecoveryLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "post-recovery retrans request integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "post-recovery retrans request integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "post-recovery retrans request integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery retrans request integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery retrans request integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "post-recovery retrans request integration established");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auGapPayload,
+		sizeof(auGapPayload),
+		auGapFrame,
+		sizeof(auGapFrame),
+		&xGapLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auGapFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xGapLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery retrans request integration gap poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "post-recovery retrans request integration retransmission pending");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "post-recovery retrans request integration gap event");
+	vAssertTrue(xTransport.uSendCount == 2U, "post-recovery retrans request integration first retransmission request sent");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "post-recovery retrans request integration clear first outstanding");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		2U,
+		auRecoveryPayload,
+		sizeof(auRecoveryPayload),
+		auRecoveryFrame,
+		sizeof(auRecoveryFrame),
+		&xRecoveryLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRecoveryFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRecoveryLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery retrans request integration recovery poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "post-recovery retrans request integration recovery established");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RECOVERY_SUCCESS, "post-recovery retrans request integration recovery event");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "post-recovery retrans request integration outbound send one");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "post-recovery retrans request integration clear first post-recovery outstanding");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "post-recovery retrans request integration outbound send two");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "post-recovery retrans request integration clear second post-recovery outstanding");
+	vAssertTrue(xTransport.uSendCount == 4U, "post-recovery retrans request integration cumulative outbound count");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+		RSRX_REASON_SEQUENCE_GAP_DETECTED,
+		3U,
+		3U,
+		auInboundRetransmissionPayload,
+		sizeof(auInboundRetransmissionPayload),
+		auRetransmissionRequestFrame,
+		sizeof(auRetransmissionRequestFrame),
+		&xRetransmissionRequestLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRetransmissionRequestFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRetransmissionRequestLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery retrans request integration valid retrans request poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "post-recovery retrans request integration pending after retrans request");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "post-recovery retrans request integration retrans request event");
+	vAssertTrue(xTransport.uSendCount == 5U, "post-recovery retrans request integration follow-up retransmission request sent");
+	vAssertTrue(xApplication.uCallCount == 0U, "post-recovery retrans request integration no app callback on retrans request");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "post-recovery retrans request integration clear follow-up outstanding");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		5U,
+		auRetransmissionRecoveryPayload,
+		sizeof(auRetransmissionRecoveryPayload),
+		auRetransmissionRecoveryFrame,
+		sizeof(auRetransmissionRecoveryFrame),
+		&xRetransmissionRecoveryLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRetransmissionRecoveryFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRetransmissionRecoveryLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "post-recovery retrans request integration follow-up recovery poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "post-recovery retrans request integration final established");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RECOVERY_SUCCESS, "post-recovery retrans request integration follow-up recovery event");
+	vAssertTrue(xApplication.uCallCount == 1U, "post-recovery retrans request integration only recovery data callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "post-recovery retrans request integration no lifecycle callback");
+}
+
 static void vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow(void)
 {
 	rsrx_session_t xSession;
@@ -12509,6 +12685,7 @@ static void vTestIntegratedProtocolVariantCloseoutFlow(void)
 	vTestIntegratedRepeatedGapPostRecoveryOrderingFlow();
 	vTestIntegratedPostRecoveryHeartbeatOrderingFlow();
 	vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow();
+	vTestIntegratedPostRecoveryRetransmissionRequestOrderingFlow();
 	vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow();
 }
 
