@@ -11442,6 +11442,206 @@ static void vTestIntegratedPostRecoveryHeartbeatOrderingFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 2U, "post-recovery heartbeat integration lifecycle callback");
 }
 
+static void vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auFirstGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSecondGapFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRecoveryFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auValidHeartbeatFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auInvalidHeartbeatFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0x91U, 0x92U, 0x93U, 0x94U, 0U, 0U, 0U, 0U };
+	static const uint8_t auFirstGapPayload[2] = { 0xA1U, 0xA2U };
+	static const uint8_t auSecondGapPayload[2] = { 0xB1U, 0xB2U };
+	static const uint8_t auRecoveryPayload[2] = { 0xC1U, 0xC2U };
+	rsrx_transport_frame_t xTransportEventFrame;
+	size_t xHandshakeLength;
+	size_t xFirstGapLength;
+	size_t xSecondGapLength;
+	size_t xRecoveryLength;
+	size_t xValidHeartbeatLength;
+	size_t xInvalidHeartbeatLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "repeated-gap post-recovery heartbeat integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "repeated-gap post-recovery heartbeat integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "repeated-gap post-recovery heartbeat integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "repeated-gap post-recovery heartbeat integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "repeated-gap post-recovery heartbeat integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "repeated-gap post-recovery heartbeat integration established");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U,
+		1U,
+		auFirstGapPayload,
+		sizeof(auFirstGapPayload),
+		auFirstGapFrame,
+		sizeof(auFirstGapFrame),
+		&xFirstGapLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auFirstGapFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xFirstGapLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "repeated-gap post-recovery heartbeat integration first gap poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "repeated-gap post-recovery heartbeat integration retransmission pending");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "repeated-gap post-recovery heartbeat integration first gap event");
+	vAssertTrue(xTransport.uSendCount == 2U, "repeated-gap post-recovery heartbeat integration first retransmission request");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "repeated-gap post-recovery heartbeat integration clear first retransmission outstanding");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		4U,
+		1U,
+		auSecondGapPayload,
+		sizeof(auSecondGapPayload),
+		auSecondGapFrame,
+		sizeof(auSecondGapFrame),
+		&xSecondGapLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auSecondGapFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSecondGapLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "repeated-gap post-recovery heartbeat integration second gap poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "repeated-gap post-recovery heartbeat integration still retransmission pending");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_SEQUENCE_GAP_DETECTED, "repeated-gap post-recovery heartbeat integration second gap event");
+	vAssertTrue(xTransport.uSendCount == 3U, "repeated-gap post-recovery heartbeat integration second retransmission request");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "repeated-gap post-recovery heartbeat integration clear second retransmission outstanding");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		3U,
+		auRecoveryPayload,
+		sizeof(auRecoveryPayload),
+		auRecoveryFrame,
+		sizeof(auRecoveryFrame),
+		&xRecoveryLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRecoveryFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRecoveryLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "repeated-gap post-recovery heartbeat integration recovery poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "repeated-gap post-recovery heartbeat integration recovery established");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RECOVERY_SUCCESS, "repeated-gap post-recovery heartbeat integration recovery event");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "repeated-gap post-recovery heartbeat integration outbound send one");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "repeated-gap post-recovery heartbeat integration clear first post-recovery outstanding");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "repeated-gap post-recovery heartbeat integration outbound send two");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "repeated-gap post-recovery heartbeat integration clear second post-recovery outstanding");
+	vAssertTrue(xTransport.uSendCount == 5U, "repeated-gap post-recovery heartbeat integration cumulative outbound count");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_HEARTBEAT,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		3U,
+		3U,
+		(const uint8_t *)0,
+		0U,
+		auValidHeartbeatFrame,
+		sizeof(auValidHeartbeatFrame),
+		&xValidHeartbeatLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auValidHeartbeatFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xValidHeartbeatLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "repeated-gap post-recovery heartbeat integration valid heartbeat poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "repeated-gap post-recovery heartbeat integration valid retained");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_VALID_HEARTBEAT, "repeated-gap post-recovery heartbeat integration valid heartbeat event");
+	vAssertTrue(xApplication.uCallCount == 0U, "repeated-gap post-recovery heartbeat integration no app callback on heartbeat");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_HEARTBEAT,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		4U,
+		5U,
+		(const uint8_t *)0,
+		0U,
+		auInvalidHeartbeatFrame,
+		sizeof(auInvalidHeartbeatFrame),
+		&xInvalidHeartbeatLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auInvalidHeartbeatFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xInvalidHeartbeatLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "repeated-gap post-recovery heartbeat integration invalid heartbeat poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "repeated-gap post-recovery heartbeat integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "repeated-gap post-recovery heartbeat integration protocol error");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "repeated-gap post-recovery heartbeat integration rejected status");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "repeated-gap post-recovery heartbeat integration reason");
+	vAssertTrue(xApplication.uCallCount == 0U, "repeated-gap post-recovery heartbeat integration still no app callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 2U, "repeated-gap post-recovery heartbeat integration lifecycle callback");
+}
+
 static void vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow(void)
 {
 	rsrx_session_t xSession;
@@ -12765,6 +12965,7 @@ int main(void)
 	vTestIntegratedPostRecoveryOrderingCloseoutFlow();
 	vTestIntegratedRepeatedGapPostRecoveryOrderingFlow();
 	vTestIntegratedPostRecoveryHeartbeatOrderingFlow();
+	vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow();
 	vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow();
 	vTestIntegratedRuntimeOrderingCloseoutFlow();
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
