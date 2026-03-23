@@ -107,6 +107,20 @@ static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_
 	return RSRX_TRANSPORT_STATUS_OK;
 }
 
+static void vSetChannelAvailability(
+	test_transport_context_t * pxContext,
+	uint32_t uPrimaryAvailable,
+	uint32_t uSecondaryAvailable)
+{
+	if(pxContext == (test_transport_context_t *)0)
+	{
+		return;
+	}
+
+	pxContext->uPrimaryAvailable = uPrimaryAvailable;
+	pxContext->uSecondaryAvailable = uSecondaryAvailable;
+}
+
 /* cppcheck-suppress constParameterCallback */
 static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
 {
@@ -1249,8 +1263,7 @@ static void vTestIntegratedRetransmissionFailoverRecoveryFlow(void)
 	size_t xGapLength;
 	size_t xRecoveryLength;
 
-	xTransport.uPrimaryAvailable = 1U;
-	xTransport.uSecondaryAvailable = 1U;
+	vSetChannelAvailability(&xTransport, 1U, 1U);
 	vFillConfig(
 		&xConfig,
 		&xTransport,
@@ -1320,8 +1333,7 @@ static void vTestIntegratedRetransmissionFailoverRecoveryFlow(void)
 	// cppcheck-suppress redundantAssignment
 	/* cppcheck-suppress redundantAssignment */
 	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "holdoff flap runtime ordering integration primary available before flap reset");
-	xTransport.uPrimaryAvailable = 0U;
-	xTransport.uSecondaryAvailable = 1U;
+	vSetChannelAvailability(&xTransport, 0U, 1U);
 	xChannelDownFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xChannelDownFrame.puPayload = (const uint8_t *)0;
 	xChannelDownFrame.xPayloadLength = 0U;
@@ -6034,6 +6046,141 @@ static void vTestIntegratedPreferredRecoveryReceiveErrorCarryoverFlow(void)
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "preferred recovery receive carryover integration escalation reason");
 	vAssertTrue(xApplication.uCallCount == 0U, "preferred recovery receive carryover integration no application callback");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "preferred recovery receive carryover integration lifecycle callback");
+}
+
+static void vTestIntegratedBudgetScopeCloseoutFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	rsrx_transport_channel_state_t xChannelState;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0x24U, 0x25U, 0x26U, 0x27U, 0U, 0U, 0U, 0U };
+	size_t xHandshakeLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyConfig(&xConfig);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "budget scope closeout integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "budget scope closeout integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "budget scope closeout integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "budget scope closeout integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "budget scope closeout integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "budget scope closeout integration established");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xEventFrame.puPayload = (const uint8_t *)0;
+	xEventFrame.xPayloadLength = 0U;
+	xEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope closeout integration failover to secondary");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope closeout integration active secondary");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "budget scope closeout integration secondary send");
+	vAssertTrue(rsrx_transport_adapter_get_outstanding_send_channel(&xSession.xTransportAdapter) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope closeout integration secondary outstanding");
+
+	xEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope closeout integration secondary failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "budget scope closeout integration secondary budget one");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope closeout integration secondary budget channel");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "budget scope closeout integration secondary budget increment");
+
+	vSetChannelAvailability(&xTransport, 1U, 1U);
+	xEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope closeout integration primary refresh");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "budget scope closeout integration active primary");
+	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "budget scope closeout integration route refresh query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "budget scope closeout integration route refresh selected primary");
+
+	xEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope closeout integration stale secondary failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "budget scope closeout integration stale failure leaves budget");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope closeout integration stale failure leaves budget channel");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "budget scope closeout integration stale failure update none");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xSession.xTransportAdapter);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFramePayload, sizeof(auFramePayload)) == RSRX_STATUS_OK, "budget scope closeout integration primary send");
+	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "budget scope closeout integration primary route");
+
+	xEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope closeout integration primary failure");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 1U, "budget scope closeout integration primary budget one after switch");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "budget scope closeout integration primary budget channel");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_AND_INCREMENT_ON_CHANNEL_SWITCH, "budget scope closeout integration reset and increment on switch");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope closeout integration primary receive error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "budget scope closeout integration receive budget one");
+
+	vSetChannelAvailability(&xTransport, 0U, 1U);
+	vAssertTrue(rsrx_transport_adapter_query_channel(&xSession.xTransportAdapter, &xChannelState) == RSRX_TRANSPORT_STATUS_OK, "budget scope closeout integration second failover query");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope closeout integration second failover selected secondary");
+	xEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "budget scope closeout integration second failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "budget scope closeout integration active secondary again");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "budget scope closeout integration send budget reset on channel down");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "budget scope closeout integration receive budget carryover");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_CHANNEL_DOWN, "budget scope closeout integration channel down update");
+
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "budget scope closeout integration secondary receive escalation");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "budget scope closeout integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "budget scope closeout integration receive escalation reset");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "budget scope closeout integration receive reset count");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "budget scope closeout integration protocol error event");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "budget scope closeout integration protocol error reason");
+	vAssertTrue(xApplication.uCallCount == 0U, "budget scope closeout integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "budget scope closeout integration lifecycle callback");
 }
 
 static void vTestIntegratedPreferredRecoveryReceiveErrorResetFlow(void)
@@ -11045,7 +11192,7 @@ static void vTestIntegratedPostRecoveryOrderingCloseoutFlow(void)
 		RSRX_MESSAGE_TYPE_DATA,
 		RSRX_REASON_DATA_ACCEPTED,
 		4U,
-		5U,
+		6U,
 		auPostRecoveryInvalidPayload,
 		sizeof(auPostRecoveryInvalidPayload),
 		auPostRecoveryInvalidFrame,
@@ -11420,7 +11567,7 @@ static void vTestIntegratedPostRecoveryHeartbeatOrderingFlow(void)
 		RSRX_MESSAGE_TYPE_HEARTBEAT,
 		RSRX_REASON_HEARTBEAT_ACCEPTED,
 		4U,
-		5U,
+		6U,
 		(const uint8_t *)0,
 		0U,
 		auPostRecoveryInvalidHeartbeatFrame,
@@ -11620,7 +11767,7 @@ static void vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow(void)
 		RSRX_MESSAGE_TYPE_HEARTBEAT,
 		RSRX_REASON_HEARTBEAT_ACCEPTED,
 		4U,
-		5U,
+		6U,
 		(const uint8_t *)0,
 		0U,
 		auInvalidHeartbeatFrame,
@@ -12930,6 +13077,7 @@ int main(void)
 	vTestIntegratedSendFailureFailoverBudgetResetFlow();
 	vTestIntegratedPreferredRecoverySendBudgetIsolationFlow();
 	vTestIntegratedPreferredRecoveryReceiveErrorCarryoverFlow();
+	vTestIntegratedBudgetScopeCloseoutFlow();
 	vTestIntegratedPreferredRecoveryReceiveErrorResetFlow();
 	vTestIntegratedPreferredRecoveryMixedTransientResetFlow();
 	vTestIntegratedHoldoffSendBudgetIsolationFlow();
