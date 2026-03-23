@@ -1250,7 +1250,7 @@ static void vTestSupervisorSendFeedbackOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED, "feedback ordering matrix inactive secondary completion decision");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "feedback ordering matrix completion keeps budget zero");
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 0U, "feedback ordering matrix completion clears outstanding");
-	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_SEND_COMPLETED, "feedback ordering matrix completion budget update");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "feedback ordering matrix completion budget update");
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "feedback ordering matrix primary send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "feedback ordering matrix primary route");
@@ -1262,6 +1262,70 @@ static void vTestSupervisorSendFeedbackOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "feedback ordering matrix primary budget channel");
 	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED, "feedback ordering matrix primary failure budget update");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "feedback ordering matrix final established");
+}
+
+static void vTestSupervisorChannelEventOrderingMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[1] = { 0x7AU };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vSetActiveStandbyConfig(&xConfig);
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "channel event ordering matrix session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel event ordering matrix session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel event ordering matrix session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "channel event ordering matrix establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "channel event ordering matrix supervisor init");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel event ordering matrix failover");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel event ordering matrix selected secondary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel event ordering matrix switch count after failover");
+	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel event ordering matrix failover switch flag");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED, "channel event ordering matrix failover decision");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel event ordering matrix secondary refresh noop");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel event ordering matrix secondary retained on noop");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel event ordering matrix switch count unchanged on noop");
+	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "channel event ordering matrix noop switch flag cleared");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED, "channel event ordering matrix secondary refresh decision");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel event ordering matrix primary recovery refresh");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel event ordering matrix selected primary after recovery");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel event ordering matrix switch count after recovery");
+	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel event ordering matrix recovery switch occurred");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED, "channel event ordering matrix primary refresh decision");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel event ordering matrix repeated primary refresh noop");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel event ordering matrix primary retained on repeated refresh");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel event ordering matrix repeated refresh switch count unchanged");
+	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "channel event ordering matrix repeated refresh switch flag cleared");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel event ordering matrix final established");
 }
 
 static void vTestSupervisorRecoverySuccessFromRetransmissionPending(void)
@@ -1458,6 +1522,7 @@ int main(void)
 	vTestSupervisorSendFailureBudgetResetsAfterSuccess();
 	vTestSupervisorBudgetScopeMatrix();
 	vTestSupervisorSendFeedbackOrderingMatrix();
+	vTestSupervisorChannelEventOrderingMatrix();
 	vTestSupervisorTimerExpiryDelegation();
 	vTestSupervisorRecoverySuccessFromRetransmissionPending();
 	vTestSupervisorPumpReceiveBoundedDrain();
