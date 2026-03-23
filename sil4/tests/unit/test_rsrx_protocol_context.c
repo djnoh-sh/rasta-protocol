@@ -677,6 +677,109 @@ static void vTestSequencedMessageFamilyOrderingMatrix(void)
 	}
 }
 
+static void vTestPostRecoveryMessageFamilyOrderingMatrix(void)
+{
+	typedef struct
+	{
+		rsrx_message_type_t eMessageType;
+		rsrx_event_t eSuggestedEvent;
+		uint32_t uSequenceNumber;
+		uint32_t uConfirmationNumber;
+		rsrx_event_t eExpectedEvent;
+	} test_case_t;
+
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_encode_request_t xRequest;
+	rsrx_event_t eEvent;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{
+			RSRX_MESSAGE_TYPE_HEARTBEAT,
+			RSRX_EVENT_VALID_HEARTBEAT,
+			5U, 1U, RSRX_EVENT_VALID_HEARTBEAT
+		},
+		{
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			5U, 3U, RSRX_EVENT_VALID_DATA
+		},
+		{
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_EVENT_SEQUENCE_GAP_DETECTED,
+			5U, 3U, RSRX_EVENT_SEQUENCE_GAP_DETECTED
+		},
+		{
+			RSRX_MESSAGE_TYPE_HEARTBEAT,
+			RSRX_EVENT_VALID_HEARTBEAT,
+			5U, 0U, RSRX_EVENT_PROTOCOL_ERROR
+		},
+		{
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			5U, 4U, RSRX_EVENT_PROTOCOL_ERROR
+		},
+		{
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_EVENT_SEQUENCE_GAP_DETECTED,
+			6U, 1U, RSRX_EVENT_SEQUENCE_GAP_DETECTED
+		}
+	};
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+
+		xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+		xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+		xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+		xMessage.uSequenceNumber = 3U;
+		xMessage.uConfirmationNumber = 0U;
+		xMessage.xPayloadLength = 0U;
+		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_REASON_SEQUENCE_GAP_DETECTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "start retransmission pending");
+
+		xMessage.uSequenceNumber = 4U;
+		xMessage.uConfirmationNumber = 1U;
+		vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve recovery success");
+		vAssertTrue(eEvent == RSRX_EVENT_RECOVERY_SUCCESS, "recovery success accepted");
+		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record recovery success");
+		vAssertTrue(rsrx_protocol_context_clear_retransmission(&xContext) == RSRX_STATUS_OK, "clear retransmission");
+
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "first outbound after recovery");
+		vAssertTrue(rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK, "second outbound after recovery");
+
+		xMessage.eMessageType = axCases[uIndex].eMessageType;
+		xMessage.eSuggestedEvent = axCases[uIndex].eSuggestedEvent;
+		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
+		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+		vAssertTrue(
+			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+			"post-recovery message family ordering matrix resolve");
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "post-recovery message family ordering matrix event");
+	}
+}
+
 static void vTestDuplicateInboundSequenceRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -752,6 +855,7 @@ int main(void)
 	vTestRepeatedGapRecoveryOrderingMatrix();
 	vTestRepeatedGapPostRecoveryOrderingMatrix();
 	vTestSequencedMessageFamilyOrderingMatrix();
+	vTestPostRecoveryMessageFamilyOrderingMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInvalidArguments();
