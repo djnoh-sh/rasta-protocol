@@ -11,8 +11,8 @@
 ## Summary
 
 - 현재 전체 진행률 추정: `91~93%`
-- 현재 단계: `P3/P4 protocol hardening 단계`
-- 다음 주력 단계: `detailed sequence validation`, `runtime fault integration`, `evidence maintenance`
+- 현재 단계: `P3/P4 residual closeout 단계`
+- 다음 주력 단계: `residual sequencing closeout`, `redundancy stability closeout`, `evidence maintenance`
 
 ## Overall Phase Status
 
@@ -131,35 +131,35 @@
 
 | Area | Readiness | Comment |
 | --- | --- | --- |
-| 설계 구조 | High | 모듈 경계와 책임 분리는 많이 안정됨 |
-| 단위 테스트 기반 | Medium | 핵심 skeleton coverage는 있으나 protocol complete 수준은 아님 |
-| 프로토콜 완성도 | Medium | timer ingress, outbound encode, repeated gap/recovery 경로는 연결됐지만 richer sequencing과 redundancy는 미완 |
-| 통합 가능성 | Medium-High | 주요 경계와 다수의 fault-integration path는 연결됐지만 long-run과 일부 ordering 규칙은 미완 |
+| 설계 구조 | High | 모듈 경계와 책임 분리는 안정적이며 review/traceability도 유지 중 |
+| 단위 테스트 기반 | Medium-High | protocol context와 supervisor 핵심 규칙은 matrix와 closeout wrapper 수준까지 도달 |
+| 프로토콜 완성도 | Medium-High | sequencing/retransmission/confirmation 규칙은 대표 흐름과 matrix로 많이 닫혔고 잔여는 residual variant 수준 |
+| 통합 가능성 | Medium-High | 주요 경계와 다수의 fault-integration path는 연결됐지만 richer hysteresis와 long-run stability는 아직 남음 |
 | 인증 증빙 준비 | Medium | baseline policy/evidence는 많이 정리됐지만 actual runtime/vendor evidence는 아직 부족 |
 
 ## Current Risks
 
 | Risk ID | Risk | Impact | Mitigation Direction |
 | --- | --- | --- | --- |
-| R-001 | detailed sequence validation 부분 미완 | repeated gap/recovery, failover stale/unconfirmed/repeated-gap unconfirmed recovery rejection, retransmission ordering matrix, steady-state ordering matrix, post-recovery ordering matrix, repeated-gap retransmission progression과 repeated-gap recovery/post-recovery ordering matrix unit coverage, sequenced message family ordering matrix, post-recovery message family ordering matrix, protocol ordering closeout matrix unit coverage, steady-state->gap->recovery->confirmation monotonicity representative integration flow, post-recovery confirmation progression representative integration flow, repeated-gap->recovery->post-recovery confirmation representative integration flow, repeated-gap latest-recovery confirmation representative integration flow, post-recovery heartbeat ordering representative integration flow, repeated-gap post-recovery heartbeat ordering representative integration flow, post-recovery retransmission-request ordering representative integration flow, protocol variant closeout representative integration flow, retransmission channel-up holdoff recovery/repeated-gap recovery/timeout/repeated-gap timeout/repeated-gap unconfirmed recovery rejection/repeated-gap stale rejection/repeated-gap invalid confirmation rejection/repeated-gap stale feedback recovery ordering/repeated-gap stale completion unconfirmed recovery rejection/repeated-gap stale completion invalid confirmation rejection/repeated-gap stale completion regressing confirmation rejection/unconfirmed recovery rejection/invalid confirmation rejection/regressing confirmation rejection은 반영됐지만 confirm ordering과 richer retransmission variants는 아직 단순화돼 있음 | protocol context와 supervisor 규칙 확장 |
-| R-002 | transport supervisor 운영 루프 부분 미완 | outstanding-send correlation, channel-scoped budget, stale feedback filtering, holdoff stale feedback/stale completion isolation/recovery ordering, holdoff stale completion budget reset, holdoff stale feedback soak, holdoff stale completion soak, retransmission channel-up holdoff recovery/repeated-gap recovery/timeout/repeated-gap timeout/repeated-gap unconfirmed recovery rejection/repeated-gap stale rejection/repeated-gap invalid confirmation rejection/repeated-gap stale feedback timeout/recovery/recovery ordering/repeated-gap stale completion recovery ordering/repeated-gap stale completion timeout/repeated-gap stale completion unconfirmed recovery rejection/repeated-gap stale completion invalid confirmation rejection/repeated-gap stale completion regressing confirmation rejection, repeated-gap stale feedback invalid/regressing confirmation ordering, runtime ordering closeout representative integration, transport supervisor budget scope matrix와 send feedback ordering matrix, channel event ordering matrix, timer delegation matrix와 poll receive retry ordering matrix와 pump receive terminal ordering matrix와 pump receive error ordering matrix와 pump receive ignored ordering matrix와 pump receive escalation ordering matrix와 pump receive max-poll ordering matrix, runtime ordering closeout matrix coverage는 추가됐지만 runtime ordering과 retry policy는 아직 단순화돼 있음 | runtime feedback rule과 retry semantics 확장 |
-| R-003 | redundancy policy 미완 | holdoff와 flap soak/refresh reset, flap transient soak, flap transient long-run soak, flap transient long-run stale completion/stale feedback soak, channel-up holdoff transient soak, holdoff flap runtime ordering closeout representative integration, redundancy policy closeout representative integration, redundancy hysteresis closeout representative integration, redundancy long-run closeout representative integration 검증은 있으나 richer hysteresis와 장시간 stability 규칙이 아직 완결되지는 않았다 | redundancy policy 세분화와 longer-run integration 확장 |
+| R-001 | protocol sequencing residual variant 잔존 | repeated gap/recovery, latest-request recovery ordering, post-recovery ordering, heartbeat/retransmission-request family ordering, protocol ordering closeout wrapper와 representative integration은 확보됐다. 남은 공백은 broad sequencing 미완이 아니라 `CONNECT_RESPONSE` 계열과 향후 추가 message family 변형이 실제 session-supervisor integration에서도 동일 계약을 유지하는지 검증 범위를 더 줄이는 일이다 | protocol family별 residual integration parity 정리 |
+| R-002 | transport supervisor retry/runtime feedback residual 존재 | budget scope, send feedback ordering, channel event ordering, timer delegation, poll/pump receive ordering은 matrix와 representative closeout 수준까지 정리됐다. 남은 공백은 broad runtime loop 미완이 아니라 queue/backpressure 모델이 확장될 때 retry/runtime feedback semantics가 그대로 유지되는지와 일부 correlated feedback policy를 `R-004`와 경계 정리하는 일이다 | retry semantics와 queue/runtime feedback 경계 재정리 |
+| R-003 | redundancy policy 미완 | holdoff와 flap soak/refresh reset, flap transient soak, flap transient long-run soak, flap transient long-run stale completion/stale feedback soak, channel-up holdoff transient soak, holdoff flap runtime ordering closeout representative integration, redundancy policy closeout representative integration, redundancy hysteresis closeout representative integration, redundancy long-run closeout representative integration 검증은 있으나 richer hysteresis와 장시간 stability 규칙은 여전히 가장 큰 P4 residual이다 | redundancy policy 세분화와 longer-run integration 확장 |
 | R-004 | outbound application send가 minimal bounded queue 모델에 머묾 | `outstanding 1 + deferred 1`과 overflow telemetry는 들어갔지만 deeper queue/backpressure/retry semantics는 아직 단순하다 | queueing policy와 runtime feedback contract 설계 |
 | R-005 | 인증 증빙 자동화 부족 | baseline policy와 review 묶음은 정리됐지만 actual CI runtime evidence와 actual vendor evidence set이 아직 없다 | first workflow baseline fetch success evidence 확보, first actual vendor evidence set 확보 |
 
 ## Recommended Next Order
 
-1. `Protocol Sequencing Residual Variants`
-2. `Transport Supervisor Retry and Runtime Feedback`
-3. `Redundancy Hysteresis and Long-Run Stability`
+1. `Redundancy Hysteresis and Long-Run Stability`
+2. `Protocol Sequencing Residual Variants`
+3. `Transport Supervisor Retry and Runtime Feedback`
 4. `Actual CI/Vendor Evidence Acquisition`
 
 ## Next Gate Definition
 
 - Gate Name: `G-P3-P4-Closeout`
 - 목표:
-  - `R-001`의 residual retransmission/confirmation variants가 wrapper 수준이 아니라 실제 남은 규칙 항목으로 축소될 것
-  - `R-002`의 retry/runtime feedback semantics가 representative matrix와 integration 기준으로 재정리될 것
+  - `R-001`이 broad sequencing gap이 아니라 실제 남은 family-level integration parity만 가리키도록 축소될 것
+  - `R-002`가 broad runtime loop gap이 아니라 `R-004`와 분리된 retry/runtime feedback residual만 가리키도록 정리될 것
   - `R-003`의 hysteresis/long-run stability residual이 representative closeout 이후 실제 남은 policy gap으로만 남을 것
 - 통과 조건:
   - `P3/P4` closeout wrapper와 representative integration이 traceability/roadmap/review까지 연결될 것
