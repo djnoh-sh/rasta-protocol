@@ -1886,6 +1886,44 @@ static void vTestSupervisorPumpReceiveIgnoredOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "pump ignored matrix processed then budgeted decision");
 }
 
+static void vTestSupervisorPumpReceiveEscalationOrderingMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayloadA[1] = { 0x98U };
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+
+	vInitTransportContext(&xTransport, auPayloadA, sizeof(auPayloadA), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	xTransport.eReceiveStatus = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayloadA, sizeof(auPayloadA));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "pump escalation matrix immediate session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump escalation matrix immediate session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "pump escalation matrix immediate session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "pump escalation matrix immediate establish");
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "pump escalation matrix immediate supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "pump escalation matrix prime budget");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "pump escalation matrix prime count");
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump escalation matrix immediate status");
+	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 1U, "pump escalation matrix immediate iterations");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 0U, "pump escalation matrix immediate processed");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "pump escalation matrix immediate safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED, "pump escalation matrix immediate decision");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "pump escalation matrix immediate event");
+}
+
 static void vTestSupervisorPumpReceiveInvalidArguments(void)
 {
 	rsrx_transport_supervisor_context_t xSupervisor = { 0 };
@@ -1925,6 +1963,7 @@ int main(void)
 	vTestSupervisorPumpReceiveTerminalOrderingMatrix();
 	vTestSupervisorPumpReceiveErrorOrderingMatrix();
 	vTestSupervisorPumpReceiveIgnoredOrderingMatrix();
+	vTestSupervisorPumpReceiveEscalationOrderingMatrix();
 	vTestSupervisorPumpReceiveInvalidArguments();
 
 	(void)printf("rsrx_transport_supervisor_test: all tests passed\n");

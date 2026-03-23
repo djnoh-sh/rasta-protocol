@@ -147,6 +147,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveTerminalOrderingMatrix` | TC-SUP-027 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveErrorOrderingMatrix` | TC-SUP-028 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveIgnoredOrderingMatrix` | TC-SUP-029 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveEscalationOrderingMatrix` | TC-SUP-030 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionRecoveryFlow` | TC-INT-002 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedTimeoutFailSafeFlow`, `vTestIntegratedChannelDownFailSafeFlow` | TC-INT-003, TC-INT-004 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSendFailureBudgetFlow` | TC-INT-006 |  | Draft |
