@@ -12496,6 +12496,12 @@ static void vTestIntegratedRedundancyPolicyCloseoutFlow(void)
 	vTestIntegratedRedundancyHysteresisCloseoutFlow();
 }
 
+static void vTestIntegratedRedundancyLongRunCloseoutFlow(void)
+{
+	vTestIntegratedRedundancyFlapTransientLongRunRecoveryStaleMixedFeedbackFlow();
+	vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRunFlow();
+}
+
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
 {
 	rsrx_session_t xSession;
@@ -13305,6 +13311,7 @@ int main(void)
 	vTestIntegratedRuntimeOrderingCloseoutFlow();
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
 	vTestIntegratedRedundancyPolicyCloseoutFlow();
+	vTestIntegratedRedundancyLongRunCloseoutFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
