@@ -149,19 +149,19 @@
 
 ## Recommended Next Order
 
-1. `Transport Supervisor Maturation`
-2. `Redundancy and Channel Manager`
-3. `Integration Test Harness Expansion`
-4. `Static Analysis and Safety Evidence`
+1. `Protocol Sequencing Residual Variants`
+2. `Transport Supervisor Retry and Runtime Feedback`
+3. `Redundancy Hysteresis and Long-Run Stability`
+4. `Actual CI/Vendor Evidence Acquisition`
 
 ## Next Gate Definition
 
-- Gate Name: `G-Protocol-Context`
+- Gate Name: `G-P3-P4-Closeout`
 - 목표:
-  - inbound decoded message가 sequence/confirmation context에 반영될 것
-  - outbound data/retransmission/disconnect가 sequence/confirmation을 포함해 encode될 것
-  - retransmission clear와 failure semantics가 명시적 context를 기반으로 동작할 것
+  - `R-001`의 residual retransmission/confirmation variants가 wrapper 수준이 아니라 실제 남은 규칙 항목으로 축소될 것
+  - `R-002`의 retry/runtime feedback semantics가 representative matrix와 integration 기준으로 재정리될 것
+  - `R-003`의 hysteresis/long-run stability residual이 representative closeout 이후 실제 남은 policy gap으로만 남을 것
 - 통과 조건:
-  - 관련 단위 테스트와 최소 supervisor-level 테스트 추가
-  - traceability matrix에 해당 경로 반영
-  - HLD/LLD 갱신
+  - `P3/P4` closeout wrapper와 representative integration이 traceability/roadmap/review까지 연결될 것
+  - build, unit/integration test, `cppcheck`가 깨끗할 것
+  - roadmap의 `R-001~R-003` 설명이 실제 남은 큰 작업만 가리키도록 정리될 것
