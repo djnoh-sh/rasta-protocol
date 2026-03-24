@@ -668,6 +668,109 @@ static void vTestIntegratedBusyRejectThresholdEscalationFlow(void)
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy threshold integration escalation latch");
 }
 
+static void vTestIntegratedBusyRejectThresholdResetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auOutboundPayload[2] = { 0xF1U, 0xF2U };
+	size_t xHandshakeLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	xConfig.uBusyRejectErrorThreshold = 2U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "busy threshold reset integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "busy threshold reset integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "busy threshold reset integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "busy threshold reset integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "busy threshold reset integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "busy threshold reset integration established");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration first send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "busy threshold reset integration first reject");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "busy threshold reset integration second reject");
+
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "busy threshold reset integration telemetry available");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy threshold reset integration streak two");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy threshold reset integration escalation count one");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy threshold reset integration escalation latch set");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = auFramePayload;
+	xTransportEventFrame.xPayloadLength = sizeof(auFramePayload);
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "busy threshold reset integration first completion");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "busy threshold reset integration streak reset");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy threshold reset integration latch reset");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 1U, "busy threshold reset integration deferred dispatch");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "busy threshold reset integration second completion");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration fresh send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration fresh deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "busy threshold reset integration fresh reject");
+
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy threshold reset integration warning after reset");
+	vAssertTrue(xDiagnostics.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_WARNING, "busy threshold reset integration warning severity after reset");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy threshold reset integration restarted streak");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy threshold reset integration escalation count retained");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy threshold reset integration latch clear after fresh reject");
+}
+
 static void vTestIntegratedRetransmissionRecoveryFlow(void)
 {
 	rsrx_session_t xSession;
@@ -12694,6 +12797,7 @@ static void vTestIntegratedQueueBackpressureCloseoutFlow(void)
 	vTestIntegratedDeferredQueueTelemetryFlow();
 	vTestIntegratedQueueOverflowRejectFlow();
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
+	vTestIntegratedBusyRejectThresholdResetFlow();
 }
 
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
@@ -13422,6 +13526,7 @@ int main(void)
 	vTestIntegratedDeferredQueueTelemetryFlow();
 	vTestIntegratedQueueOverflowRejectFlow();
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
+	vTestIntegratedBusyRejectThresholdResetFlow();
 	vTestIntegratedRetransmissionRecoveryFlow();
 	vTestIntegratedUnconfirmedRecoveryProtocolErrorFlow();
 	vTestIntegratedRepeatedGapRetransmissionFlow();
