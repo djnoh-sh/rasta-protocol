@@ -468,11 +468,13 @@ static void vTestIntegratedDeferredQueueTelemetryFlow(void)
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue telemetry integration first send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue telemetry integration deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue telemetry integration second deferred send");
 	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
 	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue telemetry integration telemetry available");
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "queue telemetry integration queued count");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "queue telemetry integration queued count");
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 1U, "queue telemetry integration outstanding present");
 	vAssertTrue(xSession.xTransportAdapter.uHasDeferredSend == 1U, "queue telemetry integration deferred present");
+	vAssertTrue(xSession.xTransportAdapter.uDeferredSendCount == 2U, "queue telemetry integration deferred count before feedback");
 
 	xSendCompletedFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xSendCompletedFrame.puPayload = auFramePayload;
@@ -482,8 +484,9 @@ static void vTestIntegratedDeferredQueueTelemetryFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendCompletedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue telemetry integration send completed");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED, "queue telemetry integration decision");
 	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 1U, "queue telemetry integration report outstanding");
-	vAssertTrue(pxSupervisorReport->uDeferredSendPresent == 0U, "queue telemetry integration report deferred cleared");
-	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 1U, "queue telemetry integration report queued");
+	vAssertTrue(pxSupervisorReport->uDeferredSendPresent == 1U, "queue telemetry integration report deferred still present");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 1U, "queue telemetry integration report deferred count");
+	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 2U, "queue telemetry integration report queued");
 	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 1U, "queue telemetry integration report dispatched");
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 0U, "queue telemetry integration report no overflow");
 }
@@ -858,12 +861,14 @@ static void vTestIntegratedDeferredQueueFifoDispatchFlow(void)
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue fifo integration first completion");
 	vAssertTrue(xTransport.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auSecondPayload[0], "queue fifo integration first dispatched payload");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 1U, "queue fifo integration first deferred count");
 	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 1U, "queue fifo integration first dispatch telemetry");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue fifo integration second completion");
 	vAssertTrue(xTransport.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auThirdPayload[0], "queue fifo integration second dispatched payload");
 	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
 	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue fifo integration telemetry available");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue fifo integration second deferred count");
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 2U, "queue fifo integration second dispatch telemetry");
 }
 

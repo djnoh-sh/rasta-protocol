@@ -41,6 +41,7 @@ static void vResetSupervisorReport(
 	pxReport->uLastPumpProcessedFrameCount = 0U;
 	pxReport->uOutstandingSendPresent = 0U;
 	pxReport->uDeferredSendPresent = 0U;
+	pxReport->uDeferredSendCount = 0U;
 	pxReport->uQueuedSendCount = 0U;
 	pxReport->uDeferredDispatchCount = 0U;
 	pxReport->uQueueOverflowRejectCount = 0U;
@@ -159,10 +160,13 @@ static void vRefreshOutboundQueueTelemetry(
 			&pxContext->pxSession->xTransportAdapter);
 	pxContext->xLastReport.uDeferredSendPresent =
 		pxContext->pxSession->xTransportAdapter.uHasDeferredSend;
+	pxContext->xLastReport.uDeferredSendCount =
+		pxContext->pxSession->xTransportAdapter.uDeferredSendCount;
 
 	pxTelemetry = rsrx_session_get_outbound_telemetry(pxContext->pxSession);
 	if(pxTelemetry == (const rsrx_outbound_send_telemetry_t *)0)
 	{
+		pxContext->xLastReport.uDeferredSendCount = 0U;
 		pxContext->xLastReport.uQueuedSendCount = 0U;
 		pxContext->xLastReport.uDeferredDispatchCount = 0U;
 		pxContext->xLastReport.uQueueOverflowRejectCount = 0U;

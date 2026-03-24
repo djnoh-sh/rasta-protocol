@@ -88,6 +88,7 @@ typedef struct
 	uint32_t uLastPumpProcessedFrameCount;
 	uint32_t uOutstandingSendPresent;
 	uint32_t uDeferredSendPresent;
+	uint32_t uDeferredSendCount;
 	uint32_t uQueuedSendCount;
 	uint32_t uDeferredDispatchCount;
 	uint32_t uQueueOverflowRejectCount;
