@@ -13211,8 +13211,6 @@ static void vTestIntegratedHoldoffActiveLossBypassLongRunFlow(void)
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active-loss long-run integration first secondary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff active-loss long-run integration first switch count");
 
-	/* cppcheck-suppress redundantAssignment */
-	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff active-loss long-run integration first hold");
@@ -13225,8 +13223,6 @@ static void vTestIntegratedHoldoffActiveLossBypassLongRunFlow(void)
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff active-loss long-run integration recovered primary one");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "holdoff active-loss long-run integration first bypass switch count");
 
-	/* cppcheck-suppress redundantAssignment */
-	xTransport.uSecondaryAvailable = 1U;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff active-loss long-run integration first restore refresh");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff active-loss long-run integration retained primary one");

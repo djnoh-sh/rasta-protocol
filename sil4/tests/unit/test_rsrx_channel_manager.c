@@ -211,6 +211,98 @@ static void vTestPreferredRecoveryActiveLossBypassesHoldoff(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "active-loss matrix stable switch count");
 }
 
+static void vTestBypassReentersHoldoffOnNextCycle(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 2U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix primary down one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix failover one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "bypass-cycle matrix first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "bypass-cycle matrix first switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix primary restored one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "bypass-cycle matrix held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "bypass-cycle matrix no switch on hold one");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 1U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix secondary down one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix bypass one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "bypass-cycle matrix recovered primary one");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "bypass-cycle matrix switch reported one");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "bypass-cycle matrix switch count after bypass");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 1U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix secondary restored one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix refresh one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "bypass-cycle matrix retained primary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "bypass-cycle matrix no switch on refresh one");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "bypass-cycle matrix stable switch count one");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix primary down two");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix failover two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "bypass-cycle matrix second secondary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "bypass-cycle matrix switch reported two");
+	vAssertTrue(xResult.uTotalSwitchCount == 3U, "bypass-cycle matrix switch count after second failover");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix primary restored two");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix renewed hold");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "bypass-cycle matrix held secondary two");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "bypass-cycle matrix no switch on renewed hold");
+	vAssertTrue(xResult.uTotalSwitchCount == 3U, "bypass-cycle matrix switch count held two");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"bypass-cycle matrix renewed recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "bypass-cycle matrix recovered primary two");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "bypass-cycle matrix switch reported on renewed recovery");
+	vAssertTrue(xResult.uTotalSwitchCount == 4U, "bypass-cycle matrix switch count after renewed recovery");
+}
+
 int main(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -283,6 +375,7 @@ int main(void)
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryHysteresisResetMatrix();
 	vTestPreferredRecoveryActiveLossBypassesHoldoff();
+	vTestBypassReentersHoldoffOnNextCycle();
 
 	(void)printf("rsrx_channel_manager_test: all tests passed\n");
 	return EXIT_SUCCESS;
