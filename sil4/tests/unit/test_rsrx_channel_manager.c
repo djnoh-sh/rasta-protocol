@@ -149,6 +149,68 @@ static void vTestPreferredRecoveryHysteresisResetMatrix(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "hysteresis matrix switch count stable on no-op refresh");
 }
 
+static void vTestPreferredRecoveryActiveLossBypassesHoldoff(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 2U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "active-loss matrix first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "active-loss matrix first switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix primary restored");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix first hold");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "active-loss matrix held secondary");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "active-loss matrix no switch on hold");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "active-loss matrix held switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 1U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix secondary flap down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix preferred recovery bypass holdoff");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "active-loss matrix immediate preferred recovery");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "active-loss matrix switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "active-loss matrix switch count after bypass");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 1U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix secondary restored");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"active-loss matrix no-op refresh");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "active-loss matrix retained primary after restore");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "active-loss matrix no switch on refresh");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "active-loss matrix stable switch count");
+}
+
 int main(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -220,6 +282,7 @@ int main(void)
 
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryHysteresisResetMatrix();
+	vTestPreferredRecoveryActiveLossBypassesHoldoff();
 
 	(void)printf("rsrx_channel_manager_test: all tests passed\n");
 	return EXIT_SUCCESS;
