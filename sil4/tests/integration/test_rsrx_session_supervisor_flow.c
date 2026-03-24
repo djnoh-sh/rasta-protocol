@@ -558,11 +558,12 @@ static void vTestIntegratedQueueOverflowRejectFlow(void)
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue overflow integration first send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue overflow integration deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "queue overflow integration second deferred send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "queue overflow integration overflow reject");
 
 	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
 	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue overflow integration telemetry available");
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "queue overflow integration queued once");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "queue overflow integration queued twice");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "queue overflow integration overflow count");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "queue overflow integration busy reject count");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "queue overflow integration busy streak");
@@ -648,6 +649,7 @@ static void vTestIntegratedBusyRejectThresholdEscalationFlow(void)
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold integration first send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold integration deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold integration second deferred send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "busy threshold integration first reject");
 
 	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
@@ -740,6 +742,7 @@ static void vTestIntegratedBusyRejectThresholdResetFlow(void)
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration first send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration second deferred send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "busy threshold reset integration first reject");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "busy threshold reset integration second reject");
 
@@ -760,8 +763,10 @@ static void vTestIntegratedBusyRejectThresholdResetFlow(void)
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 1U, "busy threshold reset integration deferred dispatch");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "busy threshold reset integration second completion");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "busy threshold reset integration third completion");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration fresh send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration fresh deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "busy threshold reset integration fresh second deferred send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_REJECTED, "busy threshold reset integration fresh reject");
 
 	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy threshold reset integration warning after reset");

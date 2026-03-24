@@ -23,7 +23,7 @@
 | Test ID | Req ID | Objective | Precondition | Stimulus | Expected Result | Pass/Fail Criteria |
 | --- | --- | --- | --- | --- | --- | --- |
 | TC-OUT-001 | FR-003, IF-001 | outbound application send 성공 경로 검증 | `ESTABLISHED` 상태 session | `rsrx_session_send_application_data` 호출 | `DATA` frame이 encode되어 transport send 발생 | reason, sequence, confirmation, payload가 설계와 일치 |
-| TC-OUT-005 | FR-003, IF-001 | bounded queue guard 검증 | `ESTABLISHED` 상태 session, 첫 outbound send 수행됨 | second send 후 third send를 호출 | second send는 queue에 수용되고, third send는 `REJECTED`와 API callback/diagnostic rejection을 발생 | `outstanding 1 + deferred 1`을 넘으면 overflow reject가 관찰 가능하게 남는다 |
+| TC-OUT-005 | FR-003, IF-001 | bounded queue guard 검증 | `ESTABLISHED` 상태 session, 첫 outbound send 수행됨 | second/third send 후 fourth send를 호출 | second/third send는 queue에 수용되고, fourth send는 `REJECTED`와 API callback/diagnostic rejection을 발생 | `outstanding 1 + deferred 2`를 넘으면 overflow reject가 관찰 가능하게 남는다 |
 | TC-OUT-002 | IF-001 | invalid state guard 검증 | `INITIALIZED` 상태 session | `rsrx_session_send_application_data` 호출 | `INVALID_STATE` 반환 | `ESTABLISHED` 외 상태에서 send를 거부한다 |
 | TC-OUT-003 | IF-001 | invalid payload guard 검증 | `ESTABLISHED` 상태 session | null payload + nonzero length로 send 호출 | `INVALID_ARGUMENT` 반환 | 잘못된 payload 조합을 결정적으로 거부한다 |
 | TC-OUT-004 | FR-003 | transport adapter direct-send encode 검증 | transport adapter 초기화 완료 | `rsrx_transport_adapter_send_application_data` 호출 | `DATA` frame encode 후 transport send 수행 | reason=`APPLICATION_DATA_REQUESTED`, payload copy, encoded length가 설계와 일치 |

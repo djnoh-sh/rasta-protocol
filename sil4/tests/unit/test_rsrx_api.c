@@ -438,6 +438,15 @@ static void vTestSessionOutboundApplicationDataPath(void)
 		rsrx_session_send_application_data(
 			&xSession,
 			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"application data second deferred send queued");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "outbound application queued telemetry after second queue");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count after second queue");
+	vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count after second queue");
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
 		"application data send overflow reject");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "outbound application busy telemetry after reject");
@@ -512,6 +521,13 @@ static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 			sizeof(auDataPayload)) == RSRX_STATUS_OK,
 		"busy reject threshold queued send");
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "busy reject threshold queued telemetry");
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"busy reject threshold second queued send");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "busy reject threshold second queued telemetry");
 	vAssertTrue(
 		rsrx_session_send_application_data(
 			&xSession,

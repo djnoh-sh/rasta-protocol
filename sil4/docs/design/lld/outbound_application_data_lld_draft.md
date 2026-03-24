@@ -23,8 +23,8 @@
 ## Purpose
 
 - 상위 애플리케이션이 application payload를 protocol `DATA` frame으로 제출하는 명시적 경계를 정의한다.
-- 현재 단계에서는 bounded `2-stage` send API를 사용한다.
-- 현재 단계에서는 `outstanding 1 + deferred 1` 정책을 사용한다.
+- 현재 단계에서는 bounded multi-stage send API를 사용한다.
+- 현재 단계에서는 `outstanding 1 + deferred 2` 정책을 사용한다.
 - state machine action 확장 전까지 outbound data는 session API가 직접 transport adapter helper를 호출한다.
 
 ## File Structure
@@ -80,9 +80,9 @@
 
 ## Constraints
 
-- 현재 구현은 synchronous direct-send + deferred single-slot queue 모델이다.
+- 현재 구현은 synchronous direct-send + bounded deferred two-slot queue 모델이다.
 - outbound application data는 API callback이나 lifecycle callback을 발생시키지 않는다.
-- busy reject는 deferred slot까지 모두 찬 `queue overflow`로 해석한다.
+- busy reject는 deferred two-slot queue까지 모두 찬 `queue overflow`로 해석한다.
 - busy reject의 synthetic report는 `status=REJECTED`, `reason=APPLICATION_DATA_REQUESTED`, `diagnostic=WARN_REJECTED_EVENT`를 사용한다.
 - threshold가 활성화되고 repeated busy reject streak가 임계치 이상이면 synthetic report의 diagnostic는 `ERROR_INTERFACE`를 사용한다.
 - queueing, batching, multi-depth backpressure 정책은 후속 단계에서 별도 정의한다.
@@ -91,7 +91,7 @@
 
 - 필요한 테스트:
   - `ESTABLISHED` 상태 outbound application send 성공
-  - second send enqueue
+  - second/third send enqueue
   - overflow reject 시 API callback/diagnostic correlation 검증
   - valid inbound 또는 feedback clear 후 deferred dispatch 검증
   - accepted/busy reject/clear source telemetry 누적 검증

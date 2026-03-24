@@ -387,8 +387,15 @@ static void vTestApplicationDataSend(void)
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data third send queued");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "application data queued telemetry second slot");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
-		"application data third send overflow");
+		"application data fourth send overflow");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "application data busy telemetry one");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "application data queue overflow telemetry");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "application data busy streak one");
@@ -415,7 +422,7 @@ static void vTestApplicationDataSend(void)
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data send queued after dispatch");
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "application data queued telemetry after dispatch");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 3U, "application data queued telemetry after dispatch");
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(xTransportContext.uCallCount == 3U, "application data send count after clear");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 3U, "application data accepted telemetry after clear");
