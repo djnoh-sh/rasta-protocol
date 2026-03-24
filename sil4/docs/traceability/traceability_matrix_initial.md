@@ -15,7 +15,7 @@
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_decoded_message_t`, `rsrx_encode_request_t`, `rsrx_encode_buffer_t`, `rsrx_codec_encode_message`, `rsrx_codec_decode_frame` | TC-CODEC-001, TC-CODEC-002, TC-CODEC-004 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_event` | TC-API-005 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-012 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_application_data_indication_t`, `vApplicationExecutorDispatch`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_platform_adapter_build_executor_table` | TC-APP-001, TC-APP-002 |  | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_session_send_application_data`, `rsrx_transport_adapter_send_application_data` | TC-OUT-001, TC-OUT-004, TC-API-010, TC-PA-005 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_session_send_application_data`, `rsrx_transport_adapter_send_application_data` | TC-OUT-001, TC-OUT-004, TC-OUT-005, TC-OUT-006, TC-OUT-008, TC-OUT-009, TC-API-010, TC-PA-005 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame`, `rsrx_transport_supervisor_poll_receive`, `rsrx_transport_supervisor_process_transport_event` | TC-SUP-001, TC-SUP-004, TC-SUP-007, TC-SUP-010, TC-SUP-015, TC-SUP-016, TC-SUP-017 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-014 | `sil4/include/rsrx_channel_manager.h`, `sil4/src/rsrx_channel_manager.c` | `rsrx_channel_manager_init`, `rsrx_channel_manager_update_channel`, `rsrx_channel_manager_select_channel`, `rsrx_channel_manager_reset` | TC-CHM-001, TC-CHM-002, TC-CHM-004, TC-CHM-005, TC-CHM-006, TC-CHM-007 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSessionSupervisorFlow` | TC-INT-001 |  | Draft |
@@ -26,6 +26,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedChannelRecoveryHoldoffFlow` | TC-INT-012 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapSoakFlow` | TC-INT-013 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueTelemetryFlow` | TC-INT-014 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueFifoDispatchFlow` | TC-INT-102 | RV-034 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueOverflowRejectFlow` | TC-INT-015 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectThresholdEscalationFlow` | TC-INT-016 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedInitialZeroSequenceProtocolErrorFlow` | TC-INT-028 | RV-030 | Draft |
@@ -228,9 +229,10 @@
 | IF-001 |  | HLD-001, LLD-002 | `sil4/include/rsrx_state_machine.h` | `rsrx_state_machine_init`, `rsrx_state_machine_handle_event`, `rsrx_state_machine_get_state`, `rsrx_state_machine_reset` |  |  | Draft |
 | IF-001 |  | HLD-001, LLD-003 | `sil4/include/rsrx_orchestrator.h` | `rsrx_orchestrator_init`, `rsrx_orchestrator_process_event`, `rsrx_orchestrator_get_state`, `rsrx_orchestrator_reset` | TC-OR-001, TC-OR-004, TC-OR-005 |  | Draft |
 | IF-001 |  | HLD-001, LLD-007 | `sil4/include/rsrx_api.h` | `rsrx_session_init`, `rsrx_session_start`, `rsrx_session_connect`, `rsrx_session_disconnect`, `rsrx_session_process_event`, `rsrx_session_process_timer_expiry`, `rsrx_session_get_state`, `rsrx_session_reset` | TC-API-001, TC-API-003, TC-API-004, TC-API-005, TC-API-006, TC-API-007, TC-API-008, TC-API-009 |  | Draft |
-| IF-001 |  | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_send_application_data` | TC-OUT-001, TC-OUT-002, TC-OUT-003, TC-API-010, TC-API-011 |  | Draft |
+| IF-001 |  | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_send_application_data` | TC-OUT-001, TC-OUT-002, TC-OUT-003, TC-OUT-005, TC-OUT-008, TC-OUT-009, TC-API-010, TC-API-011 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPumpReceiveStabilityFlow` | TC-INT-008 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueTelemetryFlow` | TC-INT-014 |  | Draft |
+| IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueFifoDispatchFlow` | TC-INT-102 | RV-034 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueOverflowRejectFlow` | TC-INT-015 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectThresholdEscalationFlow` | TC-INT-016 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueBackpressureCloseoutFlow` | TC-INT-100 |  | Draft |
