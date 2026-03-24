@@ -872,6 +872,119 @@ static void vTestIntegratedDeferredQueueFifoDispatchFlow(void)
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 2U, "queue fifo integration second dispatch telemetry");
 }
 
+static void vTestIntegratedDeferredQueueMixedClearOrderingFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	rsrx_transport_frame_t xTransportEventFrame;
+	rsrx_transport_frame_t xInboundFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auInboundFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
+	static const uint8_t auSecondPayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
+	static const uint8_t auInboundPayload[2] = { 0x41U, 0x42U };
+	size_t xHandshakeLength;
+	size_t xInboundLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "queue mixed clear integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue mixed clear integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue mixed clear integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "queue mixed clear integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "queue mixed clear integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "queue mixed clear integration established");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFirstPayload, sizeof(auFirstPayload)) == RSRX_STATUS_OK, "queue mixed clear integration first send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSecondPayload, sizeof(auSecondPayload)) == RSRX_STATUS_OK, "queue mixed clear integration second queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auThirdPayload, sizeof(auThirdPayload)) == RSRX_STATUS_OK, "queue mixed clear integration third queued");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = auFramePayload;
+	xTransportEventFrame.xPayloadLength = sizeof(auFramePayload);
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue mixed clear integration feedback clear");
+	vAssertTrue(xTransport.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auSecondPayload[0], "queue mixed clear integration feedback dispatched payload");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 1U, "queue mixed clear integration deferred count after feedback");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auInboundPayload,
+		sizeof(auInboundPayload),
+		auInboundFrame,
+		sizeof(auInboundFrame),
+		&xInboundLength);
+	xInboundFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xInboundFrame.puPayload = auInboundFrame;
+	xInboundFrame.xPayloadLength = xInboundLength;
+	xInboundFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xInboundFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "queue mixed clear integration inbound clear");
+	vAssertTrue(xTransport.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auThirdPayload[0], "queue mixed clear integration inbound dispatched payload");
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue mixed clear integration telemetry available");
+	vAssertTrue(pxTelemetry->uClearOnFeedbackCount == 1U, "queue mixed clear integration feedback clear telemetry");
+	vAssertTrue(pxTelemetry->uClearOnInboundCount == 1U, "queue mixed clear integration inbound clear telemetry");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 2U, "queue mixed clear integration dispatch count");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue mixed clear integration deferred count after inbound");
+}
+
 static void vTestIntegratedRetransmissionRecoveryFlow(void)
 {
 	rsrx_session_t xSession;
@@ -12897,6 +13010,7 @@ static void vTestIntegratedQueueBackpressureCloseoutFlow(void)
 {
 	vTestIntegratedDeferredQueueTelemetryFlow();
 	vTestIntegratedDeferredQueueFifoDispatchFlow();
+	vTestIntegratedDeferredQueueMixedClearOrderingFlow();
 	vTestIntegratedQueueOverflowRejectFlow();
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
 	vTestIntegratedBusyRejectThresholdResetFlow();
