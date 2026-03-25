@@ -1251,7 +1251,9 @@ static void vTestIntegratedDeferredQueueMixedClearLongRunFlow(void)
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "queue mixed clear long run integration dispatch count");
 	vAssertTrue(pxTelemetry->uClearOnFeedbackCount == 2U, "queue mixed clear long run integration feedback clear count");
 	vAssertTrue(pxTelemetry->uClearOnInboundCount == 3U, "queue mixed clear long run integration inbound clear count");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "queue mixed clear long run integration max deferred retained");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue mixed clear long run integration deferred count final");
+	vAssertTrue(pxSupervisorReport->uMaxDeferredSendCount == 2U, "queue mixed clear long run integration report max deferred retained");
 	vAssertTrue(xApplication.uCallCount == 2U, "queue mixed clear long run integration application callback count");
 }
 

@@ -786,6 +786,7 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "application data mixed clear long run dispatch telemetry");
 	vAssertTrue(pxTelemetry->uClearManualCount == 3U, "application data mixed clear long run manual clear telemetry");
 	vAssertTrue(pxTelemetry->uClearOnInboundCount == 2U, "application data mixed clear long run inbound clear telemetry");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "application data mixed clear long run max deferred retained");
 }
 
 static void vTestBusyRejectThresholdManualInboundResetSources(void)
