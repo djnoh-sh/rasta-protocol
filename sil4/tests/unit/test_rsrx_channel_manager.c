@@ -303,6 +303,122 @@ static void vTestBypassReentersHoldoffOnNextCycle(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 4U, "bypass-cycle matrix switch count after renewed recovery");
 }
 
+static void vTestFlapResetBypassReentersHoldoffMatrix(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 2U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix primary down one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix failover one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap-bypass-cycle matrix first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "flap-bypass-cycle matrix first switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix primary restored one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap-bypass-cycle matrix held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "flap-bypass-cycle matrix no switch on hold one");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix primary flap down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix flap refresh");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap-bypass-cycle matrix retained secondary after flap");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "flap-bypass-cycle matrix no switch on flap refresh");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "flap-bypass-cycle matrix switch count after flap");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix primary restored again");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix renewed hold");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap-bypass-cycle matrix renewed held secondary");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "flap-bypass-cycle matrix no switch on renewed hold");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "flap-bypass-cycle matrix renewed hold switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 1U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix secondary down one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix bypass one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "flap-bypass-cycle matrix recovered primary one");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "flap-bypass-cycle matrix switch reported one");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "flap-bypass-cycle matrix switch count after bypass");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 1U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix secondary restored one");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix refresh one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "flap-bypass-cycle matrix retained primary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "flap-bypass-cycle matrix no switch on refresh one");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "flap-bypass-cycle matrix stable switch count one");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix primary down two");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix failover two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap-bypass-cycle matrix second secondary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "flap-bypass-cycle matrix switch reported two");
+	vAssertTrue(xResult.uTotalSwitchCount == 3U, "flap-bypass-cycle matrix switch count after second failover");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix primary restored two");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix renewed hold two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap-bypass-cycle matrix held secondary two");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "flap-bypass-cycle matrix no switch on renewed hold two");
+	vAssertTrue(xResult.uTotalSwitchCount == 3U, "flap-bypass-cycle matrix switch count held two");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap-bypass-cycle matrix renewed recovery two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "flap-bypass-cycle matrix recovered primary two");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "flap-bypass-cycle matrix switch reported on renewed recovery two");
+	vAssertTrue(xResult.uTotalSwitchCount == 4U, "flap-bypass-cycle matrix switch count after renewed recovery two");
+}
+
 int main(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -376,6 +492,7 @@ int main(void)
 	vTestPreferredRecoveryHysteresisResetMatrix();
 	vTestPreferredRecoveryActiveLossBypassesHoldoff();
 	vTestBypassReentersHoldoffOnNextCycle();
+	vTestFlapResetBypassReentersHoldoffMatrix();
 
 	(void)printf("rsrx_channel_manager_test: all tests passed\n");
 	return EXIT_SUCCESS;
