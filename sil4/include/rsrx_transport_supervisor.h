@@ -92,6 +92,10 @@ typedef struct
 	uint32_t uQueuedSendCount;
 	uint32_t uDeferredDispatchCount;
 	uint32_t uQueueOverflowRejectCount;
+	uint32_t uBusyRejectedSendCount;
+	uint32_t uConsecutiveBusyRejectedSendCount;
+	uint32_t uBusyRejectEscalationCount;
+	uint32_t uLastBusyRejectEscalated;
 } rsrx_transport_supervisor_report_t;
 
 typedef struct

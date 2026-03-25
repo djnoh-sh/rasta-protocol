@@ -45,6 +45,10 @@ static void vResetSupervisorReport(
 	pxReport->uQueuedSendCount = 0U;
 	pxReport->uDeferredDispatchCount = 0U;
 	pxReport->uQueueOverflowRejectCount = 0U;
+	pxReport->uBusyRejectedSendCount = 0U;
+	pxReport->uConsecutiveBusyRejectedSendCount = 0U;
+	pxReport->uBusyRejectEscalationCount = 0U;
+	pxReport->uLastBusyRejectEscalated = 0U;
 }
 
 static rsrx_supervisor_decision_class_t eMapDecisionClass(
@@ -170,6 +174,10 @@ static void vRefreshOutboundQueueTelemetry(
 		pxContext->xLastReport.uQueuedSendCount = 0U;
 		pxContext->xLastReport.uDeferredDispatchCount = 0U;
 		pxContext->xLastReport.uQueueOverflowRejectCount = 0U;
+		pxContext->xLastReport.uBusyRejectedSendCount = 0U;
+		pxContext->xLastReport.uConsecutiveBusyRejectedSendCount = 0U;
+		pxContext->xLastReport.uBusyRejectEscalationCount = 0U;
+		pxContext->xLastReport.uLastBusyRejectEscalated = 0U;
 		return;
 	}
 
@@ -177,6 +185,14 @@ static void vRefreshOutboundQueueTelemetry(
 	pxContext->xLastReport.uDeferredDispatchCount = pxTelemetry->uDeferredDispatchCount;
 	pxContext->xLastReport.uQueueOverflowRejectCount =
 		pxTelemetry->uQueueOverflowRejectCount;
+	pxContext->xLastReport.uBusyRejectedSendCount =
+		pxTelemetry->uBusyRejectedSendCount;
+	pxContext->xLastReport.uConsecutiveBusyRejectedSendCount =
+		pxTelemetry->uConsecutiveBusyRejectedSendCount;
+	pxContext->xLastReport.uBusyRejectEscalationCount =
+		pxTelemetry->uBusyRejectEscalationCount;
+	pxContext->xLastReport.uLastBusyRejectEscalated =
+		pxTelemetry->uLastBusyRejectEscalated;
 }
 
 static rsrx_transport_channel_id_t eGetActiveChannelId(

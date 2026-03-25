@@ -1490,6 +1490,10 @@ static void vTestIntegratedQueueOverflowAccumulationFlow(void)
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 2U, "queue overflow accumulation integration report overflow count");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue overflow accumulation integration report deferred count");
 	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 1U, "queue overflow accumulation integration report outstanding refreshed");
+	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 2U, "queue overflow accumulation integration report busy reject count");
+	vAssertTrue(pxSupervisorReport->uConsecutiveBusyRejectedSendCount == 0U, "queue overflow accumulation integration report streak reset");
+	vAssertTrue(pxSupervisorReport->uBusyRejectEscalationCount == 0U, "queue overflow accumulation integration report no escalation");
+	vAssertTrue(pxSupervisorReport->uLastBusyRejectEscalated == 0U, "queue overflow accumulation integration report latch clear");
 	vAssertTrue(xApplication.uCallCount == 1U, "queue overflow accumulation integration application callback");
 }
 
@@ -1604,6 +1608,10 @@ static void vTestIntegratedOverflowBusyAccumulationFlow(void)
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation integration final streak reset");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "overflow busy accumulation integration final latch reset");
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 3U, "overflow busy accumulation integration report overflow count");
+	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 3U, "overflow busy accumulation integration report busy reject count");
+	vAssertTrue(pxSupervisorReport->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation integration report streak reset");
+	vAssertTrue(pxSupervisorReport->uBusyRejectEscalationCount == 1U, "overflow busy accumulation integration report escalation count");
+	vAssertTrue(pxSupervisorReport->uLastBusyRejectEscalated == 0U, "overflow busy accumulation integration report latch reset");
 }
 
 static void vTestIntegratedBusyRejectAlternatingResetFlow(void)
