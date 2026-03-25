@@ -419,6 +419,14 @@ static void vTestFlapResetBypassReentersHoldoffMatrix(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 4U, "flap-bypass-cycle matrix switch count after renewed recovery two");
 }
 
+static void vTestPreferredRecoveryHysteresisCloseoutMatrix(void)
+{
+	vTestPreferredRecoveryHysteresisResetMatrix();
+	vTestPreferredRecoveryActiveLossBypassesHoldoff();
+	vTestBypassReentersHoldoffOnNextCycle();
+	vTestFlapResetBypassReentersHoldoffMatrix();
+}
+
 int main(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -493,6 +501,7 @@ int main(void)
 	vTestPreferredRecoveryActiveLossBypassesHoldoff();
 	vTestBypassReentersHoldoffOnNextCycle();
 	vTestFlapResetBypassReentersHoldoffMatrix();
+	vTestPreferredRecoveryHysteresisCloseoutMatrix();
 
 	(void)printf("rsrx_channel_manager_test: all tests passed\n");
 	return EXIT_SUCCESS;
