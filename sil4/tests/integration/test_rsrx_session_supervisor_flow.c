@@ -1351,12 +1351,146 @@ static void vTestIntegratedDeferredQueueTelemetryAccumulationFlow(void)
 	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue telemetry accumulation integration telemetry available");
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 4U, "queue telemetry accumulation integration queued count");
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "queue telemetry accumulation integration dispatch count");
-	vAssertTrue(pxTelemetry->uAcceptedSendCount == 6U, "queue telemetry accumulation integration accepted count");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 7U, "queue telemetry accumulation integration accepted count");
 	vAssertTrue(pxTelemetry->uClearOnFeedbackCount == 6U, "queue telemetry accumulation integration feedback clear count");
 	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 4U, "queue telemetry accumulation integration report queued count");
 	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 4U, "queue telemetry accumulation integration report dispatch count");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue telemetry accumulation integration report deferred count");
 	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 0U, "queue telemetry accumulation integration report outstanding clear");
+}
+
+static void vTestIntegratedQueueOverflowAccumulationFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	rsrx_transport_frame_t xTransportEventFrame;
+	rsrx_transport_frame_t xInboundFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auInboundDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auFirstPayload[2] = { 0x71U, 0x72U };
+	static const uint8_t auSecondPayload[2] = { 0x81U, 0x82U };
+	static const uint8_t auThirdPayload[2] = { 0x91U, 0x92U };
+	static const uint8_t auFourthPayload[2] = { 0xA1U, 0xA2U };
+	static const uint8_t auFifthPayload[2] = { 0xB1U, 0xB2U };
+	static const uint8_t auSixthPayload[2] = { 0xC1U, 0xC2U };
+	static const uint8_t auSeventhPayload[2] = { 0xD1U, 0xD2U };
+	static const uint8_t auInboundPayload[2] = { 0xE1U, 0xE2U };
+	size_t xHandshakeLength;
+	size_t xInboundLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "queue overflow accumulation integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue overflow accumulation integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "queue overflow accumulation integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "queue overflow accumulation integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "queue overflow accumulation integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "queue overflow accumulation integration established");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFirstPayload, sizeof(auFirstPayload)) == RSRX_STATUS_OK, "queue overflow accumulation integration first send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSecondPayload, sizeof(auSecondPayload)) == RSRX_STATUS_OK, "queue overflow accumulation integration second queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auThirdPayload, sizeof(auThirdPayload)) == RSRX_STATUS_OK, "queue overflow accumulation integration third queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFourthPayload, sizeof(auFourthPayload)) == RSRX_STATUS_REJECTED, "queue overflow accumulation integration first reject");
+
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "queue overflow accumulation integration telemetry available");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "queue overflow accumulation integration first overflow count");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "queue overflow accumulation integration first busy reject count");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "queue overflow accumulation integration first streak");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = auFramePayload;
+	xTransportEventFrame.xPayloadLength = sizeof(auFramePayload);
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue overflow accumulation integration first clear one");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue overflow accumulation integration first clear two");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "queue overflow accumulation integration first clear three");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "queue overflow accumulation integration first streak reset");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "queue overflow accumulation integration first overflow retained");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFifthPayload, sizeof(auFifthPayload)) == RSRX_STATUS_OK, "queue overflow accumulation integration fifth send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSixthPayload, sizeof(auSixthPayload)) == RSRX_STATUS_OK, "queue overflow accumulation integration sixth queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSeventhPayload, sizeof(auSeventhPayload)) == RSRX_STATUS_OK, "queue overflow accumulation integration seventh queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFourthPayload, sizeof(auFourthPayload)) == RSRX_STATUS_REJECTED, "queue overflow accumulation integration second reject");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 2U, "queue overflow accumulation integration second overflow count");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 2U, "queue overflow accumulation integration second busy reject count");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "queue overflow accumulation integration second streak");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auInboundPayload,
+		sizeof(auInboundPayload),
+		auInboundDataFrame,
+		sizeof(auInboundDataFrame),
+		&xInboundLength);
+	xInboundFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xInboundFrame.puPayload = auInboundDataFrame;
+	xInboundFrame.xPayloadLength = xInboundLength;
+	xInboundFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xInboundFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "queue overflow accumulation integration inbound clear");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "queue overflow accumulation integration second streak reset");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 2U, "queue overflow accumulation integration overflow retained after inbound");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "queue overflow accumulation integration dispatch count");
+	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 2U, "queue overflow accumulation integration report overflow count");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue overflow accumulation integration report deferred count");
+	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 1U, "queue overflow accumulation integration report outstanding refreshed");
+	vAssertTrue(xApplication.uCallCount == 1U, "queue overflow accumulation integration application callback");
 }
 
 static void vTestIntegratedBusyRejectAlternatingResetFlow(void)
@@ -15140,6 +15274,7 @@ static void vTestIntegratedQueueBackpressureCloseoutFlow(void)
 	vTestIntegratedDeferredQueueMixedClearOrderingFlow();
 	vTestIntegratedDeferredQueueMixedClearLongRunFlow();
 	vTestIntegratedDeferredQueueTelemetryAccumulationFlow();
+	vTestIntegratedQueueOverflowAccumulationFlow();
 	vTestIntegratedQueueOverflowRejectFlow();
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
 	vTestIntegratedBusyRejectThresholdResetFlow();
