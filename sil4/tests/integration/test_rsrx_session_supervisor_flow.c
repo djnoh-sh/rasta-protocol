@@ -14156,6 +14156,14 @@ static void vTestIntegratedRedundancyLongRunCloseoutFlow(void)
 	vTestIntegratedFlapBypassStaleFeedbackLongRunFlow();
 }
 
+static void vTestIntegratedFlapBypassCloseoutFlow(void)
+{
+	vTestIntegratedFlapResetThenActiveLossBypassFlow();
+	vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow();
+	vTestIntegratedFlapBypassMixedTransientLongRunFlow();
+	vTestIntegratedFlapBypassStaleFeedbackLongRunFlow();
+}
+
 static void vTestIntegratedProtocolVariantCloseoutFlow(void)
 {
 	vTestIntegratedProtocolOrderingCloseoutFlow();
@@ -14985,6 +14993,7 @@ int main(void)
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
 	vTestIntegratedRedundancyPolicyCloseoutFlow();
 	vTestIntegratedRedundancyLongRunCloseoutFlow();
+	vTestIntegratedFlapBypassCloseoutFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
