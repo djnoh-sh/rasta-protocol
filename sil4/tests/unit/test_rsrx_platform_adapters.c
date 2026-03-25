@@ -969,6 +969,90 @@ static void vTestDeferredQueueTelemetryAccumulationMatrix(void)
 	vAssertTrue(pxTelemetry->uClearManualCount == 6U, "deferred queue telemetry accumulation manual clear count");
 }
 
+static void vTestOverflowBusyAccumulationMatrix(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	static const uint8_t auFramePayload[2] = { 0xA1U, 0xA2U };
+	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
+	static const uint8_t auSecondPayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
+	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
+	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation init");
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFirstPayload, sizeof(auFirstPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation first send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSecondPayload, sizeof(auSecondPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation second queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auThirdPayload, sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation third queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"overflow busy accumulation first reject");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "overflow busy accumulation overflow count one");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "overflow busy accumulation busy count one");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "overflow busy accumulation streak one");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation streak reset");
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auThirdPayload, sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation fourth send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation fifth queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFifthPayload, sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation sixth queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFirstPayload, sizeof(auFirstPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"overflow busy accumulation second reject");
+	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSecondPayload, sizeof(auSecondPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"overflow busy accumulation third reject");
+
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 3U, "overflow busy accumulation overflow count three");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 3U, "overflow busy accumulation busy count three");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "overflow busy accumulation second streak");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation count");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "overflow busy accumulation escalation latch");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "overflow busy accumulation max streak");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation final streak reset");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "overflow busy accumulation final latch reset");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 3U, "overflow busy accumulation overflow retained");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation retained");
+}
+
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
@@ -978,6 +1062,7 @@ int main(void)
 	vTestApplicationDataDeferredQueueMixedClearLongRun();
 	vTestBusyRejectThresholdManualInboundResetSources();
 	vTestDeferredQueueTelemetryAccumulationMatrix();
+	vTestOverflowBusyAccumulationMatrix();
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();
