@@ -40,6 +40,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearOrderingFlow` | TC-INT-103 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearLongRunFlow` | TC-INT-116 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestApplicationDataDeferredQueueMixedClearLongRun` | TC-OUT-010 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestBusyRejectThresholdManualInboundResetSources` | TC-OUT-011 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueOverflowRejectFlow` | TC-INT-015 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectThresholdEscalationFlow` | TC-INT-016 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedInitialZeroSequenceProtocolErrorFlow` | TC-INT-028 | RV-030 | Draft |
@@ -262,6 +263,7 @@
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearOrderingFlow` | TC-INT-103 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearLongRunFlow` | TC-INT-116 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestApplicationDataDeferredQueueMixedClearLongRun` | TC-OUT-010 |  | Draft |
+| IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestBusyRejectThresholdManualInboundResetSources` | TC-OUT-011 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueOverflowRejectFlow` | TC-INT-015 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectThresholdEscalationFlow` | TC-INT-016 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueBackpressureCloseoutFlow` | TC-INT-100 |  | Draft |

@@ -783,8 +783,123 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 		"application data mixed clear long run second feedback dispatch payload");
 
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "application data mixed clear long run dispatch telemetry");
-	vAssertTrue(pxTelemetry->uClearOnFeedbackCount == 2U, "application data mixed clear long run feedback clear telemetry");
+	vAssertTrue(pxTelemetry->uClearManualCount == 3U, "application data mixed clear long run manual clear telemetry");
 	vAssertTrue(pxTelemetry->uClearOnInboundCount == 2U, "application data mixed clear long run inbound clear telemetry");
+}
+
+static void vTestBusyRejectThresholdManualInboundResetSources(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	static const uint8_t auFramePayload[2] = { 0x71U, 0x72U };
+	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
+	static const uint8_t auSecondPayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
+	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
+	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset init");
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFirstPayload,
+			sizeof(auFirstPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset first send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auSecondPayload,
+			sizeof(auSecondPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset second queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auThirdPayload,
+			sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset third queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFourthPayload,
+			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"busy reject manual inbound reset first reject");
+	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFifthPayload,
+			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"busy reject manual inbound reset second reject");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy reject manual inbound reset first streak");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy reject manual inbound reset first escalation");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "busy reject manual inbound reset manual streak reset");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy reject manual inbound reset manual latch reset");
+	vAssertTrue(pxTelemetry->uClearManualCount == 1U, "busy reject manual inbound reset manual clear telemetry");
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFourthPayload,
+			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset post-manual queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFifthPayload,
+			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"busy reject manual inbound reset post-manual reject");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy reject manual inbound reset post-manual streak restart");
+
+	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xTransportAdapterContext.xLastInboundMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
+	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
+	xTransportAdapterContext.xLastInboundMessage.xPayloadLength = sizeof(auFramePayload);
+	rsrx_transport_adapter_record_inbound_message(
+		&xTransportAdapterContext,
+		&xTransportAdapterContext.xLastInboundMessage);
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "busy reject manual inbound reset inbound streak reset");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy reject manual inbound reset inbound latch reset");
+	vAssertTrue(pxTelemetry->uClearOnInboundCount == 1U, "busy reject manual inbound reset inbound clear telemetry");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 2U, "busy reject manual inbound reset dispatch telemetry");
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFifthPayload,
+			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset post-inbound queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFourthPayload,
+			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"busy reject manual inbound reset post-inbound reject");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy reject manual inbound reset post-inbound streak restart");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy reject manual inbound reset escalation retained");
 }
 
 int main(void)
@@ -794,6 +909,7 @@ int main(void)
 	vTestApplicationDataSend();
 	vTestApplicationDataDeferredQueueFifoDispatch();
 	vTestApplicationDataDeferredQueueMixedClearLongRun();
+	vTestBusyRejectThresholdManualInboundResetSources();
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();
