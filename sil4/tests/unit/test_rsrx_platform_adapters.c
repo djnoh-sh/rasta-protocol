@@ -902,6 +902,73 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy reject manual inbound reset escalation retained");
 }
 
+static void vTestDeferredQueueTelemetryAccumulationMatrix(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	static const uint8_t auFramePayload[2] = { 0x91U, 0x92U };
+	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
+	static const uint8_t auSecondPayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
+	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
+	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
+	static const uint8_t auSixthPayload[2] = { 0x61U, 0x62U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation init");
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFirstPayload, sizeof(auFirstPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation first send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSecondPayload, sizeof(auSecondPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation second queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auThirdPayload, sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation third queued");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation fourth send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFifthPayload, sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation fifth queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSixthPayload, sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation sixth queued");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 4U, "deferred queue telemetry accumulation queued count");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "deferred queue telemetry accumulation dispatch count");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 6U, "deferred queue telemetry accumulation accepted count");
+	vAssertTrue(pxTelemetry->uClearManualCount == 6U, "deferred queue telemetry accumulation manual clear count");
+}
+
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
@@ -910,6 +977,7 @@ int main(void)
 	vTestApplicationDataDeferredQueueFifoDispatch();
 	vTestApplicationDataDeferredQueueMixedClearLongRun();
 	vTestBusyRejectThresholdManualInboundResetSources();
+	vTestDeferredQueueTelemetryAccumulationMatrix();
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();
