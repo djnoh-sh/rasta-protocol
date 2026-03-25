@@ -84,6 +84,8 @@
 | EVID-CI-050 | `../reviews/RV-043_audit_landing_zone_review.md` | Draft | audit trail operational landing zone review |
 | EVID-CI-051 | `baseline_fetch_success_execution_runbook.md` | Draft | baseline fetch success execution runbook |
 | EVID-CI-052 | `../reviews/RV-045_baseline_fetch_runbook_review.md` | Draft | baseline fetch runbook review |
+| EVID-CI-053 | `first_actual_vendor_execution_runbook.md` | Draft | first actual vendor execution runbook |
+| EVID-CI-054 | `../reviews/RV-046_vendor_execution_runbook_review.md` | Draft | vendor execution runbook review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -107,3 +109,4 @@
 14. first actual vendor runtime review
 15. first evidence execution tracker status update
 16. first baseline fetch runbook execution
+17. first actual vendor runbook execution
