@@ -88,6 +88,8 @@
 | EVID-CI-054 | `../reviews/RV-046_vendor_execution_runbook_review.md` | Draft | vendor execution runbook review |
 | EVID-CI-055 | `first_operational_evidence_execution_packet.md` | Draft | first operational evidence execution packet |
 | EVID-CI-056 | `../reviews/RV-047_execution_packet_review.md` | Draft | execution packet review |
+| EVID-CI-057 | `first_operational_evidence_handoff_sheet.md` | Draft | first operational evidence handoff sheet |
+| EVID-CI-058 | `../reviews/RV-048_handoff_sheet_review.md` | Draft | handoff sheet review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -113,3 +115,4 @@
 16. first baseline fetch runbook execution
 17. first actual vendor runbook execution
 18. first operational evidence packet execution
+19. first operational evidence handoff execution
