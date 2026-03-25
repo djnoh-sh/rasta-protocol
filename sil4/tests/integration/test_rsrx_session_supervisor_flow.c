@@ -1012,6 +1012,7 @@ static void vTestIntegratedBusyRejectThresholdInboundResetFlow(void)
 	static const uint8_t auThirdPayload[2] = { 0xF1U, 0xF2U };
 	static const uint8_t auFourthPayload[2] = { 0xA5U, 0xA6U };
 	static const uint8_t auFifthPayload[2] = { 0xB5U, 0xB6U };
+	static const uint8_t auSixthPayload[2] = { 0xC5U, 0xC6U };
 	static const uint8_t auInboundPayload[2] = { 0x91U, 0x92U };
 	size_t xHandshakeLength;
 	size_t xInboundLength;
@@ -1097,7 +1098,8 @@ static void vTestIntegratedBusyRejectThresholdInboundResetFlow(void)
 	vAssertTrue(xApplication.uCallCount == 1U, "busy inbound reset integration application callback");
 
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auFourthPayload, sizeof(auFourthPayload)) == RSRX_STATUS_OK, "busy inbound reset integration fresh deferred send");
-	vAssertTrue(rsrx_session_send_application_data(&xSession, auFifthPayload, sizeof(auFifthPayload)) == RSRX_STATUS_REJECTED, "busy inbound reset integration fresh reject");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFifthPayload, sizeof(auFifthPayload)) == RSRX_STATUS_OK, "busy inbound reset integration fresh second deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSixthPayload, sizeof(auSixthPayload)) == RSRX_STATUS_REJECTED, "busy inbound reset integration fresh reject");
 
 	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy inbound reset integration warning after reset");
 	vAssertTrue(xDiagnostics.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_WARNING, "busy inbound reset integration warning severity after reset");
@@ -1250,6 +1252,159 @@ static void vTestIntegratedDeferredQueueMixedClearLongRunFlow(void)
 	vAssertTrue(pxTelemetry->uClearOnInboundCount == 3U, "queue mixed clear long run integration inbound clear count");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue mixed clear long run integration deferred count final");
 	vAssertTrue(xApplication.uCallCount == 2U, "queue mixed clear long run integration application callback count");
+}
+
+static void vTestIntegratedBusyRejectAlternatingResetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	rsrx_transport_frame_t xTransportEventFrame;
+	rsrx_transport_frame_t xInboundFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auInboundDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
+	static const uint8_t auSecondPayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
+	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
+	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
+	static const uint8_t auSixthPayload[2] = { 0x61U, 0x62U };
+	static const uint8_t auSeventhPayload[2] = { 0x71U, 0x72U };
+	static const uint8_t auInboundPayload[2] = { 0x81U, 0x82U };
+	size_t xHandshakeLength;
+	size_t xInboundLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	xConfig.uBusyRejectErrorThreshold = 2U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "busy alternating reset integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "busy alternating reset integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "busy alternating reset integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "busy alternating reset integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "busy alternating reset integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "busy alternating reset integration established");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFirstPayload, sizeof(auFirstPayload)) == RSRX_STATUS_OK, "busy alternating reset integration first send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSecondPayload, sizeof(auSecondPayload)) == RSRX_STATUS_OK, "busy alternating reset integration second queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auThirdPayload, sizeof(auThirdPayload)) == RSRX_STATUS_OK, "busy alternating reset integration third queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFourthPayload, sizeof(auFourthPayload)) == RSRX_STATUS_REJECTED, "busy alternating reset integration first reject");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFifthPayload, sizeof(auFifthPayload)) == RSRX_STATUS_REJECTED, "busy alternating reset integration second reject");
+
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "busy alternating reset integration telemetry available");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy alternating reset integration first streak");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy alternating reset integration first escalation count");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy alternating reset integration first escalation latch");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = auFramePayload;
+	xTransportEventFrame.xPayloadLength = sizeof(auFramePayload);
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "busy alternating reset integration feedback reset");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "busy alternating reset integration feedback streak reset");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy alternating reset integration feedback latch reset");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 1U, "busy alternating reset integration feedback dispatch");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "busy alternating reset integration second completion");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "busy alternating reset integration third completion");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFourthPayload, sizeof(auFourthPayload)) == RSRX_STATUS_OK, "busy alternating reset integration fourth send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFifthPayload, sizeof(auFifthPayload)) == RSRX_STATUS_OK, "busy alternating reset integration fifth queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSixthPayload, sizeof(auSixthPayload)) == RSRX_STATUS_OK, "busy alternating reset integration sixth queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSeventhPayload, sizeof(auSeventhPayload)) == RSRX_STATUS_REJECTED, "busy alternating reset integration third reject");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFirstPayload, sizeof(auFirstPayload)) == RSRX_STATUS_REJECTED, "busy alternating reset integration fourth reject");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy alternating reset integration second streak");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 2U, "busy alternating reset integration second escalation count");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy alternating reset integration second escalation latch");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auInboundPayload,
+		sizeof(auInboundPayload),
+		auInboundDataFrame,
+		sizeof(auInboundDataFrame),
+		&xInboundLength);
+	xInboundFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xInboundFrame.puPayload = auInboundDataFrame;
+	xInboundFrame.xPayloadLength = xInboundLength;
+	xInboundFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xInboundFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "busy alternating reset integration inbound reset");
+	{
+		const uint32_t uInboundStreak = pxTelemetry->uConsecutiveBusyRejectedSendCount;
+		const uint32_t uInboundLatch = pxTelemetry->uLastBusyRejectEscalated;
+		const uint32_t uInboundDispatch = pxTelemetry->uDeferredDispatchCount;
+		const uint32_t uInboundDeferred = pxSupervisorReport->uDeferredSendCount;
+		vAssertTrue(uInboundStreak == 0U, "busy alternating reset integration inbound streak reset");
+		vAssertTrue(uInboundLatch == 0U, "busy alternating reset integration inbound latch reset");
+		vAssertTrue(uInboundDispatch == 4U, "busy alternating reset integration inbound dispatch");
+		vAssertTrue(uInboundDeferred == 0U, "busy alternating reset integration deferred count after inbound");
+	}
+	vAssertTrue(xApplication.uCallCount == 1U, "busy alternating reset integration application callback");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSeventhPayload, sizeof(auSeventhPayload)) == RSRX_STATUS_OK, "busy alternating reset integration warning restart first deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auFirstPayload, sizeof(auFirstPayload)) == RSRX_STATUS_OK, "busy alternating reset integration warning restart second deferred send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auSecondPayload, sizeof(auSecondPayload)) == RSRX_STATUS_REJECTED, "busy alternating reset integration warning restart reject");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy alternating reset integration warning after inbound reset");
+	vAssertTrue(xDiagnostics.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_WARNING, "busy alternating reset integration warning severity after inbound reset");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy alternating reset integration restarted streak");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 2U, "busy alternating reset integration escalation count retained");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy alternating reset integration latch clear after restart");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "busy alternating reset integration no lifecycle callback");
 }
 
 static void vTestIntegratedRetransmissionRecoveryFlow(void)
@@ -14883,6 +15038,7 @@ static void vTestIntegratedQueueBackpressureCloseoutFlow(void)
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
 	vTestIntegratedBusyRejectThresholdResetFlow();
 	vTestIntegratedBusyRejectThresholdInboundResetFlow();
+	vTestIntegratedBusyRejectAlternatingResetFlow();
 }
 
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
