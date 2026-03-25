@@ -81,6 +81,7 @@
 | EVID-CI-047 | `../reviews/RV-TBD_first_actual_vendor_runtime_review_stub.md` | Draft | first actual vendor runtime review operational stub |
 | EVID-CI-048 | `first_actual_vendor_evidence_set_execution_tracker.md` | Draft | first actual vendor evidence set execution tracker |
 | EVID-CI-049 | `../reviews/RV-042_evidence_execution_tracker_review.md` | Draft | evidence execution tracker review |
+| EVID-CI-050 | `../reviews/RV-043_audit_landing_zone_review.md` | Draft | audit trail operational landing zone review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |

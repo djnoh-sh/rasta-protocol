@@ -84,6 +84,37 @@
 - runtime CI evidence: `Partially Open`
 - first real vendor evidence: `Open`
 
+## Operational Evidence Landing Zone
+
+actual runtime/vendor evidence가 확보되면 아래 section을 직접 채운다.
+
+### Baseline Fetch Runtime Evidence
+
+| Artifact | Current State | Target |
+| --- | --- | --- |
+| Runtime report | `Stub Prepared` | `reports/baseline_fetch_success_evidence_first_run_stub.md` -> filled actual report |
+| Runtime review | `Stub Prepared` | `reviews/RV-TBD_baseline_fetch_success_runtime_review_stub.md` -> filled actual review |
+| Execution tracker | `Open` | `first_actual_vendor_evidence_set_execution_tracker.md`의 `EVS-001`, `EVS-002` 갱신 |
+
+### Vendor Finding Runtime Evidence
+
+| Artifact | Current State | Target |
+| --- | --- | --- |
+| Runtime report | `Stub Prepared` | `reports/first_actual_vendor_finding_set_stub.md` -> filled actual report |
+| Runtime review | `Stub Prepared` | `reviews/RV-TBD_first_actual_vendor_runtime_review_stub.md` -> filled actual review |
+| Actual matrix | `Stub Prepared` | `vendor_rule_matrix_actual.md` actual entry update |
+| Execution tracker | `Open` | `first_actual_vendor_evidence_set_execution_tracker.md`의 `EVS-003`~`EVS-008` 갱신 |
+
+### Audit Update Rule
+
+actual evidence가 채워지면 본 문서에는 최소 아래 reference를 추가한다.
+
+1. actual baseline fetch runtime report/review link
+2. actual vendor runtime report/review link
+3. actual vendor matrix entry link
+4. deviation or fix tracking link
+5. execution tracker close status
+
 ## Residual Open Items
 
 초기 closeout 이후에도 아래는 열린 상태로 남는다.
