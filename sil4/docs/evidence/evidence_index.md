@@ -75,6 +75,8 @@
 | EVID-CI-041 | `../reviews/RV-039_baseline_fetch_first_run_stub_review.md` | Draft | baseline fetch first-run stub review |
 | EVID-CI-042 | `reports/first_actual_vendor_finding_set_stub.md` | Draft | first actual vendor finding evidence stub |
 | EVID-CI-043 | `../reviews/RV-040_vendor_finding_first_run_stub_review.md` | Draft | vendor finding first-run stub review |
+| EVID-CI-044 | `vendor_rule_matrix_actual.md` | Draft | actual vendor rule matrix operational stub |
+| EVID-CI-045 | `../reviews/RV-041_vendor_rule_matrix_actual_stub_review.md` | Draft | vendor rule matrix actual stub review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -93,3 +95,4 @@
 9. first actual vendor evidence set checklist execution
 10. first baseline fetch success runtime report
 11. first actual vendor finding runtime report
+12. first actual vendor matrix entry
