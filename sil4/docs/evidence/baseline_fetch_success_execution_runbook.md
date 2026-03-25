@@ -53,6 +53,10 @@ target artifact:
 
 - `reports/baseline_fetch_success_evidence_first_run_stub.md`
 
+optional helper:
+
+- `sil4/tools/render_baseline_fetch_success_evidence.sh`
+
 fill:
 
 1. `Execution Date`
@@ -70,6 +74,8 @@ fill:
 13. `Annotation Delta Status`
 14. workflow/artifact/file references
 15. exact log snippet or line reference
+
+helper를 사용하는 경우에도 generated report를 검토하고 `Runtime Evidence Status`, `Follow-up Review`는 수동으로 확정한다.
 
 ### 2. Runtime Review
 
