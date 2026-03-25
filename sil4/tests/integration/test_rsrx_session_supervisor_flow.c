@@ -1472,6 +1472,7 @@ static void vTestIntegratedQueueOverflowAccumulationFlow(void)
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 2U, "queue overflow accumulation integration second overflow count");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 2U, "queue overflow accumulation integration second busy reject count");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "queue overflow accumulation integration second streak");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "queue overflow accumulation integration max deferred retained");
 
 	vEncodeFrame(
 		RSRX_MESSAGE_TYPE_DATA,
@@ -1494,6 +1495,7 @@ static void vTestIntegratedQueueOverflowAccumulationFlow(void)
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "queue overflow accumulation integration dispatch count");
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 2U, "queue overflow accumulation integration report overflow count");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue overflow accumulation integration report deferred count");
+	vAssertTrue(pxSupervisorReport->uMaxDeferredSendCount == 2U, "queue overflow accumulation integration report max deferred retained");
 	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 1U, "queue overflow accumulation integration report outstanding refreshed");
 	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 2U, "queue overflow accumulation integration report busy reject count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveBusyRejectedSendCount == 0U, "queue overflow accumulation integration report streak reset");
@@ -1609,11 +1611,13 @@ static void vTestIntegratedOverflowBusyAccumulationFlow(void)
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "overflow busy accumulation integration second streak");
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation integration escalation count");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "overflow busy accumulation integration escalation latch");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "overflow busy accumulation integration max deferred retained");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "overflow busy accumulation integration final clear");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation integration final streak reset");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "overflow busy accumulation integration final latch reset");
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 3U, "overflow busy accumulation integration report overflow count");
+	vAssertTrue(pxSupervisorReport->uMaxDeferredSendCount == 2U, "overflow busy accumulation integration report max deferred retained");
 	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 3U, "overflow busy accumulation integration report busy reject count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation integration report streak reset");
 	vAssertTrue(pxSupervisorReport->uMaxConsecutiveBusyRejectedSendCount == 2U, "overflow busy accumulation integration report max streak");

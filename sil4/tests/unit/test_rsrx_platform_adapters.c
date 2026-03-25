@@ -1048,12 +1048,14 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation count");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "overflow busy accumulation escalation latch");
 	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "overflow busy accumulation max streak");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "overflow busy accumulation max deferred retained");
 
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation final streak reset");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "overflow busy accumulation final latch reset");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 3U, "overflow busy accumulation overflow retained");
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "overflow busy accumulation final max deferred retained");
 }
 
 int main(void)
