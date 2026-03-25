@@ -33,6 +33,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassMixedTransientLongRunFlow` | TC-INT-109 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleFeedbackLongRunFlow` | TC-INT-110 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleCompletionLongRunFlow` | TC-INT-112 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverFlow` | TC-INT-113 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueTelemetryFlow` | TC-INT-014 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueFifoDispatchFlow` | TC-INT-102 | RV-034 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearOrderingFlow` | TC-INT-103 |  | Draft |
@@ -233,6 +234,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassMixedTransientLongRunFlow` | TC-INT-109 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleFeedbackLongRunFlow` | TC-INT-110 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleCompletionLongRunFlow` | TC-INT-112 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverFlow` | TC-INT-113 |  | Draft |
 | SR-003 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionFailoverUnconfirmedRecoveryProtocolErrorFlow` | TC-INT-050 |  | Draft |
 | SR-003 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionFailoverRepeatedGapUnconfirmedRecoveryProtocolErrorFlow` | TC-INT-051 |  | Draft |
 | SR-003 | HZ-005 | HLD-001, LLD-002 | `sil4/include/rsrx_state_machine.h`, `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_init`, `rsrx_state_machine_handle_event`, `rsrx_state_machine_get_state`, `rsrx_state_machine_reset` | TC-SM-007, TC-SM-008, TC-SM-012, TC-SM-015, TC-SM-017 |  | Draft |
