@@ -1123,6 +1123,7 @@ static void vTestSupervisorTransportSendCompletedCorrelated(void)
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 0U, "send complete correlated report no overflow");
 	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 0U, "send complete correlated report no busy reject");
 	vAssertTrue(pxSupervisorReport->uConsecutiveBusyRejectedSendCount == 0U, "send complete correlated report no busy streak");
+	vAssertTrue(pxSupervisorReport->uMaxConsecutiveBusyRejectedSendCount == 0U, "send complete correlated report no busy max streak");
 	vAssertTrue(pxSupervisorReport->uBusyRejectEscalationCount == 0U, "send complete correlated report no busy escalation");
 	vAssertTrue(pxSupervisorReport->uLastBusyRejectEscalated == 0U, "send complete correlated report no busy latch");
 }
@@ -1169,6 +1170,7 @@ static void vTestSupervisorReportExposesBusyRejectTelemetry(void)
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 2U, "report busy telemetry overflow count");
 	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 2U, "report busy telemetry busy reject count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveBusyRejectedSendCount == 0U, "report busy telemetry streak reset after clear");
+	vAssertTrue(pxSupervisorReport->uMaxConsecutiveBusyRejectedSendCount == 2U, "report busy telemetry max streak");
 	vAssertTrue(pxSupervisorReport->uBusyRejectEscalationCount == 1U, "report busy telemetry escalation count");
 	vAssertTrue(pxSupervisorReport->uLastBusyRejectEscalated == 0U, "report busy telemetry latch reset after clear");
 }

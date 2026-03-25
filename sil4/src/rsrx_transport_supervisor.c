@@ -47,6 +47,7 @@ static void vResetSupervisorReport(
 	pxReport->uQueueOverflowRejectCount = 0U;
 	pxReport->uBusyRejectedSendCount = 0U;
 	pxReport->uConsecutiveBusyRejectedSendCount = 0U;
+	pxReport->uMaxConsecutiveBusyRejectedSendCount = 0U;
 	pxReport->uBusyRejectEscalationCount = 0U;
 	pxReport->uLastBusyRejectEscalated = 0U;
 }
@@ -176,6 +177,7 @@ static void vRefreshOutboundQueueTelemetry(
 		pxContext->xLastReport.uQueueOverflowRejectCount = 0U;
 		pxContext->xLastReport.uBusyRejectedSendCount = 0U;
 		pxContext->xLastReport.uConsecutiveBusyRejectedSendCount = 0U;
+		pxContext->xLastReport.uMaxConsecutiveBusyRejectedSendCount = 0U;
 		pxContext->xLastReport.uBusyRejectEscalationCount = 0U;
 		pxContext->xLastReport.uLastBusyRejectEscalated = 0U;
 		return;
@@ -189,6 +191,8 @@ static void vRefreshOutboundQueueTelemetry(
 		pxTelemetry->uBusyRejectedSendCount;
 	pxContext->xLastReport.uConsecutiveBusyRejectedSendCount =
 		pxTelemetry->uConsecutiveBusyRejectedSendCount;
+	pxContext->xLastReport.uMaxConsecutiveBusyRejectedSendCount =
+		pxTelemetry->uMaxConsecutiveBusyRejectedSendCount;
 	pxContext->xLastReport.uBusyRejectEscalationCount =
 		pxTelemetry->uBusyRejectEscalationCount;
 	pxContext->xLastReport.uLastBusyRejectEscalated =
