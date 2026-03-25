@@ -69,6 +69,8 @@
 | EVID-CI-035 | `../reviews/RV-028_audit_trail_closeout_review.md` | Draft | audit trail closeout review |
 | EVID-CI-036 | `reports/baseline_fetch_success_evidence_template.md` | Draft | first baseline fetch success evidence template |
 | EVID-CI-037 | `../reviews/RV-029_baseline_fetch_success_evidence_template_review.md` | Draft | baseline fetch success evidence template review |
+| EVID-CI-038 | `first_actual_vendor_evidence_set_checklist.md` | Draft | first actual vendor evidence set execution checklist |
+| EVID-CI-039 | `../reviews/RV-038_vendor_evidence_set_checklist_review.md` | Draft | vendor evidence set checklist review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -84,3 +86,4 @@
 6. second-tool rule taxonomy mapping
 7. first workflow baseline fetch success evidence
 8. first actual vendor evidence set
+9. first actual vendor evidence set checklist execution
