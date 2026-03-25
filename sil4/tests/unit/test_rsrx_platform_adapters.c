@@ -673,12 +673,127 @@ static void vTestApplicationDataDeferredQueueFifoDispatch(void)
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 2U, "application data fifo second dispatch telemetry");
 }
 
+static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	static const uint8_t auFramePayload[2] = { 0xA1U, 0xA2U };
+	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
+	static const uint8_t auSecondPayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
+	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
+	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
+	static const uint8_t auSixthPayload[2] = { 0x61U, 0x62U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run init");
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFirstPayload,
+			sizeof(auFirstPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run first send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auSecondPayload,
+			sizeof(auSecondPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run second queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auThirdPayload,
+			sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run third queued");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(xTransportContext.uCallCount == 2U, "application data mixed clear long run first feedback dispatch count");
+	vAssertTrue(
+		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auSecondPayload[0],
+		"application data mixed clear long run first feedback dispatch payload");
+
+	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xTransportAdapterContext.xLastInboundMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
+	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
+	xTransportAdapterContext.xLastInboundMessage.xPayloadLength = sizeof(auFramePayload);
+	rsrx_transport_adapter_record_inbound_message(
+		&xTransportAdapterContext,
+		&xTransportAdapterContext.xLastInboundMessage);
+	vAssertTrue(xTransportContext.uCallCount == 3U, "application data mixed clear long run first inbound dispatch count");
+	vAssertTrue(
+		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auThirdPayload[0],
+		"application data mixed clear long run first inbound dispatch payload");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFourthPayload,
+			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run fourth send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFifthPayload,
+			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run fifth queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auSixthPayload,
+			sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run sixth queued");
+
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 3U;
+	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
+	rsrx_transport_adapter_record_inbound_message(
+		&xTransportAdapterContext,
+		&xTransportAdapterContext.xLastInboundMessage);
+	vAssertTrue(xTransportContext.uCallCount == 5U, "application data mixed clear long run second inbound dispatch count");
+	vAssertTrue(
+		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auFifthPayload[0],
+		"application data mixed clear long run second inbound dispatch payload");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(xTransportContext.uCallCount == 6U, "application data mixed clear long run second feedback dispatch count");
+	vAssertTrue(
+		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auSixthPayload[0],
+		"application data mixed clear long run second feedback dispatch payload");
+
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "application data mixed clear long run dispatch telemetry");
+	vAssertTrue(pxTelemetry->uClearOnFeedbackCount == 2U, "application data mixed clear long run feedback clear telemetry");
+	vAssertTrue(pxTelemetry->uClearOnInboundCount == 2U, "application data mixed clear long run inbound clear telemetry");
+}
+
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
 	vTestTransportTimerAndDiagnosticsDispatch();
 	vTestApplicationDataSend();
 	vTestApplicationDataDeferredQueueFifoDispatch();
+	vTestApplicationDataDeferredQueueMixedClearLongRun();
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();
