@@ -15,6 +15,7 @@ typedef struct
 	rsrx_transport_status_t eLastSendStatus;
 	uint32_t uAcceptedSendCount;
 	uint32_t uQueuedSendCount;
+	uint32_t uMaxDeferredSendCount;
 	uint32_t uDeferredDispatchCount;
 	uint32_t uQueueOverflowRejectCount;
 	uint32_t uBusyRejectedSendCount;

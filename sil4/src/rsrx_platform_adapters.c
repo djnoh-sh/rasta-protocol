@@ -232,6 +232,12 @@ static rsrx_transport_status_t eEncodeAndSend(
 			pxContext->aeDeferredMessageTypes[uDeferredIndex] = eMessageType;
 			pxContext->aeDeferredReasons[uDeferredIndex] = eReason;
 			pxContext->uDeferredSendCount++;
+			if(pxContext->uDeferredSendCount >
+				pxContext->xOutboundTelemetry.uMaxDeferredSendCount)
+			{
+				pxContext->xOutboundTelemetry.uMaxDeferredSendCount =
+					pxContext->uDeferredSendCount;
+			}
 			vRefreshDeferredQueueState(pxContext);
 			pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_OK;
 			pxContext->xOutboundTelemetry.uQueuedSendCount++;
@@ -374,6 +380,7 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	pxContext->xOutboundTelemetry.uAcceptedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uQueuedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uMaxDeferredSendCount = 0U;
 	pxContext->xOutboundTelemetry.uDeferredDispatchCount = 0U;
 	pxContext->xOutboundTelemetry.uQueueOverflowRejectCount = 0U;
 	pxContext->xOutboundTelemetry.uBusyRejectedSendCount = 0U;

@@ -1119,6 +1119,7 @@ static void vTestSupervisorTransportSendCompletedCorrelated(void)
 	vAssertTrue(pxSupervisorReport->uDeferredSendPresent == 0U, "send complete correlated report deferred clear");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "send complete correlated report deferred count");
 	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 1U, "send complete correlated report queued count");
+	vAssertTrue(pxSupervisorReport->uMaxDeferredSendCount == 1U, "send complete correlated report max deferred count");
 	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 1U, "send complete correlated report dispatch count");
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 0U, "send complete correlated report no overflow");
 	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 0U, "send complete correlated report no busy reject");

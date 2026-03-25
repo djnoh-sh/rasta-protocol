@@ -390,6 +390,7 @@ static void vTestApplicationDataSend(void)
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data third send queued");
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "application data queued telemetry second slot");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "application data max deferred telemetry second slot");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
@@ -966,6 +967,7 @@ static void vTestDeferredQueueTelemetryAccumulationMatrix(void)
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 4U, "deferred queue telemetry accumulation queued count");
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "deferred queue telemetry accumulation dispatch count");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 6U, "deferred queue telemetry accumulation accepted count");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "deferred queue telemetry accumulation max deferred count");
 	vAssertTrue(pxTelemetry->uClearManualCount == 6U, "deferred queue telemetry accumulation manual clear count");
 }
 

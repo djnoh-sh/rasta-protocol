@@ -487,6 +487,7 @@ static void vTestIntegratedDeferredQueueTelemetryFlow(void)
 	vAssertTrue(pxSupervisorReport->uDeferredSendPresent == 1U, "queue telemetry integration report deferred still present");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 1U, "queue telemetry integration report deferred count");
 	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 2U, "queue telemetry integration report queued");
+	vAssertTrue(pxSupervisorReport->uMaxDeferredSendCount == 2U, "queue telemetry integration report max deferred");
 	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 1U, "queue telemetry integration report dispatched");
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 0U, "queue telemetry integration report no overflow");
 }
@@ -1352,8 +1353,10 @@ static void vTestIntegratedDeferredQueueTelemetryAccumulationFlow(void)
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 4U, "queue telemetry accumulation integration queued count");
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "queue telemetry accumulation integration dispatch count");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 7U, "queue telemetry accumulation integration accepted count");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "queue telemetry accumulation integration max deferred count");
 	vAssertTrue(pxTelemetry->uClearOnFeedbackCount == 6U, "queue telemetry accumulation integration feedback clear count");
 	vAssertTrue(pxSupervisorReport->uQueuedSendCount == 4U, "queue telemetry accumulation integration report queued count");
+	vAssertTrue(pxSupervisorReport->uMaxDeferredSendCount == 2U, "queue telemetry accumulation integration report max deferred count");
 	vAssertTrue(pxSupervisorReport->uDeferredDispatchCount == 4U, "queue telemetry accumulation integration report dispatch count");
 	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "queue telemetry accumulation integration report deferred count");
 	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 0U, "queue telemetry accumulation integration report outstanding clear");

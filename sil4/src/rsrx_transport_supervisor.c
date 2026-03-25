@@ -43,6 +43,7 @@ static void vResetSupervisorReport(
 	pxReport->uDeferredSendPresent = 0U;
 	pxReport->uDeferredSendCount = 0U;
 	pxReport->uQueuedSendCount = 0U;
+	pxReport->uMaxDeferredSendCount = 0U;
 	pxReport->uDeferredDispatchCount = 0U;
 	pxReport->uQueueOverflowRejectCount = 0U;
 	pxReport->uBusyRejectedSendCount = 0U;
@@ -173,6 +174,7 @@ static void vRefreshOutboundQueueTelemetry(
 	{
 		pxContext->xLastReport.uDeferredSendCount = 0U;
 		pxContext->xLastReport.uQueuedSendCount = 0U;
+		pxContext->xLastReport.uMaxDeferredSendCount = 0U;
 		pxContext->xLastReport.uDeferredDispatchCount = 0U;
 		pxContext->xLastReport.uQueueOverflowRejectCount = 0U;
 		pxContext->xLastReport.uBusyRejectedSendCount = 0U;
@@ -184,6 +186,8 @@ static void vRefreshOutboundQueueTelemetry(
 	}
 
 	pxContext->xLastReport.uQueuedSendCount = pxTelemetry->uQueuedSendCount;
+	pxContext->xLastReport.uMaxDeferredSendCount =
+		pxTelemetry->uMaxDeferredSendCount;
 	pxContext->xLastReport.uDeferredDispatchCount = pxTelemetry->uDeferredDispatchCount;
 	pxContext->xLastReport.uQueueOverflowRejectCount =
 		pxTelemetry->uQueueOverflowRejectCount;
