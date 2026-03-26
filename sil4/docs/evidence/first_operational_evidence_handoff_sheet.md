@@ -27,6 +27,8 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | --- | --- |
 | baseline fetch runtime report stub | `Prepared` |
 | baseline fetch runtime review stub | `Prepared` |
+| baseline fetch runtime review helper | `Prepared` |
+| baseline fetch packet helper | `Prepared` |
 | baseline fetch execution runbook | `Prepared` |
 | actual successful PR run | `Missing` |
 

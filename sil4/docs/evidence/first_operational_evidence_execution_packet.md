@@ -27,8 +27,12 @@
   - `reports/baseline_fetch_success_evidence_first_run_stub.md`
 - runtime review stub:
   - `reviews/RV-TBD_baseline_fetch_success_runtime_review_stub.md`
+- runtime review helper:
+  - `../tools/render_baseline_fetch_runtime_review.sh`
 - execution runbook:
   - `baseline_fetch_success_execution_runbook.md`
+- packet helper:
+  - `../tools/render_baseline_fetch_execution_packet.sh`
 
 close target:
 

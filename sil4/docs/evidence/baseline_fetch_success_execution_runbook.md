@@ -83,6 +83,10 @@ target artifact:
 
 - `reviews/RV-TBD_baseline_fetch_success_runtime_review_stub.md`
 
+optional helper:
+
+- `sil4/tools/render_baseline_fetch_runtime_review.sh`
+
 verify:
 
 1. workflow run id / trigger ref / commit id consistency
@@ -91,11 +95,27 @@ verify:
 4. annotation mode is `delta-aware`
 5. evidence index / tracker / audit trail updated
 
+helper input:
+
+1. report reference and runtime report id
+2. run/source/materialized-file metadata
+3. required log references
+4. annotation mode
+5. audit/index/roadmap references
+
+helper output:
+
+- current runtime review stub structure와 동일한 markdown review
+
 ### 3. Tracker Update
 
 target artifact:
 
 - `first_actual_vendor_evidence_set_execution_tracker.md`
+
+optional helper:
+
+- `sil4/tools/render_evidence_execution_tracker_row.sh`
 
 update:
 
@@ -129,6 +149,16 @@ helper output:
 
 - baseline landing zone에 붙일 markdown update block
 
+### 5. Packet Scaffold
+
+optional helper:
+
+- `sil4/tools/render_baseline_fetch_execution_packet.sh`
+
+helper output:
+
+- report/review/tracker/audit snippet을 한 번에 생성한 baseline packet scaffold
+
 ## Expected Completed Set
 
 이 runbook가 완료되면 최소 아래가 닫혀 있어야 한다.
@@ -143,3 +173,4 @@ helper output:
 - `push` event run은 baseline fetch success evidence의 first actual run으로 취급하지 않는다.
 - `snapshot-only` annotation이면 본 runbook 완료 조건을 만족하지 않는다.
 - 실제 artifact path나 workflow step 이름이 바뀌면 본 문서부터 갱신한다.
+- packet helper는 scaffold를 한 번에 생성하지만, actual close 판단과 document 반영은 실행자가 직접 확정해야 한다.
