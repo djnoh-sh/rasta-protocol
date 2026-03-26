@@ -84,6 +84,8 @@ close target:
   - `../tools/render_vendor_input_env.sh`
 - vendor export-metadata env helper:
   - `../tools/render_vendor_input_env_from_export_metadata.sh`
+- vendor export-dir env helper:
+  - `../tools/render_vendor_input_env_from_export_dir.sh`
 - input validator:
   - `../tools/validate_operational_input_env.sh`
 - invocation generator:

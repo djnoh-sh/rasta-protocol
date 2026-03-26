@@ -57,6 +57,7 @@ optional helper:
 
 - `sil4/tools/render_vendor_input_env.sh`
 - `sil4/tools/render_vendor_input_env_from_export_metadata.sh`
+- `sil4/tools/render_vendor_input_env_from_export_dir.sh`
 
 helper output:
 
@@ -65,6 +66,7 @@ helper output:
 metadata shortcut:
 
 - actual vendor export metadata를 env file 하나로 정리한 뒤 `render_vendor_input_env_from_export_metadata.sh`로 packet env input으로 바로 변환할 수 있다.
+- export bundle 또는 export working directory 아래 `vendor_export_context.env`가 있으면 `render_vendor_input_env_from_export_dir.sh`로 packet env input으로 바로 변환할 수 있다.
 
 ### 1. Runtime Report
 

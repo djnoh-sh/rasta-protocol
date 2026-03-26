@@ -26,16 +26,17 @@ BASE_ENV="$WORK_DIR/baseline.env"
 VENDOR_ENV="$WORK_DIR/vendor.env"
 BASE_OUT="$WORK_DIR/baseline-packet"
 VENDOR_OUT="$WORK_DIR/vendor-packet"
-VENDOR_METADATA_ENV="$WORK_DIR/vendor-export-metadata.env"
+VENDOR_EXPORT_DIR="$WORK_DIR/vendor-export"
 
 mkdir -p "$BASE_LOG_DIR"
+mkdir -p "$VENDOR_EXPORT_DIR"
 : > "$BASE_LOG_DIR/summary.env"
 : > "$BASE_LOG_DIR/baseline_summary.env"
 : > "$BASE_LOG_DIR/pr_annotation.env"
 : > "$BASE_LOG_DIR/pr_annotation.md"
-: > "$WORK_DIR/vendor.xml"
+: > "$VENDOR_EXPORT_DIR/vendor.xml"
 
-cat >"$VENDOR_METADATA_ENV" <<'EOF2'
+cat >"$VENDOR_EXPORT_DIR/vendor_export_context.env" <<'EOF2'
 DATE=2026-03-26
 TOOL_SOURCE=cppcheck
 COMMIT_ID=abc1234
@@ -46,10 +47,10 @@ TRIGGER_REF=refs/heads/main
 ARTIFACT_NAME=vendor-export
 TOOL_VERSION=2.14
 RAW_EVIDENCE_TYPE=xml
-RAW_EVIDENCE_LOCATION=/tmp/rsrx-operational-input-pipeline/vendor.xml
+RAW_EVIDENCE_LOCATION=/tmp/rsrx-operational-input-pipeline/vendor-export/vendor.xml
 EXPORT_FORMAT=xml
 CAPTURE_TIMESTAMP=2026-03-26T10:00:00Z
-REVIEWER_ACCESS_PATH=/tmp/rsrx-operational-input-pipeline/vendor.xml
+REVIEWER_ACCESS_PATH=/tmp/rsrx-operational-input-pipeline/vendor-export/vendor.xml
 VENDOR_RULE_ID=misra-c2012-2.2
 VENDOR_RULE_FAMILY=MISRA
 SUBSET_ID=Required
@@ -59,7 +60,7 @@ LOCATION=42
 INITIAL_DECISION=ReviewRequired
 EOF2
 
-sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_METADATA_ENV"
+sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_EXPORT_DIR/vendor_export_context.env"
 
 "$SELF_DIR/render_operational_input_env.sh" \
   --track baseline \
@@ -88,7 +89,7 @@ sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_METADATA_EN
   --output-dir "$VENDOR_OUT" \
   --report-id EVID-CI-RUN-003 \
   --review-id RV-201 \
-  --metadata-env "$VENDOR_METADATA_ENV" \
+  --export-dir "$VENDOR_EXPORT_DIR" \
   --workflow-url https://example.invalid/run/2002 \
   --raw-artifact-ref https://example.invalid/artifacts/2002 \
   --vendor-report-ref sil4/docs/evidence/reports/vendor_runtime_report.md \
