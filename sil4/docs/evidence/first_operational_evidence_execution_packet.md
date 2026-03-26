@@ -124,6 +124,7 @@ close target:
 | Tracker linkage | `Prepared` | `EVS-001`~`EVS-008` status row 존재 |
 | Audit linkage | `Prepared` | landing zone 정의 완료 |
 | Artifact-dir ingress | `Prepared` | baseline log dir / vendor export dir만 있으면 one-shot runner 진입 가능 |
+| Artifact-dir direct runner regression | `Prepared` | baseline/vendor direct smoke 준비 완료 |
 
 ## Execution Entry Conditions
 
@@ -177,3 +178,4 @@ sil4/tools/run_operational_packet_from_env.sh \
 - helper chain regression은 `test_operational_evidence_helpers.sh`로 baseline/vendor 둘 다 한 번에 점검한다.
 - top-level input collection부터 runner execute까지의 regression은 `test_operational_input_pipeline.sh`로 점검한다.
 - top-level artifact-dir one-shot runner regression은 `test_operational_artifact_runner.sh`로 점검한다.
+- helper path 기준 `R-005` residual은 더 이상 남지 않았고, 남은 것은 actual artifact availability뿐이다.

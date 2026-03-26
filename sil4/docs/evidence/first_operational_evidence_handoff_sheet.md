@@ -67,7 +67,8 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | helper smoke script | `Prepared` |
 | input pipeline smoke script | `Prepared` |
 | artifact runner smoke script | `Prepared` |
-| roadmap `R-005` residual wording | `Prepared for reduction after execution` |
+| direct artifact-dir runner regression | `Prepared` |
+| roadmap `R-005` residual wording | `Prepared for artifact-availability-only tracking` |
 
 ## Immediate Actions
 
