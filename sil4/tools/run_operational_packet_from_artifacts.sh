@@ -79,6 +79,33 @@ EOF
   echo "$summary_file"
 }
 
+write_receipt() {
+  local output_dir="$1"
+  local track="$2"
+  local artifact_dir="$3"
+  local input_path="$4"
+  local receipt_file="$output_dir/artifact_runner_receipt.md"
+
+  cat >"$receipt_file" <<EOF
+# Operational Artifact Runner Receipt
+
+- Track: \`$track\`
+- Artifact Dir: \`$artifact_dir\`
+- Output Dir: \`$output_dir\`
+- Input Env: \`$input_path\`
+- Packet Manifest: \`$output_dir/packet_manifest.md\`
+- Summary Env: \`$output_dir/artifact_runner_summary.env\`
+
+## Next Open Targets
+
+1. open \`$output_dir/packet_manifest.md\`
+2. update tracker/audit trail using generated packet files
+3. retain actual artifact references linked from the generated packet
+EOF
+
+  echo "$receipt_file"
+}
+
 TRACK=""
 INPUT=""
 ARTIFACT_DIR=""
@@ -137,4 +164,6 @@ fi
 
 SUMMARY_FILE="$(write_summary "$OUTPUT_DIR" "$TRACK" "$ARTIFACT_DIR" "$INPUT")"
 bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$SUMMARY_FILE" >/dev/null
+RECEIPT_FILE="$(write_receipt "$OUTPUT_DIR" "$TRACK" "$ARTIFACT_DIR" "$INPUT")"
 echo "Operational artifact packet ready: $SUMMARY_FILE"
+echo "Operational artifact receipt ready: $RECEIPT_FILE"

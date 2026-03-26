@@ -131,6 +131,7 @@ close target:
 | Artifact-dir auto workspace generation | `Prepared` | input env/output dir도 default path로 생성 가능 |
 | Artifact-dir runner summary output | `Prepared` | post-run summary env로 follow-up path 바로 확인 가능 |
 | Artifact-dir summary validation | `Prepared` | summary env contract를 direct validator로 검증 가능 |
+| Artifact-dir runner receipt output | `Prepared` | 사람이 바로 읽는 post-run receipt markdown 생성 가능 |
 | Artifact-dir direct runner regression | `Prepared` | baseline/vendor direct smoke 준비 완료 |
 
 ## Execution Entry Conditions
@@ -190,4 +191,5 @@ sil4/tools/run_operational_packet_from_env.sh \
 - artifact-dir runner는 input env와 output dir를 넘기지 않아도 default workspace path를 생성할 수 있다.
 - artifact-dir runner는 summary env를 남겨 follow-up에 필요한 manifest/input path를 바로 찾게 한다.
 - artifact-dir runner는 summary env 생성 뒤 validator까지 수행한다.
+- artifact-dir runner는 사람이 바로 볼 receipt markdown도 함께 생성한다.
 - helper path 기준 `R-005` residual은 더 이상 남지 않았고, 남은 것은 actual artifact availability뿐이다.

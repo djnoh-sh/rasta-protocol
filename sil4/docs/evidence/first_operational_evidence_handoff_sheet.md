@@ -63,6 +63,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | artifact-dir auto workspace generation | `Prepared` |
 | artifact-dir runner summary output | `Prepared` |
 | artifact-dir runner summary validation | `Prepared` |
+| artifact-dir runner receipt output | `Prepared` |
 | input worksheet | `Prepared` |
 | input validator | `Prepared` |
 | invocation generator | `Prepared` |

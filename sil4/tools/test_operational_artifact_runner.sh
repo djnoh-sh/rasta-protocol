@@ -100,12 +100,18 @@ grep -q '^REVIEW_ID=RV-VDRUN-20260326-2002$' "$VENDOR_ENV"
 [ -f "$VENDOR_OUT/packet_manifest.md" ]
 [ -f "$BASE_OUT/artifact_runner_summary.env" ]
 [ -f "$VENDOR_OUT/artifact_runner_summary.env" ]
+[ -f "$BASE_OUT/artifact_runner_receipt.md" ]
+[ -f "$VENDOR_OUT/artifact_runner_receipt.md" ]
 grep -q "^TRACK=baseline$" "$BASE_OUT/artifact_runner_summary.env"
 grep -q "^TRACK=vendor$" "$VENDOR_OUT/artifact_runner_summary.env"
 grep -q "^INPUT_ENV=$BASE_ENV$" "$BASE_OUT/artifact_runner_summary.env"
 grep -q "^INPUT_ENV=$VENDOR_ENV$" "$VENDOR_OUT/artifact_runner_summary.env"
 grep -q "^PACKET_MANIFEST=$BASE_OUT/packet_manifest.md$" "$BASE_OUT/artifact_runner_summary.env"
 grep -q "^PACKET_MANIFEST=$VENDOR_OUT/packet_manifest.md$" "$VENDOR_OUT/artifact_runner_summary.env"
+grep -q "^# Operational Artifact Runner Receipt$" "$BASE_OUT/artifact_runner_receipt.md"
+grep -q "^# Operational Artifact Runner Receipt$" "$VENDOR_OUT/artifact_runner_receipt.md"
+grep -q '^- Track: `baseline`$' "$BASE_OUT/artifact_runner_receipt.md"
+grep -q '^- Track: `vendor`$' "$VENDOR_OUT/artifact_runner_receipt.md"
 bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$BASE_OUT/artifact_runner_summary.env" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$VENDOR_OUT/artifact_runner_summary.env" >/dev/null
 
