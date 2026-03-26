@@ -48,6 +48,7 @@ actual evidence는 아래 source에서만 채운다.
 helper:
 
 - `sil4/tools/render_first_actual_vendor_evidence.sh`
+- `sil4/tools/render_first_actual_vendor_execution_packet.sh`
 
 ### 1. Runtime Report
 
@@ -78,6 +79,7 @@ helper input:
 helper output:
 
 - current stub structure와 동일한 runtime report markdown
+- packet helper를 쓰면 report/review/matrix/tracker/audit snippet이 한 번에 scaffold된다.
 
 ### 2. Runtime Review
 
@@ -231,3 +233,4 @@ helper output:
 - review helper를 사용해도 reviewer는 `Result`, `Summary`를 직접 최종 확정해야 한다.
 - matrix helper를 사용해도 실제 matrix 문서 반영과 status 판단은 실행자가 직접 최종 확정해야 한다.
 - tracker helper를 사용해도 close status/date/reference의 최종 판단과 문서 반영은 실행자가 직접 확정해야 한다.
+- packet helper는 실행용 scaffold를 한 번에 만들지만, 각 artifact의 실제 operational 반영과 close 판단은 여전히 실행자가 직접 확정해야 한다.

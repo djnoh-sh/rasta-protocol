@@ -49,6 +49,8 @@ close target:
   - `../tools/render_vendor_matrix_actual_row.sh`
 - execution runbook:
   - `first_actual_vendor_execution_runbook.md`
+- packet helper:
+  - `../tools/render_first_actual_vendor_execution_packet.sh`
 
 close target:
 

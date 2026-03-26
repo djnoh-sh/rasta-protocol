@@ -40,6 +40,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | vendor runtime review helper | `Prepared` |
 | actual vendor matrix stub | `Prepared` |
 | vendor matrix helper | `Prepared` |
+| vendor execution packet helper | `Prepared` |
 | vendor execution runbook | `Prepared` |
 | actual vendor export | `Missing` |
 
