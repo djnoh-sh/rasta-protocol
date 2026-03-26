@@ -86,10 +86,13 @@ helper/runbook/packet 문서가 실행 절차를 담는다면, 본 문서는 다
 ## Recommended Use
 
 1. worksheet를 먼저 채운다.
-2. top-level helper invocation example과 대조한다.
-3. 빈 값이 없어지면 helper 실행으로 넘어간다.
+2. 필요하면 env-style input file로 옮긴다.
+3. `sil4/tools/render_operational_packet_invocation.sh`로 top-level helper command를 생성한다.
+4. 빈 값이 없어지면 helper 실행으로 넘어간다.
 
 ## Notes
 
 - 이 문서는 execution packet/runbook를 대체하지 않는다.
 - 이 문서의 목적은 helper invocation 직전 입력 누락을 줄이는 것이다.
+- optional helper:
+  - `../tools/render_operational_packet_invocation.sh`

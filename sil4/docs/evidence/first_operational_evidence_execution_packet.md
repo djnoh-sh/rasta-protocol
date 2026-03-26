@@ -71,6 +71,8 @@ close target:
   - `../tools/render_first_operational_evidence_packet.sh`
 - input worksheet:
   - `first_operational_evidence_input_worksheet.md`
+- invocation generator:
+  - `../tools/render_operational_packet_invocation.sh`
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
 - tracker helper:

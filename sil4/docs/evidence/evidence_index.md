@@ -102,6 +102,7 @@
 | EVID-CI-068 | `../reviews/RV-058_operational_packet_helper_review.md` | Draft | top-level operational packet helper review |
 | EVID-CI-070 | `first_operational_evidence_input_worksheet.md` | Draft | first operational evidence input worksheet |
 | EVID-CI-071 | `../reviews/RV-060_operational_input_worksheet_review.md` | Draft | operational input worksheet review |
+| EVID-CI-072 | `../reviews/RV-061_operational_invocation_generator_review.md` | Draft | operational invocation generator review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -139,4 +140,5 @@
 27. first baseline execution packet helper execution
 28. first top-level operational packet helper execution
 29. first operational input worksheet fill-in
+30. first invocation generator execution
 29. first operational packet invocation example usage
