@@ -90,6 +90,11 @@ helper/runbook/packet 문서가 실행 절차를 담는다면, 본 문서는 다
 3. `sil4/tools/render_operational_packet_invocation.sh`로 top-level helper command를 생성한다.
 4. 빈 값이 없어지면 helper 실행으로 넘어간다.
 
+recommended templates:
+
+- `templates/first_operational_baseline_input.env`
+- `templates/first_operational_vendor_input.env`
+
 ## Notes
 
 - 이 문서는 execution packet/runbook를 대체하지 않는다.

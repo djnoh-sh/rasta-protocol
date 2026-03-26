@@ -71,6 +71,9 @@ close target:
   - `../tools/render_first_operational_evidence_packet.sh`
 - input worksheet:
   - `first_operational_evidence_input_worksheet.md`
+- env templates:
+  - `templates/first_operational_baseline_input.env`
+  - `templates/first_operational_vendor_input.env`
 - invocation generator:
   - `../tools/render_operational_packet_invocation.sh`
 - execution tracker:
