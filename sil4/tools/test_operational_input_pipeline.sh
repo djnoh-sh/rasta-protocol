@@ -26,6 +26,7 @@ BASE_ENV="$WORK_DIR/baseline.env"
 VENDOR_ENV="$WORK_DIR/vendor.env"
 BASE_OUT="$WORK_DIR/baseline-packet"
 VENDOR_OUT="$WORK_DIR/vendor-packet"
+VENDOR_METADATA_ENV="$WORK_DIR/vendor-export-metadata.env"
 
 mkdir -p "$BASE_LOG_DIR"
 : > "$BASE_LOG_DIR/summary.env"
@@ -33,6 +34,32 @@ mkdir -p "$BASE_LOG_DIR"
 : > "$BASE_LOG_DIR/pr_annotation.env"
 : > "$BASE_LOG_DIR/pr_annotation.md"
 : > "$WORK_DIR/vendor.xml"
+
+cat >"$VENDOR_METADATA_ENV" <<'EOF2'
+DATE=2026-03-26
+TOOL_SOURCE=cppcheck
+COMMIT_ID=abc1234
+REF_NAME=refs/heads/main
+RUN_ID=2002
+JOB_NAME=vendor-capture
+TRIGGER_REF=refs/heads/main
+ARTIFACT_NAME=vendor-export
+TOOL_VERSION=2.14
+RAW_EVIDENCE_TYPE=xml
+RAW_EVIDENCE_LOCATION=/tmp/rsrx-operational-input-pipeline/vendor.xml
+EXPORT_FORMAT=xml
+CAPTURE_TIMESTAMP=2026-03-26T10:00:00Z
+REVIEWER_ACCESS_PATH=/tmp/rsrx-operational-input-pipeline/vendor.xml
+VENDOR_RULE_ID=misra-c2012-2.2
+VENDOR_RULE_FAMILY=MISRA
+SUBSET_ID=Required
+SEVERITY=High
+FILE_PATH=sil4/src/example.c
+LOCATION=42
+INITIAL_DECISION=ReviewRequired
+EOF2
+
+sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_METADATA_ENV"
 
 "$SELF_DIR/render_operational_input_env.sh" \
   --track baseline \
@@ -61,27 +88,7 @@ mkdir -p "$BASE_LOG_DIR"
   --output-dir "$VENDOR_OUT" \
   --report-id EVID-CI-RUN-003 \
   --review-id RV-201 \
-  --date 2026-03-26 \
-  --tool-source cppcheck \
-  --commit-id abc1234 \
-  --ref-name refs/heads/main \
-  --run-id 2002 \
-  --job-name vendor-capture \
-  --trigger-ref refs/heads/main \
-  --artifact-name vendor-export \
-  --tool-version 2.14 \
-  --raw-evidence-type xml \
-  --raw-evidence-location "$WORK_DIR/vendor.xml" \
-  --export-format xml \
-  --capture-timestamp 2026-03-26T10:00:00Z \
-  --reviewer-access-path "$WORK_DIR/vendor.xml" \
-  --vendor-rule-id misra-c2012-2.2 \
-  --vendor-rule-family MISRA \
-  --subset-id Required \
-  --severity High \
-  --file-path sil4/src/example.c \
-  --location 42 \
-  --initial-decision ReviewRequired \
+  --metadata-env "$VENDOR_METADATA_ENV" \
   --workflow-url https://example.invalid/run/2002 \
   --raw-artifact-ref https://example.invalid/artifacts/2002 \
   --vendor-report-ref sil4/docs/evidence/reports/vendor_runtime_report.md \

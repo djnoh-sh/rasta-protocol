@@ -10,6 +10,7 @@ usage: render_operational_input_env.sh \
 This helper delegates to:
   - render_baseline_fetch_input_env.sh
   - render_vendor_input_env.sh
+  - render_vendor_input_env_from_export_metadata.sh
 EOF
   exit 1
 }
@@ -25,11 +26,27 @@ require_value() {
 
 SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 TRACK=""
+VENDOR_METADATA_MODE="0"
+PREV=""
+FORWARD_ARGS=()
+
+for arg in "$@"; do
+  if [ "$PREV" = "--track" ]; then
+    TRACK="$arg"
+  fi
+  if [ "$arg" = "--metadata-env" ]; then
+    VENDOR_METADATA_MODE="1"
+  fi
+  PREV="$arg"
+done
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --track) TRACK="$2"; shift 2 ;;
-    *) break ;;
+    --track) shift 2 ;;
+    *)
+      FORWARD_ARGS+=("$1")
+      shift
+      ;;
   esac
 done
 
@@ -37,10 +54,14 @@ require_value "--track" "$TRACK"
 
 case "$TRACK" in
   baseline)
-    "$SELF_DIR/render_baseline_fetch_input_env.sh" "$@"
+    "$SELF_DIR/render_baseline_fetch_input_env.sh" "${FORWARD_ARGS[@]}"
     ;;
   vendor)
-    "$SELF_DIR/render_vendor_input_env.sh" "$@"
+    if [ "$VENDOR_METADATA_MODE" = "1" ]; then
+      "$SELF_DIR/render_vendor_input_env_from_export_metadata.sh" "${FORWARD_ARGS[@]}"
+    else
+      "$SELF_DIR/render_vendor_input_env.sh" "${FORWARD_ARGS[@]}"
+    fi
     ;;
   *)
     echo "unsupported track: $TRACK" >&2

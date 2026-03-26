@@ -108,6 +108,7 @@
 | EVID-CI-075 | `../reviews/RV-062_operational_env_template_review.md` | Draft | operational env template review |
 | EVID-CI-076 | `../reviews/RV-063_operational_input_validator_review.md` | Draft | operational input validator review |
 | EVID-CI-077 | `../reviews/RV-064_operational_runner_review.md` | Draft | operational runner review |
+| EVID-CI-078 | `../reviews/RV-076_vendor_export_metadata_env_helper_review.md` | Draft | vendor export metadata env helper review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -158,3 +159,4 @@
 39. first top-level input env helper execution
 40. first operational input pipeline smoke run
 41. first baseline ci-log input env helper execution
+42. first vendor export-metadata env helper execution
