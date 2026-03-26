@@ -102,6 +102,8 @@ close target:
   - `../tools/test_operational_evidence_helpers.sh`
 - input pipeline smoke:
   - `../tools/test_operational_input_pipeline.sh`
+- artifact runner smoke:
+  - `../tools/test_operational_artifact_runner.sh`
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
 - tracker helper:
@@ -174,3 +176,4 @@ sil4/tools/run_operational_packet_from_env.sh \
 - execute mode runner는 packet generation 뒤 validator까지 수행한다.
 - helper chain regression은 `test_operational_evidence_helpers.sh`로 baseline/vendor 둘 다 한 번에 점검한다.
 - top-level input collection부터 runner execute까지의 regression은 `test_operational_input_pipeline.sh`로 점검한다.
+- top-level artifact-dir one-shot runner regression은 `test_operational_artifact_runner.sh`로 점검한다.

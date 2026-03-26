@@ -113,6 +113,7 @@
 | EVID-CI-080 | `../reviews/RV-078_operational_artifact_dir_env_helper_review.md` | Draft | top-level artifact dir env helper review |
 | EVID-CI-081 | `../reviews/RV-079_operational_artifact_dir_runner_review.md` | Draft | top-level artifact dir runner review |
 | EVID-CI-082 | `../reviews/RV-080_r005_artifact_path_closeout_review.md` | Draft | R-005 artifact path closeout review |
+| EVID-CI-083 | `../reviews/RV-081_operational_artifact_runner_smoke_review.md` | Draft | operational artifact runner smoke review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -167,3 +168,4 @@
 43. first vendor export-dir env helper execution
 44. first top-level artifact-dir env helper execution
 45. first top-level artifact-dir runner execution
+46. first operational artifact runner smoke run
