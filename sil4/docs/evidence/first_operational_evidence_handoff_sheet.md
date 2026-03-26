@@ -48,6 +48,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | Item | State |
 | --- | --- |
 | execution tracker | `Prepared` |
+| execution tracker helper | `Prepared` |
 | audit landing zone | `Prepared` |
 | roadmap `R-005` residual wording | `Prepared for reduction after execution` |
 

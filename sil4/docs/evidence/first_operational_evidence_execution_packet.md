@@ -63,6 +63,8 @@ close target:
 
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
+- tracker helper:
+  - `../tools/render_evidence_execution_tracker_row.sh`
 - audit landing zone:
   - `audit_trail_closeout.md`
 - master checklist:

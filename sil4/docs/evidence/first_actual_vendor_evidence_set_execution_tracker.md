@@ -72,3 +72,5 @@
 - 실제 artifact가 채워지기 전에는 본 문서를 `Stub` 상태로 유지한다.
 - item이 하나라도 닫히면 해당 row에 date/reference를 추가한다.
 - roadmap의 `R-005`는 본 tracker 상태를 기준으로만 축소한다.
+- optional helper:
+  - `../tools/render_evidence_execution_tracker_row.sh`

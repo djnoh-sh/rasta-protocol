@@ -158,6 +158,10 @@ target artifact:
 
 - `first_actual_vendor_evidence_set_execution_tracker.md`
 
+optional helper:
+
+- `sil4/tools/render_evidence_execution_tracker_row.sh`
+
 update:
 
 - `EVS-003` -> `Closed`
@@ -166,6 +170,17 @@ update:
 - `EVS-006` -> `Closed`
 - `EVS-007` -> `Closed`
 - `EVS-008` -> `Closed` after audit trail update
+
+helper input:
+
+1. `EVS-*` item id
+2. status
+3. target artifact text
+4. execution note text
+
+helper output:
+
+- tracker table에 바로 붙일 수 있는 markdown row
 
 ### 6. Audit Trail Update
 
@@ -200,3 +215,4 @@ add:
 - helper는 runtime report 작성 부담을 줄이지만 review/matrix/tracker/audit trail update 자체를 대체하지는 않는다.
 - review helper를 사용해도 reviewer는 `Result`, `Summary`를 직접 최종 확정해야 한다.
 - matrix helper를 사용해도 실제 matrix 문서 반영과 status 판단은 실행자가 직접 최종 확정해야 한다.
+- tracker helper를 사용해도 close status/date/reference의 최종 판단과 문서 반영은 실행자가 직접 확정해야 한다.

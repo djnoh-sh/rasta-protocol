@@ -94,6 +94,7 @@
 | EVID-CI-060 | `../reviews/RV-050_vendor_evidence_helper_review.md` | Draft | vendor evidence helper review |
 | EVID-CI-061 | `../reviews/RV-051_vendor_runtime_review_helper_review.md` | Draft | vendor runtime review helper review |
 | EVID-CI-062 | `../reviews/RV-052_vendor_matrix_helper_review.md` | Draft | vendor matrix helper review |
+| EVID-CI-063 | `../reviews/RV-053_execution_tracker_helper_review.md` | Draft | execution tracker helper review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
 | EVID-SA-016 | `reports/static_analysis_report_2026-03-17_sa6_clang_baseline.md` | Draft | first clang second-tool baseline result |
@@ -123,3 +124,4 @@
 20. first actual vendor evidence helper execution
 21. first actual vendor runtime review helper execution
 22. first actual vendor matrix helper execution
+23. first evidence execution tracker helper execution
