@@ -121,6 +121,7 @@ close target:
 | Vendor finding packet | `Prepared` | actual vendor export만 필요 |
 | Tracker linkage | `Prepared` | `EVS-001`~`EVS-008` status row 존재 |
 | Audit linkage | `Prepared` | landing zone 정의 완료 |
+| Artifact-dir ingress | `Prepared` | baseline log dir / vendor export dir만 있으면 one-shot runner 진입 가능 |
 
 ## Execution Entry Conditions
 
