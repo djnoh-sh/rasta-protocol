@@ -76,6 +76,8 @@ close target:
   - `templates/first_operational_vendor_input.env`
 - baseline env helper:
   - `../tools/render_baseline_fetch_input_env.sh`
+- vendor env helper:
+  - `../tools/render_vendor_input_env.sh`
 - input validator:
   - `../tools/validate_operational_input_env.sh`
 - invocation generator:

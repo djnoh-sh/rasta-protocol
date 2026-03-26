@@ -51,6 +51,16 @@ helper:
 - `sil4/tools/render_first_actual_vendor_execution_packet.sh`
 - `sil4/tools/render_first_operational_evidence_packet.sh --track vendor`
 
+### 0. Vendor Input Env Generation
+
+optional helper:
+
+- `sil4/tools/render_vendor_input_env.sh`
+
+helper output:
+
+- vendor track packet/runner용 env input file
+
 ### 1. Runtime Report
 
 target artifact:

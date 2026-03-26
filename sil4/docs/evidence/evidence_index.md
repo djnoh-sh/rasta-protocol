@@ -154,3 +154,4 @@
 35. first operational runner execute+validate run
 36. first operational helper smoke run
 37. first baseline input env helper execution
+38. first vendor input env helper execution
