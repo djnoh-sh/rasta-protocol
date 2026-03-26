@@ -35,6 +35,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | Item | State |
 | --- | --- |
 | vendor runtime report stub | `Prepared` |
+| vendor evidence helper | `Prepared` |
 | vendor runtime review stub | `Prepared` |
 | actual vendor matrix stub | `Prepared` |
 | vendor execution runbook | `Prepared` |

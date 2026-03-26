@@ -45,6 +45,10 @@ actual evidence는 아래 source에서만 채운다.
 
 ## Fill-In Procedure
 
+helper:
+
+- `sil4/tools/render_first_actual_vendor_evidence.sh`
+
 ### 1. Runtime Report
 
 target artifact:
@@ -63,6 +67,17 @@ fill:
 8. file / location
 9. initial decision
 10. downstream artifact links
+
+helper input:
+
+1. run metadata
+2. raw evidence reference metadata
+3. vendor rule classification fields
+4. downstream artifact references
+
+helper output:
+
+- current stub structure와 동일한 runtime report markdown
 
 ### 2. Runtime Review
 
@@ -151,3 +166,4 @@ add:
 - first actual vendor finding은 sample 문서가 아니라 본 runbook의 target artifact를 직접 채운다.
 - deviation이 필요 없더라도 tracking link는 비워두지 않는다.
 - second actual vendor finding 이후에는 본 runbook를 반복 적용하되, matrix와 tracker는 누적 갱신한다.
+- helper는 runtime report 작성 부담을 줄이지만 review/matrix/tracker/audit trail update 자체를 대체하지는 않는다.
