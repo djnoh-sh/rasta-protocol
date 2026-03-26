@@ -54,6 +54,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | execution tracker helper | `Prepared` |
 | audit landing zone | `Prepared` |
 | audit landing helper | `Prepared` |
+| top-level packet helper | `Prepared` |
 | roadmap `R-005` residual wording | `Prepared for reduction after execution` |
 
 ## Immediate Actions

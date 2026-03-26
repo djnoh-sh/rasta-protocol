@@ -67,6 +67,8 @@ close target:
 
 ## Shared Operational Control
 
+- top-level packet helper:
+  - `../tools/render_first_operational_evidence_packet.sh`
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
 - tracker helper:
@@ -107,3 +109,4 @@ packet 실행은 아래 둘 중 하나가 성립할 때 시작한다.
 
 - 이 문서는 새 증빙 구조를 만들지 않는다.
 - 실제 실행 시에는 각 track runbook를 따라가고, 본 문서는 packet-level entry/exit 판단만 담당한다.
+- top-level packet helper는 baseline/vendor 어느 track를 실행할지 선택하고 해당 packet helper로 위임한다.
