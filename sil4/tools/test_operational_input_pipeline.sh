@@ -72,9 +72,9 @@ EOF2
 
 sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_EXPORT_DIR/vendor_export_context.env"
 
-"$SELF_DIR/render_operational_input_env_from_artifacts.sh" \
+"$SELF_DIR/run_operational_packet_from_artifacts.sh" \
   --track baseline \
-  --output "$BASE_ENV" \
+  --input "$BASE_ENV" \
   --output-dir "$BASE_OUT" \
   --report-id EVID-CI-RUN-001 \
   --review-id RV-101 \
@@ -86,9 +86,9 @@ sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_EXPORT_DIR/
   --materialize-log-ref materialize-step \
   --annotate-log-ref annotate-step >/dev/null
 
-"$SELF_DIR/render_operational_input_env_from_artifacts.sh" \
+"$SELF_DIR/run_operational_packet_from_artifacts.sh" \
   --track vendor \
-  --output "$VENDOR_ENV" \
+  --input "$VENDOR_ENV" \
   --output-dir "$VENDOR_OUT" \
   --report-id EVID-CI-RUN-003 \
   --review-id RV-201 \
@@ -100,15 +100,5 @@ sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_EXPORT_DIR/
   --vendor-matrix-ref sil4/docs/evidence/vendor_rule_matrix_actual.md \
   --tracking-ref sil4/docs/evidence/misra_deviation_log.md \
   --audit-trail-ref sil4/docs/evidence/audit_trail_closeout.md >/dev/null
-
-"$SELF_DIR/run_operational_packet_from_env.sh" \
-  --track baseline \
-  --input "$BASE_ENV" \
-  --execute >/dev/null
-
-"$SELF_DIR/run_operational_packet_from_env.sh" \
-  --track vendor \
-  --input "$VENDOR_ENV" \
-  --execute >/dev/null
 
 echo "Operational input pipeline smoke passed: $WORK_DIR"

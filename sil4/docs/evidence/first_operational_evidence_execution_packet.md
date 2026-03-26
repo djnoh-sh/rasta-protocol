@@ -75,6 +75,8 @@ close target:
   - `../tools/render_operational_input_env.sh`
 - top-level artifact-dir env helper:
   - `../tools/render_operational_input_env_from_artifacts.sh`
+- top-level artifact-dir runner:
+  - `../tools/run_operational_packet_from_artifacts.sh`
 - env templates:
   - `templates/first_operational_baseline_input.env`
   - `templates/first_operational_vendor_input.env`
