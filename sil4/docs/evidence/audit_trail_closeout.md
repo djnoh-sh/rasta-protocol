@@ -143,3 +143,10 @@ runtime evidence template reference:
 1. 첫 baseline fetch success workflow run이 나오면 closeout 상태를 `operational evidence available`로 승격
 2. 첫 actual vendor finding이 들어오면 closeout 문서에 actual evidence 링크 추가
 3. 이후 필요 시 assessor-facing closeout 버전으로 분리
+
+## Optional Helpers
+
+- baseline landing update:
+  - `../tools/render_audit_evidence_update.sh --track baseline`
+- vendor landing update:
+  - `../tools/render_audit_evidence_update.sh --track vendor`

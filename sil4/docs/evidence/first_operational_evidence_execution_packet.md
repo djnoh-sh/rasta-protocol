@@ -67,6 +67,8 @@ close target:
   - `../tools/render_evidence_execution_tracker_row.sh`
 - audit landing zone:
   - `audit_trail_closeout.md`
+- audit landing helper:
+  - `../tools/render_audit_evidence_update.sh`
 - master checklist:
   - `first_actual_vendor_evidence_set_checklist.md`
 

@@ -188,6 +188,10 @@ target artifact:
 
 - `audit_trail_closeout.md`
 
+optional helper:
+
+- `sil4/tools/render_audit_evidence_update.sh --track vendor`
+
 add:
 
 1. actual vendor runtime report link
@@ -195,6 +199,17 @@ add:
 3. actual vendor matrix entry link
 4. deviation or fix tracking link
 5. tracker close status reference
+
+helper input:
+
+1. date
+2. report/review references
+3. matrix/tracking references
+4. tracker reference
+
+helper output:
+
+- vendor landing zone에 붙일 markdown update block
 
 ## Expected Completed Set
 

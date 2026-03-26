@@ -109,11 +109,25 @@ target artifact:
 
 - `audit_trail_closeout.md`
 
+optional helper:
+
+- `sil4/tools/render_audit_evidence_update.sh --track baseline`
+
 add:
 
 1. actual runtime report link
 2. actual runtime review link
 3. tracker close status reference
+
+helper input:
+
+1. date
+2. report/review references
+3. tracker reference
+
+helper output:
+
+- baseline landing zone에 붙일 markdown update block
 
 ## Expected Completed Set
 
