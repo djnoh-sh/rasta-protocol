@@ -11,8 +11,8 @@
 ## Summary
 
 - 현재 전체 진행률 추정: `91~93%`
-- 현재 단계: `P3/P4 residual closeout + R-005 execution readiness 단계`
-- 다음 주력 단계: `actual CI/vendor evidence execution`, `redundancy stability closeout`, `residual sequencing closeout`
+- 현재 단계: `P3/P4 residual closeout + R-005 execution-input-only 단계`
+- 다음 주력 단계: `actual CI/vendor evidence execution`, `residual redundancy refinement`, `residual sequencing/runtime refinement`
 
 ## Overall Phase Status
 
@@ -30,7 +30,7 @@
 | --- | --- | --- | --- |
 | Rules and Governance | 과제 운영 규칙, 코딩 규칙, 작업공간 기준 | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` |
 | Requirements and HLD | SRS, hazard, architecture | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` |
-| Traceability | 요구사항-설계-코드-테스트 매핑 | In Progress | `traceability_matrix_initial.md`, `docs/reviews/RV-030_p3_p4_traceability_alignment_review.md`, `docs/reviews/RV-035_outbound_queue_closeout_review.md`, `docs/reviews/RV-036_redundancy_residual_scope_review.md`, `docs/reviews/RV-037_protocol_runtime_residual_scope_review.md` |
+| Traceability | 요구사항-설계-코드-테스트 매핑 | In Progress | `traceability_matrix_initial.md`, `docs/reviews/RV-030_p3_p4_traceability_alignment_review.md`, `docs/reviews/RV-035_outbound_queue_closeout_review.md`, `docs/reviews/RV-036_redundancy_residual_scope_review.md`, `docs/reviews/RV-037_protocol_runtime_residual_scope_review.md`, `docs/reviews/RV-065_r005_execution_chain_closeout_review.md` |
 | State Machine | 연결 상태와 전이 규칙 | In Progress | `rsrx_state_machine.*`, `test_rsrx_state_machine.c` |
 | Orchestrator | 상태 결정과 side effect dispatch 경계 | In Progress | `rsrx_orchestrator.*`, `test_rsrx_orchestrator.c` |
 | Platform Abstraction | clock/timer/diagnostics 계약 | Completed | `rsrx_platform.h`, `test_rsrx_platform_contract.c` |
@@ -135,7 +135,7 @@
 | 단위 테스트 기반 | Medium-High | protocol context와 supervisor 핵심 규칙은 matrix와 closeout wrapper 수준까지 도달 |
 | 프로토콜 완성도 | Medium-High | sequencing/retransmission/confirmation 규칙은 대표 흐름과 matrix로 많이 닫혔고 잔여는 residual variant 수준 |
 | 통합 가능성 | Medium-High | 주요 경계와 다수의 fault-integration path는 연결됐지만 richer hysteresis와 long-run stability는 아직 남음 |
-| 인증 증빙 준비 | Medium | baseline policy/evidence 구조는 execution-ready 수준까지 정리됐지만 actual runtime/vendor evidence 입력은 아직 부족 |
+| 인증 증빙 준비 | Medium | baseline/vendor execution chain은 input-ready 수준까지 정리됐지만 actual runtime/vendor evidence 입력은 아직 부족 |
 
 ## Current Risks
 
@@ -145,7 +145,7 @@
 | R-002 | transport supervisor runtime feedback의 다음 refinement 단계가 아직 남아 있음 | runtime ordering closeout matrix, runtime ordering closeout representative integration, budget scope closeout representative integration까지 current runtime ordering contract의 representative coverage는 확보됐다. 현재 residual은 broad runtime loop 미완보다 queue growth 이후 retry/runtime feedback parity, 일부 correlated feedback refinement, `R-004`와의 경계 정리 쪽에 더 가깝다 | next runtime feedback parity 정리 |
 | R-003 | redundancy policy의 다음 refinement 단계가 아직 남아 있음 | preferred recovery hysteresis closeout matrix coverage, holdoff active-loss bypass integration, holdoff active-loss bypass long-run integration, active-loss bypass 이후 holdoff re-entry integration, flap-reset then active-loss bypass integration, flap-reset then active-loss bypass long-run integration, flap-bypass mixed transient/stale feedback/stale completion/receive carryover/receive reset representative flow, flap-bypass family closeout representative integration, redundancy hysteresis closeout representative integration, redundancy long-run closeout representative integration까지 representative coverage는 확보됐다. 현재 residual은 current active-standby/holdoff/bypass model 내부 coverage보다 richer hysteresis threshold, switching audit policy, longer-run stability envelope, future redundancy mode growth 쪽에 더 가깝다 | next redundancy policy와 longer-run stability contract 정리 |
 | R-004 | outbound application send의 다음 queue policy 단계가 아직 열려 있음 | deferred queue telemetry, peak deferred depth telemetry, deferred queue FIFO dispatch, deferred queue mixed clear ordering, deferred queue mixed clear long-run ordering, mixed clear long-run adapter matrix, deferred queue telemetry accumulation matrix, deferred queue telemetry accumulation integration, queue overflow accumulation integration, overflow/busy reject accumulation matrix, overflow/busy reject accumulation integration, busy reject manual/inbound reset-source adapter matrix, busy reject alternating reset-source integration, outbound queue/backpressure closeout matrix coverage, queue/backpressure closeout representative integration까지 current bounded `outstanding 1 + deferred 2` 모델의 representative coverage는 확보됐다. 현재 residual은 current model 내부 coverage보다 deeper backlog policy, current FIFO를 넘는 fairness policy, queue growth 이후 richer retry/runtime feedback semantics 설계 쪽에 가깝다 | next queueing policy와 runtime feedback contract 설계 |
-| R-005 | 인증 증빙의 first operational run이 아직 없음 | baseline policy, template, sample, onboarding, audit trail, execution checklist, baseline fetch first-run stub, vendor finding first-run stub, actual vendor matrix stub, baseline fetch runtime review stub, vendor runtime review stub, evidence execution tracker, audit landing zone, baseline fetch execution runbook, baseline fetch evidence helper, baseline runtime review helper, baseline execution packet helper, first actual vendor execution runbook, vendor evidence helper, vendor runtime review helper, vendor matrix helper, execution tracker helper, audit landing helper, vendor execution packet helper, top-level operational packet helper, first operational evidence execution packet, first operational evidence handoff sheet까지는 정리됐다. 현재 residual은 구조 부족이 아니라 first workflow baseline fetch success run과 first actual vendor finding execution 부재 자체다 | first workflow baseline fetch success evidence 확보, first actual vendor evidence set execution |
+| R-005 | 인증 증빙의 first operational input이 아직 없음 | baseline policy, template, sample, onboarding, audit trail, execution checklist, baseline fetch first-run stub, vendor finding first-run stub, actual vendor matrix stub, baseline fetch runtime review stub, vendor runtime review stub, evidence execution tracker, audit landing zone, baseline fetch execution runbook, baseline fetch evidence helper, baseline runtime review helper, baseline execution packet helper, first actual vendor execution runbook, vendor evidence helper, vendor runtime review helper, vendor matrix helper, execution tracker helper, audit landing helper, vendor execution packet helper, top-level operational packet helper, first operational evidence execution packet, first operational evidence handoff sheet, operational input worksheet, invocation generator, env templates, input validator, env runner까지는 정리됐다. 현재 residual은 구조 부족이 아니라 first workflow baseline fetch success run input과 first actual vendor finding export input 부재 자체다 | first workflow baseline fetch success evidence 확보, first actual vendor evidence set execution |
 
 ## Recommended Next Order
 
