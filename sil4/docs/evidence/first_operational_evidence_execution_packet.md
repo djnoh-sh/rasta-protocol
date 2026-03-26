@@ -69,6 +69,8 @@ close target:
 
 - top-level packet helper:
   - `../tools/render_first_operational_evidence_packet.sh`
+- input worksheet:
+  - `first_operational_evidence_input_worksheet.md`
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
 - tracker helper:
