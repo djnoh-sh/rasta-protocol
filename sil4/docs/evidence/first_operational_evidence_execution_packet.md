@@ -90,6 +90,8 @@ close target:
   - `../tools/validate_first_operational_packet.sh`
 - smoke script:
   - `../tools/test_operational_evidence_helpers.sh`
+- input pipeline smoke:
+  - `../tools/test_operational_input_pipeline.sh`
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
 - tracker helper:
@@ -160,3 +162,4 @@ sil4/tools/run_operational_packet_from_env.sh \
 - top-level packet helper는 baseline/vendor 어느 track를 실행할지 선택하고 해당 packet helper로 위임한다.
 - execute mode runner는 packet generation 뒤 validator까지 수행한다.
 - helper chain regression은 `test_operational_evidence_helpers.sh`로 baseline/vendor 둘 다 한 번에 점검한다.
+- top-level input collection부터 runner execute까지의 regression은 `test_operational_input_pipeline.sh`로 점검한다.
