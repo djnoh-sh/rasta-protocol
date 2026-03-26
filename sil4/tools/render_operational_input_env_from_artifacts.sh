@@ -4,7 +4,7 @@ set -eu
 usage() {
   cat >&2 <<'EOF'
 usage: render_operational_input_env_from_artifacts.sh \
-  --track <baseline|vendor> \
+  --track <baseline|vendor|auto> \
   --output <env-file> \
   --output-dir <dir> \
   --report-id <id> \
@@ -43,6 +43,20 @@ require_value() {
 
 SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 
+detect_track() {
+  local artifact_dir="$1"
+  if [ -f "$artifact_dir/baseline_fetch_context.env" ]; then
+    echo "baseline"
+    return 0
+  fi
+  if [ -f "$artifact_dir/vendor_export_context.env" ]; then
+    echo "vendor"
+    return 0
+  fi
+  echo "unable to detect track from artifact dir: $artifact_dir" >&2
+  exit 1
+}
+
 TRACK=""
 OUTPUT=""
 OUTPUT_DIR=""
@@ -76,6 +90,10 @@ require_value "--output-dir" "$OUTPUT_DIR"
 require_value "--report-id" "$REPORT_ID"
 require_value "--review-id" "$REVIEW_ID"
 require_value "--artifact-dir" "$ARTIFACT_DIR"
+
+if [ "$TRACK" = "auto" ]; then
+  TRACK="$(detect_track "$ARTIFACT_DIR")"
+fi
 
 case "$TRACK" in
   baseline)

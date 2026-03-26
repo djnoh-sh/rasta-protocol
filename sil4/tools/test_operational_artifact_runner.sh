@@ -72,7 +72,7 @@ EOF2
 sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR/vendor_export_context.env"
 
 "$SELF_DIR/run_operational_packet_from_artifacts.sh" \
-  --track baseline \
+  --track auto \
   --input "$BASE_ENV" \
   --artifact-dir "$BASE_LOG_DIR" \
   --output-dir "$BASE_OUT" \
@@ -86,7 +86,7 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
   --annotate-log-ref annotate-step >/dev/null
 
 "$SELF_DIR/run_operational_packet_from_artifacts.sh" \
-  --track vendor \
+  --track auto \
   --input "$VENDOR_ENV" \
   --artifact-dir "$VENDOR_EXPORT_DIR" \
   --output-dir "$VENDOR_OUT" \

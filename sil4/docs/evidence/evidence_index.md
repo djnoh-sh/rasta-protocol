@@ -115,6 +115,7 @@
 | EVID-CI-082 | `../reviews/RV-080_r005_artifact_path_closeout_review.md` | Draft | R-005 artifact path closeout review |
 | EVID-CI-083 | `../reviews/RV-081_operational_artifact_runner_smoke_review.md` | Draft | operational artifact runner smoke review |
 | EVID-CI-084 | `../reviews/RV-082_r005_artifact_runner_closeout_review.md` | Draft | R-005 artifact runner closeout review |
+| EVID-CI-085 | `../reviews/RV-083_operational_artifact_auto_track_review.md` | Draft | operational artifact auto-track runner review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |

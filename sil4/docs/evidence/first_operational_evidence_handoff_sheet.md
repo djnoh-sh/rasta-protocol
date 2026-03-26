@@ -58,6 +58,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | top-level input env helper | `Prepared` |
 | top-level artifact-dir env helper | `Prepared` |
 | top-level artifact-dir runner | `Prepared` |
+| artifact-dir auto track detection | `Prepared` |
 | input worksheet | `Prepared` |
 | input validator | `Prepared` |
 | invocation generator | `Prepared` |
