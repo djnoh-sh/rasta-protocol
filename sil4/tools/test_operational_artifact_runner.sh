@@ -106,5 +106,7 @@ grep -q "^INPUT_ENV=$BASE_ENV$" "$BASE_OUT/artifact_runner_summary.env"
 grep -q "^INPUT_ENV=$VENDOR_ENV$" "$VENDOR_OUT/artifact_runner_summary.env"
 grep -q "^PACKET_MANIFEST=$BASE_OUT/packet_manifest.md$" "$BASE_OUT/artifact_runner_summary.env"
 grep -q "^PACKET_MANIFEST=$VENDOR_OUT/packet_manifest.md$" "$VENDOR_OUT/artifact_runner_summary.env"
+bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$BASE_OUT/artifact_runner_summary.env" >/dev/null
+bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$VENDOR_OUT/artifact_runner_summary.env" >/dev/null
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"
