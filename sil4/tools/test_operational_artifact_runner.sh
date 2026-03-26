@@ -116,5 +116,7 @@ bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$BAS
 bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$VENDOR_OUT/artifact_runner_summary.env" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$BASE_OUT/artifact_runner_receipt.md" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$VENDOR_OUT/artifact_runner_receipt.md" >/dev/null
+bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track baseline --output-dir "$BASE_OUT" >/dev/null
+bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track vendor --output-dir "$VENDOR_OUT" >/dev/null
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"

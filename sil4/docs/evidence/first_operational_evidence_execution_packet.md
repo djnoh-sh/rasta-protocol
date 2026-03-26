@@ -102,6 +102,8 @@ close target:
   - `../tools/validate_operational_artifact_runner_summary.sh`
 - artifact runner receipt validator:
   - `../tools/validate_operational_artifact_runner_receipt.sh`
+- artifact bundle validator:
+  - `../tools/validate_operational_artifact_bundle.sh`
 - smoke script:
   - `../tools/test_operational_evidence_helpers.sh`
 - input pipeline smoke:
@@ -135,6 +137,7 @@ close target:
 | Artifact-dir summary validation | `Prepared` | summary env contract를 direct validator로 검증 가능 |
 | Artifact-dir runner receipt output | `Prepared` | 사람이 바로 읽는 post-run receipt markdown 생성 가능 |
 | Artifact-dir receipt validation | `Prepared` | receipt markdown contract를 direct validator로 검증 가능 |
+| Artifact-dir bundle validation | `Prepared` | packet+summary+receipt를 one-shot validator로 검증 가능 |
 | Artifact-dir direct runner regression | `Prepared` | baseline/vendor direct smoke 준비 완료 |
 
 ## Execution Entry Conditions
@@ -196,4 +199,5 @@ sil4/tools/run_operational_packet_from_env.sh \
 - artifact-dir runner는 summary env 생성 뒤 validator까지 수행한다.
 - artifact-dir runner는 사람이 바로 볼 receipt markdown도 함께 생성한다.
 - artifact-dir runner는 receipt markdown 생성 뒤 validator까지 수행한다.
+- artifact-dir runner는 packet+summary+receipt를 bundle validator로 한 번 더 검증한다.
 - helper path 기준 `R-005` residual은 더 이상 남지 않았고, 남은 것은 actual artifact availability뿐이다.

@@ -15,8 +15,8 @@ usage: run_operational_packet_from_artifacts.sh \
 This helper:
   1. renders packet env input from artifact dir
   2. runs run_operational_packet_from_env.sh --execute
-  3. writes and validates artifact runner summary
-  4. writes and validates artifact runner receipt
+  3. writes summary/receipt
+  4. validates the full artifact bundle
 EOF
   exit 1
 }
@@ -164,8 +164,9 @@ fi
   --execute
 
 SUMMARY_FILE="$(write_summary "$OUTPUT_DIR" "$TRACK" "$ARTIFACT_DIR" "$INPUT")"
-bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$SUMMARY_FILE" >/dev/null
 RECEIPT_FILE="$(write_receipt "$OUTPUT_DIR" "$TRACK" "$ARTIFACT_DIR" "$INPUT")"
-bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$RECEIPT_FILE" >/dev/null
+bash "$SELF_DIR/validate_operational_artifact_bundle.sh" \
+  --track "$TRACK" \
+  --output-dir "$OUTPUT_DIR" >/dev/null
 echo "Operational artifact packet ready: $SUMMARY_FILE"
 echo "Operational artifact receipt ready: $RECEIPT_FILE"
