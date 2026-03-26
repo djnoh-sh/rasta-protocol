@@ -89,7 +89,8 @@ helper/runbook/packet 문서가 실행 절차를 담는다면, 본 문서는 다
 2. 필요하면 env-style input file로 옮긴다.
 3. `sil4/tools/validate_operational_input_env.sh`로 `TBD`와 누락값을 먼저 검증한다.
 4. `sil4/tools/render_operational_packet_invocation.sh`로 top-level helper command를 생성한다.
-5. 빈 값이 없어지면 helper 실행으로 넘어간다.
+5. 또는 `sil4/tools/run_operational_packet_from_env.sh`로 dry-run/actual execution entry point를 사용한다.
+6. 빈 값이 없어지면 helper 실행으로 넘어간다.
 
 recommended templates:
 
@@ -103,3 +104,4 @@ recommended templates:
 - optional helper:
   - `../tools/validate_operational_input_env.sh`
   - `../tools/render_operational_packet_invocation.sh`
+  - `../tools/run_operational_packet_from_env.sh`

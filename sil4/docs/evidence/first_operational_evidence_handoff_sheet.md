@@ -59,6 +59,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | input validator | `Prepared` |
 | invocation generator | `Prepared` |
 | env templates | `Prepared` |
+| env runner | `Prepared` |
 | roadmap `R-005` residual wording | `Prepared for reduction after execution` |
 
 ## Immediate Actions

@@ -78,6 +78,8 @@ close target:
   - `../tools/validate_operational_input_env.sh`
 - invocation generator:
   - `../tools/render_operational_packet_invocation.sh`
+- runner:
+  - `../tools/run_operational_packet_from_env.sh`
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
 - tracker helper:
@@ -119,63 +121,26 @@ packet 실행은 아래 둘 중 하나가 성립할 때 시작한다.
 ### Baseline Track
 
 ```bash
-sil4/tools/render_first_operational_evidence_packet.sh \
-  --output-dir /tmp/rsrx-operational-packet \
+sil4/tools/run_operational_packet_from_env.sh \
   --track baseline \
-  --report-id EVID-CI-RUN-001 \
-  --review-id RV-101 \
-  --execution-date 2026-03-26 \
-  --commit-id <commit> \
-  --ref-name <pr-ref> \
-  --run-id <workflow-run-id> \
-  --trigger-ref <trigger-ref> \
-  --source-type same-pr \
-  --source-run-id <baseline-run-id> \
-  --workflow-url <workflow-url> \
-  --artifact-ref <artifact-url-or-ref> \
-  --resolve-log-ref <resolve-log-ref> \
-  --download-log-ref <download-log-ref> \
-  --materialize-log-ref <materialize-log-ref> \
-  --annotate-log-ref <annotate-log-ref> \
-  --log-dir <materialized-log-dir>
+  --input sil4/docs/evidence/templates/first_operational_baseline_input.env
 ```
 
 ### Vendor Track
 
 ```bash
-sil4/tools/render_first_operational_evidence_packet.sh \
-  --output-dir /tmp/rsrx-operational-packet \
+sil4/tools/run_operational_packet_from_env.sh \
   --track vendor \
-  --report-id EVID-CI-RUN-003 \
-  --review-id RV-201 \
-  --date 2026-03-26 \
-  --tool-source <vendor-tool> \
-  --commit-id <commit> \
-  --ref-name <branch-or-pr> \
-  --run-id <capture-or-workflow-run-id> \
-  --job-name <job-name> \
-  --trigger-ref <trigger-ref> \
-  --artifact-name <artifact-name> \
-  --tool-version <version> \
-  --raw-evidence-type <type> \
-  --raw-evidence-location <location> \
-  --export-format <format> \
-  --capture-timestamp <timestamp> \
-  --reviewer-access-path <path> \
-  --vendor-rule-id <rule-id> \
-  --vendor-rule-family <family> \
-  --subset-id <subset> \
-  --severity <severity> \
-  --file-path <file> \
-  --location <location> \
-  --initial-decision <decision> \
-  --workflow-url <workflow-url> \
-  --raw-artifact-ref <artifact-ref> \
-  --vendor-report-ref <report-ref> \
-  --vendor-review-ref <review-ref> \
-  --vendor-matrix-ref <matrix-ref> \
-  --tracking-ref <tracking-ref> \
-  --audit-trail-ref <audit-ref>
+  --input sil4/docs/evidence/templates/first_operational_vendor_input.env
+```
+
+Actual execution:
+
+```bash
+sil4/tools/run_operational_packet_from_env.sh \
+  --track baseline \
+  --input <filled-env-file> \
+  --execute
 ```
 
 ## Notes
