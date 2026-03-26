@@ -49,6 +49,7 @@ helper:
 
 - `sil4/tools/render_first_actual_vendor_evidence.sh`
 - `sil4/tools/render_first_actual_vendor_execution_packet.sh`
+- `sil4/tools/render_first_operational_evidence_packet.sh --track vendor`
 
 ### 1. Runtime Report
 

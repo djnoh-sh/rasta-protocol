@@ -154,6 +154,7 @@ helper output:
 optional helper:
 
 - `sil4/tools/render_baseline_fetch_execution_packet.sh`
+- `sil4/tools/render_first_operational_evidence_packet.sh --track baseline`
 
 helper output:
 
