@@ -125,6 +125,7 @@ close target:
 | Audit linkage | `Prepared` | landing zone 정의 완료 |
 | Artifact-dir ingress | `Prepared` | baseline log dir / vendor export dir만 있으면 one-shot runner 진입 가능 |
 | Artifact-dir auto track detection | `Prepared` | context file만 있으면 track 선택 없이 진입 가능 |
+| Artifact-dir auto id generation | `Prepared` | context file 기준 default report/review id 생성 가능 |
 | Artifact-dir direct runner regression | `Prepared` | baseline/vendor direct smoke 준비 완료 |
 
 ## Execution Entry Conditions
@@ -180,4 +181,5 @@ sil4/tools/run_operational_packet_from_env.sh \
 - top-level input collection부터 runner execute까지의 regression은 `test_operational_input_pipeline.sh`로 점검한다.
 - top-level artifact-dir one-shot runner regression은 `test_operational_artifact_runner.sh`로 점검한다.
 - artifact-dir entry는 context file 기준으로 baseline/vendor track를 자동 판별할 수 있다.
+- artifact-dir runner는 report/review id를 넘기지 않아도 context file 기준 default id를 생성할 수 있다.
 - helper path 기준 `R-005` residual은 더 이상 남지 않았고, 남은 것은 actual artifact availability뿐이다.

@@ -76,8 +76,6 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
   --input "$BASE_ENV" \
   --artifact-dir "$BASE_LOG_DIR" \
   --output-dir "$BASE_OUT" \
-  --report-id EVID-CI-RUN-001 \
-  --review-id RV-101 \
   --workflow-url https://example.invalid/run/1001 \
   --artifact-ref https://example.invalid/artifacts/1001 \
   --resolve-log-ref resolve-step \
@@ -90,8 +88,6 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
   --input "$VENDOR_ENV" \
   --artifact-dir "$VENDOR_EXPORT_DIR" \
   --output-dir "$VENDOR_OUT" \
-  --report-id EVID-CI-RUN-003 \
-  --review-id RV-201 \
   --workflow-url https://example.invalid/run/2002 \
   --raw-artifact-ref https://example.invalid/artifacts/2002 \
   --vendor-report-ref sil4/docs/evidence/reports/vendor_runtime_report.md \
@@ -99,5 +95,10 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
   --vendor-matrix-ref sil4/docs/evidence/vendor_rule_matrix_actual.md \
   --tracking-ref sil4/docs/evidence/misra_deviation_log.md \
   --audit-trail-ref sil4/docs/evidence/audit_trail_closeout.md >/dev/null
+
+grep -q '^REPORT_ID=EVID-CI-BLRUN-20260326-1001$' "$BASE_ENV"
+grep -q '^REVIEW_ID=RV-BLRUN-20260326-1001$' "$BASE_ENV"
+grep -q '^REPORT_ID=EVID-CI-VDRUN-20260326-2002$' "$VENDOR_ENV"
+grep -q '^REVIEW_ID=RV-VDRUN-20260326-2002$' "$VENDOR_ENV"
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"

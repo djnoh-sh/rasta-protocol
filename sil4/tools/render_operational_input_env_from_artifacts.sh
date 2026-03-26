@@ -7,8 +7,8 @@ usage: render_operational_input_env_from_artifacts.sh \
   --track <baseline|vendor|auto> \
   --output <env-file> \
   --output-dir <dir> \
-  --report-id <id> \
-  --review-id <id> \
+  [--report-id <id>] \
+  [--review-id <id>] \
   --artifact-dir <dir> \
   [track-specific args...]
 
@@ -57,6 +57,72 @@ detect_track() {
   exit 1
 }
 
+get_env_value() {
+  local file="$1"
+  local key="$2"
+  local line
+  if [ ! -f "$file" ]; then
+    echo ""
+    return
+  fi
+  line="$(grep -E "^${key}=" "$file" | tail -n 1 || true)"
+  if [ -z "$line" ]; then
+    echo ""
+    return
+  fi
+  echo "${line#*=}"
+}
+
+default_report_id() {
+  local track="$1"
+  local artifact_dir="$2"
+  case "$track" in
+    baseline)
+      local ctx="$artifact_dir/baseline_fetch_context.env"
+      local date_value run_id
+      date_value="$(get_env_value "$ctx" "EXECUTION_DATE")"
+      run_id="$(get_env_value "$ctx" "RUN_ID")"
+      require_value "EXECUTION_DATE in baseline_fetch_context.env" "$date_value"
+      require_value "RUN_ID in baseline_fetch_context.env" "$run_id"
+      printf 'EVID-CI-BLRUN-%s-%s' "${date_value//-/}" "$run_id"
+      ;;
+    vendor)
+      local ctx="$artifact_dir/vendor_export_context.env"
+      local date_value run_id
+      date_value="$(get_env_value "$ctx" "DATE")"
+      run_id="$(get_env_value "$ctx" "RUN_ID")"
+      require_value "DATE in vendor_export_context.env" "$date_value"
+      require_value "RUN_ID in vendor_export_context.env" "$run_id"
+      printf 'EVID-CI-VDRUN-%s-%s' "${date_value//-/}" "$run_id"
+      ;;
+  esac
+}
+
+default_review_id() {
+  local track="$1"
+  local artifact_dir="$2"
+  case "$track" in
+    baseline)
+      local ctx="$artifact_dir/baseline_fetch_context.env"
+      local date_value run_id
+      date_value="$(get_env_value "$ctx" "EXECUTION_DATE")"
+      run_id="$(get_env_value "$ctx" "RUN_ID")"
+      require_value "EXECUTION_DATE in baseline_fetch_context.env" "$date_value"
+      require_value "RUN_ID in baseline_fetch_context.env" "$run_id"
+      printf 'RV-BLRUN-%s-%s' "${date_value//-/}" "$run_id"
+      ;;
+    vendor)
+      local ctx="$artifact_dir/vendor_export_context.env"
+      local date_value run_id
+      date_value="$(get_env_value "$ctx" "DATE")"
+      run_id="$(get_env_value "$ctx" "RUN_ID")"
+      require_value "DATE in vendor_export_context.env" "$date_value"
+      require_value "RUN_ID in vendor_export_context.env" "$run_id"
+      printf 'RV-VDRUN-%s-%s' "${date_value//-/}" "$run_id"
+      ;;
+  esac
+}
+
 TRACK=""
 OUTPUT=""
 OUTPUT_DIR=""
@@ -87,12 +153,18 @@ done
 require_value "--track" "$TRACK"
 require_value "--output" "$OUTPUT"
 require_value "--output-dir" "$OUTPUT_DIR"
-require_value "--report-id" "$REPORT_ID"
-require_value "--review-id" "$REVIEW_ID"
 require_value "--artifact-dir" "$ARTIFACT_DIR"
 
 if [ "$TRACK" = "auto" ]; then
   TRACK="$(detect_track "$ARTIFACT_DIR")"
+fi
+
+if [ -z "$REPORT_ID" ]; then
+  REPORT_ID="$(default_report_id "$TRACK" "$ARTIFACT_DIR")"
+fi
+
+if [ -z "$REVIEW_ID" ]; then
+  REVIEW_ID="$(default_review_id "$TRACK" "$ARTIFACT_DIR")"
 fi
 
 case "$TRACK" in

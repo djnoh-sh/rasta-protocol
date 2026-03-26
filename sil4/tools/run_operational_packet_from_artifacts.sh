@@ -8,8 +8,8 @@ usage: run_operational_packet_from_artifacts.sh \
   --input <generated-env-file> \
   --artifact-dir <dir> \
   --output-dir <dir> \
-  --report-id <id> \
-  --review-id <id> \
+  [--report-id <id>] \
+  [--review-id <id>] \
   [track-specific args...]
 
 This helper:
@@ -75,8 +75,6 @@ require_value "--track" "$TRACK"
 require_value "--input" "$INPUT"
 require_value "--artifact-dir" "$ARTIFACT_DIR"
 require_value "--output-dir" "$OUTPUT_DIR"
-require_value "--report-id" "$REPORT_ID"
-require_value "--review-id" "$REVIEW_ID"
 
 if [ "$TRACK" = "auto" ]; then
   TRACK="$(detect_track "$ARTIFACT_DIR")"
