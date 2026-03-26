@@ -63,3 +63,5 @@
 - 이 문서는 sample matrix를 대체하지 않는다.
 - first actual vendor finding 이전에는 `Stub` 상태를 유지한다.
 - second actual finding 이후에는 entry를 누적해 operational matrix로 확장한다.
+- optional helper:
+  - `../tools/render_vendor_matrix_actual_row.sh`

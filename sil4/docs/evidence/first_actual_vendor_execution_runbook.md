@@ -115,6 +115,10 @@ target artifact:
 
 - `vendor_rule_matrix_actual.md`
 
+optional helper:
+
+- `sil4/tools/render_vendor_matrix_actual_row.sh`
+
 update:
 
 1. actual rule id and family
@@ -125,6 +129,17 @@ update:
 6. review link
 7. tracking link
 8. status
+
+helper input:
+
+1. tool source and run id
+2. rule classification fields
+3. report/review/tracking references
+4. status
+
+helper output:
+
+- `vendor_rule_matrix_actual.md`의 operational row에 바로 붙일 수 있는 markdown row
 
 ### 4. Tracking Update
 
@@ -184,3 +199,4 @@ add:
 - second actual vendor finding 이후에는 본 runbook를 반복 적용하되, matrix와 tracker는 누적 갱신한다.
 - helper는 runtime report 작성 부담을 줄이지만 review/matrix/tracker/audit trail update 자체를 대체하지는 않는다.
 - review helper를 사용해도 reviewer는 `Result`, `Summary`를 직접 최종 확정해야 한다.
+- matrix helper를 사용해도 실제 matrix 문서 반영과 status 판단은 실행자가 직접 최종 확정해야 한다.

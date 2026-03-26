@@ -45,6 +45,8 @@ close target:
   - `../tools/render_first_actual_vendor_runtime_review.sh`
 - actual matrix stub:
   - `vendor_rule_matrix_actual.md`
+- matrix helper:
+  - `../tools/render_vendor_matrix_actual_row.sh`
 - execution runbook:
   - `first_actual_vendor_execution_runbook.md`
 
