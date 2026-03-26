@@ -36,6 +36,7 @@ actual evidence는 아래 source에서만 채운다.
 
 - workflow run page
 - `sil4-ci-logs` artifact
+- `/tmp/rsrx-ci-logs/baseline_fetch_context.env`
 - `/tmp/rsrx-ci-logs/summary.env`
 - `/tmp/rsrx-ci-logs/baseline_summary.env`
 - `/tmp/rsrx-ci-logs/pr_annotation.md`
@@ -52,6 +53,7 @@ actual evidence는 아래 source에서만 채운다.
 optional helper:
 
 - `sil4/tools/render_baseline_fetch_input_env.sh`
+- `sil4/tools/render_baseline_fetch_input_env_from_ci_logs.sh`
 
 helper output:
 

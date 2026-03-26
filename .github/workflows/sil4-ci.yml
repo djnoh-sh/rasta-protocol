@@ -124,6 +124,23 @@ jobs:
         if: always() && github.event_name == 'pull_request'
         run: bash sil4/tools/render_pr_annotation.sh
 
+      - name: Capture Baseline Fetch Context
+        if: always() && github.event_name == 'pull_request'
+        env:
+          BASELINE_SOURCE: ${{ steps.baseline_artifact.outputs.source }}
+          BASELINE_SOURCE_RUN_ID: ${{ steps.baseline_artifact.outputs.run_id }}
+        run: |
+          mkdir -p /tmp/rsrx-ci-logs
+          cat >/tmp/rsrx-ci-logs/baseline_fetch_context.env <<EOF
+          EXECUTION_DATE=$(date -u +%F)
+          COMMIT_ID=${GITHUB_SHA}
+          REF_NAME=${GITHUB_HEAD_REF}
+          RUN_ID=${GITHUB_RUN_ID}
+          TRIGGER_REF=${GITHUB_REF}
+          SOURCE_TYPE=${BASELINE_SOURCE}
+          SOURCE_RUN_ID=${BASELINE_SOURCE_RUN_ID}
+          EOF
+
       - name: Publish Step Summary
         if: always()
         run: |
@@ -192,6 +209,7 @@ jobs:
             /tmp/rsrx-ci-logs/summary.env
             /tmp/rsrx-ci-logs/baseline_artifact.zip
             /tmp/rsrx-ci-logs/baseline_summary.env
+            /tmp/rsrx-ci-logs/baseline_fetch_context.env
             /tmp/rsrx-ci-logs/pr_annotation.md
             /tmp/rsrx-ci-logs/pr_annotation.env
           if-no-files-found: error

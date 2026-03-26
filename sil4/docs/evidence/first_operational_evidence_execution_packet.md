@@ -78,6 +78,8 @@ close target:
   - `templates/first_operational_vendor_input.env`
 - baseline env helper:
   - `../tools/render_baseline_fetch_input_env.sh`
+- baseline ci-log env helper:
+  - `../tools/render_baseline_fetch_input_env_from_ci_logs.sh`
 - vendor env helper:
   - `../tools/render_vendor_input_env.sh`
 - input validator:
