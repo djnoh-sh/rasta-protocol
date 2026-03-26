@@ -71,6 +71,8 @@ close target:
   - `../tools/render_first_operational_evidence_packet.sh`
 - input worksheet:
   - `first_operational_evidence_input_worksheet.md`
+- top-level input env helper:
+  - `../tools/render_operational_input_env.sh`
 - env templates:
   - `templates/first_operational_baseline_input.env`
   - `templates/first_operational_vendor_input.env`

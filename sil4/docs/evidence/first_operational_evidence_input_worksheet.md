@@ -99,6 +99,7 @@ recommended templates:
 
 baseline shortcut helper:
 
+- `../tools/render_operational_input_env.sh`
 - `../tools/render_baseline_fetch_input_env.sh`
 - `../tools/render_vendor_input_env.sh`
 
