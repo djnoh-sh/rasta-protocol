@@ -47,6 +47,16 @@ actual evidence는 아래 source에서만 채운다.
 
 ## Fill-In Procedure
 
+### 0. Baseline Input Env Generation
+
+optional helper:
+
+- `sil4/tools/render_baseline_fetch_input_env.sh`
+
+helper output:
+
+- baseline track packet/runner용 env input file
+
 ### 1. Runtime Report
 
 target artifact:
