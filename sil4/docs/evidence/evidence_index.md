@@ -152,3 +152,4 @@
 29. first operational packet invocation example usage
 34. first operational packet validation run
 35. first operational runner execute+validate run
+36. first operational helper smoke run

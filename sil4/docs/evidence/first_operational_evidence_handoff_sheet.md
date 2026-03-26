@@ -61,6 +61,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | env templates | `Prepared` |
 | env runner | `Prepared` |
 | packet validator | `Prepared` |
+| helper smoke script | `Prepared` |
 | roadmap `R-005` residual wording | `Prepared for reduction after execution` |
 
 ## Immediate Actions

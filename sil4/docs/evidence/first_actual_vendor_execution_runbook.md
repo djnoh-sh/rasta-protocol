@@ -219,6 +219,7 @@ helper output:
 optional helper:
 
 - `sil4/tools/validate_first_operational_packet.sh --track vendor`
+- `sil4/tools/test_operational_evidence_helpers.sh`
 
 helper output:
 
