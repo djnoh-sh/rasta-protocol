@@ -58,6 +58,26 @@ default_output_dir() {
   printf '%s/%s-%s-packet' "$parent_dir" "$base_name" "$track"
 }
 
+write_summary() {
+  local output_dir="$1"
+  local track="$2"
+  local artifact_dir="$3"
+  local input_path="$4"
+  local summary_file="$output_dir/artifact_runner_summary.env"
+
+  mkdir -p "$output_dir"
+
+  cat >"$summary_file" <<EOF
+TRACK=$track
+ARTIFACT_DIR=$artifact_dir
+OUTPUT_DIR=$output_dir
+INPUT_ENV=$input_path
+PACKET_MANIFEST=$output_dir/packet_manifest.md
+EOF
+
+  echo "$summary_file"
+}
+
 TRACK=""
 INPUT=""
 ARTIFACT_DIR=""
@@ -113,3 +133,6 @@ fi
   --track "$TRACK" \
   --input "$INPUT" \
   --execute
+
+SUMMARY_FILE="$(write_summary "$OUTPUT_DIR" "$TRACK" "$ARTIFACT_DIR" "$INPUT")"
+echo "Operational artifact packet ready: $SUMMARY_FILE"

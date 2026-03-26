@@ -118,6 +118,7 @@
 | EVID-CI-085 | `../reviews/RV-083_operational_artifact_auto_track_review.md` | Draft | operational artifact auto-track runner review |
 | EVID-CI-086 | `../reviews/RV-084_operational_artifact_auto_id_review.md` | Draft | operational artifact auto-id runner review |
 | EVID-CI-087 | `../reviews/RV-085_operational_artifact_workspace_review.md` | Draft | operational artifact workspace auto-generation review |
+| EVID-CI-088 | `../reviews/RV-086_operational_artifact_summary_review.md` | Draft | operational artifact runner summary review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |

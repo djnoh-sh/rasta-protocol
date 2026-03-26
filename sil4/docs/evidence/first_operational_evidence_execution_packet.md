@@ -127,6 +127,7 @@ close target:
 | Artifact-dir auto track detection | `Prepared` | context file만 있으면 track 선택 없이 진입 가능 |
 | Artifact-dir auto id generation | `Prepared` | context file 기준 default report/review id 생성 가능 |
 | Artifact-dir auto workspace generation | `Prepared` | input env/output dir도 default path로 생성 가능 |
+| Artifact-dir runner summary output | `Prepared` | post-run summary env로 follow-up path 바로 확인 가능 |
 | Artifact-dir direct runner regression | `Prepared` | baseline/vendor direct smoke 준비 완료 |
 
 ## Execution Entry Conditions
@@ -184,4 +185,5 @@ sil4/tools/run_operational_packet_from_env.sh \
 - artifact-dir entry는 context file 기준으로 baseline/vendor track를 자동 판별할 수 있다.
 - artifact-dir runner는 report/review id를 넘기지 않아도 context file 기준 default id를 생성할 수 있다.
 - artifact-dir runner는 input env와 output dir를 넘기지 않아도 default workspace path를 생성할 수 있다.
+- artifact-dir runner는 summary env를 남겨 follow-up에 필요한 manifest/input path를 바로 찾게 한다.
 - helper path 기준 `R-005` residual은 더 이상 남지 않았고, 남은 것은 actual artifact availability뿐이다.

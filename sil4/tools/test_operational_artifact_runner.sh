@@ -98,5 +98,13 @@ grep -q '^REPORT_ID=EVID-CI-VDRUN-20260326-2002$' "$VENDOR_ENV"
 grep -q '^REVIEW_ID=RV-VDRUN-20260326-2002$' "$VENDOR_ENV"
 [ -f "$BASE_OUT/packet_manifest.md" ]
 [ -f "$VENDOR_OUT/packet_manifest.md" ]
+[ -f "$BASE_OUT/artifact_runner_summary.env" ]
+[ -f "$VENDOR_OUT/artifact_runner_summary.env" ]
+grep -q "^TRACK=baseline$" "$BASE_OUT/artifact_runner_summary.env"
+grep -q "^TRACK=vendor$" "$VENDOR_OUT/artifact_runner_summary.env"
+grep -q "^INPUT_ENV=$BASE_ENV$" "$BASE_OUT/artifact_runner_summary.env"
+grep -q "^INPUT_ENV=$VENDOR_ENV$" "$VENDOR_OUT/artifact_runner_summary.env"
+grep -q "^PACKET_MANIFEST=$BASE_OUT/packet_manifest.md$" "$BASE_OUT/artifact_runner_summary.env"
+grep -q "^PACKET_MANIFEST=$VENDOR_OUT/packet_manifest.md$" "$VENDOR_OUT/artifact_runner_summary.env"
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"
