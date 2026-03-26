@@ -85,6 +85,10 @@ target artifact:
 
 - `reviews/RV-TBD_first_actual_vendor_runtime_review_stub.md`
 
+optional helper:
+
+- `sil4/tools/render_first_actual_vendor_runtime_review.sh`
+
 verify:
 
 1. raw evidence reference is traceable
@@ -92,6 +96,18 @@ verify:
 3. decision and tracking link are consistent
 4. actual matrix entry and audit trail update exist
 5. evidence index / tracker / roadmap linkage updated
+
+helper input:
+
+1. report reference
+2. runtime report id
+3. raw evidence reference
+4. rule classification fields
+5. matrix/tracking/audit/index/roadmap references
+
+helper output:
+
+- current review stub structure와 동일한 runtime review markdown
 
 ### 3. Actual Matrix Update
 
@@ -167,3 +183,4 @@ add:
 - deviation이 필요 없더라도 tracking link는 비워두지 않는다.
 - second actual vendor finding 이후에는 본 runbook를 반복 적용하되, matrix와 tracker는 누적 갱신한다.
 - helper는 runtime report 작성 부담을 줄이지만 review/matrix/tracker/audit trail update 자체를 대체하지는 않는다.
+- review helper를 사용해도 reviewer는 `Result`, `Summary`를 직접 최종 확정해야 한다.

@@ -41,6 +41,8 @@ close target:
   - `reports/first_actual_vendor_finding_set_stub.md`
 - runtime review stub:
   - `reviews/RV-TBD_first_actual_vendor_runtime_review_stub.md`
+- runtime review helper:
+  - `../tools/render_first_actual_vendor_runtime_review.sh`
 - actual matrix stub:
   - `vendor_rule_matrix_actual.md`
 - execution runbook:
