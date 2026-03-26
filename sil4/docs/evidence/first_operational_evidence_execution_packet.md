@@ -80,6 +80,8 @@ close target:
   - `../tools/render_operational_packet_invocation.sh`
 - runner:
   - `../tools/run_operational_packet_from_env.sh`
+- packet validator:
+  - `../tools/validate_first_operational_packet.sh`
 - execution tracker:
   - `first_actual_vendor_evidence_set_execution_tracker.md`
 - tracker helper:
@@ -148,3 +150,4 @@ sil4/tools/run_operational_packet_from_env.sh \
 - 이 문서는 새 증빙 구조를 만들지 않는다.
 - 실제 실행 시에는 각 track runbook를 따라가고, 본 문서는 packet-level entry/exit 판단만 담당한다.
 - top-level packet helper는 baseline/vendor 어느 track를 실행할지 선택하고 해당 packet helper로 위임한다.
+- execute mode runner는 packet generation 뒤 validator까지 수행한다.

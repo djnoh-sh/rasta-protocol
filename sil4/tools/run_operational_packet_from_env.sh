@@ -41,6 +41,11 @@ done
 require_value "--track" "$TRACK"
 require_value "--input" "$INPUT"
 
+if [ ! -f "$INPUT" ]; then
+  echo "input file not found: $INPUT" >&2
+  exit 1
+fi
+
 TMP_CMD="$(mktemp /tmp/rsrx-operational-cmd.XXXXXX.sh)"
 trap 'rm -f "$TMP_CMD"' EXIT
 
@@ -65,3 +70,12 @@ fi
 echo
 echo "Executing generated command..."
 /bin/bash "$TMP_CMD"
+
+# shellcheck disable=SC1090
+. "$INPUT"
+
+echo
+echo "Validating generated packet..."
+"$SELF_DIR/validate_first_operational_packet.sh" \
+  --track "$TRACK" \
+  --output-dir "$OUTPUT_DIR"

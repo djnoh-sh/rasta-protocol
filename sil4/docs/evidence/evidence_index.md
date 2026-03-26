@@ -150,3 +150,5 @@
 32. first operational input validation run
 33. first operational runner dry-run
 29. first operational packet invocation example usage
+34. first operational packet validation run
+35. first operational runner execute+validate run

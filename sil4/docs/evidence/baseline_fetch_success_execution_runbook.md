@@ -155,10 +155,12 @@ optional helper:
 
 - `sil4/tools/render_baseline_fetch_execution_packet.sh`
 - `sil4/tools/render_first_operational_evidence_packet.sh --track baseline`
+- `sil4/tools/validate_first_operational_packet.sh --track baseline`
 
 helper output:
 
 - report/review/tracker/audit snippet을 한 번에 생성한 baseline packet scaffold
+- generated baseline packet output completeness confirmation
 
 ## Expected Completed Set
 

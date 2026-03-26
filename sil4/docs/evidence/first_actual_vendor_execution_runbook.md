@@ -214,6 +214,16 @@ helper output:
 
 - vendor landing zone에 붙일 markdown update block
 
+### 7. Packet Validation
+
+optional helper:
+
+- `sil4/tools/validate_first_operational_packet.sh --track vendor`
+
+helper output:
+
+- generated vendor packet output completeness confirmation
+
 ## Expected Completed Set
 
 이 runbook가 완료되면 최소 아래가 닫혀 있어야 한다.
