@@ -114,5 +114,7 @@ grep -q '^- Track: `baseline`$' "$BASE_OUT/artifact_runner_receipt.md"
 grep -q '^- Track: `vendor`$' "$VENDOR_OUT/artifact_runner_receipt.md"
 bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$BASE_OUT/artifact_runner_summary.env" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_runner_summary.sh" --summary "$VENDOR_OUT/artifact_runner_summary.env" >/dev/null
+bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$BASE_OUT/artifact_runner_receipt.md" >/dev/null
+bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$VENDOR_OUT/artifact_runner_receipt.md" >/dev/null
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"
