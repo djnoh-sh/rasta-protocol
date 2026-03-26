@@ -5,9 +5,9 @@ usage() {
   cat >&2 <<'EOF'
 usage: run_operational_packet_from_artifacts.sh \
   --track <baseline|vendor|auto> \
-  --input <generated-env-file> \
   --artifact-dir <dir> \
-  --output-dir <dir> \
+  [--input <generated-env-file>] \
+  [--output-dir <dir>] \
   [--report-id <id>] \
   [--review-id <id>] \
   [track-specific args...]
@@ -44,6 +44,20 @@ detect_track() {
   exit 1
 }
 
+default_input_path() {
+  local output_dir="$1"
+  printf '%s/operational_input.env' "$output_dir"
+}
+
+default_output_dir() {
+  local artifact_dir="$1"
+  local track="$2"
+  local parent_dir base_name
+  parent_dir="$(dirname "$artifact_dir")"
+  base_name="$(basename "$artifact_dir")"
+  printf '%s/%s-%s-packet' "$parent_dir" "$base_name" "$track"
+}
+
 TRACK=""
 INPUT=""
 ARTIFACT_DIR=""
@@ -72,12 +86,18 @@ while [ "$#" -gt 0 ]; do
 done
 
 require_value "--track" "$TRACK"
-require_value "--input" "$INPUT"
 require_value "--artifact-dir" "$ARTIFACT_DIR"
-require_value "--output-dir" "$OUTPUT_DIR"
 
 if [ "$TRACK" = "auto" ]; then
   TRACK="$(detect_track "$ARTIFACT_DIR")"
+fi
+
+if [ -z "$OUTPUT_DIR" ]; then
+  OUTPUT_DIR="$(default_output_dir "$ARTIFACT_DIR" "$TRACK")"
+fi
+
+if [ -z "$INPUT" ]; then
+  INPUT="$(default_input_path "$OUTPUT_DIR")"
 fi
 
 "$SELF_DIR/render_operational_input_env_from_artifacts.sh" \

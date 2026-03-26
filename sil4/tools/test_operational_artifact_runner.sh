@@ -22,11 +22,11 @@ rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
-BASE_ENV="$WORK_DIR/baseline.env"
-BASE_OUT="$WORK_DIR/baseline-packet"
+BASE_OUT="$WORK_DIR/baseline-logs-baseline-packet"
+BASE_ENV="$BASE_OUT/operational_input.env"
 VENDOR_EXPORT_DIR="$WORK_DIR/vendor-export"
-VENDOR_ENV="$WORK_DIR/vendor.env"
-VENDOR_OUT="$WORK_DIR/vendor-packet"
+VENDOR_OUT="$WORK_DIR/vendor-export-vendor-packet"
+VENDOR_ENV="$VENDOR_OUT/operational_input.env"
 
 mkdir -p "$BASE_LOG_DIR" "$VENDOR_EXPORT_DIR"
 : > "$BASE_LOG_DIR/summary.env"
@@ -73,9 +73,7 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
 
 "$SELF_DIR/run_operational_packet_from_artifacts.sh" \
   --track auto \
-  --input "$BASE_ENV" \
   --artifact-dir "$BASE_LOG_DIR" \
-  --output-dir "$BASE_OUT" \
   --workflow-url https://example.invalid/run/1001 \
   --artifact-ref https://example.invalid/artifacts/1001 \
   --resolve-log-ref resolve-step \
@@ -85,9 +83,7 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
 
 "$SELF_DIR/run_operational_packet_from_artifacts.sh" \
   --track auto \
-  --input "$VENDOR_ENV" \
   --artifact-dir "$VENDOR_EXPORT_DIR" \
-  --output-dir "$VENDOR_OUT" \
   --workflow-url https://example.invalid/run/2002 \
   --raw-artifact-ref https://example.invalid/artifacts/2002 \
   --vendor-report-ref sil4/docs/evidence/reports/vendor_runtime_report.md \
@@ -100,5 +96,7 @@ grep -q '^REPORT_ID=EVID-CI-BLRUN-20260326-1001$' "$BASE_ENV"
 grep -q '^REVIEW_ID=RV-BLRUN-20260326-1001$' "$BASE_ENV"
 grep -q '^REPORT_ID=EVID-CI-VDRUN-20260326-2002$' "$VENDOR_ENV"
 grep -q '^REVIEW_ID=RV-VDRUN-20260326-2002$' "$VENDOR_ENV"
+[ -f "$BASE_OUT/packet_manifest.md" ]
+[ -f "$VENDOR_OUT/packet_manifest.md" ]
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"
