@@ -101,7 +101,11 @@ baseline shortcut helper:
 
 - `../tools/render_operational_input_env.sh`
 - `../tools/render_baseline_fetch_input_env.sh`
-- `../tools/render_vendor_input_env.sh`
+- `../tools/render_operational_input_env_from_artifacts.sh`
+
+artifact shortcut:
+
+- baseline은 extracted CI log dir, vendor는 export dir만 준비되면 `render_operational_input_env_from_artifacts.sh`로 바로 packet env input까지 내릴 수 있다.
 
 ## Notes
 

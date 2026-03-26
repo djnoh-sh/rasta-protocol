@@ -36,6 +36,16 @@ mkdir -p "$VENDOR_EXPORT_DIR"
 : > "$BASE_LOG_DIR/pr_annotation.md"
 : > "$VENDOR_EXPORT_DIR/vendor.xml"
 
+cat >"$BASE_LOG_DIR/baseline_fetch_context.env" <<'EOF2'
+EXECUTION_DATE=2026-03-26
+COMMIT_ID=abc1234
+REF_NAME=refs/pull/123/head
+RUN_ID=1001
+TRIGGER_REF=refs/pull/123/head
+SOURCE_TYPE=same-pr
+SOURCE_RUN_ID=999
+EOF2
+
 cat >"$VENDOR_EXPORT_DIR/vendor_export_context.env" <<'EOF2'
 DATE=2026-03-26
 TOOL_SOURCE=cppcheck
@@ -62,34 +72,27 @@ EOF2
 
 sed -i "s|/tmp/rsrx-operational-input-pipeline|$WORK_DIR|g" "$VENDOR_EXPORT_DIR/vendor_export_context.env"
 
-"$SELF_DIR/render_operational_input_env.sh" \
+"$SELF_DIR/render_operational_input_env_from_artifacts.sh" \
   --track baseline \
   --output "$BASE_ENV" \
   --output-dir "$BASE_OUT" \
   --report-id EVID-CI-RUN-001 \
   --review-id RV-101 \
-  --execution-date 2026-03-26 \
-  --commit-id abc1234 \
-  --ref-name refs/pull/123/head \
-  --run-id 1001 \
-  --trigger-ref refs/pull/123/head \
-  --source-type same-pr \
-  --source-run-id 999 \
+  --artifact-dir "$BASE_LOG_DIR" \
   --workflow-url https://example.invalid/run/1001 \
   --artifact-ref https://example.invalid/artifacts/1001 \
   --resolve-log-ref resolve-step \
   --download-log-ref download-step \
   --materialize-log-ref materialize-step \
-  --annotate-log-ref annotate-step \
-  --log-dir "$BASE_LOG_DIR" >/dev/null
+  --annotate-log-ref annotate-step >/dev/null
 
-"$SELF_DIR/render_operational_input_env.sh" \
+"$SELF_DIR/render_operational_input_env_from_artifacts.sh" \
   --track vendor \
   --output "$VENDOR_ENV" \
   --output-dir "$VENDOR_OUT" \
   --report-id EVID-CI-RUN-003 \
   --review-id RV-201 \
-  --export-dir "$VENDOR_EXPORT_DIR" \
+  --artifact-dir "$VENDOR_EXPORT_DIR" \
   --workflow-url https://example.invalid/run/2002 \
   --raw-artifact-ref https://example.invalid/artifacts/2002 \
   --vendor-report-ref sil4/docs/evidence/reports/vendor_runtime_report.md \

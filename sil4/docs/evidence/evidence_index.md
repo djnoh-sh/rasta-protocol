@@ -110,6 +110,7 @@
 | EVID-CI-077 | `../reviews/RV-064_operational_runner_review.md` | Draft | operational runner review |
 | EVID-CI-078 | `../reviews/RV-076_vendor_export_metadata_env_helper_review.md` | Draft | vendor export metadata env helper review |
 | EVID-CI-079 | `../reviews/RV-077_vendor_export_dir_env_helper_review.md` | Draft | vendor export dir env helper review |
+| EVID-CI-080 | `../reviews/RV-078_operational_artifact_dir_env_helper_review.md` | Draft | top-level artifact dir env helper review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -162,3 +163,4 @@
 41. first baseline ci-log input env helper execution
 42. first vendor export-metadata env helper execution
 43. first vendor export-dir env helper execution
+44. first top-level artifact-dir env helper execution
