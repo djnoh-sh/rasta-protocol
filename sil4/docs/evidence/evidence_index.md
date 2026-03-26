@@ -106,6 +106,7 @@
 | EVID-CI-073 | `templates/first_operational_baseline_input.env` | Draft | baseline operational input env template |
 | EVID-CI-074 | `templates/first_operational_vendor_input.env` | Draft | vendor operational input env template |
 | EVID-CI-075 | `../reviews/RV-062_operational_env_template_review.md` | Draft | operational env template review |
+| EVID-CI-076 | `../reviews/RV-063_operational_input_validator_review.md` | Draft | operational input validator review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -145,4 +146,5 @@
 29. first operational input worksheet fill-in
 30. first invocation generator execution
 31. first operational env template fill-in
+32. first operational input validation run
 29. first operational packet invocation example usage

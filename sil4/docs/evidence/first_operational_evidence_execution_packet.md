@@ -74,6 +74,8 @@ close target:
 - env templates:
   - `templates/first_operational_baseline_input.env`
   - `templates/first_operational_vendor_input.env`
+- input validator:
+  - `../tools/validate_operational_input_env.sh`
 - invocation generator:
   - `../tools/render_operational_packet_invocation.sh`
 - execution tracker:
