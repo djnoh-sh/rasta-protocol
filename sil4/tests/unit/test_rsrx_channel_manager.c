@@ -73,6 +73,59 @@ static void vTestPreferredRecoveryHoldoff(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff switch count after recovery");
 }
 
+static void vTestPreferredRecoveryHoldoffThresholdThree(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 3U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-3 init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-3 primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-3 failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-3 first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-3 failover switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-3 primary restored");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-3 hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-3 held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-3 no switch one");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-3 stable switch count one");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-3 hold two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-3 held secondary two");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-3 no switch two");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-3 stable switch count two");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-3 recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-3 recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff-3 switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-3 recovery switch count");
+}
+
 static void vTestPreferredRecoveryHysteresisResetMatrix(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -497,6 +550,7 @@ int main(void)
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after reset");
 
 	vTestPreferredRecoveryHoldoff();
+	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHysteresisResetMatrix();
 	vTestPreferredRecoveryActiveLossBypassesHoldoff();
 	vTestBypassReentersHoldoffOnNextCycle();
