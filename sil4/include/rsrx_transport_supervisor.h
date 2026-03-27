@@ -84,6 +84,8 @@ typedef struct
 	uint32_t uErrorDecisionCount;
 	uint32_t uChannelSwitchCount;
 	uint32_t uLastChannelSwitchOccurred;
+	rsrx_transport_channel_id_t eLastSwitchFromChannelId;
+	rsrx_transport_channel_id_t eLastSwitchToChannelId;
 	uint32_t uLastPumpIterationCount;
 	uint32_t uLastPumpProcessedFrameCount;
 	uint32_t uOutstandingSendPresent;

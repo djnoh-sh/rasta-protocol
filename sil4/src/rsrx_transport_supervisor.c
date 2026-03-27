@@ -37,6 +37,8 @@ static void vResetSupervisorReport(
 	pxReport->uErrorDecisionCount = 0U;
 	pxReport->uChannelSwitchCount = 0U;
 	pxReport->uLastChannelSwitchOccurred = 0U;
+	pxReport->eLastSwitchFromChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxReport->eLastSwitchToChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxReport->uLastPumpIterationCount = 0U;
 	pxReport->uLastPumpProcessedFrameCount = 0U;
 	pxReport->uOutstandingSendPresent = 0U;
@@ -136,18 +138,33 @@ static void vRecordDecision(
 }
 
 static void vRefreshChannelSwitchTelemetry(
-	rsrx_transport_supervisor_context_t * pxContext)
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_transport_channel_id_t ePreviousActiveChannelId)
 {
+	rsrx_transport_channel_id_t eCurrentActiveChannelId;
+
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(pxContext->pxSession == (rsrx_session_t *)0))
 	{
 		return;
 	}
 
+	eCurrentActiveChannelId = rsrx_channel_manager_get_active_channel(
+		&pxContext->pxSession->xChannelManager);
 	pxContext->xLastReport.uChannelSwitchCount =
 		pxContext->pxSession->xChannelManager.uTotalSwitchCount;
 	pxContext->xLastReport.uLastChannelSwitchOccurred =
 		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
+	if(pxContext->xLastReport.uLastChannelSwitchOccurred != 0U)
+	{
+		pxContext->xLastReport.eLastSwitchFromChannelId = ePreviousActiveChannelId;
+		pxContext->xLastReport.eLastSwitchToChannelId = eCurrentActiveChannelId;
+	}
+	else
+	{
+		pxContext->xLastReport.eLastSwitchFromChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+		pxContext->xLastReport.eLastSwitchToChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	}
 }
 
 static void vRefreshOutboundQueueTelemetry(
@@ -263,7 +280,7 @@ static rsrx_supervisor_status_t eProcessSessionEventInternal(
 		(eSessionStatus == RSRX_STATUS_REJECTED) ?
 			RSRX_SUPERVISOR_DECISION_SESSION_REJECTED :
 			RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED);
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	vRefreshOutboundQueueTelemetry(pxContext);
 
 	*ppxReport = &pxContext->xLastReport;
@@ -329,7 +346,7 @@ static rsrx_supervisor_status_t eEscalateToProtocolError(
 	pxContext->xLastReport.eLastEffectiveEvent = RSRX_EVENT_PROTOCOL_ERROR;
 	pxContext->xLastReport.eLastSessionStatus = eSessionStatus;
 	vRecordDecision(pxContext, eDecision);
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	vRefreshOutboundQueueTelemetry(pxContext);
 	*ppxReport = &pxContext->xLastReport;
 
@@ -358,7 +375,7 @@ static uint32_t uAlternativeChannelIsAvailable(
 	}
 
 	pxContext->xLastReport.xLastChannelState = xChannelState;
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	return (uint32_t)(xChannelState.eChannelId != eFailedChannelId);
 }
 
@@ -378,7 +395,7 @@ static uint32_t uRefreshAvailableChannelState(
 	}
 
 	pxContext->xLastReport.xLastChannelState = xChannelState;
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	return 1U;
 }
 
@@ -500,7 +517,7 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 		(eSessionStatus == RSRX_STATUS_REJECTED) ?
 			RSRX_SUPERVISOR_DECISION_SESSION_REJECTED :
 			RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED);
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	vRefreshOutboundQueueTelemetry(pxContext);
 
 	pxContext->xLastReport.uProcessedFrameCount++;
@@ -528,7 +545,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_init(
 	pxContext->uMaxConsecutiveSendFailures = D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET;
 	pxContext->uMaxConsecutiveReceiveErrors = D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET;
 	pxContext->uInitialized = 1U;
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	vRefreshOutboundQueueTelemetry(pxContext);
 
 	return RSRX_SUPERVISOR_STATUS_OK;
@@ -567,7 +584,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	eTransportStatus = rsrx_transport_adapter_query_channel(
 		&pxContext->pxSession->xTransportAdapter,
 		&pxContext->xLastReport.xLastChannelState);
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	vRefreshOutboundQueueTelemetry(pxContext);
 	pxContext->xLastReport.uPollCount++;
 	if(eTransportStatus != RSRX_TRANSPORT_STATUS_OK)
@@ -713,6 +730,8 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 	const rsrx_transport_frame_t * pxFrame,
 	const rsrx_transport_supervisor_report_t ** ppxReport)
 {
+	rsrx_transport_channel_id_t ePreviousActiveChannelId;
+
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(pxFrame == (const rsrx_transport_frame_t *)0) ||
 		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
@@ -722,6 +741,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 	}
 
 	pxContext->xLastReport.xLastFrame = *pxFrame;
+	ePreviousActiveChannelId = eGetActiveChannelId(pxContext);
 
 	switch(pxFrame->eEventType)
 	{
@@ -802,6 +822,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 				vRecordDecision(
 					pxContext,
 					RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED);
+				vRefreshChannelSwitchTelemetry(pxContext, ePreviousActiveChannelId);
 				vRefreshOutboundQueueTelemetry(pxContext);
 				*ppxReport = &pxContext->xLastReport;
 				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
@@ -815,11 +836,13 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 			if(uRefreshAvailableChannelState(pxContext) != 0U)
 			{
 				vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED);
+				vRefreshChannelSwitchTelemetry(pxContext, ePreviousActiveChannelId);
 				vRefreshOutboundQueueTelemetry(pxContext);
 				*ppxReport = &pxContext->xLastReport;
 				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 			}
 			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED);
+			vRefreshChannelSwitchTelemetry(pxContext, ePreviousActiveChannelId);
 			vRefreshOutboundQueueTelemetry(pxContext);
 			*ppxReport = &pxContext->xLastReport;
 			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
@@ -830,6 +853,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 		case RSRX_TRANSPORT_EVENT_NONE:
 		default:
 			vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED);
+			vRefreshChannelSwitchTelemetry(pxContext, ePreviousActiveChannelId);
 			vRefreshOutboundQueueTelemetry(pxContext);
 			*ppxReport = &pxContext->xLastReport;
 			return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
@@ -856,7 +880,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_timer_expiry(
 		&pxContext->xLastReport.pxLastReport);
 	pxContext->xLastReport.eLastSessionStatus = eSessionStatus;
 	vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_TIMER_DELEGATED);
-	vRefreshChannelSwitchTelemetry(pxContext);
+	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	vRefreshOutboundQueueTelemetry(pxContext);
 	if(uSessionStatusIsHandled(eSessionStatus) == 0U)
 	{
