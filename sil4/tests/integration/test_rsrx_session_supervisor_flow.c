@@ -6254,6 +6254,7 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration selected secondary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover integration switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover integration switch occurred");
+	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER, "channel failover integration switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration switch from primary");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration switch to secondary");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel failover integration state retained");

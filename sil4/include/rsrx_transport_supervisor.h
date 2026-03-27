@@ -60,6 +60,13 @@ typedef enum
 	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION
 } rsrx_supervisor_budget_update_t;
 
+typedef enum
+{
+	RSRX_SUPERVISOR_SWITCH_KIND_NONE = 0,
+	RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER,
+	RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY
+} rsrx_supervisor_switch_kind_t;
+
 typedef struct
 {
 	rsrx_transport_channel_state_t xLastChannelState;
@@ -84,6 +91,7 @@ typedef struct
 	uint32_t uErrorDecisionCount;
 	uint32_t uChannelSwitchCount;
 	uint32_t uLastChannelSwitchOccurred;
+	rsrx_supervisor_switch_kind_t eLastSwitchKind;
 	rsrx_transport_channel_id_t eLastSwitchFromChannelId;
 	rsrx_transport_channel_id_t eLastSwitchToChannelId;
 	uint32_t uLastPumpIterationCount;
