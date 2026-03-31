@@ -704,6 +704,12 @@ static void vTestPreferredRecoveryHysteresisCloseoutMatrix(void)
 	vTestFlapResetBypassReentersHoldoffMatrix();
 }
 
+static void vTestPreferredRecoveryStabilityEnvelopeCloseoutMatrix(void)
+{
+	vTestPreferredRecoveryHysteresisCloseoutMatrix();
+	vTestPreferredRecoveryThresholdCloseoutMatrix();
+}
+
 int main(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -784,6 +790,7 @@ int main(void)
 	vTestBypassReentersHoldoffOnNextCycle();
 	vTestFlapResetBypassReentersHoldoffMatrix();
 	vTestPreferredRecoveryHysteresisCloseoutMatrix();
+	vTestPreferredRecoveryStabilityEnvelopeCloseoutMatrix();
 
 	(void)printf("rsrx_channel_manager_test: all tests passed\n");
 	return EXIT_SUCCESS;

@@ -16025,6 +16025,15 @@ static void vTestIntegratedFlapBypassCloseoutFlow(void)
 	vTestIntegratedFlapBypassReceiveResetFlow();
 }
 
+static void vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow(void)
+{
+	vTestIntegratedRedundancyHysteresisCloseoutFlow();
+	vTestIntegratedRedundancyLongRunCloseoutFlow();
+	vTestIntegratedFlapBypassCloseoutFlow();
+	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
+	vTestIntegratedSwitchAuditCloseoutFlow();
+}
+
 static void vTestIntegratedProtocolVariantCloseoutFlow(void)
 {
 	vTestIntegratedProtocolOrderingCloseoutFlow();
@@ -16861,6 +16870,7 @@ int main(void)
 	vTestIntegratedRedundancyPolicyCloseoutFlow();
 	vTestIntegratedRedundancyLongRunCloseoutFlow();
 	vTestIntegratedFlapBypassCloseoutFlow();
+	vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
 	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
 	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
