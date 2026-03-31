@@ -951,6 +951,88 @@ static void vTestPreferredRecoveryHoldoffThresholdFourteen(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-14 recovery switch count");
 }
 
+static void vTestPreferredRecoveryHoldoffThresholdFifteen(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 15U;
+
+	vAssertTrue(rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 primary down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 failover switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 primary restored");
+
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch one");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count one");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary two");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch two");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count two");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold three");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary three");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch three");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count three");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold four");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary four");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch four");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count four");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold five");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary five");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch five");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count five");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold six");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary six");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch six");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count six");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold seven");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary seven");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch seven");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count seven");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold eight");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary eight");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch eight");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count eight");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold nine");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary nine");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch nine");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count nine");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold ten");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary ten");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch ten");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count ten");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold eleven");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary eleven");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch eleven");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count eleven");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold twelve");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary twelve");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch twelve");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count twelve");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 hold thirteen");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 held secondary thirteen");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 no switch thirteen");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 stable switch count thirteen");
+
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-15 recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff-15 switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-15 recovery switch count");
+}
+
 static void vTestPreferredRecoveryHoldoffThresholdThreeFlapReset(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -1969,6 +2051,90 @@ static void vTestPreferredRecoveryHoldoffThresholdFourteenFlapReset(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-14 flap recovery switch count");
 }
 
+static void vTestPreferredRecoveryHoldoffThresholdFifteenFlapReset(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 15U;
+
+	vAssertTrue(rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap primary down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 flap first switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap primary restored");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch one");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap reset down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap refresh");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap retained secondary");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch on reset");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-15 flap switch count after reset");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap primary restored again");
+
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed one");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary two");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed two");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold three");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary three");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed three");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold four");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary four");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed four");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold five");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary five");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed five");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold six");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary six");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed six");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold seven");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary seven");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed seven");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold eight");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary eight");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed eight");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold nine");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary nine");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed nine");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold ten");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary ten");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed ten");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold eleven");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary eleven");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed eleven");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold twelve");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary twelve");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed twelve");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed hold thirteen");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-15 flap renewed held secondary thirteen");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-15 flap no switch renewed thirteen");
+
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-15 flap renewed recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-15 flap renewed recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff-15 flap switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-15 flap recovery switch count");
+}
+
 static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 {
 	vTestPreferredRecoveryHoldoffThresholdThree();
@@ -1983,6 +2149,7 @@ static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 	vTestPreferredRecoveryHoldoffThresholdTwelve();
 	vTestPreferredRecoveryHoldoffThresholdThirteen();
 	vTestPreferredRecoveryHoldoffThresholdFourteen();
+	vTestPreferredRecoveryHoldoffThresholdFifteen();
 	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFiveFlapReset();
@@ -1995,6 +2162,7 @@ static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 	vTestPreferredRecoveryHoldoffThresholdTwelveFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdThirteenFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourteenFlapReset();
+	vTestPreferredRecoveryHoldoffThresholdFifteenFlapReset();
 }
 
 static void vTestPreferredRecoveryHysteresisResetMatrix(void)
@@ -2439,6 +2607,7 @@ int main(void)
 	vTestPreferredRecoveryHoldoffThresholdTwelve();
 	vTestPreferredRecoveryHoldoffThresholdThirteen();
 	vTestPreferredRecoveryHoldoffThresholdFourteen();
+	vTestPreferredRecoveryHoldoffThresholdFifteen();
 	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFiveFlapReset();
@@ -2451,6 +2620,7 @@ int main(void)
 	vTestPreferredRecoveryHoldoffThresholdTwelveFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdThirteenFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourteenFlapReset();
+	vTestPreferredRecoveryHoldoffThresholdFifteenFlapReset();
 	vTestPreferredRecoveryThresholdCloseoutMatrix();
 	vTestPreferredRecoveryHysteresisResetMatrix();
 	vTestPreferredRecoveryActiveLossBypassesHoldoff();
