@@ -186,6 +186,73 @@ static void vTestPreferredRecoveryHoldoffThresholdFour(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-4 recovery switch count");
 }
 
+static void vTestPreferredRecoveryHoldoffThresholdFive(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 5U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-5 first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-5 failover switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 primary restored");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-5 held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-5 no switch one");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-5 stable switch count one");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 hold two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-5 held secondary two");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-5 no switch two");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-5 stable switch count two");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 hold three");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-5 held secondary three");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-5 no switch three");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-5 stable switch count three");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 hold four");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-5 held secondary four");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-5 no switch four");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-5 stable switch count four");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"holdoff-5 recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-5 recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff-5 switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-5 recovery switch count");
+}
+
 static void vTestPreferredRecoveryHoldoffThresholdThreeFlapReset(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -346,6 +413,7 @@ static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 {
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();
+	vTestPreferredRecoveryHoldoffThresholdFive();
 	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
 }
@@ -782,6 +850,7 @@ int main(void)
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();
+	vTestPreferredRecoveryHoldoffThresholdFive();
 	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
 	vTestPreferredRecoveryThresholdCloseoutMatrix();
