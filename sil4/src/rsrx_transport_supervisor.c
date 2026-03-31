@@ -39,6 +39,7 @@ static void vResetSupervisorReport(
 	pxReport->uLastChannelSwitchOccurred = 0U;
 	pxReport->uFailoverSwitchCount = 0U;
 	pxReport->uPreferredRecoverySwitchCount = 0U;
+	pxReport->uNoOpRefreshCount = 0U;
 	pxReport->eLastSwitchKind = RSRX_SUPERVISOR_SWITCH_KIND_NONE;
 	pxReport->eLastSwitchFromChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxReport->eLastSwitchToChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
@@ -185,6 +186,16 @@ static void vRefreshChannelSwitchTelemetry(
 	}
 	else
 	{
+		if((pxContext->xLastReport.eLastDecision ==
+				RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED) &&
+			(pxContext->uNoOpAuditCountedInCurrentCall == 0U))
+		{
+			pxContext->uNoOpAuditCountedInCurrentCall = 1U;
+			if(pxContext->xLastReport.uNoOpRefreshCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uNoOpRefreshCount++;
+			}
+		}
 		pxContext->xLastReport.eLastSwitchKind =
 			RSRX_SUPERVISOR_SWITCH_KIND_NONE;
 		pxContext->xLastReport.eLastSwitchFromChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
@@ -400,7 +411,6 @@ static uint32_t uAlternativeChannelIsAvailable(
 	}
 
 	pxContext->xLastReport.xLastChannelState = xChannelState;
-	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	return (uint32_t)(xChannelState.eChannelId != eFailedChannelId);
 }
 
@@ -420,7 +430,6 @@ static uint32_t uRefreshAvailableChannelState(
 	}
 
 	pxContext->xLastReport.xLastChannelState = xChannelState;
-	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	return 1U;
 }
 
@@ -569,6 +578,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_init(
 	vResetSupervisorReport(&pxContext->xLastReport);
 	pxContext->uMaxConsecutiveSendFailures = D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET;
 	pxContext->uMaxConsecutiveReceiveErrors = D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET;
+	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
 	pxContext->uInitialized = 1U;
 	vRefreshChannelSwitchTelemetry(pxContext, eGetActiveChannelId(pxContext));
 	vRefreshOutboundQueueTelemetry(pxContext);
@@ -589,6 +599,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
 	}
 
+	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
 	return eProcessFrameInternal(pxContext, pxFrame, ppxReport);
 }
 
@@ -606,6 +617,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
 	}
 
+	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
 	eTransportStatus = rsrx_transport_adapter_query_channel(
 		&pxContext->pxSession->xTransportAdapter,
 		&pxContext->xLastReport.xLastChannelState);
@@ -716,6 +728,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_pump_receive(
 
 	pxContext->xLastReport.uLastPumpIterationCount = 0U;
 	pxContext->xLastReport.uLastPumpProcessedFrameCount = 0U;
+	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
 	uInitialProcessedCount = pxContext->xLastReport.uProcessedFrameCount;
 
 	for(uIteration = 0U; uIteration < uMaxPolls; ++uIteration)
@@ -765,6 +778,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
 	}
 
+	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
 	pxContext->xLastReport.xLastFrame = *pxFrame;
 	ePreviousActiveChannelId = eGetActiveChannelId(pxContext);
 
@@ -899,6 +913,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_timer_expiry(
 		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
 	}
 
+	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
 	eSessionStatus = rsrx_session_process_timer_expiry(
 		pxContext->pxSession,
 		eTimerSource,

@@ -93,6 +93,7 @@ typedef struct
 	uint32_t uLastChannelSwitchOccurred;
 	uint32_t uFailoverSwitchCount;
 	uint32_t uPreferredRecoverySwitchCount;
+	uint32_t uNoOpRefreshCount;
 	rsrx_supervisor_switch_kind_t eLastSwitchKind;
 	rsrx_transport_channel_id_t eLastSwitchFromChannelId;
 	rsrx_transport_channel_id_t eLastSwitchToChannelId;
@@ -119,6 +120,7 @@ typedef struct
 	rsrx_transport_supervisor_report_t xLastReport;
 	uint32_t uMaxConsecutiveSendFailures;
 	uint32_t uMaxConsecutiveReceiveErrors;
+	uint32_t uNoOpAuditCountedInCurrentCall;
 	uint32_t uInitialized;
 } rsrx_transport_supervisor_context_t;
 
