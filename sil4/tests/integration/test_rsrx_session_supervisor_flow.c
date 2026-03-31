@@ -15248,6 +15248,12 @@ static void vTestIntegratedSwitchAuditCumulativeFlow(void)
 	vTestIntegratedSwitchAuditLongRunFlow();
 }
 
+static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
+{
+	vTestIntegratedSwitchAuditCloseoutFlow();
+	vTestIntegratedSwitchAuditCumulativeFlow();
+}
+
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)
 {
 	rsrx_session_t xSession;
@@ -16575,8 +16581,7 @@ static void vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow(void)
 	vTestIntegratedRedundancyLongRunCloseoutFlow();
 	vTestIntegratedFlapBypassCloseoutFlow();
 	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
-	vTestIntegratedSwitchAuditCloseoutFlow();
-	vTestIntegratedSwitchAuditCumulativeFlow();
+	vTestIntegratedSwitchAuditEnvelopeFlow();
 }
 
 static void vTestIntegratedProtocolVariantCloseoutFlow(void)

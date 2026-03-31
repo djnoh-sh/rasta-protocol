@@ -1504,6 +1504,12 @@ static void vTestSupervisorSwitchAuditCumulativeMatrix(void)
 	vTestSupervisorChannelEventOrderingMatrix();
 }
 
+static void vTestSupervisorSwitchAuditEnvelopeMatrix(void)
+{
+	vTestSupervisorSwitchAuditCloseoutMatrix();
+	vTestSupervisorSwitchAuditCumulativeMatrix();
+}
+
 static void vTestSupervisorTimerDelegationMatrix(void)
 {
 	rsrx_session_t xSession;
@@ -2108,6 +2114,7 @@ static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
 	vTestSupervisorChannelEventOrderingMatrix();
 	vTestSupervisorSwitchAuditCloseoutMatrix();
 	vTestSupervisorSwitchAuditCumulativeMatrix();
+	vTestSupervisorSwitchAuditEnvelopeMatrix();
 	vTestSupervisorTimerDelegationMatrix();
 	vTestSupervisorPollReceiveRetryOrderingMatrix();
 	vTestSupervisorPumpReceiveTerminalOrderingMatrix();
