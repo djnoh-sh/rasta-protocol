@@ -37,6 +37,8 @@ static void vResetSupervisorReport(
 	pxReport->uErrorDecisionCount = 0U;
 	pxReport->uChannelSwitchCount = 0U;
 	pxReport->uLastChannelSwitchOccurred = 0U;
+	pxReport->uFailoverSwitchCount = 0U;
+	pxReport->uPreferredRecoverySwitchCount = 0U;
 	pxReport->eLastSwitchKind = RSRX_SUPERVISOR_SWITCH_KIND_NONE;
 	pxReport->eLastSwitchFromChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxReport->eLastSwitchToChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
@@ -164,11 +166,19 @@ static void vRefreshChannelSwitchTelemetry(
 		{
 			pxContext->xLastReport.eLastSwitchKind =
 				RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY;
+			if(pxContext->xLastReport.uPreferredRecoverySwitchCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uPreferredRecoverySwitchCount++;
+			}
 		}
 		else
 		{
 			pxContext->xLastReport.eLastSwitchKind =
 				RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER;
+			if(pxContext->xLastReport.uFailoverSwitchCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uFailoverSwitchCount++;
+			}
 		}
 		pxContext->xLastReport.eLastSwitchFromChannelId = ePreviousActiveChannelId;
 		pxContext->xLastReport.eLastSwitchToChannelId = eCurrentActiveChannelId;

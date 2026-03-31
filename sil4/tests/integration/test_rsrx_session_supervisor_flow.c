@@ -6257,6 +6257,8 @@ static void vTestIntegratedChannelFailoverFlow(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration selected secondary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover integration switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover integration switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel failover integration failover count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 0U, "channel failover integration preferred recovery count");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER, "channel failover integration switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover integration switch from primary");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover integration switch to secondary");
@@ -14493,6 +14495,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration first failover");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "switch audit long-run integration first failover switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "switch audit long-run integration first failover switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "switch audit long-run integration first failover count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 0U, "switch audit long-run integration first preferred recovery count");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER, "switch audit long-run integration first failover switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit long-run integration first failover switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "switch audit long-run integration first failover switch to");
@@ -14502,6 +14506,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration first hold");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "switch audit long-run integration first hold switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "switch audit long-run integration first hold no switch");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "switch audit long-run integration first hold failover count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 0U, "switch audit long-run integration first hold preferred recovery count retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration first hold switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration first hold switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration first hold switch to");
@@ -14509,6 +14515,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration first recovery");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "switch audit long-run integration first recovery switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "switch audit long-run integration first recovery switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "switch audit long-run integration first recovery failover count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "switch audit long-run integration first recovery preferred recovery count");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY, "switch audit long-run integration first recovery switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "switch audit long-run integration first recovery switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit long-run integration first recovery switch to");
@@ -14516,6 +14524,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration first repeated refresh");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "switch audit long-run integration first repeated refresh switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "switch audit long-run integration first repeated refresh no switch");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "switch audit long-run integration first repeated refresh failover count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "switch audit long-run integration first repeated refresh preferred recovery count retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration first repeated refresh switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration first repeated refresh switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration first repeated refresh switch to");
@@ -14526,6 +14536,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration second failover");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "switch audit long-run integration second failover switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "switch audit long-run integration second failover switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 2U, "switch audit long-run integration second failover count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "switch audit long-run integration second preferred recovery count retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER, "switch audit long-run integration second failover switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit long-run integration second failover switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "switch audit long-run integration second failover switch to");
@@ -14535,6 +14547,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration second hold");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 3U, "switch audit long-run integration second hold switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "switch audit long-run integration second hold no switch");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 2U, "switch audit long-run integration second hold failover count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "switch audit long-run integration second hold preferred recovery count retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration second hold switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration second hold switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration second hold switch to");
@@ -14542,6 +14556,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration second recovery");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 4U, "switch audit long-run integration second recovery switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "switch audit long-run integration second recovery switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 2U, "switch audit long-run integration second recovery failover count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 2U, "switch audit long-run integration second recovery preferred recovery count");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY, "switch audit long-run integration second recovery switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "switch audit long-run integration second recovery switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit long-run integration second recovery switch to");
@@ -14549,6 +14565,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit long-run integration second repeated refresh");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 4U, "switch audit long-run integration second repeated refresh switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "switch audit long-run integration second repeated refresh no switch");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 2U, "switch audit long-run integration second repeated refresh failover count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 2U, "switch audit long-run integration second repeated refresh preferred recovery count retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration second repeated refresh switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration second repeated refresh switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration second repeated refresh switch to");
@@ -14951,6 +14969,12 @@ static void vTestIntegratedPreferredRecoveryThresholdCloseoutFlow(void)
 }
 
 static void vTestIntegratedSwitchAuditCloseoutFlow(void)
+{
+	vTestIntegratedChannelFailoverFlow();
+	vTestIntegratedSwitchAuditLongRunFlow();
+}
+
+static void vTestIntegratedSwitchAuditCumulativeFlow(void)
 {
 	vTestIntegratedChannelFailoverFlow();
 	vTestIntegratedSwitchAuditLongRunFlow();
@@ -16258,6 +16282,7 @@ static void vTestIntegratedRedundancyLongRunCloseoutFlow(void)
 	vTestIntegratedPreferredRecoveryHoldoffThresholdFourFlapResetFlow();
 	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
 	vTestIntegratedSwitchAuditCloseoutFlow();
+	vTestIntegratedSwitchAuditCumulativeFlow();
 	vTestIntegratedActiveLossBypassReentersHoldoffFlow();
 	vTestIntegratedFlapResetThenActiveLossBypassFlow();
 	vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow();
@@ -16283,6 +16308,7 @@ static void vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow(void)
 	vTestIntegratedFlapBypassCloseoutFlow();
 	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
 	vTestIntegratedSwitchAuditCloseoutFlow();
+	vTestIntegratedSwitchAuditCumulativeFlow();
 }
 
 static void vTestIntegratedProtocolVariantCloseoutFlow(void)

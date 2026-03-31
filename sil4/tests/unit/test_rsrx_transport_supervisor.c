@@ -905,6 +905,8 @@ static void vTestSupervisorChannelDownUsesFailover(void)
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 2U, "channel failover ignored count");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel failover failover count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 0U, "channel failover preferred recovery count");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER, "channel failover switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel failover switch from primary");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel failover switch to secondary");
@@ -967,6 +969,8 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 2U, "channel up refresh ignored count");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel up refresh switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel up refresh switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel up refresh failover count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "channel up refresh preferred recovery count");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY, "channel up refresh switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel up refresh switch from secondary");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up refresh switch to primary");
@@ -1438,6 +1442,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel event ordering matrix selected secondary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel event ordering matrix switch count after failover");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel event ordering matrix failover switch flag");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel event ordering matrix failover count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 0U, "channel event ordering matrix preferred recovery count before recovery");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER, "channel event ordering matrix failover switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel event ordering matrix failover switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel event ordering matrix failover switch to");
@@ -1449,6 +1455,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel event ordering matrix secondary retained on noop");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel event ordering matrix switch count unchanged on noop");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "channel event ordering matrix noop switch flag cleared");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel event ordering matrix failover count retained on noop");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 0U, "channel event ordering matrix preferred recovery count retained on noop");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "channel event ordering matrix noop switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel event ordering matrix noop switch from invalid");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel event ordering matrix noop switch to invalid");
@@ -1461,6 +1469,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel event ordering matrix selected primary after recovery");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel event ordering matrix switch count after recovery");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel event ordering matrix recovery switch occurred");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel event ordering matrix failover count after recovery");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "channel event ordering matrix preferred recovery count after recovery");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY, "channel event ordering matrix recovery switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel event ordering matrix recovery switch from");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel event ordering matrix recovery switch to");
@@ -1470,6 +1480,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel event ordering matrix primary retained on repeated refresh");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel event ordering matrix repeated refresh switch count unchanged");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "channel event ordering matrix repeated refresh switch flag cleared");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel event ordering matrix failover count retained on repeated noop");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "channel event ordering matrix preferred recovery count retained on repeated noop");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "channel event ordering matrix repeated noop switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel event ordering matrix repeated noop switch from invalid");
 	vAssertTrue(pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel event ordering matrix repeated noop switch to invalid");
@@ -1477,6 +1489,11 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 }
 
 static void vTestSupervisorSwitchAuditCloseoutMatrix(void)
+{
+	vTestSupervisorChannelEventOrderingMatrix();
+}
+
+static void vTestSupervisorSwitchAuditCumulativeMatrix(void)
 {
 	vTestSupervisorChannelEventOrderingMatrix();
 }
@@ -2084,6 +2101,7 @@ static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
 	vTestSupervisorSendFeedbackOrderingMatrix();
 	vTestSupervisorChannelEventOrderingMatrix();
 	vTestSupervisorSwitchAuditCloseoutMatrix();
+	vTestSupervisorSwitchAuditCumulativeMatrix();
 	vTestSupervisorTimerDelegationMatrix();
 	vTestSupervisorPollReceiveRetryOrderingMatrix();
 	vTestSupervisorPumpReceiveTerminalOrderingMatrix();

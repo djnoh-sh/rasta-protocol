@@ -91,6 +91,8 @@ typedef struct
 	uint32_t uErrorDecisionCount;
 	uint32_t uChannelSwitchCount;
 	uint32_t uLastChannelSwitchOccurred;
+	uint32_t uFailoverSwitchCount;
+	uint32_t uPreferredRecoverySwitchCount;
 	rsrx_supervisor_switch_kind_t eLastSwitchKind;
 	rsrx_transport_channel_id_t eLastSwitchFromChannelId;
 	rsrx_transport_channel_id_t eLastSwitchToChannelId;
