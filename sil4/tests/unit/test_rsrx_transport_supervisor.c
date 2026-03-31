@@ -1476,6 +1476,11 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel event ordering matrix final established");
 }
 
+static void vTestSupervisorSwitchAuditCloseoutMatrix(void)
+{
+	vTestSupervisorChannelEventOrderingMatrix();
+}
+
 static void vTestSupervisorTimerDelegationMatrix(void)
 {
 	rsrx_session_t xSession;
@@ -2078,6 +2083,7 @@ static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
 	vTestSupervisorBudgetScopeMatrix();
 	vTestSupervisorSendFeedbackOrderingMatrix();
 	vTestSupervisorChannelEventOrderingMatrix();
+	vTestSupervisorSwitchAuditCloseoutMatrix();
 	vTestSupervisorTimerDelegationMatrix();
 	vTestSupervisorPollReceiveRetryOrderingMatrix();
 	vTestSupervisorPumpReceiveTerminalOrderingMatrix();

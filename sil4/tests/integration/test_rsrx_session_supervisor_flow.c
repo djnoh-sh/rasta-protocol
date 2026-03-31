@@ -14699,6 +14699,12 @@ static void vTestIntegratedPreferredRecoveryThresholdCloseoutFlow(void)
 	vTestIntegratedPreferredRecoveryHoldoffThresholdFourFlapResetFlow();
 }
 
+static void vTestIntegratedSwitchAuditCloseoutFlow(void)
+{
+	vTestIntegratedChannelFailoverFlow();
+	vTestIntegratedSwitchAuditLongRunFlow();
+}
+
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)
 {
 	rsrx_session_t xSession;
@@ -16000,6 +16006,7 @@ static void vTestIntegratedRedundancyLongRunCloseoutFlow(void)
 	vTestIntegratedPreferredRecoveryHoldoffThresholdThreeFlapResetFlow();
 	vTestIntegratedPreferredRecoveryHoldoffThresholdFourFlapResetFlow();
 	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
+	vTestIntegratedSwitchAuditCloseoutFlow();
 	vTestIntegratedActiveLossBypassReentersHoldoffFlow();
 	vTestIntegratedFlapResetThenActiveLossBypassFlow();
 	vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow();
