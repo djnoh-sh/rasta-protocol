@@ -14691,6 +14691,14 @@ static void vTestIntegratedPreferredRecoveryHoldoffThresholdFourFlapResetFlow(vo
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "holdoff-4 flap integration no lifecycle callback");
 }
 
+static void vTestIntegratedPreferredRecoveryThresholdCloseoutFlow(void)
+{
+	vTestIntegratedPreferredRecoveryHoldoffThresholdThreeFlow();
+	vTestIntegratedPreferredRecoveryHoldoffThresholdFourFlow();
+	vTestIntegratedPreferredRecoveryHoldoffThresholdThreeFlapResetFlow();
+	vTestIntegratedPreferredRecoveryHoldoffThresholdFourFlapResetFlow();
+}
+
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)
 {
 	rsrx_session_t xSession;
@@ -15991,6 +15999,7 @@ static void vTestIntegratedRedundancyLongRunCloseoutFlow(void)
 	vTestIntegratedSwitchAuditLongRunFlow();
 	vTestIntegratedPreferredRecoveryHoldoffThresholdThreeFlapResetFlow();
 	vTestIntegratedPreferredRecoveryHoldoffThresholdFourFlapResetFlow();
+	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
 	vTestIntegratedActiveLossBypassReentersHoldoffFlow();
 	vTestIntegratedFlapResetThenActiveLossBypassFlow();
 	vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow();

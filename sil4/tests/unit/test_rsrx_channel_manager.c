@@ -342,6 +342,14 @@ static void vTestPreferredRecoveryHoldoffThresholdFourFlapReset(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-4 flap recovery switch count");
 }
 
+static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
+{
+	vTestPreferredRecoveryHoldoffThresholdThree();
+	vTestPreferredRecoveryHoldoffThresholdFour();
+	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
+	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
+}
+
 static void vTestPreferredRecoveryHysteresisResetMatrix(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -770,6 +778,7 @@ int main(void)
 	vTestPreferredRecoveryHoldoffThresholdFour();
 	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
+	vTestPreferredRecoveryThresholdCloseoutMatrix();
 	vTestPreferredRecoveryHysteresisResetMatrix();
 	vTestPreferredRecoveryActiveLossBypassesHoldoff();
 	vTestBypassReentersHoldoffOnNextCycle();
