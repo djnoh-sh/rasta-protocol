@@ -72,6 +72,7 @@ typedef enum
 	RSRX_SUPERVISOR_SWITCH_REASON_NONE = 0,
 	RSRX_SUPERVISOR_SWITCH_REASON_FAILOVER_CHANNEL_DOWN,
 	RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_COMPLETED,
+	RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_RESET_CHANNEL_DOWN,
 	RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP,
 	RSRX_SUPERVISOR_SWITCH_REASON_ACTIVE_REFRESH_NOOP
 } rsrx_supervisor_switch_reason_t;
@@ -105,6 +106,7 @@ typedef struct
 	uint32_t uNoOpRefreshCount;
 	uint32_t uHoldoffRefreshNoOpCount;
 	uint32_t uActiveRefreshNoOpCount;
+	uint32_t uHoldoffResetCount;
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;
 	uint32_t uPreferredRecoveryHoldoffRemainingCount;

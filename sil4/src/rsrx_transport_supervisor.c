@@ -42,6 +42,7 @@ static void vResetSupervisorReport(
 	pxReport->uNoOpRefreshCount = 0U;
 	pxReport->uHoldoffRefreshNoOpCount = 0U;
 	pxReport->uActiveRefreshNoOpCount = 0U;
+	pxReport->uHoldoffResetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffRemainingCount = 0U;
@@ -157,6 +158,7 @@ static void vRefreshChannelSwitchTelemetry(
 {
 	rsrx_transport_channel_id_t eCurrentActiveChannelId;
 	rsrx_transport_channel_id_t ePreferredChannelId;
+	uint32_t uPreviousHoldoffProgressCount;
 
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(pxContext->pxSession == (rsrx_session_t *)0))
@@ -166,6 +168,8 @@ static void vRefreshChannelSwitchTelemetry(
 
 	eCurrentActiveChannelId = rsrx_channel_manager_get_active_channel(
 		&pxContext->pxSession->xChannelManager);
+	uPreviousHoldoffProgressCount =
+		pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount;
 	ePreferredChannelId =
 		pxContext->pxSession->xChannelManager.xConfig.axChannels[
 			pxContext->pxSession->xChannelManager.xConfig.uPreferredChannelIndex].eChannelId;
@@ -240,6 +244,19 @@ static void vRefreshChannelSwitchTelemetry(
 				{
 				pxContext->xLastReport.uHoldoffRefreshNoOpCount++;
 				}
+			}
+		}
+		else if((eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN) &&
+			(eTriggerChannelId == ePreferredChannelId) &&
+			(eCurrentActiveChannelId != ePreferredChannelId) &&
+			(uPreviousHoldoffProgressCount > 0U) &&
+			(pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount == 0U))
+		{
+			pxContext->xLastReport.eLastSwitchReason =
+				RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_RESET_CHANNEL_DOWN;
+			if(pxContext->xLastReport.uHoldoffResetCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uHoldoffResetCount++;
 			}
 		}
 		else
