@@ -18121,12 +18121,17 @@ static void vTestIntegratedSwitchAuditHoldoffOutcomeFlow(void)
 	vTestIntegratedSwitchAuditTriggerOriginFlow();
 }
 
+static void vTestIntegratedSwitchAuditTerminalOutcomeEnvelopeFlow(void)
+{
+	vTestIntegratedSwitchAuditHoldoffOutcomeFlow();
+}
+
 static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
 {
 	vTestIntegratedSwitchAuditCloseoutFlow();
 	vTestIntegratedSwitchAuditCumulativeFlow();
 	vTestIntegratedSwitchAuditReasonFlow();
-	vTestIntegratedSwitchAuditHoldoffOutcomeFlow();
+	vTestIntegratedSwitchAuditTerminalOutcomeEnvelopeFlow();
 }
 
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)

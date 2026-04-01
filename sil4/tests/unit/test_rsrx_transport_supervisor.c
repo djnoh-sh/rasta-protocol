@@ -2008,12 +2008,17 @@ static void vTestSupervisorSwitchAuditHoldoffOutcomeMatrix(void)
 	vTestSupervisorSwitchAuditTriggerOriginMatrix();
 }
 
+static void vTestSupervisorSwitchAuditTerminalOutcomeEnvelopeMatrix(void)
+{
+	vTestSupervisorSwitchAuditHoldoffOutcomeMatrix();
+}
+
 static void vTestSupervisorSwitchAuditEnvelopeMatrix(void)
 {
 	vTestSupervisorSwitchAuditCloseoutMatrix();
 	vTestSupervisorSwitchAuditCumulativeMatrix();
 	vTestSupervisorSwitchAuditReasonMatrix();
-	vTestSupervisorSwitchAuditHoldoffOutcomeMatrix();
+	vTestSupervisorSwitchAuditTerminalOutcomeEnvelopeMatrix();
 }
 
 static void vTestSupervisorTimerDelegationMatrix(void)
