@@ -57,6 +57,7 @@ static void vResetSupervisorReport(
 	pxReport->uOrdinaryCompletedHoldoffCycleCount = 0U;
 	pxReport->uBypassCompletedHoldoffCycleCount = 0U;
 	pxReport->uAbortedHoldoffCycleCount = 0U;
+	pxReport->uTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uOrdinaryTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uBypassTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uAbortedTerminalHoldoffOutcomeCount = 0U;
@@ -268,6 +269,10 @@ static void vRefreshChannelSwitchTelemetry(
 						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 						RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED;
+					if(pxContext->xLastReport.uTerminalHoldoffOutcomeCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uTerminalHoldoffOutcomeCount++;
+					}
 					if(pxContext->xLastReport.uBypassTerminalHoldoffOutcomeCount < UINT32_MAX)
 					{
 						pxContext->xLastReport.uBypassTerminalHoldoffOutcomeCount++;
@@ -293,6 +298,10 @@ static void vRefreshChannelSwitchTelemetry(
 						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 						RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED;
+					if(pxContext->xLastReport.uTerminalHoldoffOutcomeCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uTerminalHoldoffOutcomeCount++;
+					}
 					if(pxContext->xLastReport.uOrdinaryTerminalHoldoffOutcomeCount < UINT32_MAX)
 					{
 						pxContext->xLastReport.uOrdinaryTerminalHoldoffOutcomeCount++;
@@ -409,6 +418,10 @@ static void vRefreshChannelSwitchTelemetry(
 				RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED;
 			pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 				RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED;
+			if(pxContext->xLastReport.uTerminalHoldoffOutcomeCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uTerminalHoldoffOutcomeCount++;
+			}
 			if(pxContext->xLastReport.uAbortedTerminalHoldoffOutcomeCount < UINT32_MAX)
 			{
 				pxContext->xLastReport.uAbortedTerminalHoldoffOutcomeCount++;

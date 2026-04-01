@@ -13899,6 +13899,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "holdoff active-loss bypass integration terminal outcome after failover");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_NONE, "holdoff active-loss bypass integration terminal trigger event after failover");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "holdoff active-loss bypass integration terminal trigger channel after failover");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration terminal outcome total count after failover");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration ordinary terminal outcome count after failover");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration bypass terminal outcome count after failover");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration aborted terminal outcome count after failover");
@@ -13918,6 +13919,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "holdoff active-loss bypass integration terminal outcome retained on hold");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_NONE, "holdoff active-loss bypass integration terminal trigger event retained on hold");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "holdoff active-loss bypass integration terminal trigger channel retained on hold");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration terminal outcome total count retained on hold");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration ordinary terminal outcome count retained on hold");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration bypass terminal outcome count retained on hold");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration aborted terminal outcome count retained on hold");
@@ -13940,6 +13942,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "holdoff active-loss bypass integration terminal outcome after bypass");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "holdoff active-loss bypass integration terminal trigger event after bypass");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active-loss bypass integration terminal trigger channel after bypass");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "holdoff active-loss bypass integration terminal outcome total count after bypass");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration ordinary terminal outcome count after bypass");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 1U, "holdoff active-loss bypass integration bypass terminal outcome count after bypass");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration aborted terminal outcome count after bypass");
@@ -13961,6 +13964,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "holdoff active-loss bypass integration terminal outcome retained on refresh");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "holdoff active-loss bypass integration terminal trigger event retained on refresh");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active-loss bypass integration terminal trigger channel retained on refresh");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "holdoff active-loss bypass integration terminal outcome total count retained on refresh");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration ordinary terminal outcome count retained on refresh");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 1U, "holdoff active-loss bypass integration bypass terminal outcome count retained on refresh");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss bypass integration aborted terminal outcome count retained on refresh");
@@ -15850,6 +15854,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "switch audit long-run integration first hold terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_NONE, "switch audit long-run integration first hold terminal trigger event");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit long-run integration first hold terminal trigger channel");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first hold terminal outcome total count");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first hold ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first hold bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first hold aborted terminal outcome count");
@@ -15883,6 +15888,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED, "switch audit long-run integration first recovery terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration first recovery terminal trigger event");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit long-run integration first recovery terminal trigger channel");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "switch audit long-run integration first recovery terminal outcome total count");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit long-run integration first recovery ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first recovery bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first recovery aborted terminal outcome count");
@@ -15918,6 +15924,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED, "switch audit long-run integration first repeated refresh terminal outcome retained");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration first repeated refresh terminal trigger event retained");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit long-run integration first repeated refresh terminal trigger channel retained");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "switch audit long-run integration first repeated refresh terminal outcome total count retained");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit long-run integration first repeated refresh ordinary terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first repeated refresh bypass terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit long-run integration first repeated refresh aborted terminal outcome count retained");
@@ -16130,6 +16137,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "switch audit holdoff reset integration first hold terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_NONE, "switch audit holdoff reset integration first hold terminal trigger event");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "switch audit holdoff reset integration first hold terminal trigger channel");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration first hold terminal outcome total count");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration first hold ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration first hold bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration first hold aborted terminal outcome count");
@@ -16157,6 +16165,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED, "switch audit holdoff reset integration reset terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "switch audit holdoff reset integration reset terminal trigger event");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit holdoff reset integration reset terminal trigger channel");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset integration reset terminal outcome total count");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration reset ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration reset bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset integration reset aborted terminal outcome count");
@@ -16186,6 +16195,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED, "switch audit holdoff reset integration hold after reset terminal outcome retained");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "switch audit holdoff reset integration hold after reset terminal trigger event retained");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit holdoff reset integration hold after reset terminal trigger channel retained");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset integration hold after reset terminal outcome total count retained");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration hold after reset ordinary terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration hold after reset bypass terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset integration hold after reset aborted terminal outcome count retained");
@@ -16208,6 +16218,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED, "switch audit holdoff reset integration recovery terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit holdoff reset integration recovery terminal trigger event");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit holdoff reset integration recovery terminal trigger channel");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 2U, "switch audit holdoff reset integration recovery terminal outcome total count");
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset integration recovery ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset integration recovery bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset integration recovery aborted terminal outcome count retained");
