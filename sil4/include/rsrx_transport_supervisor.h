@@ -128,6 +128,7 @@ typedef struct
 	uint32_t uActiveRefreshNoOpCount;
 	uint32_t uHoldoffCycleCount;
 	uint32_t uCompletedHoldoffCycleCount;
+	uint32_t uOrdinaryCompletedHoldoffCycleCount;
 	uint32_t uBypassCompletedHoldoffCycleCount;
 	uint32_t uAbortedHoldoffCycleCount;
 	uint32_t uHoldoffResetCount;

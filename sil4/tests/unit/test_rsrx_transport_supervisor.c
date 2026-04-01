@@ -1657,6 +1657,7 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP, "switch audit holdoff progress matrix first hold reason");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff progress matrix first hold cycle count");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold completed cycle count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold ordinary-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold bypass-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff progress matrix first hold state");
@@ -1676,6 +1677,7 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_AFTER_HOLDOFF, "switch audit holdoff progress matrix recovery reason");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff progress matrix recovery cycle count retained");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit holdoff progress matrix recovery completed cycle count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 1U, "switch audit holdoff progress matrix recovery ordinary-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix recovery bypass-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix recovery aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit holdoff progress matrix recovery state");
@@ -1695,6 +1697,7 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_ACTIVE_REFRESH_NOOP, "switch audit holdoff progress matrix active repeated refresh reason");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff progress matrix active repeated refresh cycle count retained");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit holdoff progress matrix active repeated refresh completed cycle count retained");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 1U, "switch audit holdoff progress matrix active repeated refresh ordinary-completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix active repeated refresh bypass-completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix active repeated refresh aborted cycle count retained");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit holdoff progress matrix active repeated refresh state");
@@ -1755,6 +1758,7 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit holdoff reset matrix first hold remaining");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff reset matrix first hold cycle count");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix first hold completed cycle count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix first hold ordinary-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix first hold bypass-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset matrix first hold state");
@@ -1777,6 +1781,7 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_RESET_CHANNEL_DOWN, "switch audit holdoff reset matrix reset reason");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff reset matrix reset cycle count retained");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix reset completed cycle count retained");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix reset ordinary-completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix reset bypass-completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset matrix reset aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED, "switch audit holdoff reset matrix reset state");
@@ -1802,6 +1807,7 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit holdoff reset matrix hold count after reset");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 2U, "switch audit holdoff reset matrix cycle count after reset");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix completed cycle count after reset");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix ordinary-completed cycle count after reset");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix bypass-completed cycle count after reset");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset matrix aborted cycle count after reset");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset matrix hold after reset state");
@@ -1878,6 +1884,7 @@ static void vTestSupervisorSwitchAuditTriggerOriginMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 0U, "switch audit trigger origin matrix completed holdoff preferred recovery count after bypass");
 	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 1U, "switch audit trigger origin matrix bypass preferred recovery count after bypass");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit trigger origin matrix completed cycle count after bypass");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "switch audit trigger origin matrix ordinary-completed cycle count after bypass");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 1U, "switch audit trigger origin matrix bypass-completed cycle count after bypass");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit trigger origin matrix aborted cycle count after bypass");
 }
