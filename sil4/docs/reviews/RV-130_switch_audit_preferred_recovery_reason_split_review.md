@@ -31,9 +31,9 @@
   - cumulative counts
   - holdoff progress/target/remaining
   - holdoff reset reason/count
-  - holdoff cycle/completed-cycle count
-- immediate-vs-after-holdoff preferred recovery split
-- immediate-vs-after-holdoff preferred recovery cumulative count split
+  - holdoff cycle/completed-cycle/aborted-cycle count
+  - immediate-vs-after-holdoff preferred recovery split
+  - immediate-vs-after-holdoff preferred recovery cumulative count split
 
 ## Residual
 - current active-standby holdoff audit family gap is narrower again.

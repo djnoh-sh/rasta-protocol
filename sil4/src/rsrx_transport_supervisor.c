@@ -46,6 +46,7 @@ static void vResetSupervisorReport(
 	pxReport->uActiveRefreshNoOpCount = 0U;
 	pxReport->uHoldoffCycleCount = 0U;
 	pxReport->uCompletedHoldoffCycleCount = 0U;
+	pxReport->uAbortedHoldoffCycleCount = 0U;
 	pxReport->uHoldoffResetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
@@ -281,6 +282,10 @@ static void vRefreshChannelSwitchTelemetry(
 		{
 			pxContext->xLastReport.eLastSwitchReason =
 				RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_RESET_CHANNEL_DOWN;
+			if(pxContext->xLastReport.uAbortedHoldoffCycleCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uAbortedHoldoffCycleCount++;
+			}
 			if(pxContext->xLastReport.uHoldoffResetCount < UINT32_MAX)
 			{
 				pxContext->xLastReport.uHoldoffResetCount++;
