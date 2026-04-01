@@ -61,6 +61,8 @@ static void vResetSupervisorReport(
 	pxReport->uOrdinaryTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uBypassTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uAbortedTerminalHoldoffOutcomeCount = 0U;
+	pxReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount = 0U;
+	pxReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uHoldoffResetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
@@ -277,6 +279,10 @@ static void vRefreshChannelSwitchTelemetry(
 					{
 						pxContext->xLastReport.uBypassTerminalHoldoffOutcomeCount++;
 					}
+					if(pxContext->xLastReport.uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount++;
+					}
 					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
 						eTriggerEventType;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerChannelId =
@@ -305,6 +311,10 @@ static void vRefreshChannelSwitchTelemetry(
 					if(pxContext->xLastReport.uOrdinaryTerminalHoldoffOutcomeCount < UINT32_MAX)
 					{
 						pxContext->xLastReport.uOrdinaryTerminalHoldoffOutcomeCount++;
+					}
+					if(pxContext->xLastReport.uPreferredChannelTriggeredTerminalHoldoffOutcomeCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uPreferredChannelTriggeredTerminalHoldoffOutcomeCount++;
 					}
 					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
 						eTriggerEventType;
@@ -425,6 +435,10 @@ static void vRefreshChannelSwitchTelemetry(
 			if(pxContext->xLastReport.uAbortedTerminalHoldoffOutcomeCount < UINT32_MAX)
 			{
 				pxContext->xLastReport.uAbortedTerminalHoldoffOutcomeCount++;
+			}
+			if(pxContext->xLastReport.uPreferredChannelTriggeredTerminalHoldoffOutcomeCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uPreferredChannelTriggeredTerminalHoldoffOutcomeCount++;
 			}
 			pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
 				eTriggerEventType;

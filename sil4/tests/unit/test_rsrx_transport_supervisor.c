@@ -992,6 +992,8 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "channel up refresh ordinary terminal holdoff outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "channel up refresh bypass terminal holdoff outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "channel up refresh aborted terminal holdoff outcome count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "channel up refresh preferred-triggered terminal holdoff outcome count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "channel up refresh non-preferred-triggered terminal holdoff outcome count");
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 0U, "channel up refresh no-op count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "channel up refresh preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "channel up refresh non-preferred-triggered refresh count");
@@ -1693,6 +1695,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix first hold ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix first hold bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix first hold aborted terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix first hold preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix first hold non-preferred-triggered terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "switch audit holdoff progress matrix first hold preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff progress matrix first hold non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff progress matrix first hold preferred-triggered no-op count");
@@ -1721,6 +1725,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff progress matrix recovery ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix recovery bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix recovery aborted terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff progress matrix recovery preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix recovery non-preferred-triggered terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 2U, "switch audit holdoff progress matrix recovery preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff progress matrix recovery non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff progress matrix recovery preferred-triggered no-op count retained");
@@ -1749,6 +1755,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff progress matrix active repeated refresh ordinary terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix active repeated refresh bypass terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix active repeated refresh aborted terminal outcome count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff progress matrix active repeated refresh preferred-triggered terminal outcome count retained");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff progress matrix active repeated refresh non-preferred-triggered terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 3U, "switch audit holdoff progress matrix active repeated refresh preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff progress matrix active repeated refresh non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 2U, "switch audit holdoff progress matrix active repeated refresh preferred-triggered no-op count");
@@ -1818,6 +1826,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix first hold ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix first hold bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix first hold aborted terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix first hold preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix first hold non-preferred-triggered terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "switch audit holdoff reset matrix first hold preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff reset matrix first hold non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff reset matrix first hold preferred-triggered no-op count");
@@ -1849,6 +1859,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix reset ordinary terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix reset bypass terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset matrix reset aborted terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset matrix reset preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix reset non-preferred-triggered terminal outcome count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "switch audit holdoff reset matrix reset preferred-triggered refresh count retained");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff reset matrix reset non-preferred-triggered refresh count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff reset matrix reset preferred-triggered no-op count retained");
@@ -1883,6 +1895,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix hold after reset ordinary terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix hold after reset bypass terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset matrix hold after reset aborted terminal outcome count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit holdoff reset matrix hold after reset preferred-triggered terminal outcome count retained");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit holdoff reset matrix hold after reset non-preferred-triggered terminal outcome count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 2U, "switch audit holdoff reset matrix hold after reset preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff reset matrix hold after reset non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "switch audit holdoff reset matrix preferred-triggered switch count retained");
@@ -1967,6 +1981,8 @@ static void vTestSupervisorSwitchAuditTriggerOriginMatrix(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit trigger origin matrix ordinary terminal outcome count after bypass");
 	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 1U, "switch audit trigger origin matrix bypass terminal outcome count after bypass");
 	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit trigger origin matrix aborted terminal outcome count after bypass");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit trigger origin matrix preferred-triggered terminal outcome count after bypass");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit trigger origin matrix non-preferred-triggered terminal outcome count after bypass");
 }
 
 static void vTestSupervisorSwitchAuditHoldoffOutcomeMatrix(void)
