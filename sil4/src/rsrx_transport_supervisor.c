@@ -198,7 +198,9 @@ static void vRefreshChannelSwitchTelemetry(
 			pxContext->xLastReport.eLastSwitchKind =
 				RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY;
 			pxContext->xLastReport.eLastSwitchReason =
-				RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_COMPLETED;
+				(uPreviousHoldoffProgressCount > 0U) ?
+					RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_AFTER_HOLDOFF :
+					RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_IMMEDIATE;
 			if(pxContext->xLastReport.uPreferredRecoverySwitchCount < UINT32_MAX)
 			{
 				pxContext->xLastReport.uPreferredRecoverySwitchCount++;
