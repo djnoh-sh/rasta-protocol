@@ -107,6 +107,8 @@ typedef struct
 	uint32_t uActiveRefreshNoOpCount;
 	rsrx_supervisor_switch_kind_t eLastSwitchKind;
 	rsrx_supervisor_switch_reason_t eLastSwitchReason;
+	rsrx_transport_event_type_t eLastSwitchTriggerEventType;
+	rsrx_transport_channel_id_t eLastSwitchTriggerChannelId;
 	rsrx_transport_channel_id_t eLastSwitchFromChannelId;
 	rsrx_transport_channel_id_t eLastSwitchToChannelId;
 	uint32_t uLastPumpIterationCount;
