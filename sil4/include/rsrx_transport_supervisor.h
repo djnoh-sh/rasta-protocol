@@ -104,6 +104,8 @@ typedef struct
 	uint32_t uLastChannelSwitchOccurred;
 	uint32_t uFailoverSwitchCount;
 	uint32_t uPreferredRecoverySwitchCount;
+	uint32_t uImmediatePreferredRecoverySwitchCount;
+	uint32_t uHoldoffPreferredRecoverySwitchCount;
 	uint32_t uNoOpRefreshCount;
 	uint32_t uHoldoffRefreshNoOpCount;
 	uint32_t uActiveRefreshNoOpCount;

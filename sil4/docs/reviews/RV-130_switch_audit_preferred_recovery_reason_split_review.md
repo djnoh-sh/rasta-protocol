@@ -7,6 +7,8 @@
 ## Added Observability
 - `RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_IMMEDIATE`
 - `RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_AFTER_HOLDOFF`
+- `uImmediatePreferredRecoverySwitchCount`
+- `uHoldoffPreferredRecoverySwitchCount`
 
 ## Covered Contract
 - holdoff 없는 preferred recovery:
@@ -30,7 +32,8 @@
   - holdoff progress/target/remaining
   - holdoff reset reason/count
   - holdoff cycle/completed-cycle count
-  - immediate-vs-after-holdoff preferred recovery split
+- immediate-vs-after-holdoff preferred recovery split
+- immediate-vs-after-holdoff preferred recovery cumulative count split
 
 ## Residual
 - current active-standby holdoff audit family gap is narrower again.
