@@ -13892,6 +13892,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count after failover");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 0U, "holdoff active-loss bypass integration non-preferred-triggered switch count after failover");
 	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 0U, "holdoff active-loss bypass integration bypass preferred recovery count after failover");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 0U, "holdoff active-loss bypass integration completed holdoff preferred recovery count after failover");
 
 	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
@@ -13901,6 +13902,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count retained on hold");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 0U, "holdoff active-loss bypass integration non-preferred-triggered switch count retained on hold");
 	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 0U, "holdoff active-loss bypass integration bypass preferred recovery count retained on hold");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 0U, "holdoff active-loss bypass integration completed holdoff preferred recovery count retained on hold");
 
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
@@ -13911,6 +13913,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count retained on bypass");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration non-preferred-triggered switch count after bypass");
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 1U, "holdoff active-loss bypass integration holdoff preferred recovery count after bypass");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 0U, "holdoff active-loss bypass integration completed holdoff preferred recovery count after bypass");
 	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 1U, "holdoff active-loss bypass integration bypass preferred recovery count after bypass");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_BYPASS_ACTIVE_LOSS, "holdoff active-loss bypass integration bypass reason");
 
@@ -13923,6 +13926,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count retained on refresh");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration non-preferred-triggered switch count retained on refresh");
 	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 1U, "holdoff active-loss bypass integration bypass preferred recovery count retained on refresh");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 0U, "holdoff active-loss bypass integration completed holdoff preferred recovery count retained on refresh");
 
 	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame;

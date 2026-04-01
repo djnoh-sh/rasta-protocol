@@ -115,6 +115,7 @@ typedef struct
 	uint32_t uPreferredRecoverySwitchCount;
 	uint32_t uImmediatePreferredRecoverySwitchCount;
 	uint32_t uHoldoffPreferredRecoverySwitchCount;
+	uint32_t uCompletedHoldoffPreferredRecoverySwitchCount;
 	uint32_t uBypassPreferredRecoverySwitchCount;
 	uint32_t uNoOpRefreshCount;
 	uint32_t uPreferredChannelTriggeredRefreshEventCount;
