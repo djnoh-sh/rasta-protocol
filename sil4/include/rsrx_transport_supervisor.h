@@ -107,6 +107,7 @@ typedef struct
 	uint32_t uHoldoffRefreshNoOpCount;
 	uint32_t uActiveRefreshNoOpCount;
 	uint32_t uHoldoffCycleCount;
+	uint32_t uCompletedHoldoffCycleCount;
 	uint32_t uHoldoffResetCount;
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;

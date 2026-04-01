@@ -43,6 +43,7 @@ static void vResetSupervisorReport(
 	pxReport->uHoldoffRefreshNoOpCount = 0U;
 	pxReport->uActiveRefreshNoOpCount = 0U;
 	pxReport->uHoldoffCycleCount = 0U;
+	pxReport->uCompletedHoldoffCycleCount = 0U;
 	pxReport->uHoldoffResetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
@@ -201,6 +202,11 @@ static void vRefreshChannelSwitchTelemetry(
 			if(pxContext->xLastReport.uPreferredRecoverySwitchCount < UINT32_MAX)
 			{
 				pxContext->xLastReport.uPreferredRecoverySwitchCount++;
+			}
+			if((uPreviousHoldoffProgressCount > 0U) &&
+				(pxContext->xLastReport.uCompletedHoldoffCycleCount < UINT32_MAX))
+			{
+				pxContext->xLastReport.uCompletedHoldoffCycleCount++;
 			}
 		}
 		else

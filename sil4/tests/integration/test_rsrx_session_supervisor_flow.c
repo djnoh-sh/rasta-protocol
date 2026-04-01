@@ -15780,6 +15780,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit long-run integration first hold holdoff no-op count");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 0U, "switch audit long-run integration first hold active no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit long-run integration first hold cycle count");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit long-run integration first hold completed cycle count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit long-run integration first hold progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first hold target");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit long-run integration first hold remaining");
@@ -15799,6 +15800,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit long-run integration first recovery holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 0U, "switch audit long-run integration first recovery active no-op count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit long-run integration first recovery cycle count retained");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit long-run integration first recovery completed cycle count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration first recovery progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first recovery target retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit long-run integration first recovery remaining reset");
@@ -15818,6 +15820,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit long-run integration first repeated refresh holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 1U, "switch audit long-run integration first repeated refresh active no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit long-run integration first repeated refresh cycle count retained");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit long-run integration first repeated refresh completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration first repeated refresh progress zero");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first repeated refresh target retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit long-run integration first repeated refresh remaining retained");
@@ -15857,6 +15860,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit long-run integration second hold holdoff no-op count");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 1U, "switch audit long-run integration second hold active no-op count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 2U, "switch audit long-run integration second hold cycle count");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit long-run integration second hold completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit long-run integration second hold progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration second hold target");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit long-run integration second hold remaining");
@@ -15876,6 +15880,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit long-run integration second recovery holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 1U, "switch audit long-run integration second recovery active no-op count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 2U, "switch audit long-run integration second recovery cycle count retained");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 2U, "switch audit long-run integration second recovery completed cycle count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration second recovery progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration second recovery target retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit long-run integration second recovery remaining reset");
@@ -15895,6 +15900,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit long-run integration second repeated refresh holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 2U, "switch audit long-run integration second repeated refresh active no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 2U, "switch audit long-run integration second repeated refresh cycle count retained");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 2U, "switch audit long-run integration second repeated refresh completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration second repeated refresh progress zero");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration second repeated refresh target retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit long-run integration second repeated refresh remaining retained");
@@ -15986,6 +15992,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit holdoff reset integration first hold holdoff count");
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 0U, "switch audit holdoff reset integration first hold reset count");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff reset integration first hold cycle count");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset integration first hold completed cycle count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit holdoff reset integration first hold progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit holdoff reset integration first hold remaining");
 
@@ -15998,6 +16005,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit holdoff reset integration holdoff count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 1U, "switch audit holdoff reset integration reset count");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff reset integration cycle count retained on reset");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset integration completed cycle count retained on reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit holdoff reset integration progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit holdoff reset integration remaining reset");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit holdoff reset integration switch kind");
@@ -16011,6 +16019,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit holdoff reset integration hold count after reset");
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 1U, "switch audit holdoff reset integration reset count retained after hold");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 2U, "switch audit holdoff reset integration cycle count after reset");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset integration completed cycle count after reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit holdoff reset integration progress after reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit holdoff reset integration remaining after reset");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP, "switch audit holdoff reset integration hold reason after reset");
@@ -16019,6 +16028,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "switch audit holdoff reset integration preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 1U, "switch audit holdoff reset integration reset count retained after recovery");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 2U, "switch audit holdoff reset integration cycle count retained after recovery");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit holdoff reset integration completed cycle count after recovery");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit holdoff reset integration recovery progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit holdoff reset integration recovery remaining reset");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_COMPLETED, "switch audit holdoff reset integration recovery reason");
