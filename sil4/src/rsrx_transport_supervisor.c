@@ -62,6 +62,8 @@ static void vResetSupervisorReport(
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffRemainingCount = 0U;
 	pxReport->eLastHoldoffCycleState = RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE;
+	pxReport->eLastCompletedHoldoffCycleKind =
+		RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE;
 	pxReport->eLastSwitchKind = RSRX_SUPERVISOR_SWITCH_KIND_NONE;
 	pxReport->eLastSwitchReason = RSRX_SUPERVISOR_SWITCH_REASON_NONE;
 	pxReport->eLastSwitchTriggerEventType = RSRX_TRANSPORT_EVENT_NONE;
@@ -255,6 +257,8 @@ static void vRefreshChannelSwitchTelemetry(
 					{
 						pxContext->xLastReport.uBypassCompletedHoldoffCycleCount++;
 					}
+					pxContext->xLastReport.eLastCompletedHoldoffCycleKind =
+						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS;
 				}
 				else
 				{
@@ -268,6 +272,8 @@ static void vRefreshChannelSwitchTelemetry(
 					{
 						pxContext->xLastReport.uOrdinaryCompletedHoldoffCycleCount++;
 					}
+					pxContext->xLastReport.eLastCompletedHoldoffCycleKind =
+						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY;
 				}
 				if(pxContext->xLastReport.uHoldoffPreferredRecoverySwitchCount < UINT32_MAX)
 				{
