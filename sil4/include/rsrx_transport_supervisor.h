@@ -67,6 +67,15 @@ typedef enum
 	RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY
 } rsrx_supervisor_switch_kind_t;
 
+typedef enum
+{
+	RSRX_SUPERVISOR_SWITCH_REASON_NONE = 0,
+	RSRX_SUPERVISOR_SWITCH_REASON_FAILOVER_CHANNEL_DOWN,
+	RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_COMPLETED,
+	RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP,
+	RSRX_SUPERVISOR_SWITCH_REASON_ACTIVE_REFRESH_NOOP
+} rsrx_supervisor_switch_reason_t;
+
 typedef struct
 {
 	rsrx_transport_channel_state_t xLastChannelState;
@@ -94,7 +103,10 @@ typedef struct
 	uint32_t uFailoverSwitchCount;
 	uint32_t uPreferredRecoverySwitchCount;
 	uint32_t uNoOpRefreshCount;
+	uint32_t uHoldoffRefreshNoOpCount;
+	uint32_t uActiveRefreshNoOpCount;
 	rsrx_supervisor_switch_kind_t eLastSwitchKind;
+	rsrx_supervisor_switch_reason_t eLastSwitchReason;
 	rsrx_transport_channel_id_t eLastSwitchFromChannelId;
 	rsrx_transport_channel_id_t eLastSwitchToChannelId;
 	uint32_t uLastPumpIterationCount;
