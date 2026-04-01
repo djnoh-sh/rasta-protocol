@@ -15777,6 +15777,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 1U, "switch audit long-run integration first hold no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit long-run integration first hold holdoff no-op count");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 0U, "switch audit long-run integration first hold active no-op count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit long-run integration first hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first hold target");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration first hold switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP, "switch audit long-run integration first hold switch reason");
 	vAssertTrue(pxSupervisorReport->eLastSwitchTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration first hold trigger event");
@@ -15792,6 +15794,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 1U, "switch audit long-run integration first recovery no-op count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit long-run integration first recovery holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 0U, "switch audit long-run integration first recovery active no-op count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration first recovery progress reset");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first recovery target retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY, "switch audit long-run integration first recovery switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_COMPLETED, "switch audit long-run integration first recovery switch reason");
 	vAssertTrue(pxSupervisorReport->eLastSwitchTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration first recovery trigger event");
@@ -15807,6 +15811,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 2U, "switch audit long-run integration first repeated refresh no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "switch audit long-run integration first repeated refresh holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 1U, "switch audit long-run integration first repeated refresh active no-op count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration first repeated refresh progress zero");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first repeated refresh target retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration first repeated refresh switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_ACTIVE_REFRESH_NOOP, "switch audit long-run integration first repeated refresh switch reason");
 	vAssertTrue(pxSupervisorReport->eLastSwitchTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration first repeated refresh trigger event");
@@ -15842,6 +15848,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 3U, "switch audit long-run integration second hold no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit long-run integration second hold holdoff no-op count");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 1U, "switch audit long-run integration second hold active no-op count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit long-run integration second hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration second hold target");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration second hold switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP, "switch audit long-run integration second hold switch reason");
 	vAssertTrue(pxSupervisorReport->eLastSwitchTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration second hold trigger event");
@@ -15857,6 +15865,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 3U, "switch audit long-run integration second recovery no-op count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit long-run integration second recovery holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 1U, "switch audit long-run integration second recovery active no-op count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration second recovery progress reset");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration second recovery target retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY, "switch audit long-run integration second recovery switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_COMPLETED, "switch audit long-run integration second recovery switch reason");
 	vAssertTrue(pxSupervisorReport->eLastSwitchTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration second recovery trigger event");
@@ -15872,6 +15882,8 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 4U, "switch audit long-run integration second repeated refresh no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit long-run integration second repeated refresh holdoff no-op count retained");
 	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 2U, "switch audit long-run integration second repeated refresh active no-op count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration second repeated refresh progress zero");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration second repeated refresh target retained");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit long-run integration second repeated refresh switch kind");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_ACTIVE_REFRESH_NOOP, "switch audit long-run integration second repeated refresh switch reason");
 	vAssertTrue(pxSupervisorReport->eLastSwitchTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit long-run integration second repeated refresh trigger event");
@@ -17712,11 +17724,17 @@ static void vTestIntegratedSwitchAuditReasonFlow(void)
 	vTestIntegratedSwitchAuditLongRunFlow();
 }
 
+static void vTestIntegratedSwitchAuditHoldoffProgressFlow(void)
+{
+	vTestIntegratedSwitchAuditLongRunFlow();
+}
+
 static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
 {
 	vTestIntegratedSwitchAuditCloseoutFlow();
 	vTestIntegratedSwitchAuditCumulativeFlow();
 	vTestIntegratedSwitchAuditReasonFlow();
+	vTestIntegratedSwitchAuditHoldoffProgressFlow();
 }
 
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)

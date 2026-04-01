@@ -42,6 +42,8 @@ static void vResetSupervisorReport(
 	pxReport->uNoOpRefreshCount = 0U;
 	pxReport->uHoldoffRefreshNoOpCount = 0U;
 	pxReport->uActiveRefreshNoOpCount = 0U;
+	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
+	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
 	pxReport->eLastSwitchKind = RSRX_SUPERVISOR_SWITCH_KIND_NONE;
 	pxReport->eLastSwitchReason = RSRX_SUPERVISOR_SWITCH_REASON_NONE;
 	pxReport->eLastSwitchTriggerEventType = RSRX_TRANSPORT_EVENT_NONE;
@@ -166,6 +168,10 @@ static void vRefreshChannelSwitchTelemetry(
 	ePreferredChannelId =
 		pxContext->pxSession->xChannelManager.xConfig.axChannels[
 			pxContext->pxSession->xChannelManager.xConfig.uPreferredChannelIndex].eChannelId;
+	pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount =
+		pxContext->pxSession->xChannelManager.uPreferredRecoveryStableSelectionCount;
+	pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount =
+		pxContext->pxSession->xChannelManager.xConfig.uPreferredRecoveryHoldoffSelections;
 	pxContext->xLastReport.uChannelSwitchCount =
 		pxContext->pxSession->xChannelManager.uTotalSwitchCount;
 	pxContext->xLastReport.uLastChannelSwitchOccurred =
