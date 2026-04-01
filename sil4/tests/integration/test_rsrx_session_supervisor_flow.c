@@ -17689,15 +17689,16 @@ static void vTestIntegratedSwitchAuditCumulativeFlow(void)
 	vTestIntegratedSwitchAuditLongRunFlow();
 }
 
+static void vTestIntegratedSwitchAuditReasonFlow(void)
+{
+	vTestIntegratedSwitchAuditLongRunFlow();
+}
+
 static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
 {
 	vTestIntegratedSwitchAuditCloseoutFlow();
 	vTestIntegratedSwitchAuditCumulativeFlow();
-}
-
-static void vTestIntegratedSwitchAuditReasonFlow(void)
-{
-	vTestIntegratedSwitchAuditLongRunFlow();
+	vTestIntegratedSwitchAuditReasonFlow();
 }
 
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)

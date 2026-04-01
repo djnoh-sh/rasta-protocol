@@ -1522,15 +1522,16 @@ static void vTestSupervisorSwitchAuditCumulativeMatrix(void)
 	vTestSupervisorChannelEventOrderingMatrix();
 }
 
+static void vTestSupervisorSwitchAuditReasonMatrix(void)
+{
+	vTestSupervisorChannelEventOrderingMatrix();
+}
+
 static void vTestSupervisorSwitchAuditEnvelopeMatrix(void)
 {
 	vTestSupervisorSwitchAuditCloseoutMatrix();
 	vTestSupervisorSwitchAuditCumulativeMatrix();
-}
-
-static void vTestSupervisorSwitchAuditReasonMatrix(void)
-{
-	vTestSupervisorChannelEventOrderingMatrix();
+	vTestSupervisorSwitchAuditReasonMatrix();
 }
 
 static void vTestSupervisorTimerDelegationMatrix(void)
@@ -2138,7 +2139,6 @@ static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
 	vTestSupervisorSwitchAuditCloseoutMatrix();
 	vTestSupervisorSwitchAuditCumulativeMatrix();
 	vTestSupervisorSwitchAuditEnvelopeMatrix();
-	vTestSupervisorSwitchAuditReasonMatrix();
 	vTestSupervisorTimerDelegationMatrix();
 	vTestSupervisorPollReceiveRetryOrderingMatrix();
 	vTestSupervisorPumpReceiveTerminalOrderingMatrix();
