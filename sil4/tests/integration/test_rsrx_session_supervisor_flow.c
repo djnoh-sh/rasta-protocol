@@ -18121,9 +18121,119 @@ static void vTestIntegratedSwitchAuditHoldoffOutcomeFlow(void)
 	vTestIntegratedSwitchAuditTriggerOriginFlow();
 }
 
+static void vTestIntegratedSwitchAuditTerminalOutcomeMixedLongRunFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	size_t xHandshakeLength;
+	static const uint8_t auOutboundPayload[8] = { 0x81U, 0x82U, 0x83U, 0x84U, 0x85U, 0x86U, 0x87U, 0x88U };
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auOutboundPayload, sizeof(auOutboundPayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "switch audit terminal outcome mixed long-run integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit terminal outcome mixed long-run integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit terminal outcome mixed long-run integration session connect");
+
+	vEncodeFrame(RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, RSRX_REASON_HANDSHAKE_COMPLETED, 1U, 1U, (const uint8_t *)0, 0U, auHandshakeFrame, sizeof(auHandshakeFrame), &xHandshakeLength);
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "switch audit terminal outcome mixed long-run integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "switch audit terminal outcome mixed long-run integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "switch audit terminal outcome mixed long-run integration established");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration first failover");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration first hold");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration ordinary completion");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration ordinary total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration ordinary subtype count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome mixed long-run integration ordinary bypass subtype count");
+	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome mixed long-run integration ordinary aborted subtype count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration ordinary preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome mixed long-run integration ordinary non-preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration ordinary channel-up count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome mixed long-run integration ordinary channel-down count");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration second failover");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration abort hold");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration abort reset");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome mixed long-run integration abort total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration abort ordinary subtype count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome mixed long-run integration abort bypass subtype count");
+	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration abort aborted subtype count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome mixed long-run integration abort preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome mixed long-run integration abort non-preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration abort channel-up count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration abort channel-down count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration renewed hold");
+
+	xTransport.uSecondaryAvailable = 0U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome mixed long-run integration bypass completion");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 3U, "switch audit terminal outcome mixed long-run integration final total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration final ordinary subtype count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration final bypass subtype count");
+	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration final aborted subtype count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome mixed long-run integration final preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration final non-preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run integration final channel-up count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome mixed long-run integration final channel-down count");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "switch audit terminal outcome mixed long-run integration final terminal outcome");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "switch audit terminal outcome mixed long-run integration final terminal trigger event");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "switch audit terminal outcome mixed long-run integration final terminal trigger channel");
+	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "switch audit terminal outcome mixed long-run integration final completed kind");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit terminal outcome mixed long-run integration final holdoff state");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "switch audit terminal outcome mixed long-run integration final established");
+}
+
 static void vTestIntegratedSwitchAuditTerminalOutcomeEnvelopeFlow(void)
 {
 	vTestIntegratedSwitchAuditHoldoffOutcomeFlow();
+	vTestIntegratedSwitchAuditTerminalOutcomeMixedLongRunFlow();
 }
 
 static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
