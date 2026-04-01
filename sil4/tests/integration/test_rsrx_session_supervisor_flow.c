@@ -17993,14 +17993,19 @@ static void vTestIntegratedSwitchAuditTriggerOriginFlow(void)
 	vTestIntegratedHoldoffActiveLossBypassFlow();
 }
 
+static void vTestIntegratedSwitchAuditHoldoffOutcomeFlow(void)
+{
+	vTestIntegratedSwitchAuditHoldoffProgressFlow();
+	vTestIntegratedSwitchAuditHoldoffResetFlowWrapper();
+	vTestIntegratedSwitchAuditTriggerOriginFlow();
+}
+
 static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
 {
 	vTestIntegratedSwitchAuditCloseoutFlow();
 	vTestIntegratedSwitchAuditCumulativeFlow();
 	vTestIntegratedSwitchAuditReasonFlow();
-	vTestIntegratedSwitchAuditHoldoffProgressFlow();
-	vTestIntegratedSwitchAuditHoldoffResetFlowWrapper();
-	vTestIntegratedSwitchAuditTriggerOriginFlow();
+	vTestIntegratedSwitchAuditHoldoffOutcomeFlow();
 }
 
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)

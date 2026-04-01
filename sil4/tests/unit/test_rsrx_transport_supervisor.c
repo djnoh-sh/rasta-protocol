@@ -1901,14 +1901,19 @@ static void vTestSupervisorSwitchAuditTriggerOriginMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "switch audit trigger origin matrix completed kind after bypass");
 }
 
+static void vTestSupervisorSwitchAuditHoldoffOutcomeMatrix(void)
+{
+	vTestSupervisorSwitchAuditHoldoffProgressMatrix();
+	vTestSupervisorSwitchAuditHoldoffResetMatrix();
+	vTestSupervisorSwitchAuditTriggerOriginMatrix();
+}
+
 static void vTestSupervisorSwitchAuditEnvelopeMatrix(void)
 {
 	vTestSupervisorSwitchAuditCloseoutMatrix();
 	vTestSupervisorSwitchAuditCumulativeMatrix();
 	vTestSupervisorSwitchAuditReasonMatrix();
-	vTestSupervisorSwitchAuditHoldoffProgressMatrix();
-	vTestSupervisorSwitchAuditHoldoffResetMatrix();
-	vTestSupervisorSwitchAuditTriggerOriginMatrix();
+	vTestSupervisorSwitchAuditHoldoffOutcomeMatrix();
 }
 
 static void vTestSupervisorTimerDelegationMatrix(void)
