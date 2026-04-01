@@ -2,11 +2,12 @@
 
 ## Summary
 - switch audit telemetry에 holdoff 진행도를 추가했다.
-- `holdoff no-op`가 발생했을 때 단순히 no-op reason만 남는 것이 아니라, 현재 stable-selection progress와 configured holdoff target도 supervisor report에서 직접 관찰 가능해졌다.
+- `holdoff no-op`가 발생했을 때 단순히 no-op reason만 남는 것이 아니라, 현재 stable-selection progress와 configured holdoff target, remaining count도 supervisor report에서 직접 관찰 가능해졌다.
 
 ## Added Observability
 - `uPreferredRecoveryHoldoffProgressCount`
 - `uPreferredRecoveryHoldoffTargetCount`
+- `uPreferredRecoveryHoldoffRemainingCount`
 
 ## Covered Contract
 - holdoff no-op:
@@ -29,8 +30,8 @@
   - `reason`
   - trigger channel/event
   - cumulative counts
-  - holdoff progress/target
+  - holdoff progress/target/remaining
 
 ## Residual
 - current active-standby holdoff audit family gap is narrower again.
-- remaining work is future audit-policy growth beyond the current trigger-aware, holdoff-progress-aware envelope.
+- remaining work is future audit-policy growth beyond the current trigger-aware, holdoff-progress/remaining-aware envelope.

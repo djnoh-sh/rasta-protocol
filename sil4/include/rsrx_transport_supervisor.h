@@ -107,6 +107,7 @@ typedef struct
 	uint32_t uActiveRefreshNoOpCount;
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;
+	uint32_t uPreferredRecoveryHoldoffRemainingCount;
 	rsrx_supervisor_switch_kind_t eLastSwitchKind;
 	rsrx_supervisor_switch_reason_t eLastSwitchReason;
 	rsrx_transport_event_type_t eLastSwitchTriggerEventType;
