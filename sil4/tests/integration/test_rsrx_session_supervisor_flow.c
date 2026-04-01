@@ -13896,6 +13896,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "holdoff active-loss bypass integration ordinary-completed cycle count after failover");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "holdoff active-loss bypass integration bypass-completed cycle count after failover");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "holdoff active-loss bypass integration completed kind after failover");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "holdoff active-loss bypass integration terminal outcome after failover");
 
 	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
@@ -13909,6 +13910,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "holdoff active-loss bypass integration ordinary-completed cycle count retained on hold");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "holdoff active-loss bypass integration bypass-completed cycle count retained on hold");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "holdoff active-loss bypass integration completed kind retained on hold");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "holdoff active-loss bypass integration terminal outcome retained on hold");
 
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
@@ -13925,6 +13927,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "holdoff active-loss bypass integration ordinary-completed cycle count after bypass");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 1U, "holdoff active-loss bypass integration bypass-completed cycle count after bypass");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "holdoff active-loss bypass integration completed kind after bypass");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "holdoff active-loss bypass integration terminal outcome after bypass");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_BYPASS_ACTIVE_LOSS, "holdoff active-loss bypass integration bypass reason");
 
 	/* cppcheck-suppress redundantAssignment */
@@ -13940,6 +13943,7 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "holdoff active-loss bypass integration ordinary-completed cycle count retained on refresh");
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 1U, "holdoff active-loss bypass integration bypass-completed cycle count retained on refresh");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "holdoff active-loss bypass integration completed kind retained on refresh");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "holdoff active-loss bypass integration terminal outcome retained on refresh");
 
 	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame;
@@ -15823,6 +15827,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit long-run integration first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit long-run integration first hold state");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "switch audit long-run integration first hold completed kind");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "switch audit long-run integration first hold terminal outcome");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit long-run integration first hold progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first hold target");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit long-run integration first hold remaining");
@@ -15850,6 +15855,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit long-run integration first recovery aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit long-run integration first recovery state");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY, "switch audit long-run integration first recovery completed kind");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED, "switch audit long-run integration first recovery terminal outcome");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration first recovery progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first recovery target retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit long-run integration first recovery remaining reset");
@@ -15879,6 +15885,7 @@ static void vTestIntegratedSwitchAuditLongRunFlow(void)
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit long-run integration first repeated refresh aborted cycle count retained");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit long-run integration first repeated refresh state");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY, "switch audit long-run integration first repeated refresh completed kind retained");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED, "switch audit long-run integration first repeated refresh terminal outcome retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit long-run integration first repeated refresh progress zero");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit long-run integration first repeated refresh target retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit long-run integration first repeated refresh remaining retained");
@@ -16085,6 +16092,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff reset integration first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset integration first hold state");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "switch audit holdoff reset integration first hold completed kind");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "switch audit holdoff reset integration first hold terminal outcome");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit holdoff reset integration first hold progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit holdoff reset integration first hold remaining");
 
@@ -16106,6 +16114,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset integration completed cycle count retained on reset");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset integration aborted cycle count on reset");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED, "switch audit holdoff reset integration reset state");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED, "switch audit holdoff reset integration reset terminal outcome");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit holdoff reset integration progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit holdoff reset integration remaining reset");
 	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "switch audit holdoff reset integration switch kind");
@@ -16129,6 +16138,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset integration aborted cycle count after reset");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset integration hold after reset state");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "switch audit holdoff reset integration hold after reset completed kind");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED, "switch audit holdoff reset integration hold after reset terminal outcome retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit holdoff reset integration progress after reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit holdoff reset integration remaining after reset");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP, "switch audit holdoff reset integration hold reason after reset");
@@ -16145,6 +16155,7 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset integration aborted cycle count retained after recovery");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit holdoff reset integration recovery state");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY, "switch audit holdoff reset integration recovery completed kind");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED, "switch audit holdoff reset integration recovery terminal outcome");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit holdoff reset integration recovery progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit holdoff reset integration recovery remaining reset");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_AFTER_HOLDOFF, "switch audit holdoff reset integration recovery reason");

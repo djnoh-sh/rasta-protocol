@@ -94,6 +94,14 @@ typedef enum
 	RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS
 } rsrx_supervisor_completed_holdoff_cycle_kind_t;
 
+typedef enum
+{
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE = 0,
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED,
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED,
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED
+} rsrx_supervisor_terminal_holdoff_outcome_t;
+
 typedef struct
 {
 	rsrx_transport_channel_state_t xLastChannelState;
@@ -144,6 +152,7 @@ typedef struct
 	uint32_t uPreferredRecoveryHoldoffRemainingCount;
 	rsrx_supervisor_holdoff_cycle_state_t eLastHoldoffCycleState;
 	rsrx_supervisor_completed_holdoff_cycle_kind_t eLastCompletedHoldoffCycleKind;
+	rsrx_supervisor_terminal_holdoff_outcome_t eLastTerminalHoldoffOutcome;
 	rsrx_supervisor_switch_kind_t eLastSwitchKind;
 	rsrx_supervisor_switch_reason_t eLastSwitchReason;
 	rsrx_transport_event_type_t eLastSwitchTriggerEventType;
