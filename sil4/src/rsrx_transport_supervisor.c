@@ -51,6 +51,7 @@ static void vResetSupervisorReport(
 	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffRemainingCount = 0U;
+	pxReport->eLastHoldoffCycleState = RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE;
 	pxReport->eLastSwitchKind = RSRX_SUPERVISOR_SWITCH_KIND_NONE;
 	pxReport->eLastSwitchReason = RSRX_SUPERVISOR_SWITCH_REASON_NONE;
 	pxReport->eLastSwitchTriggerEventType = RSRX_TRANSPORT_EVENT_NONE;
@@ -218,6 +219,8 @@ static void vRefreshChannelSwitchTelemetry(
 				{
 					pxContext->xLastReport.uCompletedHoldoffCycleCount++;
 				}
+				pxContext->xLastReport.eLastHoldoffCycleState =
+					RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED;
 			}
 			else if(pxContext->xLastReport.uImmediatePreferredRecoverySwitchCount < UINT32_MAX)
 			{
@@ -272,6 +275,11 @@ static void vRefreshChannelSwitchTelemetry(
 				{
 					pxContext->xLastReport.uHoldoffCycleCount++;
 				}
+				if(pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount > 0U)
+				{
+					pxContext->xLastReport.eLastHoldoffCycleState =
+						RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS;
+				}
 			}
 		}
 		else if((eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN) &&
@@ -290,6 +298,8 @@ static void vRefreshChannelSwitchTelemetry(
 			{
 				pxContext->xLastReport.uHoldoffResetCount++;
 			}
+			pxContext->xLastReport.eLastHoldoffCycleState =
+				RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED;
 		}
 		else
 		{
@@ -299,6 +309,14 @@ static void vRefreshChannelSwitchTelemetry(
 				RSRX_TRANSPORT_EVENT_NONE;
 			pxContext->xLastReport.eLastSwitchTriggerChannelId =
 				RSRX_TRANSPORT_CHANNEL_INVALID;
+		}
+		if((pxContext->xLastReport.eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_NONE) &&
+			(pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount == 0U) &&
+			(pxContext->xLastReport.eLastHoldoffCycleState ==
+				RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS))
+		{
+			pxContext->xLastReport.eLastHoldoffCycleState =
+				RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE;
 		}
 		pxContext->xLastReport.eLastSwitchKind =
 			RSRX_SUPERVISOR_SWITCH_KIND_NONE;

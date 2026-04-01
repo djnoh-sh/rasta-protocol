@@ -78,6 +78,14 @@ typedef enum
 	RSRX_SUPERVISOR_SWITCH_REASON_ACTIVE_REFRESH_NOOP
 } rsrx_supervisor_switch_reason_t;
 
+typedef enum
+{
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE = 0,
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS,
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED,
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED
+} rsrx_supervisor_holdoff_cycle_state_t;
+
 typedef struct
 {
 	rsrx_transport_channel_state_t xLastChannelState;
@@ -116,6 +124,7 @@ typedef struct
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;
 	uint32_t uPreferredRecoveryHoldoffRemainingCount;
+	rsrx_supervisor_holdoff_cycle_state_t eLastHoldoffCycleState;
 	rsrx_supervisor_switch_kind_t eLastSwitchKind;
 	rsrx_supervisor_switch_reason_t eLastSwitchReason;
 	rsrx_transport_event_type_t eLastSwitchTriggerEventType;
