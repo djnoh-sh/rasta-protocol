@@ -117,6 +117,8 @@ typedef struct
 	uint32_t uNoOpRefreshCount;
 	uint32_t uPreferredChannelTriggeredRefreshEventCount;
 	uint32_t uNonPreferredChannelTriggeredRefreshEventCount;
+	uint32_t uPreferredChannelTriggeredSwitchCount;
+	uint32_t uNonPreferredChannelTriggeredSwitchCount;
 	uint32_t uPreferredChannelTriggeredNoOpRefreshCount;
 	uint32_t uNonPreferredChannelTriggeredNoOpRefreshCount;
 	uint32_t uHoldoffRefreshNoOpCount;

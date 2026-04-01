@@ -44,6 +44,8 @@ static void vResetSupervisorReport(
 	pxReport->uNoOpRefreshCount = 0U;
 	pxReport->uPreferredChannelTriggeredRefreshEventCount = 0U;
 	pxReport->uNonPreferredChannelTriggeredRefreshEventCount = 0U;
+	pxReport->uPreferredChannelTriggeredSwitchCount = 0U;
+	pxReport->uNonPreferredChannelTriggeredSwitchCount = 0U;
 	pxReport->uPreferredChannelTriggeredNoOpRefreshCount = 0U;
 	pxReport->uNonPreferredChannelTriggeredNoOpRefreshCount = 0U;
 	pxReport->uHoldoffRefreshNoOpCount = 0U;
@@ -215,6 +217,17 @@ static void vRefreshChannelSwitchTelemetry(
 	}
 	if(pxContext->xLastReport.uLastChannelSwitchOccurred != 0U)
 	{
+		if(eTriggerChannelId == ePreferredChannelId)
+		{
+			if(pxContext->xLastReport.uPreferredChannelTriggeredSwitchCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uPreferredChannelTriggeredSwitchCount++;
+			}
+		}
+		else if(pxContext->xLastReport.uNonPreferredChannelTriggeredSwitchCount < UINT32_MAX)
+		{
+			pxContext->xLastReport.uNonPreferredChannelTriggeredSwitchCount++;
+		}
 		if(eCurrentActiveChannelId == ePreferredChannelId)
 		{
 			pxContext->xLastReport.eLastSwitchKind =

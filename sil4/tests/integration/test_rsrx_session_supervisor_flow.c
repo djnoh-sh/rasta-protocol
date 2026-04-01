@@ -13889,12 +13889,16 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff active-loss bypass integration first failover");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active-loss bypass integration first secondary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff active-loss bypass integration first switch count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count after failover");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 0U, "holdoff active-loss bypass integration non-preferred-triggered switch count after failover");
 
 	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff active-loss bypass integration hold");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active-loss bypass integration held secondary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff active-loss bypass integration held switch count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count retained on hold");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 0U, "holdoff active-loss bypass integration non-preferred-triggered switch count retained on hold");
 
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
@@ -13902,6 +13906,8 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff active-loss bypass integration active secondary down");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff active-loss bypass integration immediate preferred recovery");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "holdoff active-loss bypass integration bypass switch count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count retained on bypass");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration non-preferred-triggered switch count after bypass");
 
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uSecondaryAvailable = 1U;
@@ -13909,6 +13915,8 @@ static void vTestIntegratedHoldoffActiveLossBypassFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff active-loss bypass integration secondary restore refresh");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff active-loss bypass integration retained primary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "holdoff active-loss bypass integration stable switch count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration preferred-triggered switch count retained on refresh");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 1U, "holdoff active-loss bypass integration non-preferred-triggered switch count retained on refresh");
 
 	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame;
@@ -17948,6 +17956,11 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlowWrapper(void)
 	vTestIntegratedSwitchAuditHoldoffResetFlow();
 }
 
+static void vTestIntegratedSwitchAuditTriggerOriginFlow(void)
+{
+	vTestIntegratedHoldoffActiveLossBypassFlow();
+}
+
 static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
 {
 	vTestIntegratedSwitchAuditCloseoutFlow();
@@ -17955,6 +17968,7 @@ static void vTestIntegratedSwitchAuditEnvelopeFlow(void)
 	vTestIntegratedSwitchAuditReasonFlow();
 	vTestIntegratedSwitchAuditHoldoffProgressFlow();
 	vTestIntegratedSwitchAuditHoldoffResetFlowWrapper();
+	vTestIntegratedSwitchAuditTriggerOriginFlow();
 }
 
 static void vTestIntegratedActiveLossBypassReentersHoldoffFlow(void)
