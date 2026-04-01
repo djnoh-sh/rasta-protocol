@@ -146,6 +146,9 @@ typedef struct
 	uint32_t uOrdinaryCompletedHoldoffCycleCount;
 	uint32_t uBypassCompletedHoldoffCycleCount;
 	uint32_t uAbortedHoldoffCycleCount;
+	uint32_t uOrdinaryTerminalHoldoffOutcomeCount;
+	uint32_t uBypassTerminalHoldoffOutcomeCount;
+	uint32_t uAbortedTerminalHoldoffOutcomeCount;
 	uint32_t uHoldoffResetCount;
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;

@@ -57,6 +57,9 @@ static void vResetSupervisorReport(
 	pxReport->uOrdinaryCompletedHoldoffCycleCount = 0U;
 	pxReport->uBypassCompletedHoldoffCycleCount = 0U;
 	pxReport->uAbortedHoldoffCycleCount = 0U;
+	pxReport->uOrdinaryTerminalHoldoffOutcomeCount = 0U;
+	pxReport->uBypassTerminalHoldoffOutcomeCount = 0U;
+	pxReport->uAbortedTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uHoldoffResetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
@@ -265,6 +268,10 @@ static void vRefreshChannelSwitchTelemetry(
 						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 						RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED;
+					if(pxContext->xLastReport.uBypassTerminalHoldoffOutcomeCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uBypassTerminalHoldoffOutcomeCount++;
+					}
 					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
 						eTriggerEventType;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerChannelId =
@@ -286,6 +293,10 @@ static void vRefreshChannelSwitchTelemetry(
 						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 						RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED;
+					if(pxContext->xLastReport.uOrdinaryTerminalHoldoffOutcomeCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uOrdinaryTerminalHoldoffOutcomeCount++;
+					}
 					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
 						eTriggerEventType;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerChannelId =
@@ -398,6 +409,10 @@ static void vRefreshChannelSwitchTelemetry(
 				RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED;
 			pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 				RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED;
+			if(pxContext->xLastReport.uAbortedTerminalHoldoffOutcomeCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uAbortedTerminalHoldoffOutcomeCount++;
+			}
 			pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
 				eTriggerEventType;
 			pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerChannelId =
