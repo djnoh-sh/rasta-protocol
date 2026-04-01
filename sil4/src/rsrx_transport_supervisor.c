@@ -66,6 +66,8 @@ static void vResetSupervisorReport(
 		RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE;
 	pxReport->eLastTerminalHoldoffOutcome =
 		RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE;
+	pxReport->eLastTerminalHoldoffOutcomeTriggerEventType = RSRX_TRANSPORT_EVENT_NONE;
+	pxReport->eLastTerminalHoldoffOutcomeTriggerChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxReport->eLastSwitchKind = RSRX_SUPERVISOR_SWITCH_KIND_NONE;
 	pxReport->eLastSwitchReason = RSRX_SUPERVISOR_SWITCH_REASON_NONE;
 	pxReport->eLastSwitchTriggerEventType = RSRX_TRANSPORT_EVENT_NONE;
@@ -263,6 +265,10 @@ static void vRefreshChannelSwitchTelemetry(
 						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 						RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED;
+					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
+						eTriggerEventType;
+					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerChannelId =
+						eTriggerChannelId;
 				}
 				else
 				{
@@ -280,6 +286,10 @@ static void vRefreshChannelSwitchTelemetry(
 						RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY;
 					pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 						RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED;
+					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
+						eTriggerEventType;
+					pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerChannelId =
+						eTriggerChannelId;
 				}
 				if(pxContext->xLastReport.uHoldoffPreferredRecoverySwitchCount < UINT32_MAX)
 				{
@@ -388,6 +398,10 @@ static void vRefreshChannelSwitchTelemetry(
 				RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED;
 			pxContext->xLastReport.eLastTerminalHoldoffOutcome =
 				RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED;
+			pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerEventType =
+				eTriggerEventType;
+			pxContext->xLastReport.eLastTerminalHoldoffOutcomeTriggerChannelId =
+				eTriggerChannelId;
 		}
 		else
 		{
