@@ -983,6 +983,8 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 0U, "channel up refresh holdoff preferred recovery count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE, "channel up refresh holdoff cycle state");
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 0U, "channel up refresh no-op count retained");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "channel up refresh preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "channel up refresh non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 0U, "channel up refresh preferred-triggered no-op count retained");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "channel up refresh non-preferred-triggered no-op count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 0U, "channel up refresh holdoff no-op count retained");
@@ -1466,6 +1468,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "channel event ordering matrix immediate preferred recovery count before recovery");
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 0U, "channel event ordering matrix holdoff preferred recovery count before recovery");
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 0U, "channel event ordering matrix no-op count before recovery");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 0U, "channel event ordering matrix preferred-triggered refresh count before recovery");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "channel event ordering matrix non-preferred-triggered refresh count before recovery");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 0U, "channel event ordering matrix preferred-triggered no-op count before recovery");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "channel event ordering matrix non-preferred-triggered no-op count before recovery");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 0U, "channel event ordering matrix holdoff no-op count before recovery");
@@ -1493,6 +1497,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "channel event ordering matrix immediate preferred recovery count retained on noop");
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 0U, "channel event ordering matrix holdoff preferred recovery count retained on noop");
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 1U, "channel event ordering matrix no-op count after first noop");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 0U, "channel event ordering matrix preferred-triggered refresh count after first noop");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 1U, "channel event ordering matrix non-preferred-triggered refresh count after first noop");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 0U, "channel event ordering matrix preferred-triggered no-op count after first noop");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 1U, "channel event ordering matrix non-preferred-triggered no-op count after first noop");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "channel event ordering matrix holdoff no-op count after first noop");
@@ -1523,6 +1529,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 1U, "channel event ordering matrix immediate preferred recovery count after recovery");
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 0U, "channel event ordering matrix holdoff preferred recovery count after recovery");
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 1U, "channel event ordering matrix no-op count retained after recovery");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "channel event ordering matrix preferred-triggered refresh count after recovery");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 1U, "channel event ordering matrix non-preferred-triggered refresh count after recovery");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 0U, "channel event ordering matrix preferred-triggered no-op count retained after recovery");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 1U, "channel event ordering matrix non-preferred-triggered no-op count retained after recovery");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "channel event ordering matrix holdoff no-op count retained after recovery");
@@ -1550,6 +1558,8 @@ static void vTestSupervisorChannelEventOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 1U, "channel event ordering matrix immediate preferred recovery count retained on repeated noop");
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 0U, "channel event ordering matrix holdoff preferred recovery count retained on repeated noop");
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 2U, "channel event ordering matrix no-op count after repeated noop");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 2U, "channel event ordering matrix preferred-triggered refresh count after repeated noop");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 1U, "channel event ordering matrix non-preferred-triggered refresh count after repeated noop");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "channel event ordering matrix preferred-triggered no-op count after repeated noop");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 1U, "channel event ordering matrix non-preferred-triggered no-op count after repeated noop");
 	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 1U, "channel event ordering matrix holdoff no-op count after repeated noop");
@@ -1631,6 +1641,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff progress matrix first hold state");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "switch audit holdoff progress matrix first hold preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff progress matrix first hold non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff progress matrix first hold preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff progress matrix first hold non-preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "switch audit holdoff progress matrix first hold immediate preferred recovery count");
@@ -1645,6 +1657,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit holdoff progress matrix recovery completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix recovery aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit holdoff progress matrix recovery state");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 2U, "switch audit holdoff progress matrix recovery preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff progress matrix recovery non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff progress matrix recovery preferred-triggered no-op count retained");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff progress matrix recovery non-preferred-triggered no-op count retained");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "switch audit holdoff progress matrix recovery immediate preferred recovery count");
@@ -1659,6 +1673,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 1U, "switch audit holdoff progress matrix active repeated refresh completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix active repeated refresh aborted cycle count retained");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit holdoff progress matrix active repeated refresh state");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 3U, "switch audit holdoff progress matrix active repeated refresh preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff progress matrix active repeated refresh non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 2U, "switch audit holdoff progress matrix active repeated refresh preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff progress matrix active repeated refresh non-preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "switch audit holdoff progress matrix active repeated refresh immediate preferred recovery count retained");
@@ -1714,6 +1730,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix first hold completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset matrix first hold state");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "switch audit holdoff reset matrix first hold preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff reset matrix first hold non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff reset matrix first hold preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff reset matrix first hold non-preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "switch audit holdoff reset matrix first hold immediate preferred recovery count");
@@ -1731,6 +1749,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix reset completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset matrix reset aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED, "switch audit holdoff reset matrix reset state");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 1U, "switch audit holdoff reset matrix reset preferred-triggered refresh count retained");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff reset matrix reset non-preferred-triggered refresh count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 1U, "switch audit holdoff reset matrix reset preferred-triggered no-op count retained");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff reset matrix reset non-preferred-triggered no-op count retained");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "switch audit holdoff reset matrix reset immediate preferred recovery count");
@@ -1751,6 +1771,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix completed cycle count after reset");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset matrix aborted cycle count after reset");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset matrix hold after reset state");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 2U, "switch audit holdoff reset matrix hold after reset preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff reset matrix hold after reset non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 2U, "switch audit holdoff reset matrix hold after reset preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff reset matrix hold after reset non-preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "switch audit holdoff reset matrix hold after reset immediate preferred recovery count");

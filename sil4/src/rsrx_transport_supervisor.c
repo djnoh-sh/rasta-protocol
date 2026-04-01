@@ -42,6 +42,8 @@ static void vResetSupervisorReport(
 	pxReport->uImmediatePreferredRecoverySwitchCount = 0U;
 	pxReport->uHoldoffPreferredRecoverySwitchCount = 0U;
 	pxReport->uNoOpRefreshCount = 0U;
+	pxReport->uPreferredChannelTriggeredRefreshEventCount = 0U;
+	pxReport->uNonPreferredChannelTriggeredRefreshEventCount = 0U;
 	pxReport->uPreferredChannelTriggeredNoOpRefreshCount = 0U;
 	pxReport->uNonPreferredChannelTriggeredNoOpRefreshCount = 0U;
 	pxReport->uHoldoffRefreshNoOpCount = 0U;
@@ -197,6 +199,20 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
 	pxContext->xLastReport.eLastSwitchTriggerEventType = eTriggerEventType;
 	pxContext->xLastReport.eLastSwitchTriggerChannelId = eTriggerChannelId;
+	if(eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP)
+	{
+		if(eTriggerChannelId == ePreferredChannelId)
+		{
+			if(pxContext->xLastReport.uPreferredChannelTriggeredRefreshEventCount < UINT32_MAX)
+			{
+				pxContext->xLastReport.uPreferredChannelTriggeredRefreshEventCount++;
+			}
+		}
+		else if(pxContext->xLastReport.uNonPreferredChannelTriggeredRefreshEventCount < UINT32_MAX)
+		{
+			pxContext->xLastReport.uNonPreferredChannelTriggeredRefreshEventCount++;
+		}
+	}
 	if(pxContext->xLastReport.uLastChannelSwitchOccurred != 0U)
 	{
 		if(eCurrentActiveChannelId == ePreferredChannelId)
