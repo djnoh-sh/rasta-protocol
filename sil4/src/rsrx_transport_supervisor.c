@@ -41,6 +41,7 @@ static void vResetSupervisorReport(
 	pxReport->uPreferredRecoverySwitchCount = 0U;
 	pxReport->uImmediatePreferredRecoverySwitchCount = 0U;
 	pxReport->uHoldoffPreferredRecoverySwitchCount = 0U;
+	pxReport->uBypassPreferredRecoverySwitchCount = 0U;
 	pxReport->uNoOpRefreshCount = 0U;
 	pxReport->uPreferredChannelTriggeredRefreshEventCount = 0U;
 	pxReport->uNonPreferredChannelTriggeredRefreshEventCount = 0U;
@@ -232,16 +233,27 @@ static void vRefreshChannelSwitchTelemetry(
 		{
 			pxContext->xLastReport.eLastSwitchKind =
 				RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY;
-			pxContext->xLastReport.eLastSwitchReason =
-				(uPreviousHoldoffProgressCount > 0U) ?
-					RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_AFTER_HOLDOFF :
-					RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_IMMEDIATE;
 			if(pxContext->xLastReport.uPreferredRecoverySwitchCount < UINT32_MAX)
 			{
 				pxContext->xLastReport.uPreferredRecoverySwitchCount++;
 			}
 			if(uPreviousHoldoffProgressCount > 0U)
 			{
+				if((eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN) &&
+					(eTriggerChannelId != ePreferredChannelId))
+				{
+					pxContext->xLastReport.eLastSwitchReason =
+						RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_BYPASS_ACTIVE_LOSS;
+					if(pxContext->xLastReport.uBypassPreferredRecoverySwitchCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uBypassPreferredRecoverySwitchCount++;
+					}
+				}
+				else
+				{
+					pxContext->xLastReport.eLastSwitchReason =
+						RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_AFTER_HOLDOFF;
+				}
 				if(pxContext->xLastReport.uHoldoffPreferredRecoverySwitchCount < UINT32_MAX)
 				{
 					pxContext->xLastReport.uHoldoffPreferredRecoverySwitchCount++;
@@ -253,9 +265,14 @@ static void vRefreshChannelSwitchTelemetry(
 				pxContext->xLastReport.eLastHoldoffCycleState =
 					RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED;
 			}
-			else if(pxContext->xLastReport.uImmediatePreferredRecoverySwitchCount < UINT32_MAX)
+			else
 			{
-				pxContext->xLastReport.uImmediatePreferredRecoverySwitchCount++;
+				pxContext->xLastReport.eLastSwitchReason =
+					RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_IMMEDIATE;
+				if(pxContext->xLastReport.uImmediatePreferredRecoverySwitchCount < UINT32_MAX)
+				{
+					pxContext->xLastReport.uImmediatePreferredRecoverySwitchCount++;
+				}
 			}
 		}
 		else
