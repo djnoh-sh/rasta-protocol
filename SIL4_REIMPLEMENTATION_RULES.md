@@ -204,6 +204,10 @@
 - 인터페이스 변경은 영향도 분석을 먼저 수행한다.
 - 안전 관련 상수 변경은 테스트와 문서를 동시에 갱신한다.
 - 미완성 기능은 feature flag 없이 mainline에 넣지 않는다.
+- `git add`, `git commit`, `git rm`, `git mv`, `git restore --staged`처럼 index/worktree를 쓰는 git 명령은 순차 실행만 허용한다.
+- index를 쓰는 git 명령을 병렬 실행하지 않는다.
+- staging과 commit은 기본적으로 `git add -> staged diff 확인 -> git commit` 순서로만 진행한다.
+- `index.lock` 오류가 나면 먼저 동시 실행 여부와 살아있는 git 프로세스를 확인하고, stale lock 여부가 확인되기 전에는 임의 삭제하지 않는다.
 
 ## 22. Documentation Rules
 
