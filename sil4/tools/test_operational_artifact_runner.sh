@@ -11,6 +11,8 @@ EOF
 SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 WORK_DIR="/tmp/rsrx-operational-artifact-runner"
 
+. "$SELF_DIR/verification_sequence_common.sh"
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --work-dir) WORK_DIR="$2"; shift 2 ;;
@@ -20,6 +22,9 @@ done
 
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
+
+SUMMARY_MD="$WORK_DIR/summary.md"
+SUMMARY_ENV="$WORK_DIR/summary.env"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_OUT="$WORK_DIR/baseline-logs-baseline-packet"
@@ -70,6 +75,7 @@ INITIAL_DECISION=ReviewRequired
 EOF2
 
 sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR/vendor_export_context.env"
+mark_verification_phase_complete "$WORK_DIR" setup
 
 "$SELF_DIR/run_operational_packet_from_artifacts.sh" \
   --track auto \
@@ -80,6 +86,7 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
   --download-log-ref download-step \
   --materialize-log-ref materialize-step \
   --annotate-log-ref annotate-step >/dev/null
+mark_verification_phase_complete "$WORK_DIR" baseline_execute
 
 "$SELF_DIR/run_operational_packet_from_artifacts.sh" \
   --track auto \
@@ -91,6 +98,7 @@ sed -i "s|/tmp/rsrx-operational-artifact-runner|$WORK_DIR|g" "$VENDOR_EXPORT_DIR
   --vendor-matrix-ref sil4/docs/evidence/vendor_rule_matrix_actual.md \
   --tracking-ref sil4/docs/evidence/misra_deviation_log.md \
   --audit-trail-ref sil4/docs/evidence/audit_trail_closeout.md >/dev/null
+mark_verification_phase_complete "$WORK_DIR" vendor_execute
 
 grep -q '^REPORT_ID=EVID-CI-BLRUN-20260326-1001$' "$BASE_ENV"
 grep -q '^REVIEW_ID=RV-BLRUN-20260326-1001$' "$BASE_ENV"
@@ -118,5 +126,48 @@ bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$BAS
 bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$VENDOR_OUT/artifact_runner_receipt.md" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track baseline --output-dir "$BASE_OUT" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track vendor --output-dir "$VENDOR_OUT" >/dev/null
+mark_verification_phase_complete "$WORK_DIR" validate
+
+cat >"$SUMMARY_MD" <<EOF
+# Operational Artifact Runner Smoke Summary
+
+| Item | Result |
+| --- | --- |
+| Setup | Pass |
+| Baseline Packet Execution | Pass |
+| Vendor Packet Execution | Pass |
+| Validation | Pass |
+| Verification Ordering Status | Pass |
+
+## Phase Markers
+
+| Phase | Marker |
+| --- | --- |
+| Setup | \`$(phase_marker_path "$WORK_DIR" setup)\` |
+| Baseline Execute | \`$(phase_marker_path "$WORK_DIR" baseline_execute)\` |
+| Vendor Execute | \`$(phase_marker_path "$WORK_DIR" vendor_execute)\` |
+| Validate | \`$(phase_marker_path "$WORK_DIR" validate)\` |
+
+## Key Outputs
+
+- Baseline env: \`$BASE_ENV\`
+- Vendor env: \`$VENDOR_ENV\`
+- Baseline output: \`$BASE_OUT\`
+- Vendor output: \`$VENDOR_OUT\`
+EOF
+
+cat >"$SUMMARY_ENV" <<EOF
+SUMMARY_MD=$SUMMARY_MD
+VERIFICATION_ORDERING_STATUS=Pass
+SETUP_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" setup)
+BASELINE_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" baseline_execute)
+VENDOR_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" vendor_execute)
+VALIDATE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" validate)
+BASE_ENV=$BASE_ENV
+VENDOR_ENV=$VENDOR_ENV
+BASE_OUT=$BASE_OUT
+VENDOR_OUT=$VENDOR_OUT
+EOF
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"
+echo "Summary: $SUMMARY_MD"

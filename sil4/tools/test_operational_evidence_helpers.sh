@@ -11,6 +11,8 @@ EOF
 SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 WORK_DIR="/tmp/rsrx-operational-smoke"
 
+. "$SELF_DIR/verification_sequence_common.sh"
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --work-dir) WORK_DIR="$2"; shift 2 ;;
@@ -20,6 +22,9 @@ done
 
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
+
+SUMMARY_MD="$WORK_DIR/summary.md"
+SUMMARY_ENV="$WORK_DIR/summary.env"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_ENV="$WORK_DIR/baseline.env"
@@ -87,15 +92,57 @@ VENDOR_MATRIX_REF=sil4/docs/evidence/vendor_rule_matrix_actual.md
 TRACKING_REF=sil4/docs/evidence/misra_deviation_log.md
 AUDIT_TRAIL_REF=sil4/docs/evidence/audit_trail_closeout.md
 EOF
+mark_verification_phase_complete "$WORK_DIR" setup
 
 "$SELF_DIR/run_operational_packet_from_env.sh" \
   --track baseline \
   --input "$BASE_ENV" \
   --execute >/dev/null
+mark_verification_phase_complete "$WORK_DIR" baseline_execute
 
 "$SELF_DIR/run_operational_packet_from_env.sh" \
   --track vendor \
   --input "$VENDOR_ENV" \
   --execute >/dev/null
+mark_verification_phase_complete "$WORK_DIR" vendor_execute
+
+cat >"$SUMMARY_MD" <<EOF
+# Operational Evidence Helper Smoke Summary
+
+| Item | Result |
+| --- | --- |
+| Setup | Pass |
+| Baseline Packet Execution | Pass |
+| Vendor Packet Execution | Pass |
+| Verification Ordering Status | Pass |
+
+## Phase Markers
+
+| Phase | Marker |
+| --- | --- |
+| Setup | \`$(phase_marker_path "$WORK_DIR" setup)\` |
+| Baseline Execute | \`$(phase_marker_path "$WORK_DIR" baseline_execute)\` |
+| Vendor Execute | \`$(phase_marker_path "$WORK_DIR" vendor_execute)\` |
+
+## Key Outputs
+
+- Baseline env: \`$BASE_ENV\`
+- Vendor env: \`$VENDOR_ENV\`
+- Baseline output: \`$BASE_OUT\`
+- Vendor output: \`$VENDOR_OUT\`
+EOF
+
+cat >"$SUMMARY_ENV" <<EOF
+SUMMARY_MD=$SUMMARY_MD
+VERIFICATION_ORDERING_STATUS=Pass
+SETUP_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" setup)
+BASELINE_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" baseline_execute)
+VENDOR_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" vendor_execute)
+BASE_ENV=$BASE_ENV
+VENDOR_ENV=$VENDOR_ENV
+BASE_OUT=$BASE_OUT
+VENDOR_OUT=$VENDOR_OUT
+EOF
 
 echo "Operational evidence helper smoke passed: $WORK_DIR"
+echo "Summary: $SUMMARY_MD"
