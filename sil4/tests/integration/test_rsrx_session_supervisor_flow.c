@@ -20179,6 +20179,7 @@ static void vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow(void)
 	vTestIntegratedFlapBypassCloseoutFlow();
 	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
 	vTestIntegratedSwitchAuditEnvelopeFlow();
+	vTestIntegratedSwitchAuditTerminalOutcomeEnvelopeFlow();
 }
 
 static void vTestIntegratedProtocolVariantCloseoutFlow(void)
