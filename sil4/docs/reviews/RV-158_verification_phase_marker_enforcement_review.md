@@ -19,7 +19,7 @@
   - test executable readiness 확인
   를 제공한다.
 - `run_ci_verification.sh`, `run_static_analysis_baseline.sh`는 이 helper를 사용해 순서를 강제한다.
-- `run_ci_verification.sh` summary artifact는 phase marker path와 verification ordering status도 함께 남긴다.
+- `run_ci_verification.sh`, `run_static_analysis_baseline.sh` summary artifact는 phase marker path와 verification ordering status를 함께 남긴다.
 
 ## Result
 - verification helper는 이제
@@ -28,4 +28,4 @@
   - `build -> cppcheck`
   순서를 marker 기반으로 강제한다.
 - build 종료 전 test binary를 집는 종류의 false failure는 helper 경로에서 구조적으로 더 어렵게 된다.
-- CI summary만 봐도 ordering marker가 실제로 생성됐는지 확인할 수 있다.
+- summary artifact만 봐도 ordering marker가 실제로 생성됐는지 확인할 수 있다.
