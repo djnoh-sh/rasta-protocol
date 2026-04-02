@@ -669,9 +669,6 @@ static void vTestSupervisorPollReceiveChannelDown(void)
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
 	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll down session init");
@@ -857,7 +854,6 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	vAssertTrue(xCallbacks.uApplicationCount == 1U, "poll retry matrix success callback");
 
 	xTransport.eQueryStatus = RSRX_TRANSPORT_STATUS_OK;
-	/* cppcheck-suppress redundantAssignment */
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "poll retry matrix channel gated");

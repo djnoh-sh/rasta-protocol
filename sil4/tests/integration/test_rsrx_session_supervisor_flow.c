@@ -320,11 +320,7 @@ static void vTestIntegratedSessionSupervisorFlow(void)
 	size_t xHandshakeLength;
 	size_t xInboundDataLength;
 
-	// cppcheck-suppress redundantAssignment
 	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	// cppcheck-suppress redundantAssignment
 	xTransport.uPrimaryAvailable = 1U;
 	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
@@ -2439,8 +2435,6 @@ static void vTestIntegratedRetransmissionFailoverRecoveryFlow(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retrans failover recovery integration retrans pending");
 	vAssertTrue(xTransport.uSendCount == 2U, "retrans failover recovery integration retrans request sent");
 
-	// cppcheck-suppress redundantAssignment
-	// cppcheck-suppress redundantAssignment
 	/* cppcheck-suppress redundantAssignment */
 	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "holdoff flap runtime ordering integration primary available before flap reset");
 	vSetChannelAvailability(&xTransport, 0U, 1U);
@@ -2570,17 +2564,6 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 
 	vAssertTrue(xTransport.uPrimaryAvailable == 1U, "redundancy hysteresis closeout integration primary available before flap reset");
 	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	xTransport.uSecondaryAvailable = 1U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
@@ -2595,8 +2578,6 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow(void)
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff recovery integration clear outstanding");
 
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 1U;
 	// cppcheck-suppress redundantAssignment
@@ -3836,10 +3817,6 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapStaleFeedbac
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_RECOVERY_SUCCESS, "retrans channel up holdoff repeated gap stale feedback recovery integration recovery event");
 
 	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
@@ -3934,7 +3911,6 @@ static void vTestIntegratedRetransmissionChannelUpHoldoffRepeatedGapStaleFeedbac
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "retrans channel up holdoff repeated gap stale feedback recovery ordering integration clear first outstanding");
 
-	/* cppcheck-suppress redundantAssignment */
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
@@ -5549,10 +5525,6 @@ static void vTestIntegratedStaleRetransmissionProtocolErrorFlow(void)
 	size_t xStaleLength;
 
 	xTransport.uPrimaryAvailable = 1U;
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uSecondaryAvailable = 0U;
 	vFillConfig(
@@ -8593,9 +8565,6 @@ static void vTestIntegratedHoldoffStaleCompletionSoakFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "holdoff stale completion soak integration primary success");
 	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 2U, "holdoff stale completion soak integration second reset count");
 
-	// cppcheck-suppress redundantAssignment
-	/* cppcheck-suppress redundantAssignment */
-	/* cppcheck-suppress redundantAssignment */
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
