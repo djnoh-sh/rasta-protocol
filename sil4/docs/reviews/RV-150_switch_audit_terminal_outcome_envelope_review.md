@@ -11,6 +11,7 @@
   - total cumulative count
   - trigger-origin cumulative count
   - trigger-event cumulative count
+  - post-terminal active no-op retention parity
 - 다만 문서와 traceability 관점에서는 이 축들이 holdoff outcome wrapper 내부에만 흩어져 있어 terminal outcome family 전체를 하나의 closeout 항목으로 읽기 어렵다.
 
 ## Judgment
@@ -21,8 +22,10 @@
 - 아래 representative wrapper를 추가한다.
   - `TC-SUP-043` terminal outcome envelope matrix
   - `TC-INT-161` terminal outcome envelope integration
+  - `TC-SUP-049` terminal outcome stability long-run matrix
+  - `TC-INT-167` terminal outcome stability long-run integration
 - wrapper는 existing holdoff outcome wrapper를 재사용한다.
 
 ## Result
 - current switch audit family는 terminal outcome family까지 representative closeout 항목으로 추적 가능해졌다.
-- `R-003` residual은 current terminal outcome telemetry 부족이 아니라 next policy growth와 longer-run stability envelope 쪽으로 더 좁혀진다.
+- `R-003` residual은 current terminal outcome telemetry나 post-terminal retention parity 부족이 아니라 next policy growth와 longer-run stability envelope 쪽으로 더 좁혀진다.
