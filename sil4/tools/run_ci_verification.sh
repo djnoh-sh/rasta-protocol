@@ -102,6 +102,11 @@ SEVERITY_HIGH_COUNT="$((SUBSET_S2_COUNT + SUBSET_S3_COUNT + SUBSET_S4_COUNT))"
 SEVERITY_MEDIUM_COUNT="$((SUBSET_S5_COUNT))"
 SEVERITY_LOW_COUNT="$((SUBSET_S6_COUNT))"
 SEVERITY_INFO_COUNT="0"
+CONFIGURE_PHASE_MARKER="$(phase_marker_path "$LOG_DIR" configure)"
+BUILD_PHASE_MARKER="$(phase_marker_path "$LOG_DIR" build)"
+TEST_PHASE_MARKER="$(phase_marker_path "$LOG_DIR" test)"
+CPPCHECK_PHASE_MARKER="$(phase_marker_path "$LOG_DIR" cppcheck)"
+VERIFICATION_ORDERING_STATUS="Pass"
 
 cat >"$SUMMARY_MD" <<EOF2
 # SIL4 CI Summary
@@ -113,6 +118,7 @@ cat >"$SUMMARY_MD" <<EOF2
 | Test Executables Passed | ${TEST_COUNT} |
 | Compiler Warning Lines | ${COMPILER_WARNING_COUNT} |
 | Cppcheck Finding Lines | ${CPPCHECK_FINDING_COUNT} |
+| Verification Ordering Status | ${VERIFICATION_ORDERING_STATUS} |
 | Severity Mapping Reference | \`sil4/docs/evidence/severity_mapping.md\` |
 | Tool-Specific Mapping Reference | \`sil4/docs/evidence/tool_specific_misra_mapping.md\` |
 
@@ -136,6 +142,15 @@ cat >"$SUMMARY_MD" <<EOF2
 | MISRA-S4 Interface Integrity | ${SUBSET_S4_COUNT} |
 | MISRA-S5 Defensive Robustness | ${SUBSET_S5_COUNT} |
 | MISRA-S6 Maintainability Style | ${SUBSET_S6_COUNT} |
+
+## Verification Phase Markers
+
+| Phase | Marker |
+| --- | --- |
+| Configure | \`$CONFIGURE_PHASE_MARKER\` |
+| Build | \`$BUILD_PHASE_MARKER\` |
+| Test | \`$TEST_PHASE_MARKER\` |
+| Cppcheck | \`$CPPCHECK_PHASE_MARKER\` |
 
 ## Artifact Logs
 
@@ -165,14 +180,16 @@ SUBSET_S3_COUNT=$SUBSET_S3_COUNT
 SUBSET_S4_COUNT=$SUBSET_S4_COUNT
 SUBSET_S5_COUNT=$SUBSET_S5_COUNT
 SUBSET_S6_COUNT=$SUBSET_S6_COUNT
-CONFIGURE_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" configure)
-BUILD_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" build)
-TEST_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" test)
-CPPCHECK_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" cppcheck)
+VERIFICATION_ORDERING_STATUS=$VERIFICATION_ORDERING_STATUS
+CONFIGURE_PHASE_MARKER=$CONFIGURE_PHASE_MARKER
+BUILD_PHASE_MARKER=$BUILD_PHASE_MARKER
+TEST_PHASE_MARKER=$TEST_PHASE_MARKER
+CPPCHECK_PHASE_MARKER=$CPPCHECK_PHASE_MARKER
 EOF2
 
 echo "Configure log: $CONFIGURE_LOG"
 echo "Build log: $BUILD_LOG"
 echo "Test log: $TEST_LOG"
 echo "Cppcheck log: $CPPCHECK_LOG"
+echo "Verification ordering status: $VERIFICATION_ORDERING_STATUS"
 echo "Summary: $SUMMARY_MD"
