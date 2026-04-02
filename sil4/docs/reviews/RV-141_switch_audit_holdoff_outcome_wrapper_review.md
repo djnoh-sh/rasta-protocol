@@ -8,6 +8,7 @@
   - ordinary holdoff-complete path
   - holdoff reset/abort path
   - bypass holdoff-complete path
+- direct holdoff cycle start trigger telemetry도 이미 current family에 추가되어 있다.
 - 하지만 문서와 테스트 구조상 이 세 경로를 하나의 holdoff outcome family로 직접 묶는 wrapper 항목은 없었다.
 
 ## Judgment
@@ -27,4 +28,5 @@
 
 ## Result
 - current switch audit의 holdoff outcome subfamily는 ordinary complete, bypass complete, abort path를 representative wrapper 수준에서 추적 가능하게 된다.
+- direct holdoff cycle start trigger도 holdoff outcome wrapper가 함께 보증하는 current-family field로 정리된다.
 - `R-003` residual은 current holdoff outcome family 내부 case 나열보다 다음 policy growth 쪽으로 더 좁아진다.
