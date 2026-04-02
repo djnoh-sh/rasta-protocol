@@ -70,6 +70,8 @@ static void vResetSupervisorReport(
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffRemainingCount = 0U;
 	pxReport->eLastHoldoffCycleState = RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE;
+	pxReport->eLastHoldoffCycleStartTriggerEventType = RSRX_TRANSPORT_EVENT_NONE;
+	pxReport->eLastHoldoffCycleStartTriggerChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxReport->eLastCompletedHoldoffCycleKind =
 		RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE;
 	pxReport->eLastTerminalHoldoffOutcome =
@@ -410,6 +412,10 @@ static void vRefreshChannelSwitchTelemetry(
 					(pxContext->xLastReport.uHoldoffCycleCount < UINT32_MAX))
 				{
 					pxContext->xLastReport.uHoldoffCycleCount++;
+					pxContext->xLastReport.eLastHoldoffCycleStartTriggerEventType =
+						eTriggerEventType;
+					pxContext->xLastReport.eLastHoldoffCycleStartTriggerChannelId =
+						eTriggerChannelId;
 				}
 				if(pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount > 0U)
 				{

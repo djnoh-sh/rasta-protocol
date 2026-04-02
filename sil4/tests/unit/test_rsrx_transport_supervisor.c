@@ -1689,6 +1689,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold bypass-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff progress matrix first hold state");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit holdoff progress matrix first hold start trigger event");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit holdoff progress matrix first hold start trigger channel");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "switch audit holdoff progress matrix first hold completed kind");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE, "switch audit holdoff progress matrix first hold terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_NONE, "switch audit holdoff progress matrix first hold terminal trigger event");
@@ -1721,6 +1723,8 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix recovery bypass-completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff progress matrix recovery aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit holdoff progress matrix recovery state");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit holdoff progress matrix recovery start trigger event retained");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit holdoff progress matrix recovery start trigger channel retained");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY, "switch audit holdoff progress matrix recovery completed kind");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED, "switch audit holdoff progress matrix recovery terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit holdoff progress matrix recovery terminal trigger event");
@@ -1861,6 +1865,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix reset bypass-completed cycle count retained");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset matrix reset aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED, "switch audit holdoff reset matrix reset state");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit holdoff reset matrix reset start trigger event retained");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit holdoff reset matrix reset start trigger channel retained");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "switch audit holdoff reset matrix reset completed kind");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED, "switch audit holdoff reset matrix reset terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "switch audit holdoff reset matrix reset terminal trigger event");
@@ -1899,6 +1905,8 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset matrix bypass-completed cycle count after reset");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset matrix aborted cycle count after reset");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset matrix hold after reset state");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit holdoff reset matrix hold after reset start trigger event");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit holdoff reset matrix hold after reset start trigger channel");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE, "switch audit holdoff reset matrix hold after reset completed kind");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED, "switch audit holdoff reset matrix hold after reset terminal outcome retained");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "switch audit holdoff reset matrix hold after reset terminal trigger event retained");
@@ -2090,6 +2098,8 @@ static void vTestSupervisorSwitchAuditTerminalOutcomeMixedLongRunMatrix(void)
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run matrix final non-preferred-triggered count");
 	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome mixed long-run matrix final channel-up count");
 	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome mixed long-run matrix final channel-down count");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit terminal outcome mixed long-run matrix final start trigger event");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit terminal outcome mixed long-run matrix final start trigger channel");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "switch audit terminal outcome mixed long-run matrix final terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "switch audit terminal outcome mixed long-run matrix final terminal trigger event");
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "switch audit terminal outcome mixed long-run matrix final terminal trigger channel");
