@@ -2,10 +2,14 @@
 set -eu
 
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 BUILD_DIR="${BUILD_DIR:-/tmp/rsrx-ci-build}"
 LOG_DIR="${LOG_DIR:-/tmp/rsrx-ci-logs}"
 
+. "$SCRIPT_DIR/verification_sequence_common.sh"
+
 mkdir -p "$BUILD_DIR" "$LOG_DIR"
+reset_verification_phase_markers "$LOG_DIR"
 
 CONFIGURE_LOG="$LOG_DIR/configure.log"
 BUILD_LOG="$LOG_DIR/build.log"
@@ -26,14 +30,31 @@ count_matches() {
 
 echo "[1/4] Configure"
 cmake -S "$ROOT_DIR" -B "$BUILD_DIR" >"$CONFIGURE_LOG" 2>&1
+mark_verification_phase_complete "$LOG_DIR" configure
 
 echo "[2/4] Build"
 # Verification ordering rule:
 # - never run test executables before the build step has fully completed
 # - never overlap build, test, and cppcheck phases
+require_verification_phase_complete "$LOG_DIR" configure
 cmake --build "$BUILD_DIR" -j4 >"$BUILD_LOG" 2>&1
+mark_verification_phase_complete "$LOG_DIR" build
 
 echo "[3/4] Run unit/integration executables"
+require_verification_phase_complete "$LOG_DIR" build
+require_test_executable_ready "$BUILD_DIR/rsrx_state_machine_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_orchestrator_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_platform_contract_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_platform_adapters_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_transport_contract_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_channel_manager_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_api_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_config_validator_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_codec_contract_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_codec_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_protocol_context_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_transport_supervisor_test"
+require_test_executable_ready "$BUILD_DIR/rsrx_session_supervisor_flow_test"
 {
   "$BUILD_DIR/rsrx_state_machine_test"
   "$BUILD_DIR/rsrx_orchestrator_test"
@@ -49,8 +70,10 @@ echo "[3/4] Run unit/integration executables"
   "$BUILD_DIR/rsrx_transport_supervisor_test"
   "$BUILD_DIR/rsrx_session_supervisor_flow_test"
 } >"$TEST_LOG" 2>&1
+mark_verification_phase_complete "$LOG_DIR" test
 
 echo "[4/4] Cppcheck"
+require_verification_phase_complete "$LOG_DIR" test
 cppcheck \
   --enable=warning,style,performance,portability \
   --std=c11 \
@@ -61,6 +84,7 @@ cppcheck \
   "$ROOT_DIR/tests/unit" \
   "$ROOT_DIR/tests/integration" \
   >"$CPPCHECK_LOG" 2>&1
+mark_verification_phase_complete "$LOG_DIR" cppcheck
 
 TEST_COUNT="$(grep -c "all tests passed" "$TEST_LOG" || true)"
 CPPCHECK_FINDING_COUNT="$(grep -Evc '^(Checking |[0-9]+/[0-9]+ files checked )' "$CPPCHECK_LOG" || true)"
@@ -141,6 +165,10 @@ SUBSET_S3_COUNT=$SUBSET_S3_COUNT
 SUBSET_S4_COUNT=$SUBSET_S4_COUNT
 SUBSET_S5_COUNT=$SUBSET_S5_COUNT
 SUBSET_S6_COUNT=$SUBSET_S6_COUNT
+CONFIGURE_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" configure)
+BUILD_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" build)
+TEST_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" test)
+CPPCHECK_PHASE_MARKER=$(phase_marker_path "$LOG_DIR" cppcheck)
 EOF2
 
 echo "Configure log: $CONFIGURE_LOG"
