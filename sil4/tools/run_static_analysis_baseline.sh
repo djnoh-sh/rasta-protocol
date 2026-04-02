@@ -11,6 +11,8 @@ BUILD_LOG="$LOG_DIR/build.log"
 CPPCHECK_LOG="$LOG_DIR/cppcheck.log"
 
 echo "[1/2] Build warning gate"
+# Verification ordering rule:
+# - cppcheck starts only after the build step has fully completed
 cmake --build "$BUILD_DIR" -j4 >"$BUILD_LOG" 2>&1
 
 echo "[2/2] Cppcheck baseline"

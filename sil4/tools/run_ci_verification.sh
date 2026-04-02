@@ -28,6 +28,9 @@ echo "[1/4] Configure"
 cmake -S "$ROOT_DIR" -B "$BUILD_DIR" >"$CONFIGURE_LOG" 2>&1
 
 echo "[2/4] Build"
+# Verification ordering rule:
+# - never run test executables before the build step has fully completed
+# - never overlap build, test, and cppcheck phases
 cmake --build "$BUILD_DIR" -j4 >"$BUILD_LOG" 2>&1
 
 echo "[3/4] Run unit/integration executables"
