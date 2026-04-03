@@ -77,6 +77,8 @@ close target:
   - `../tools/render_operational_input_env_from_artifacts.sh`
 - top-level artifact-dir runner:
   - `../tools/run_operational_packet_from_artifacts.sh`
+- one-shot actual execution starter:
+  - `../tools/run_operational_evidence_from_artifact.sh`
 - artifact availability preflight helper:
   - `../tools/check_operational_evidence_readiness.sh`
 - readiness update helper:
@@ -204,6 +206,7 @@ sil4/tools/run_operational_packet_from_env.sh \
 - top-level input collection부터 runner execute까지의 regression은 `test_operational_input_pipeline.sh`로 점검한다.
 - top-level artifact-dir one-shot runner regression은 `test_operational_artifact_runner.sh`로 점검한다.
 - actual artifact availability preflight는 `check_operational_evidence_readiness.sh`로 baseline/vendor 둘 다 한 번에 점검할 수 있다.
+- actual artifact dir 하나로 readiness helper chain과 artifact-dir runner를 연속 실행할 때는 `run_operational_evidence_from_artifact.sh`를 사용한다.
 - preflight 결과를 tracker/handoff update snippet으로 바꿀 때는 `render_operational_evidence_readiness_update.sh`를 사용한다.
 - preflight 결과를 실제 artifact-dir runner command block으로 바꿀 때는 `render_operational_evidence_ready_commands.sh`를 사용한다.
 - preflight 결과를 tracker row 초안으로 바꿀 때는 `render_operational_evidence_readiness_tracker_rows.sh`를 사용한다.

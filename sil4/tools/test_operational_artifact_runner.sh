@@ -25,6 +25,7 @@ mkdir -p "$WORK_DIR"
 
 SUMMARY_MD="$WORK_DIR/summary.md"
 SUMMARY_ENV="$WORK_DIR/summary.env"
+STARTER_DIR="$WORK_DIR/starter"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_OUT="$WORK_DIR/baseline-logs-baseline-packet"
@@ -126,6 +127,24 @@ bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$BAS
 bash "$SELF_DIR/validate_operational_artifact_runner_receipt.sh" --receipt "$VENDOR_OUT/artifact_runner_receipt.md" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track baseline --output-dir "$BASE_OUT" >/dev/null
 bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track vendor --output-dir "$VENDOR_OUT" >/dev/null
+
+"$SELF_DIR/run_operational_evidence_from_artifact.sh" \
+  --artifact-dir "$BASE_LOG_DIR" \
+  --work-dir "$STARTER_DIR" \
+  --track auto \
+  --workflow-url https://example.invalid/run/1001 \
+  --artifact-ref https://example.invalid/artifacts/1001 \
+  --resolve-log-ref resolve-step \
+  --download-log-ref download-step \
+  --materialize-log-ref materialize-step \
+  --annotate-log-ref annotate-step >/dev/null
+[ -f "$STARTER_DIR/readiness/summary.md" ]
+[ -f "$STARTER_DIR/readiness_update.md" ]
+[ -f "$STARTER_DIR/ready_commands.md" ]
+[ -f "$STARTER_DIR/readiness_tracker_rows.md" ]
+[ -f "$STARTER_DIR/readiness_audit_note.md" ]
+[ -f "$STARTER_DIR/runner.log" ]
+grep -q 'run_operational_packet_from_artifacts.sh --track auto --artifact-dir' "$STARTER_DIR/ready_commands.md"
 mark_verification_phase_complete "$WORK_DIR" validate
 
 cat >"$SUMMARY_MD" <<EOF
@@ -154,6 +173,7 @@ cat >"$SUMMARY_MD" <<EOF
 - Vendor env: \`$VENDOR_ENV\`
 - Baseline output: \`$BASE_OUT\`
 - Vendor output: \`$VENDOR_OUT\`
+- Starter work dir: \`$STARTER_DIR\`
 EOF
 
 cat >"$SUMMARY_ENV" <<EOF
@@ -167,6 +187,7 @@ BASE_ENV=$BASE_ENV
 VENDOR_ENV=$VENDOR_ENV
 BASE_OUT=$BASE_OUT
 VENDOR_OUT=$VENDOR_OUT
+STARTER_DIR=$STARTER_DIR
 EOF
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"
