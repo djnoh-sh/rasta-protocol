@@ -26,6 +26,7 @@ mkdir -p "$WORK_DIR"
 SUMMARY_MD="$WORK_DIR/summary.md"
 SUMMARY_ENV="$WORK_DIR/summary.env"
 STARTER_DIR="$WORK_DIR/starter"
+STARTER_HANDOFF_SUMMARY_MD="$WORK_DIR/starter_handoff_summary.md"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_OUT="$WORK_DIR/baseline-logs-baseline-packet"
@@ -144,7 +145,12 @@ bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track vendor --output
 [ -f "$STARTER_DIR/readiness_tracker_rows.md" ]
 [ -f "$STARTER_DIR/readiness_audit_note.md" ]
 [ -f "$STARTER_DIR/runner.log" ]
+"$SELF_DIR/render_operational_evidence_handoff_summary.sh" \
+  --output "$STARTER_HANDOFF_SUMMARY_MD" \
+  --starter-work-dir "$STARTER_DIR" >/dev/null
+[ -f "$STARTER_HANDOFF_SUMMARY_MD" ]
 grep -q 'run_operational_packet_from_artifacts.sh --track auto --artifact-dir' "$STARTER_DIR/ready_commands.md"
+grep -q '^### Operational Evidence Handoff Summary$' "$STARTER_HANDOFF_SUMMARY_MD"
 mark_verification_phase_complete "$WORK_DIR" validate
 
 cat >"$SUMMARY_MD" <<EOF
@@ -174,6 +180,7 @@ cat >"$SUMMARY_MD" <<EOF
 - Baseline output: \`$BASE_OUT\`
 - Vendor output: \`$VENDOR_OUT\`
 - Starter work dir: \`$STARTER_DIR\`
+- Starter handoff summary: \`$STARTER_HANDOFF_SUMMARY_MD\`
 EOF
 
 cat >"$SUMMARY_ENV" <<EOF
@@ -188,6 +195,7 @@ VENDOR_ENV=$VENDOR_ENV
 BASE_OUT=$BASE_OUT
 VENDOR_OUT=$VENDOR_OUT
 STARTER_DIR=$STARTER_DIR
+STARTER_HANDOFF_SUMMARY=$STARTER_HANDOFF_SUMMARY_MD
 EOF
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"
