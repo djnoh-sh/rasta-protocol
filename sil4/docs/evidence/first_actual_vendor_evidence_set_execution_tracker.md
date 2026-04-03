@@ -75,3 +75,4 @@
 - optional helper:
   - `../tools/render_evidence_execution_tracker_row.sh`
   - `../tools/render_operational_evidence_readiness_update.sh`
+  - `../tools/render_operational_evidence_readiness_tracker_rows.sh`
