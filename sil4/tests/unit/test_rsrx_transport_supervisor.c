@@ -3108,6 +3108,7 @@ static void vTestSupervisorSwitchAuditHoldoffOutcomeMatrix(void)
 }
 
 static void vTestSupervisorSwitchAuditTerminalOutcomeThresholdElevenMixedLongRunMatrix(void);
+static void vTestSupervisorSwitchAuditTerminalOutcomeThresholdTwelveMixedLongRunMatrix(void);
 
 static void vTestSupervisorSwitchAuditTerminalOutcomeEnvelopeMatrix(void)
 {
@@ -3123,6 +3124,7 @@ static void vTestSupervisorSwitchAuditTerminalOutcomeEnvelopeMatrix(void)
 	vTestSupervisorSwitchAuditTerminalOutcomeThresholdNineMixedLongRunMatrix();
 	vTestSupervisorSwitchAuditTerminalOutcomeThresholdTenMixedLongRunMatrix();
 	vTestSupervisorSwitchAuditTerminalOutcomeThresholdElevenMixedLongRunMatrix();
+	vTestSupervisorSwitchAuditTerminalOutcomeThresholdTwelveMixedLongRunMatrix();
 }
 
 static void vTestSupervisorSwitchAuditTerminalOutcomeThresholdElevenMixedLongRunMatrix(void)
@@ -3252,6 +3254,139 @@ static void vTestSupervisorSwitchAuditTerminalOutcomeThresholdElevenMixedLongRun
 	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "switch audit terminal outcome threshold eleven mixed long-run matrix final terminal outcome");
 	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "switch audit terminal outcome threshold eleven mixed long-run matrix final completed kind");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit terminal outcome threshold eleven mixed long-run matrix final holdoff state");
+}
+
+static void vTestSupervisorSwitchAuditTerminalOutcomeThresholdTwelveMixedLongRunMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[1] = { 0x8bU };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 12U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "switch audit terminal outcome threshold twelve mixed long-run matrix session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit terminal outcome threshold twelve mixed long-run matrix session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit terminal outcome threshold twelve mixed long-run matrix session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "switch audit terminal outcome threshold twelve mixed long-run matrix establish");
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "switch audit terminal outcome threshold twelve mixed long-run matrix supervisor init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = (const uint8_t *)0;
+	xFrame.xPayloadLength = 0U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix first failover");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix first hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix first hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 11U, "switch audit terminal outcome threshold twelve mixed long-run matrix first hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix first hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix second hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 2U, "switch audit terminal outcome threshold twelve mixed long-run matrix second hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 10U, "switch audit terminal outcome threshold twelve mixed long-run matrix second hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix second hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix third hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 3U, "switch audit terminal outcome threshold twelve mixed long-run matrix third hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 9U, "switch audit terminal outcome threshold twelve mixed long-run matrix third hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix third hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix fourth hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 4U, "switch audit terminal outcome threshold twelve mixed long-run matrix fourth hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 8U, "switch audit terminal outcome threshold twelve mixed long-run matrix fourth hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix fourth hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix fifth hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 5U, "switch audit terminal outcome threshold twelve mixed long-run matrix fifth hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 7U, "switch audit terminal outcome threshold twelve mixed long-run matrix fifth hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix fifth hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix sixth hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 6U, "switch audit terminal outcome threshold twelve mixed long-run matrix sixth hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 6U, "switch audit terminal outcome threshold twelve mixed long-run matrix sixth hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix sixth hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix seventh hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 7U, "switch audit terminal outcome threshold twelve mixed long-run matrix seventh hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 5U, "switch audit terminal outcome threshold twelve mixed long-run matrix seventh hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix seventh hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix eighth hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 8U, "switch audit terminal outcome threshold twelve mixed long-run matrix eighth hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 4U, "switch audit terminal outcome threshold twelve mixed long-run matrix eighth hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix eighth hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix ninth hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 9U, "switch audit terminal outcome threshold twelve mixed long-run matrix ninth hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 3U, "switch audit terminal outcome threshold twelve mixed long-run matrix ninth hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix ninth hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix tenth hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 10U, "switch audit terminal outcome threshold twelve mixed long-run matrix tenth hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit terminal outcome threshold twelve mixed long-run matrix tenth hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix tenth hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix eleventh hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 11U, "switch audit terminal outcome threshold twelve mixed long-run matrix eleventh hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix eleventh hold remaining");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix eleventh hold terminal count");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix ordinary completion");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix ordinary total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix ordinary subtype count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix ordinary bypass subtype count");
+	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix ordinary aborted subtype count");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix second failover");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix abort hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix abort hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 11U, "switch audit terminal outcome threshold twelve mixed long-run matrix abort hold remaining");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix abort reset");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome threshold twelve mixed long-run matrix abort total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix abort ordinary subtype count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 0U, "switch audit terminal outcome threshold twelve mixed long-run matrix abort bypass subtype count");
+	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix abort aborted subtype count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix renewed hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix renewed hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 11U, "switch audit terminal outcome threshold twelve mixed long-run matrix renewed hold remaining");
+
+	xTransport.uSecondaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit terminal outcome threshold twelve mixed long-run matrix bypass completion");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 3U, "switch audit terminal outcome threshold twelve mixed long-run matrix final total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix final ordinary subtype count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix final bypass subtype count");
+	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix final aborted subtype count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome threshold twelve mixed long-run matrix final preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix final non-preferred-triggered count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit terminal outcome threshold twelve mixed long-run matrix final channel-up count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit terminal outcome threshold twelve mixed long-run matrix final channel-down count");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP, "switch audit terminal outcome threshold twelve mixed long-run matrix final start trigger event");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleStartTriggerChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "switch audit terminal outcome threshold twelve mixed long-run matrix final start trigger channel");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "switch audit terminal outcome threshold twelve mixed long-run matrix final terminal outcome");
+	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "switch audit terminal outcome threshold twelve mixed long-run matrix final completed kind");
+	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED, "switch audit terminal outcome threshold twelve mixed long-run matrix final holdoff state");
 }
 
 static void vTestSupervisorSwitchAuditEnvelopeMatrix(void)

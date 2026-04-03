@@ -135,6 +135,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdNineMixedLongRunMatrix` | TC-SUP-051 | RV-172 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdTenMixedLongRunMatrix` | TC-SUP-052 | RV-173 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdElevenMixedLongRunMatrix` | TC-SUP-053 | RV-177 | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdTwelveMixedLongRunMatrix` | TC-SUP-054 | RV-180 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorRuntimeOrderingCloseoutMatrix` | TC-SUP-032 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-SUP-033 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryStabilityEnvelopeCloseoutMatrix` | TC-CHM-017 |  | Draft |
@@ -327,6 +328,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdNineMixedLongRunFlow` | TC-INT-169 | RV-172 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdTenMixedLongRunFlow` | TC-INT-170 | RV-173 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdElevenMixedLongRunFlow` | TC-INT-174 | RV-177 | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdTwelveMixedLongRunFlow` | TC-INT-175 | RV-180 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFeedbackLongRunRepresentativeFlow` | TC-INT-172 | RV-175 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyBypassReentryRepresentativeFlow` | TC-INT-173 | RV-176 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyStabilityLongRunRepresentativeFlow` | TC-INT-171 | RV-174 | Draft |
