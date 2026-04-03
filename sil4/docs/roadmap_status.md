@@ -150,18 +150,18 @@
 ## Recommended Next Order
 
 1. `Actual CI/Vendor Evidence Acquisition`
-2. `Redundancy Hysteresis and Long-Run Stability`
-3. `Protocol Sequencing Residual Variants`
-4. `Transport Supervisor Retry and Runtime Feedback`
+2. `Redundancy Next Policy Growth`
+3. `Protocol Sequencing Next Parity Growth`
+4. `Transport Supervisor Runtime Feedback Growth`
 
 ## Next Gate Definition
 
 - Gate Name: `G-P3-P4-Closeout`
 - 목표:
-  - `R-001`이 broad sequencing gap이 아니라 실제 남은 family-level integration parity만 가리키도록 축소될 것
-  - `R-002`가 broad runtime loop gap이 아니라 `R-004`와 분리된 retry/runtime feedback residual만 가리키도록 정리될 것
-  - `R-003`의 hysteresis/long-run stability residual이 representative closeout 이후 실제 남은 policy gap으로만 남을 것
+  - `R-001~R-003`가 current representative closeout state 이후의 next policy-growth residual만 가리키도록 유지될 것
+  - `P4`가 current family inventory가 아니라 current closeout state와 next growth area만 가리키도록 유지될 것
+  - `R-005`는 계속 helper/tooling gap이 아니라 artifact-availability-only residual로 유지될 것
 - 통과 조건:
   - `P3/P4` closeout wrapper와 representative integration이 traceability/roadmap/review까지 연결될 것
   - build, unit/integration test, `cppcheck`가 깨끗할 것
-  - roadmap의 `R-001~R-003` 설명이 실제 남은 큰 작업만 가리키도록 정리될 것
+  - roadmap의 `R-001~R-005` 설명이 current closeout state와 실제 남은 큰 작업만 가리키도록 정리될 것
