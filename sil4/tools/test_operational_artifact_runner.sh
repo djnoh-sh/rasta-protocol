@@ -31,6 +31,8 @@ STARTER_CLOSEOUT_BUNDLE_MD="$WORK_DIR/starter_closeout_bundle.md"
 STARTER_PATCH_GUIDANCE_MD="$WORK_DIR/starter_patch_guidance.md"
 BASELINE_ACTUAL_CLOSE_GUIDANCE_MD="$WORK_DIR/baseline_actual_close_guidance.md"
 VENDOR_ACTUAL_CLOSE_GUIDANCE_MD="$WORK_DIR/vendor_actual_close_guidance.md"
+BASELINE_REVIEW_LINK_GUIDANCE_MD="$WORK_DIR/baseline_review_link_guidance.md"
+VENDOR_REVIEW_LINK_GUIDANCE_MD="$WORK_DIR/vendor_review_link_guidance.md"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_OUT="$WORK_DIR/baseline-logs-baseline-packet"
@@ -138,10 +140,20 @@ bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track vendor --output
 "$SELF_DIR/render_operational_evidence_actual_close_guidance.sh" \
   --output "$VENDOR_ACTUAL_CLOSE_GUIDANCE_MD" \
   --summary "$VENDOR_OUT/artifact_runner_summary.env" >/dev/null
+"$SELF_DIR/render_operational_evidence_review_link_guidance.sh" \
+  --output "$BASELINE_REVIEW_LINK_GUIDANCE_MD" \
+  --actual-close-guidance "$BASELINE_ACTUAL_CLOSE_GUIDANCE_MD" >/dev/null
+"$SELF_DIR/render_operational_evidence_review_link_guidance.sh" \
+  --output "$VENDOR_REVIEW_LINK_GUIDANCE_MD" \
+  --actual-close-guidance "$VENDOR_ACTUAL_CLOSE_GUIDANCE_MD" >/dev/null
 [ -f "$BASELINE_ACTUAL_CLOSE_GUIDANCE_MD" ]
 [ -f "$VENDOR_ACTUAL_CLOSE_GUIDANCE_MD" ]
+ [ -f "$BASELINE_REVIEW_LINK_GUIDANCE_MD" ]
+ [ -f "$VENDOR_REVIEW_LINK_GUIDANCE_MD" ]
 grep -q '^### Operational Evidence Actual Close Guidance$' "$BASELINE_ACTUAL_CLOSE_GUIDANCE_MD"
 grep -q '^### Operational Evidence Actual Close Guidance$' "$VENDOR_ACTUAL_CLOSE_GUIDANCE_MD"
+grep -q '^### Operational Evidence Review Link Guidance$' "$BASELINE_REVIEW_LINK_GUIDANCE_MD"
+grep -q '^### Operational Evidence Review Link Guidance$' "$VENDOR_REVIEW_LINK_GUIDANCE_MD"
 
 "$SELF_DIR/run_operational_evidence_from_artifact.sh" \
   --artifact-dir "$BASE_LOG_DIR" \
@@ -209,6 +221,8 @@ cat >"$SUMMARY_MD" <<EOF
 - Starter patch guidance: \`$STARTER_PATCH_GUIDANCE_MD\`
 - Baseline actual close guidance: \`$BASELINE_ACTUAL_CLOSE_GUIDANCE_MD\`
 - Vendor actual close guidance: \`$VENDOR_ACTUAL_CLOSE_GUIDANCE_MD\`
+- Baseline review/link guidance: \`$BASELINE_REVIEW_LINK_GUIDANCE_MD\`
+- Vendor review/link guidance: \`$VENDOR_REVIEW_LINK_GUIDANCE_MD\`
 EOF
 
 cat >"$SUMMARY_ENV" <<EOF
@@ -228,6 +242,8 @@ STARTER_CLOSEOUT_BUNDLE=$STARTER_CLOSEOUT_BUNDLE_MD
 STARTER_PATCH_GUIDANCE=$STARTER_PATCH_GUIDANCE_MD
 BASELINE_ACTUAL_CLOSE_GUIDANCE=$BASELINE_ACTUAL_CLOSE_GUIDANCE_MD
 VENDOR_ACTUAL_CLOSE_GUIDANCE=$VENDOR_ACTUAL_CLOSE_GUIDANCE_MD
+BASELINE_REVIEW_LINK_GUIDANCE=$BASELINE_REVIEW_LINK_GUIDANCE_MD
+VENDOR_REVIEW_LINK_GUIDANCE=$VENDOR_REVIEW_LINK_GUIDANCE_MD
 EOF
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"

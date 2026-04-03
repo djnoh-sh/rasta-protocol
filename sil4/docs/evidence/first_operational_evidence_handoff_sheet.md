@@ -63,6 +63,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | starter closeout bundle helper | `Prepared` |
 | starter patch guidance helper | `Prepared` |
 | actual close guidance helper | `Prepared` |
+| review/link guidance helper | `Prepared` |
 | artifact-dir auto track detection | `Prepared` |
 | artifact-dir auto report/review id generation | `Prepared` |
 | artifact-dir auto workspace generation | `Prepared` |
@@ -105,6 +106,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 11. if needed, render closeout bundle with `sil4/tools/render_operational_evidence_closeout_bundle.sh --starter-work-dir ...`
 12. if needed, render patch guidance with `sil4/tools/render_operational_evidence_patch_guidance.sh --starter-work-dir ...`
 13. if needed, render actual close guidance with `sil4/tools/render_operational_evidence_actual_close_guidance.sh --summary ...`
+14. if needed, render review/link guidance with `sil4/tools/render_operational_evidence_review_link_guidance.sh --actual-close-guidance ...`
 
 ### If First Vendor Export Appears
 
@@ -121,6 +123,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 11. if needed, render closeout bundle with `sil4/tools/render_operational_evidence_closeout_bundle.sh --starter-work-dir ...`
 12. if needed, render patch guidance with `sil4/tools/render_operational_evidence_patch_guidance.sh --starter-work-dir ...`
 13. if needed, render actual close guidance with `sil4/tools/render_operational_evidence_actual_close_guidance.sh --summary ...`
+14. if needed, render review/link guidance with `sil4/tools/render_operational_evidence_review_link_guidance.sh --actual-close-guidance ...`
 
 ## Done Condition
 

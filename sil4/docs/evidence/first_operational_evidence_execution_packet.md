@@ -87,6 +87,8 @@ close target:
   - `../tools/render_operational_evidence_patch_guidance.sh`
 - actual close guidance helper:
   - `../tools/render_operational_evidence_actual_close_guidance.sh`
+- review/link guidance helper:
+  - `../tools/render_operational_evidence_review_link_guidance.sh`
 - artifact availability preflight helper:
   - `../tools/check_operational_evidence_readiness.sh`
 - readiness update helper:
@@ -219,6 +221,7 @@ sil4/tools/run_operational_packet_from_env.sh \
 - starter work dir를 tracker/audit closeout-ready bundle로 다시 묶을 때는 `render_operational_evidence_closeout_bundle.sh`를 사용한다.
 - starter work dir를 실제 문서 반영 지점 기준으로 정리할 때는 `render_operational_evidence_patch_guidance.sh`를 사용한다.
 - generated packet output을 실제 close 반영 지점 기준으로 정리할 때는 `render_operational_evidence_actual_close_guidance.sh`를 사용한다.
+- actual close guidance 다음에 review/link 정리 지점을 정리할 때는 `render_operational_evidence_review_link_guidance.sh`를 사용한다.
 - preflight 결과를 tracker/handoff update snippet으로 바꿀 때는 `render_operational_evidence_readiness_update.sh`를 사용한다.
 - preflight 결과를 실제 artifact-dir runner command block으로 바꿀 때는 `render_operational_evidence_ready_commands.sh`를 사용한다.
 - preflight 결과를 tracker row 초안으로 바꿀 때는 `render_operational_evidence_readiness_tracker_rows.sh`를 사용한다.
