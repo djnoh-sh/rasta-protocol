@@ -337,6 +337,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdFifteenMixedLongRunFlow` | TC-INT-178 | RV-183 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFeedbackLongRunRepresentativeFlow` | TC-INT-172 | RV-175 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyBypassReentryRepresentativeFlow` | TC-INT-173 | RV-176 | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapBypassReceiveRepresentativeFlow` | TC-INT-180 | RV-187 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyStabilityLongRunRepresentativeFlow` | TC-INT-171 | RV-174 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow` | TC-INT-128 | RV-166 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPreferredRecoveryHoldoffThresholdThreeFlapResetFlow` | TC-INT-124 |  | Draft |

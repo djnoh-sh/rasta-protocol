@@ -21608,11 +21608,18 @@ static void vTestIntegratedRedundancyBypassReentryRepresentativeFlow(void)
 	vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow();
 }
 
+static void vTestIntegratedRedundancyFlapBypassReceiveRepresentativeFlow(void)
+{
+	vTestIntegratedFlapBypassReceiveCarryoverFlow();
+	vTestIntegratedFlapBypassReceiveResetFlow();
+}
+
 static void vTestIntegratedRedundancyStabilityLongRunRepresentativeFlow(void)
 {
 	vTestIntegratedRedundancyLongRunCloseoutFlow();
 	vTestIntegratedRedundancyFeedbackLongRunRepresentativeFlow();
 	vTestIntegratedRedundancyBypassReentryRepresentativeFlow();
+	vTestIntegratedRedundancyFlapBypassReceiveRepresentativeFlow();
 	vTestIntegratedFlapBypassCloseoutFlow();
 	vTestIntegratedSwitchAuditTerminalOutcomeStabilityLongRunFlow();
 }
