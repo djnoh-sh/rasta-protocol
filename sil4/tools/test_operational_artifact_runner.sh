@@ -28,6 +28,7 @@ SUMMARY_ENV="$WORK_DIR/summary.env"
 STARTER_DIR="$WORK_DIR/starter"
 STARTER_HANDOFF_SUMMARY_MD="$WORK_DIR/starter_handoff_summary.md"
 STARTER_CLOSEOUT_BUNDLE_MD="$WORK_DIR/starter_closeout_bundle.md"
+STARTER_PATCH_GUIDANCE_MD="$WORK_DIR/starter_patch_guidance.md"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_OUT="$WORK_DIR/baseline-logs-baseline-packet"
@@ -152,11 +153,16 @@ bash "$SELF_DIR/validate_operational_artifact_bundle.sh" --track vendor --output
 "$SELF_DIR/render_operational_evidence_closeout_bundle.sh" \
   --output "$STARTER_CLOSEOUT_BUNDLE_MD" \
   --starter-work-dir "$STARTER_DIR" >/dev/null
+"$SELF_DIR/render_operational_evidence_patch_guidance.sh" \
+  --output "$STARTER_PATCH_GUIDANCE_MD" \
+  --starter-work-dir "$STARTER_DIR" >/dev/null
 [ -f "$STARTER_HANDOFF_SUMMARY_MD" ]
 [ -f "$STARTER_CLOSEOUT_BUNDLE_MD" ]
+[ -f "$STARTER_PATCH_GUIDANCE_MD" ]
 grep -q 'run_operational_packet_from_artifacts.sh --track auto --artifact-dir' "$STARTER_DIR/ready_commands.md"
 grep -q '^### Operational Evidence Handoff Summary$' "$STARTER_HANDOFF_SUMMARY_MD"
 grep -q '^### Operational Evidence Closeout Bundle$' "$STARTER_CLOSEOUT_BUNDLE_MD"
+grep -q '^### Operational Evidence Patch Guidance$' "$STARTER_PATCH_GUIDANCE_MD"
 mark_verification_phase_complete "$WORK_DIR" validate
 
 cat >"$SUMMARY_MD" <<EOF
@@ -188,6 +194,7 @@ cat >"$SUMMARY_MD" <<EOF
 - Starter work dir: \`$STARTER_DIR\`
 - Starter handoff summary: \`$STARTER_HANDOFF_SUMMARY_MD\`
 - Starter closeout bundle: \`$STARTER_CLOSEOUT_BUNDLE_MD\`
+- Starter patch guidance: \`$STARTER_PATCH_GUIDANCE_MD\`
 EOF
 
 cat >"$SUMMARY_ENV" <<EOF
@@ -204,6 +211,7 @@ VENDOR_OUT=$VENDOR_OUT
 STARTER_DIR=$STARTER_DIR
 STARTER_HANDOFF_SUMMARY=$STARTER_HANDOFF_SUMMARY_MD
 STARTER_CLOSEOUT_BUNDLE=$STARTER_CLOSEOUT_BUNDLE_MD
+STARTER_PATCH_GUIDANCE=$STARTER_PATCH_GUIDANCE_MD
 EOF
 
 echo "Operational artifact runner smoke passed: $WORK_DIR"

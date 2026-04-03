@@ -61,6 +61,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | one-shot actual execution starter | `Prepared` |
 | starter handoff summary helper | `Prepared` |
 | starter closeout bundle helper | `Prepared` |
+| starter patch guidance helper | `Prepared` |
 | artifact-dir auto track detection | `Prepared` |
 | artifact-dir auto report/review id generation | `Prepared` |
 | artifact-dir auto workspace generation | `Prepared` |
@@ -101,6 +102,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 9. if needed, start with `sil4/tools/run_operational_evidence_from_artifact.sh --artifact-dir ...`
 10. if needed, render handoff summary with `sil4/tools/render_operational_evidence_handoff_summary.sh --starter-work-dir ...`
 11. if needed, render closeout bundle with `sil4/tools/render_operational_evidence_closeout_bundle.sh --starter-work-dir ...`
+12. if needed, render patch guidance with `sil4/tools/render_operational_evidence_patch_guidance.sh --starter-work-dir ...`
 
 ### If First Vendor Export Appears
 
@@ -115,6 +117,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 9. if needed, start with `sil4/tools/run_operational_evidence_from_artifact.sh --artifact-dir ...`
 10. if needed, render handoff summary with `sil4/tools/render_operational_evidence_handoff_summary.sh --starter-work-dir ...`
 11. if needed, render closeout bundle with `sil4/tools/render_operational_evidence_closeout_bundle.sh --starter-work-dir ...`
+12. if needed, render patch guidance with `sil4/tools/render_operational_evidence_patch_guidance.sh --starter-work-dir ...`
 
 ## Done Condition
 
