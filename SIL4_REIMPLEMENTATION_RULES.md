@@ -174,6 +174,10 @@
 - `build`와 `test`를 병렬 실행하지 않는다.
 - `cppcheck` 같은 정적 분석도 build와 병렬 실행하지 않는다.
 - 빠른 확인이 필요해도 검증 단계 간 순서를 깨는 임시 병렬 실행은 허용하지 않는다.
+- 반복 패턴 확장 작업은 큰 블록 자동 치환보다 `함수 1개 + registration 1개 + 문서 1세트` 단위의 좁은 수정으로 나눈다.
+- 반복 패턴 확장에서 자동 복제나 치환을 썼다면 build 전에 새로 추가된 함수 블록만 별도로 다시 읽어 progression, registration, 정의 순서를 검산한다.
+- holdoff/remaining/count 같은 수열형 값은 반복 확장 직후 해당 함수 범위 안에서 직접 검산하고, 넓은 범위 일괄 치환만으로 완료 처리하지 않는다.
+- 자동 치환이 기존 wrapper, registration, 인접 함수까지 함께 건드릴 가능성이 있으면 더 작은 범위의 수동 수정으로 되돌린다.
 
 ## 18. Static Analysis and Quality Gate Rules
 
