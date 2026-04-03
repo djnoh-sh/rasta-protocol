@@ -110,11 +110,11 @@
 
 | Item ID | Item | Current State | Exit Criteria |
 | --- | --- | --- | --- |
-| IP-001 | Public API hardening | timer ingress, outbound send, application delivery contract, bounded `outstanding 1 + deferred 2` queue, outbound telemetry, peak deferred depth telemetry, overflow reject API/diagnostic correlation과 integration coverage, repeated reject streak telemetry, threshold-based escalation, escalation hit telemetry 포함 | queueing/backpressure policy와 callback/report semantics 결정 |
+| IP-001 | Public API hardening | current public API/bounded queue family는 representative closeout 상태다. timer ingress, outbound send, application delivery contract, bounded queue telemetry/escalation observability까지 정리돼 있다 | queueing/backpressure policy와 callback/report semantics 결정 |
 | IP-002 | Codec maturation | deterministic skeleton과 outbound encode 연결 완료 | 실제 protocol field rules, length/range checks, negative vectors 보강 |
 | IP-003 | Protocol context maturation | current protocol sequencing representative family는 closeout 상태다. ordering matrix, protocol variant representative integration, repeated-gap/recovery/post-recovery ordering family, failover confirmation ordering family까지 정리돼 있다 | richer confirm/retransmission edge cases와 future message family parity 보강 |
 | IP-004 | Transport supervisor maturation | current runtime feedback/redundancy integration family는 representative closeout 상태다. runtime ordering, budget scope, holdoff/recovery/reset/feedback long-run family, telemetry observability, deferred queue exposure까지 정리돼 있다 | integration-facing runtime event model과 channel-scoped send budget / non-channel-scoped receive budget semantics 반영 |
-| IP-005 | Traceability enrichment | 최근 `TC-INT-017~039` integration 항목과 `RV-030` review linkage까지 backfill 완료 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
+| IP-005 | Traceability enrichment | current closeout wrapper와 residual-scope alignment backfill은 완료됐다. 최근 integration 항목과 주요 review linkage까지 current roadmap 기준으로 정리돼 있다 | 모든 구현 모듈과 테스트, 리뷰 항목 연결 |
 
 ## Not-Started Items
 
