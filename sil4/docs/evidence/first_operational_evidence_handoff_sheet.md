@@ -66,6 +66,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | artifact-dir runner receipt output | `Prepared` |
 | artifact-dir runner receipt validation | `Prepared` |
 | artifact-dir bundle validation | `Prepared` |
+| artifact availability preflight helper | `Prepared` |
 | input worksheet | `Prepared` |
 | input validator | `Prepared` |
 | invocation generator | `Prepared` |
@@ -85,14 +86,16 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 1. follow `baseline_fetch_success_execution_runbook.md`
 2. fill `EVS-001`, `EVS-002`
 3. update tracker and audit trail
-4. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track baseline ...`
+4. if needed, check readiness first with `sil4/tools/check_operational_evidence_readiness.sh ...`
+5. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track baseline ...`
 
 ### If First Vendor Export Appears
 
 1. follow `first_actual_vendor_execution_runbook.md`
 2. fill `EVS-003`~`EVS-008`
 3. update tracker, matrix, tracking log, audit trail
-4. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track vendor ...`
+4. if needed, check readiness first with `sil4/tools/check_operational_evidence_readiness.sh ...`
+5. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track vendor ...`
 
 ## Done Condition
 

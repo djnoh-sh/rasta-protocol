@@ -77,6 +77,8 @@ close target:
   - `../tools/render_operational_input_env_from_artifacts.sh`
 - top-level artifact-dir runner:
   - `../tools/run_operational_packet_from_artifacts.sh`
+- artifact availability preflight helper:
+  - `../tools/check_operational_evidence_readiness.sh`
 - env templates:
   - `templates/first_operational_baseline_input.env`
   - `templates/first_operational_vendor_input.env`
@@ -139,6 +141,7 @@ close target:
 | Artifact-dir receipt validation | `Prepared` | receipt markdown contract를 direct validator로 검증 가능 |
 | Artifact-dir bundle validation | `Prepared` | packet+summary+receipt를 one-shot validator로 검증 가능 |
 | Artifact-dir direct runner regression | `Prepared` | baseline/vendor direct smoke 준비 완료 |
+| Artifact availability preflight | `Prepared` | baseline/vendor actual artifact availability를 summary/env 하나로 바로 점검 가능 |
 
 ## Execution Entry Conditions
 
@@ -192,6 +195,7 @@ sil4/tools/run_operational_packet_from_env.sh \
 - helper chain regression은 `test_operational_evidence_helpers.sh`로 baseline/vendor 둘 다 한 번에 점검한다.
 - top-level input collection부터 runner execute까지의 regression은 `test_operational_input_pipeline.sh`로 점검한다.
 - top-level artifact-dir one-shot runner regression은 `test_operational_artifact_runner.sh`로 점검한다.
+- actual artifact availability preflight는 `check_operational_evidence_readiness.sh`로 baseline/vendor 둘 다 한 번에 점검할 수 있다.
 - artifact-dir entry는 context file 기준으로 baseline/vendor track를 자동 판별할 수 있다.
 - artifact-dir runner는 report/review id를 넘기지 않아도 context file 기준 default id를 생성할 수 있다.
 - artifact-dir runner는 input env와 output dir를 넘기지 않아도 default workspace path를 생성할 수 있다.

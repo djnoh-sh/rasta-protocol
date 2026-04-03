@@ -25,19 +25,35 @@ mkdir -p "$WORK_DIR"
 
 SUMMARY_MD="$WORK_DIR/summary.md"
 SUMMARY_ENV="$WORK_DIR/summary.env"
+READINESS_DIR="$WORK_DIR/readiness"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_ENV="$WORK_DIR/baseline.env"
 VENDOR_ENV="$WORK_DIR/vendor.env"
 BASE_OUT="$WORK_DIR/baseline-packet"
 VENDOR_OUT="$WORK_DIR/vendor-packet"
+BASE_ARTIFACT_DIR="$WORK_DIR/baseline-artifacts"
+VENDOR_ARTIFACT_DIR="$WORK_DIR/vendor-artifacts"
 
-mkdir -p "$BASE_LOG_DIR"
+mkdir -p "$BASE_LOG_DIR" "$BASE_ARTIFACT_DIR" "$VENDOR_ARTIFACT_DIR"
 : > "$BASE_LOG_DIR/summary.env"
 : > "$BASE_LOG_DIR/baseline_summary.env"
 : > "$BASE_LOG_DIR/pr_annotation.env"
 : > "$BASE_LOG_DIR/pr_annotation.md"
 : > "$WORK_DIR/vendor.xml"
+: > "$VENDOR_ARTIFACT_DIR/vendor.xml"
+
+cat >"$BASE_ARTIFACT_DIR/baseline_fetch_context.env" <<EOF
+EXECUTION_DATE=2026-03-26
+RUN_ID=1001
+EOF
+
+cat >"$VENDOR_ARTIFACT_DIR/vendor_export_context.env" <<EOF
+DATE=2026-03-26
+RUN_ID=2002
+RAW_EVIDENCE_LOCATION=$VENDOR_ARTIFACT_DIR/vendor.xml
+REVIEWER_ACCESS_PATH=$VENDOR_ARTIFACT_DIR/vendor.xml
+EOF
 
 cat >"$BASE_ENV" <<EOF
 OUTPUT_DIR=$BASE_OUT
@@ -94,6 +110,16 @@ AUDIT_TRAIL_REF=sil4/docs/evidence/audit_trail_closeout.md
 EOF
 mark_verification_phase_complete "$WORK_DIR" setup
 
+"$SELF_DIR/check_operational_evidence_readiness.sh" \
+  --work-dir "$READINESS_DIR" \
+  --baseline-artifact-dir "$BASE_ARTIFACT_DIR" \
+  --vendor-artifact-dir "$VENDOR_ARTIFACT_DIR" \
+  --require-ready >/dev/null
+grep -q '^OVERALL_READINESS_STATUS=Ready$' "$READINESS_DIR/summary.env"
+grep -q '^BASELINE_ARTIFACT_STATUS=Available$' "$READINESS_DIR/summary.env"
+grep -q '^VENDOR_ARTIFACT_STATUS=Available$' "$READINESS_DIR/summary.env"
+mark_verification_phase_complete "$WORK_DIR" readiness_check
+
 "$SELF_DIR/run_operational_packet_from_env.sh" \
   --track baseline \
   --input "$BASE_ENV" \
@@ -112,6 +138,7 @@ cat >"$SUMMARY_MD" <<EOF
 | Item | Result |
 | --- | --- |
 | Setup | Pass |
+| Readiness Check | Pass |
 | Baseline Packet Execution | Pass |
 | Vendor Packet Execution | Pass |
 | Verification Ordering Status | Pass |
@@ -121,6 +148,7 @@ cat >"$SUMMARY_MD" <<EOF
 | Phase | Marker |
 | --- | --- |
 | Setup | \`$(phase_marker_path "$WORK_DIR" setup)\` |
+| Readiness Check | \`$(phase_marker_path "$WORK_DIR" readiness_check)\` |
 | Baseline Execute | \`$(phase_marker_path "$WORK_DIR" baseline_execute)\` |
 | Vendor Execute | \`$(phase_marker_path "$WORK_DIR" vendor_execute)\` |
 
@@ -136,8 +164,10 @@ cat >"$SUMMARY_ENV" <<EOF
 SUMMARY_MD=$SUMMARY_MD
 VERIFICATION_ORDERING_STATUS=Pass
 SETUP_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" setup)
+READINESS_CHECK_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" readiness_check)
 BASELINE_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" baseline_execute)
 VENDOR_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" vendor_execute)
+READINESS_SUMMARY=$READINESS_DIR/summary.md
 BASE_ENV=$BASE_ENV
 VENDOR_ENV=$VENDOR_ENV
 BASE_OUT=$BASE_OUT
