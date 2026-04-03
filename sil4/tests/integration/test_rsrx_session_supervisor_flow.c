@@ -20660,11 +20660,17 @@ static void vTestIntegratedFlapBypassCloseoutFlow(void)
 	vTestIntegratedFlapBypassReceiveResetFlow();
 }
 
+static void vTestIntegratedRedundancyStabilityLongRunRepresentativeFlow(void)
+{
+	vTestIntegratedRedundancyLongRunCloseoutFlow();
+	vTestIntegratedFlapBypassCloseoutFlow();
+	vTestIntegratedSwitchAuditTerminalOutcomeStabilityLongRunFlow();
+}
+
 static void vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow(void)
 {
 	vTestIntegratedRedundancyHysteresisCloseoutFlow();
-	vTestIntegratedRedundancyLongRunCloseoutFlow();
-	vTestIntegratedFlapBypassCloseoutFlow();
+	vTestIntegratedRedundancyStabilityLongRunRepresentativeFlow();
 	vTestIntegratedPreferredRecoveryThresholdCloseoutFlow();
 	vTestIntegratedSwitchAuditEnvelopeFlow();
 	vTestIntegratedSwitchAuditTerminalOutcomeEnvelopeFlow();
