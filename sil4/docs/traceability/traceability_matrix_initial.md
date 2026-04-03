@@ -405,3 +405,6 @@
 - 현재 단계에서는 요구사항, hazard, 상위 설계까지만 연결했다.
 - 코드, 함수, 테스트, 리뷰 항목은 구현과 검토가 시작되면 채운다.
 - 각 행은 삭제하지 말고 상태를 갱신하는 방식으로 유지한다.
+
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdSixteenMixedLongRunMatrix` | TC-SUP-058 | RV-184 | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdSixteenMixedLongRunFlow` | TC-INT-179 | RV-184 | Draft |
