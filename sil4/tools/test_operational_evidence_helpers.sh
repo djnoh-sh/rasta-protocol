@@ -29,6 +29,7 @@ READINESS_DIR="$WORK_DIR/readiness"
 READINESS_UPDATE_MD="$WORK_DIR/readiness_update.md"
 READY_COMMANDS_MD="$WORK_DIR/ready_commands.md"
 READINESS_TRACKER_ROWS_MD="$WORK_DIR/readiness_tracker_rows.md"
+READINESS_AUDIT_NOTE_MD="$WORK_DIR/readiness_audit_note.md"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_ENV="$WORK_DIR/baseline.env"
@@ -133,6 +134,10 @@ grep -q '^VENDOR_ARTIFACT_STATUS=Available$' "$READINESS_DIR/summary.env"
 "$SELF_DIR/render_operational_evidence_readiness_tracker_rows.sh" \
   --output "$READINESS_TRACKER_ROWS_MD" \
   --summary-env "$READINESS_DIR/summary.env" >/dev/null
+"$SELF_DIR/render_operational_evidence_readiness_audit_note.sh" \
+  --output "$READINESS_AUDIT_NOTE_MD" \
+  --summary-env "$READINESS_DIR/summary.env" \
+  --audit-ref "sil4/docs/evidence/audit_trail_closeout.md" >/dev/null
 grep -q '^### Operational Evidence Readiness Update$' "$READINESS_UPDATE_MD"
 grep -q 'overall readiness: `Ready`' "$READINESS_UPDATE_MD"
 grep -q 'execution tracker target:' "$READINESS_UPDATE_MD"
@@ -140,6 +145,8 @@ grep -q '^### Operational Evidence Ready Commands$' "$READY_COMMANDS_MD"
 grep -q 'run_operational_packet_from_artifacts.sh --track auto --artifact-dir' "$READY_COMMANDS_MD"
 grep -q '| EVS-001 | `In Progress` | baseline fetch success runtime evidence |' "$READINESS_TRACKER_ROWS_MD"
 grep -q '| EVS-003 | `In Progress` | vendor raw evidence reference |' "$READINESS_TRACKER_ROWS_MD"
+grep -q '^### Operational Evidence Readiness Audit Note$' "$READINESS_AUDIT_NOTE_MD"
+grep -q 'audit target: `sil4/docs/evidence/audit_trail_closeout.md`' "$READINESS_AUDIT_NOTE_MD"
 mark_verification_phase_complete "$WORK_DIR" readiness_check
 
 "$SELF_DIR/run_operational_packet_from_env.sh" \
@@ -193,6 +200,7 @@ READINESS_SUMMARY=$READINESS_DIR/summary.md
 READINESS_UPDATE=$READINESS_UPDATE_MD
 READY_COMMANDS=$READY_COMMANDS_MD
 READINESS_TRACKER_ROWS=$READINESS_TRACKER_ROWS_MD
+READINESS_AUDIT_NOTE=$READINESS_AUDIT_NOTE_MD
 BASE_ENV=$BASE_ENV
 VENDOR_ENV=$VENDOR_ENV
 BASE_OUT=$BASE_OUT

@@ -150,3 +150,5 @@ runtime evidence template reference:
   - `../tools/render_audit_evidence_update.sh --track baseline`
 - vendor landing update:
   - `../tools/render_audit_evidence_update.sh --track vendor`
+- readiness pre-execution note:
+  - `../tools/render_operational_evidence_readiness_audit_note.sh`

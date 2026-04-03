@@ -85,6 +85,8 @@ close target:
   - `../tools/render_operational_evidence_ready_commands.sh`
 - readiness tracker-row helper:
   - `../tools/render_operational_evidence_readiness_tracker_rows.sh`
+- readiness audit-note helper:
+  - `../tools/render_operational_evidence_readiness_audit_note.sh`
 - env templates:
   - `templates/first_operational_baseline_input.env`
   - `templates/first_operational_vendor_input.env`
@@ -205,6 +207,7 @@ sil4/tools/run_operational_packet_from_env.sh \
 - preflight 결과를 tracker/handoff update snippet으로 바꿀 때는 `render_operational_evidence_readiness_update.sh`를 사용한다.
 - preflight 결과를 실제 artifact-dir runner command block으로 바꿀 때는 `render_operational_evidence_ready_commands.sh`를 사용한다.
 - preflight 결과를 tracker row 초안으로 바꿀 때는 `render_operational_evidence_readiness_tracker_rows.sh`를 사용한다.
+- preflight 결과를 audit-trail pre-execution note로 바꿀 때는 `render_operational_evidence_readiness_audit_note.sh`를 사용한다.
 - artifact-dir entry는 context file 기준으로 baseline/vendor track를 자동 판별할 수 있다.
 - artifact-dir runner는 report/review id를 넘기지 않아도 context file 기준 default id를 생성할 수 있다.
 - artifact-dir runner는 input env와 output dir를 넘기지 않아도 default workspace path를 생성할 수 있다.

@@ -70,6 +70,7 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 | readiness update helper | `Prepared` |
 | readiness command helper | `Prepared` |
 | readiness tracker-row helper | `Prepared` |
+| readiness audit-note helper | `Prepared` |
 | input worksheet | `Prepared` |
 | input validator | `Prepared` |
 | invocation generator | `Prepared` |
@@ -93,7 +94,8 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 5. if needed, render readiness note with `sil4/tools/render_operational_evidence_readiness_update.sh ...`
 6. if needed, render ready command with `sil4/tools/render_operational_evidence_ready_commands.sh ...`
 7. if needed, render tracker row with `sil4/tools/render_operational_evidence_readiness_tracker_rows.sh ...`
-8. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track baseline ...`
+8. if needed, render audit note with `sil4/tools/render_operational_evidence_readiness_audit_note.sh ...`
+9. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track baseline ...`
 
 ### If First Vendor Export Appears
 
@@ -104,7 +106,8 @@ packet/runbook이 상세 절차를 담는다면, 본 문서는 다음만 빠르�
 5. if needed, render readiness note with `sil4/tools/render_operational_evidence_readiness_update.sh ...`
 6. if needed, render ready command with `sil4/tools/render_operational_evidence_ready_commands.sh ...`
 7. if needed, render tracker row with `sil4/tools/render_operational_evidence_readiness_tracker_rows.sh ...`
-8. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track vendor ...`
+8. if needed, render audit note with `sil4/tools/render_operational_evidence_readiness_audit_note.sh ...`
+9. if needed, start with `sil4/tools/render_first_operational_evidence_packet.sh --track vendor ...`
 
 ## Done Condition
 
