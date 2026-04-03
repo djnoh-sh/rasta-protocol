@@ -65,13 +65,13 @@
 | M14 | protocol context 도입 | Completed | sequence/confirmation/retransmission base context, tests |
 | M15 | application data delivery contract 도입 | Completed | application callback contract, tests, traceability |
 | M16 | outbound application send contract 도입 | Completed | explicit session send API, adapter helper, tests |
-| M17 | integration harness 진입 | Completed | happy path, retransmission recovery, timeout fail-safe, channel-down fail-safe, decode failure, send failure budget, budget reset, bounded pump stability, bounded soak tests |
+| M17 | integration harness 진입 | Completed | initial happy-path/fail-safe/budget-reset/bounded-pump representative integration family |
 | M18 | channel manager wiring 진입 | Completed | session config wiring, validator gate, adapter failover selection test |
 | M19 | supervisor failover runtime flow 도입 | Completed | channel-down failover decision, unit/integration failover tests |
 | M20 | preferred recovery policy 도입 | Completed | channel manager auto-switch, adapter recovery selection, integration preferred recovery test |
 | M21 | recovery holdoff policy 도입 | Completed | channel manager holdoff config, adapter holdoff selection, integration holdoff recovery test |
 | M22 | channel switching telemetry 도입 | Completed | cumulative switch count, supervisor telemetry propagation, unit/integration telemetry assertions |
-| M23 | redundancy flap soak integration 도입 | Completed | repeated failover/recovery cycle, holdoff reset verification, cumulative switch telemetry retention |
+| M23 | redundancy flap soak integration 도입 | Completed | repeated failover/recovery soak, holdoff reset parity, cumulative switch telemetry retention |
 | M24 | supervisor decision telemetry refinement | Completed | decision class normalization, cumulative decision counter, unit telemetry assertions |
 | M25 | supervisor channel-up refresh semantics 도입 | Completed | channel-up trigger refresh, preferred recovery via supervisor event path, unit coverage |
 | M26 | static analysis evidence baseline 수립 | Completed | evidence index, static analysis plan, checklist, MISRA deviation log template |
@@ -98,13 +98,13 @@
 | M47 | first vendor deviation example 수립 | Completed | `EVID-CI-021`, `RV-020`, vendor-aware deviation workflow reference example 확보 |
 | M48 | PR comment API linkage 구현 | Completed | `sil4-ci.yml`, sticky PR comment update 경로 확보 |
 | M49 | delta-based annotation policy baseline 수립 | Completed | `EVID-CI-024`, `RV-022`, delta escalation/noise threshold 기준 고정 |
-| M50 | delta-aware helper implementation 수립 | Completed | `render_pr_annotation.sh`, `RV-023`, optional baseline file 기준 delta 계산 구현 |
-| M51 | first real vendor onboarding procedure 수립 | Completed | `EVID-CI-027`, `RV-024`, first actual vendor intake/deviation/report chain 기준 고정 |
-| M52 | baseline persistence source policy 수립 | Completed | `EVID-CI-029`, `RV-025`, PR/branch baseline source priority와 fallback 기준 고정 |
-| M53 | baseline artifact fetch implementation 수립 | Completed | `sil4-ci.yml`, `materialize_baseline_summary.sh`, `RV-026`, prior artifact fetch/materialize 경로 구현 |
-| M54 | first actual vendor rule entry sample 수립 | Completed | `EVID-CI-032`, `RV-027`, first operational vendor entry/report/review sample 확보 |
+| M50 | delta-aware helper implementation 수립 | Completed | `render_pr_annotation.sh`, `RV-023`, optional baseline delta calculation path |
+| M51 | first real vendor onboarding procedure 수립 | Completed | `EVID-CI-027`, `RV-024`, first actual vendor onboarding/deviation/report chain baseline |
+| M52 | baseline persistence source policy 수립 | Completed | `EVID-CI-029`, `RV-025`, PR/branch baseline source priority and fallback policy |
+| M53 | baseline artifact fetch implementation 수립 | Completed | `sil4-ci.yml`, `materialize_baseline_summary.sh`, `RV-026`, prior artifact fetch/materialize path |
+| M54 | first actual vendor rule entry sample 수립 | Completed | `EVID-CI-032`, `RV-027`, first operational vendor entry/report/review sample |
 | M55 | audit trail closeout baseline 수립 | Completed | `EVID-CI-034`, `RV-028`, 초기 evidence package 종료 기준 고정 |
-| M56 | P3/P4 traceability and roadmap alignment review | Completed | `RV-030`, recent `TC-INT-017~039` traceability backfill, roadmap metadata/status 정합화 |
+| M56 | P3/P4 traceability and roadmap alignment review | Completed | `RV-030`, recent integration traceability backfill, roadmap metadata/status alignment |
 
 ## In-Progress Items
 
