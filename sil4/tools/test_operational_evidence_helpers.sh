@@ -26,6 +26,7 @@ mkdir -p "$WORK_DIR"
 SUMMARY_MD="$WORK_DIR/summary.md"
 SUMMARY_ENV="$WORK_DIR/summary.env"
 READINESS_DIR="$WORK_DIR/readiness"
+READINESS_UPDATE_MD="$WORK_DIR/readiness_update.md"
 
 BASE_LOG_DIR="$WORK_DIR/baseline-logs"
 BASE_ENV="$WORK_DIR/baseline.env"
@@ -118,6 +119,15 @@ mark_verification_phase_complete "$WORK_DIR" setup
 grep -q '^OVERALL_READINESS_STATUS=Ready$' "$READINESS_DIR/summary.env"
 grep -q '^BASELINE_ARTIFACT_STATUS=Available$' "$READINESS_DIR/summary.env"
 grep -q '^VENDOR_ARTIFACT_STATUS=Available$' "$READINESS_DIR/summary.env"
+"$SELF_DIR/render_operational_evidence_readiness_update.sh" \
+  --output "$READINESS_UPDATE_MD" \
+  --summary-env "$READINESS_DIR/summary.env" \
+  --tracker-ref "sil4/docs/evidence/first_actual_vendor_evidence_set_execution_tracker.md" \
+  --handoff-ref "sil4/docs/evidence/first_operational_evidence_handoff_sheet.md" \
+  --execution-packet-ref "sil4/docs/evidence/first_operational_evidence_execution_packet.md" >/dev/null
+grep -q '^### Operational Evidence Readiness Update$' "$READINESS_UPDATE_MD"
+grep -q 'overall readiness: `Ready`' "$READINESS_UPDATE_MD"
+grep -q 'execution tracker target:' "$READINESS_UPDATE_MD"
 mark_verification_phase_complete "$WORK_DIR" readiness_check
 
 "$SELF_DIR/run_operational_packet_from_env.sh" \
@@ -168,6 +178,7 @@ READINESS_CHECK_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" readiness_check)
 BASELINE_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" baseline_execute)
 VENDOR_EXECUTE_PHASE_MARKER=$(phase_marker_path "$WORK_DIR" vendor_execute)
 READINESS_SUMMARY=$READINESS_DIR/summary.md
+READINESS_UPDATE=$READINESS_UPDATE_MD
 BASE_ENV=$BASE_ENV
 VENDOR_ENV=$VENDOR_ENV
 BASE_OUT=$BASE_OUT

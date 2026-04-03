@@ -74,3 +74,4 @@
 - roadmap의 `R-005`는 본 tracker 상태를 기준으로만 축소한다.
 - optional helper:
   - `../tools/render_evidence_execution_tracker_row.sh`
+  - `../tools/render_operational_evidence_readiness_update.sh`
