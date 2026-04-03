@@ -81,6 +81,8 @@ close target:
   - `../tools/run_operational_evidence_from_artifact.sh`
 - starter handoff summary helper:
   - `../tools/render_operational_evidence_handoff_summary.sh`
+- starter closeout bundle helper:
+  - `../tools/render_operational_evidence_closeout_bundle.sh`
 - artifact availability preflight helper:
   - `../tools/check_operational_evidence_readiness.sh`
 - readiness update helper:
@@ -210,6 +212,7 @@ sil4/tools/run_operational_packet_from_env.sh \
 - actual artifact availability preflight는 `check_operational_evidence_readiness.sh`로 baseline/vendor 둘 다 한 번에 점검할 수 있다.
 - actual artifact dir 하나로 readiness helper chain과 artifact-dir runner를 연속 실행할 때는 `run_operational_evidence_from_artifact.sh`를 사용한다.
 - starter work dir를 handoff용 summary로 다시 묶을 때는 `render_operational_evidence_handoff_summary.sh`를 사용한다.
+- starter work dir를 tracker/audit closeout-ready bundle로 다시 묶을 때는 `render_operational_evidence_closeout_bundle.sh`를 사용한다.
 - preflight 결과를 tracker/handoff update snippet으로 바꿀 때는 `render_operational_evidence_readiness_update.sh`를 사용한다.
 - preflight 결과를 실제 artifact-dir runner command block으로 바꿀 때는 `render_operational_evidence_ready_commands.sh`를 사용한다.
 - preflight 결과를 tracker row 초안으로 바꿀 때는 `render_operational_evidence_readiness_tracker_rows.sh`를 사용한다.
