@@ -20668,10 +20668,20 @@ static void vTestIntegratedRedundancyFeedbackLongRunRepresentativeFlow(void)
 	vTestIntegratedFlapBypassStaleCompletionLongRunFlow();
 }
 
+static void vTestIntegratedRedundancyBypassReentryRepresentativeFlow(void)
+{
+	vTestIntegratedHoldoffActiveLossBypassFlow();
+	vTestIntegratedHoldoffActiveLossBypassLongRunFlow();
+	vTestIntegratedActiveLossBypassReentersHoldoffFlow();
+	vTestIntegratedFlapResetThenActiveLossBypassFlow();
+	vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow();
+}
+
 static void vTestIntegratedRedundancyStabilityLongRunRepresentativeFlow(void)
 {
 	vTestIntegratedRedundancyLongRunCloseoutFlow();
 	vTestIntegratedRedundancyFeedbackLongRunRepresentativeFlow();
+	vTestIntegratedRedundancyBypassReentryRepresentativeFlow();
 	vTestIntegratedFlapBypassCloseoutFlow();
 	vTestIntegratedSwitchAuditTerminalOutcomeStabilityLongRunFlow();
 }
