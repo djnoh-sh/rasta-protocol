@@ -131,11 +131,11 @@
 
 | Area | Readiness | Comment |
 | --- | --- | --- |
-| 설계 구조 | High | 모듈 경계와 책임 분리는 안정적이며 review/traceability도 유지 중 |
-| 단위 테스트 기반 | Medium-High | protocol context와 supervisor 핵심 규칙은 matrix와 closeout wrapper 수준까지 도달 |
-| 프로토콜 완성도 | Medium-High | sequencing/retransmission/confirmation 규칙은 대표 흐름과 matrix로 많이 닫혔고 잔여는 residual variant 수준 |
-| 통합 가능성 | Medium-High | 주요 경계와 다수의 fault-integration path는 연결됐지만 richer hysteresis와 long-run stability는 아직 남음 |
-| 인증 증빙 준비 | High | baseline/vendor end-to-end execution chain, direct artifact-dir runner, auto track detection, auto id generation, auto workspace generation, runner summary output, summary validation, receipt output, receipt validation, bundle validation, smoke regression까지 준비됐고 helper/tooling 기준 잔여는 없으며 남은 것은 actual runtime/vendor artifact 입력뿐 |
+| 설계 구조 | High | 모듈 경계와 책임 분리는 안정적이고 review/traceability alignment도 유지 중 |
+| 단위 테스트 기반 | Medium-High | protocol context와 transport supervisor 핵심 규칙은 matrix와 closeout wrapper 수준까지 도달 |
+| 프로토콜 완성도 | Medium-High | sequencing/retransmission/confirmation family는 representative closeout 상태이며 잔여는 residual variant 수준 |
+| 통합 가능성 | Medium-High | 주요 fault-integration family는 연결됐고 잔여는 broader long-run/generalization 수준 |
+| 인증 증빙 준비 | High | evidence helper/tooling/execution-chain family는 representative closeout 상태이며 잔여는 artifact-availability-only residual |
 
 ## Current Risks
 
