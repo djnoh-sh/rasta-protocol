@@ -780,6 +780,80 @@ static void vTestPostRecoveryMessageFamilyOrderingMatrix(void)
 	}
 }
 
+static void vTestUnsequencedMessageFamilyPassThroughMatrix(void)
+{
+	typedef struct
+	{
+		rsrx_message_type_t eMessageType;
+		rsrx_event_t eSuggestedEvent;
+		rsrx_reason_code_t eReason;
+		uint32_t uNextTxSequenceNumber;
+		uint32_t uLastRxSequenceNumber;
+		uint32_t uLastRemoteConfirmationNumber;
+		uint32_t uRetransmissionPending;
+		uint32_t uRetransmissionBaseSequenceNumber;
+		uint32_t uLastRetransmissionRequestTxSequenceNumber;
+		uint32_t uSequenceNumber;
+		uint32_t uConfirmationNumber;
+		rsrx_event_t eExpectedEvent;
+	} test_case_t;
+
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{
+			RSRX_MESSAGE_TYPE_CONNECT_REQUEST,
+			RSRX_EVENT_CONNECT_REQUEST,
+			RSRX_REASON_CONNECT_REQUESTED,
+			1U, 0U, 0U, 0U, 0U, 0U,
+			7U, 9U, RSRX_EVENT_CONNECT_REQUEST
+		},
+		{
+			RSRX_MESSAGE_TYPE_DISCONNECT,
+			RSRX_EVENT_DISCONNECT_REQUEST,
+			RSRX_REASON_DISCONNECT_REQUESTED,
+			4U, 3U, 2U, 0U, 0U, 0U,
+			99U, 77U, RSRX_EVENT_DISCONNECT_REQUEST
+		},
+		{
+			RSRX_MESSAGE_TYPE_DIAGNOSTIC,
+			RSRX_EVENT_INVALID_MESSAGE,
+			RSRX_REASON_INVALID_MESSAGE_RECEIVED,
+			2U, 8U, 1U, 1U, 9U, 1U,
+			5U, 0U, RSRX_EVENT_INVALID_MESSAGE
+		}
+	};
+
+	xMessage.xPayloadLength = 0U;
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
+		xContext.uNextTxSequenceNumber = axCases[uIndex].uNextTxSequenceNumber;
+		xContext.uLastRxSequenceNumber = axCases[uIndex].uLastRxSequenceNumber;
+		xContext.uLastTxConfirmationNumber = axCases[uIndex].uLastRxSequenceNumber;
+		xContext.uLastRemoteConfirmationNumber = axCases[uIndex].uLastRemoteConfirmationNumber;
+		xContext.uRetransmissionPending = axCases[uIndex].uRetransmissionPending;
+		xContext.uRetransmissionBaseSequenceNumber = axCases[uIndex].uRetransmissionBaseSequenceNumber;
+		xContext.uLastRetransmissionRequestTxSequenceNumber =
+			axCases[uIndex].uLastRetransmissionRequestTxSequenceNumber;
+
+		xMessage.eMessageType = axCases[uIndex].eMessageType;
+		xMessage.eSuggestedEvent = axCases[uIndex].eSuggestedEvent;
+		xMessage.eReason = axCases[uIndex].eReason;
+		xMessage.uSequenceNumber = axCases[uIndex].uSequenceNumber;
+		xMessage.uConfirmationNumber = axCases[uIndex].uConfirmationNumber;
+
+		vAssertTrue(
+			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+			"unsequenced message family pass-through matrix resolve");
+		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "unsequenced message family pass-through matrix event");
+	}
+}
+
 static void vTestDuplicateInboundSequenceRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -851,6 +925,7 @@ static void vTestProtocolOrderingCloseoutMatrix(void)
 	vTestRepeatedGapPostRecoveryOrderingMatrix();
 	vTestSequencedMessageFamilyOrderingMatrix();
 	vTestPostRecoveryMessageFamilyOrderingMatrix();
+	vTestUnsequencedMessageFamilyPassThroughMatrix();
 }
 
 int main(void)

@@ -10,7 +10,7 @@
 | FR-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBoundedSoakPumpFlow` | TC-INT-009 |  | Draft |
 | FR-002 | HZ-001 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-001, TC-SM-002, TC-SM-009, TC-SM-013, TC-SM-014, TC-SM-016 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 |  |  |  |  | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-011 | `sil4/include/rsrx_protocol_context.h`, `sil4/src/rsrx_protocol_context.c` | `rsrx_protocol_context_record_inbound_message`, `rsrx_protocol_context_resolve_inbound_event`, `rsrx_protocol_context_build_encode_request` | TC-PC-001, TC-PC-002, TC-PC-005, TC-PC-011, TC-PC-012, TC-PC-015, TC-PC-016, TC-PC-017, TC-PC-018 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-011 | `sil4/include/rsrx_protocol_context.h`, `sil4/src/rsrx_protocol_context.c` | `rsrx_protocol_context_record_inbound_message`, `rsrx_protocol_context_resolve_inbound_event`, `rsrx_protocol_context_build_encode_request` | TC-PC-001, TC-PC-002, TC-PC-005, TC-PC-011, TC-PC-012, TC-PC-015, TC-PC-016, TC-PC-017, TC-PC-018, TC-PC-019 | RV-217 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_send_request_t`, `rsrx_transport_frame_t` | TC-TR-002 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_decoded_message_t`, `rsrx_encode_request_t`, `rsrx_encode_buffer_t`, `rsrx_codec_encode_message`, `rsrx_codec_decode_frame` | TC-CODEC-001, TC-CODEC-002, TC-CODEC-004 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_event` | TC-API-005 |  | Draft |
