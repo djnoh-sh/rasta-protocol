@@ -125,6 +125,18 @@
 | EVID-CI-092 | `../reviews/RV-090_r005_helper_chain_closeout_review.md` | Draft | R-005 helper chain closeout review |
 | EVID-CI-093 | `../reviews/RV-091_operational_artifact_bundle_validator_review.md` | Draft | operational artifact bundle validator review |
 | EVID-CI-094 | `../reviews/RV-092_r005_artifact_only_residual_review.md` | Draft | R-005 artifact-only residual review |
+| EVID-CI-095 | `../reviews/RV-202_operational_evidence_readiness_preflight_review.md` | Draft | operational evidence readiness preflight review |
+| EVID-CI-096 | `../reviews/RV-203_operational_evidence_readiness_update_review.md` | Draft | operational evidence readiness update review |
+| EVID-CI-097 | `../reviews/RV-204_operational_evidence_ready_command_review.md` | Draft | operational evidence ready command review |
+| EVID-CI-098 | `../reviews/RV-205_operational_evidence_readiness_tracker_row_review.md` | Draft | operational evidence readiness tracker row review |
+| EVID-CI-099 | `../reviews/RV-206_operational_evidence_readiness_audit_note_review.md` | Draft | operational evidence readiness audit note review |
+| EVID-CI-100 | `../reviews/RV-207_operational_evidence_starter_review.md` | Draft | operational evidence starter review |
+| EVID-CI-101 | `../reviews/RV-208_operational_evidence_handoff_summary_review.md` | Draft | operational evidence handoff summary review |
+| EVID-CI-102 | `../reviews/RV-209_operational_evidence_closeout_bundle_review.md` | Draft | operational evidence closeout bundle review |
+| EVID-CI-103 | `../reviews/RV-210_operational_evidence_patch_guidance_review.md` | Draft | operational evidence patch guidance review |
+| EVID-CI-104 | `../reviews/RV-211_operational_evidence_actual_close_guidance_review.md` | Draft | operational evidence actual close guidance review |
+| EVID-CI-105 | `../reviews/RV-212_operational_evidence_review_link_guidance_review.md` | Draft | operational evidence review link guidance review |
+| EVID-CI-106 | `../reviews/RV-213_r005_execution_guidance_chain_closeout_review.md` | Draft | R-005 execution guidance chain closeout review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
