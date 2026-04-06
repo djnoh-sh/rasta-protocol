@@ -4574,6 +4574,12 @@ static void vTestSupervisorPumpReceiveInvalidArguments(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 0U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump zero max polls");
 }
 
+static void vTestSupervisorQueueReportMatrix(void)
+{
+	vTestSupervisorTransportSendCompletedCorrelated();
+	vTestSupervisorReportExposesBusyRejectTelemetry();
+}
+
 static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
 {
 	vTestSupervisorBudgetScopeMatrix();
@@ -4608,8 +4614,7 @@ int main(void)
 	vTestSupervisorChannelUpRefreshesSelection();
 	vTestSupervisorTransportSendFailed();
 	vTestSupervisorTransportSendCompletedIgnored();
-	vTestSupervisorTransportSendCompletedCorrelated();
-	vTestSupervisorReportExposesBusyRejectTelemetry();
+	vTestSupervisorQueueReportMatrix();
 	vTestSupervisorSendFailureBudgetResetsAfterSuccess();
 	vTestSupervisorTimerExpiryDelegation();
 	vTestSupervisorRecoverySuccessFromRetransmissionPending();
