@@ -109,23 +109,29 @@ static void vRefreshDeferredQueueState(
 static void vDropDeferredSendFront(
 	rsrx_transport_adapter_context_t * pxContext)
 {
+	uint32_t uDeferredIndex;
+
 	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
 		(pxContext->uDeferredSendCount == 0U))
 	{
 		return;
 	}
 
-	if(pxContext->uDeferredSendCount > 1U)
+	for(uDeferredIndex = 1U; uDeferredIndex < pxContext->uDeferredSendCount; ++uDeferredIndex)
 	{
 		size_t xIndex;
+		const uint32_t uPreviousIndex = uDeferredIndex - 1U;
 
-		pxContext->aeDeferredMessageTypes[0] = pxContext->aeDeferredMessageTypes[1];
-		pxContext->aeDeferredReasons[0] = pxContext->aeDeferredReasons[1];
-		pxContext->axDeferredPayloadLengths[0] = pxContext->axDeferredPayloadLengths[1];
-		for(xIndex = 0U; xIndex < pxContext->axDeferredPayloadLengths[1]; ++xIndex)
+		pxContext->aeDeferredMessageTypes[uPreviousIndex] =
+			pxContext->aeDeferredMessageTypes[uDeferredIndex];
+		pxContext->aeDeferredReasons[uPreviousIndex] =
+			pxContext->aeDeferredReasons[uDeferredIndex];
+		pxContext->axDeferredPayloadLengths[uPreviousIndex] =
+			pxContext->axDeferredPayloadLengths[uDeferredIndex];
+		for(xIndex = 0U; xIndex < pxContext->axDeferredPayloadLengths[uDeferredIndex]; ++xIndex)
 		{
-			pxContext->aauDeferredPayloads[0][xIndex] =
-				pxContext->aauDeferredPayloads[1][xIndex];
+			pxContext->aauDeferredPayloads[uPreviousIndex][xIndex] =
+				pxContext->aauDeferredPayloads[uDeferredIndex][xIndex];
 		}
 	}
 
@@ -218,7 +224,7 @@ static rsrx_transport_status_t eEncodeAndSend(
 	if(pxContext->uHasOutstandingSend != 0U)
 	{
 		if((eMessageType == RSRX_MESSAGE_TYPE_DATA) &&
-			(pxContext->uDeferredSendCount < 2U) &&
+			(pxContext->uDeferredSendCount < D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY) &&
 			(xPayloadLength <= sizeof(pxContext->aauDeferredPayloads[0])))
 		{
 			const uint32_t uDeferredIndex = pxContext->uDeferredSendCount;
@@ -369,12 +375,19 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->uHasLastInboundMessage = 0U;
 	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxContext->uHasOutstandingSend = 0U;
-	pxContext->aeDeferredMessageTypes[0] = RSRX_MESSAGE_TYPE_INVALID;
-	pxContext->aeDeferredMessageTypes[1] = RSRX_MESSAGE_TYPE_INVALID;
-	pxContext->aeDeferredReasons[0] = RSRX_REASON_NONE;
-	pxContext->aeDeferredReasons[1] = RSRX_REASON_NONE;
-	pxContext->axDeferredPayloadLengths[0] = 0U;
-	pxContext->axDeferredPayloadLengths[1] = 0U;
+	{
+		uint32_t uDeferredIndex;
+
+		for(uDeferredIndex = 0U;
+			uDeferredIndex < D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY;
+			++uDeferredIndex)
+		{
+			pxContext->aeDeferredMessageTypes[uDeferredIndex] =
+				RSRX_MESSAGE_TYPE_INVALID;
+			pxContext->aeDeferredReasons[uDeferredIndex] = RSRX_REASON_NONE;
+			pxContext->axDeferredPayloadLengths[uDeferredIndex] = 0U;
+		}
+	}
 	pxContext->uDeferredSendCount = 0U;
 	pxContext->uHasDeferredSend = 0U;
 	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;

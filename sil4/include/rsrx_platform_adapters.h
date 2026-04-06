@@ -10,6 +10,8 @@
 #include "rsrx_protocol_context.h"
 #include "rsrx_transport.h"
 
+#define D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY 2U
+
 typedef struct
 {
 	rsrx_transport_status_t eLastSendStatus;
@@ -40,10 +42,10 @@ typedef struct
 	const uint8_t * puFramePayload;
 	size_t xFramePayloadLength;
 	uint8_t auEncodedFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
-	rsrx_message_type_t aeDeferredMessageTypes[2];
-	rsrx_reason_code_t aeDeferredReasons[2];
-	uint8_t aauDeferredPayloads[2][D_RSRX_CODEC_MAX_FRAME_BYTES];
-	size_t axDeferredPayloadLengths[2];
+	rsrx_message_type_t aeDeferredMessageTypes[D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY];
+	rsrx_reason_code_t aeDeferredReasons[D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY];
+	uint8_t aauDeferredPayloads[D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY][D_RSRX_CODEC_MAX_FRAME_BYTES];
+	size_t axDeferredPayloadLengths[D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY];
 	rsrx_outbound_send_telemetry_t xOutboundTelemetry;
 	uint32_t uHasLastInboundMessage;
 	uint32_t uHasOutstandingSend;
