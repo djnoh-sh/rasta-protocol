@@ -1066,8 +1066,15 @@ static void vTestOutboundQueueLongRunRepresentativeMatrix(void)
 	vTestOverflowBusyAccumulationMatrix();
 }
 
+static void vTestOutboundQueueFairnessRepresentativeMatrix(void)
+{
+	vTestApplicationDataDeferredQueueFifoDispatch();
+	vTestApplicationDataDeferredQueueMixedClearLongRun();
+}
+
 static void vTestOutboundQueueBackpressureCloseoutMatrix(void)
 {
+	vTestOutboundQueueFairnessRepresentativeMatrix();
 	vTestOutboundQueueLongRunRepresentativeMatrix();
 }
 
