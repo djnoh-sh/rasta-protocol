@@ -1058,12 +1058,17 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "overflow busy accumulation final max deferred retained");
 }
 
-static void vTestOutboundQueueBackpressureCloseoutMatrix(void)
+static void vTestOutboundQueueLongRunRepresentativeMatrix(void)
 {
 	vTestApplicationDataDeferredQueueMixedClearLongRun();
 	vTestBusyRejectThresholdManualInboundResetSources();
 	vTestDeferredQueueTelemetryAccumulationMatrix();
 	vTestOverflowBusyAccumulationMatrix();
+}
+
+static void vTestOutboundQueueBackpressureCloseoutMatrix(void)
+{
+	vTestOutboundQueueLongRunRepresentativeMatrix();
 }
 
 int main(void)
