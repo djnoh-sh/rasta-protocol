@@ -22125,6 +22125,12 @@ static void vTestIntegratedNonDataSequencedMessageRepresentativeFlow(void)
 	vTestIntegratedPostRecoveryRetransmissionRequestOrderingFlow();
 }
 
+static void vTestIntegratedRuntimeCorrelatedFeedbackRepresentativeFlow(void)
+{
+	vTestIntegratedRuntimeOrderingCloseoutFlow();
+	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
+}
+
 static void vTestIntegratedPumpReceiveStabilityFlow(void)
 {
 	rsrx_session_t xSession;
@@ -22481,8 +22487,7 @@ int main(void)
 	vTestIntegratedConnectResponseSequencingRepresentativeFlow();
 	vTestIntegratedNonDataSequencedMessageRepresentativeFlow();
 	vTestIntegratedQueueBackpressureCloseoutFlow();
-	vTestIntegratedRuntimeOrderingCloseoutFlow();
-	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
+	vTestIntegratedRuntimeCorrelatedFeedbackRepresentativeFlow();
 	vTestIntegratedRedundancyPolicyCloseoutFlow();
 	vTestIntegratedRedundancyLongRunCloseoutFlow();
 	vTestIntegratedFlapBypassCloseoutFlow();
