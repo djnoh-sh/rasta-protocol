@@ -22131,6 +22131,14 @@ static void vTestIntegratedRuntimeCorrelatedFeedbackRepresentativeFlow(void)
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
 }
 
+static void vTestIntegratedRuntimeStaleFeedbackLongRunRepresentativeFlow(void)
+{
+	vTestIntegratedHoldoffStaleCompletionRecoveryOrderingFlow();
+	vTestIntegratedHoldoffStaleFeedbackRecoveryOrderingFlow();
+	vTestIntegratedHoldoffStaleFeedbackSoakFlow();
+	vTestIntegratedHoldoffStaleCompletionSoakFlow();
+}
+
 static void vTestIntegratedPumpReceiveStabilityFlow(void)
 {
 	rsrx_session_t xSession;
@@ -22458,11 +22466,8 @@ int main(void)
 	vTestIntegratedHoldoffSendBudgetIsolationFlow();
 	vTestIntegratedHoldoffStaleFeedbackIsolationFlow();
 	vTestIntegratedHoldoffStaleCompletionIsolationFlow();
-	vTestIntegratedHoldoffStaleCompletionRecoveryOrderingFlow();
 	vTestIntegratedHoldoffStaleCompletionBudgetResetFlow();
-	vTestIntegratedHoldoffStaleFeedbackRecoveryOrderingFlow();
-	vTestIntegratedHoldoffStaleFeedbackSoakFlow();
-	vTestIntegratedHoldoffStaleCompletionSoakFlow();
+	vTestIntegratedRuntimeStaleFeedbackLongRunRepresentativeFlow();
 	vTestIntegratedHoldoffReceiveErrorCarryoverFlow();
 	vTestIntegratedHoldoffMixedTransientResetFlow();
 	vTestIntegratedHoldoffFlapTransientAsymmetryFlow();
