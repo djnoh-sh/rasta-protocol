@@ -21644,20 +21644,25 @@ static void vTestIntegratedProtocolVariantCloseoutFlow(void)
 	vTestIntegratedRepeatedGapUnconfirmedLatestRecoveryFlow();
 }
 
+static void vTestIntegratedQueueLongRunRepresentativeFlow(void)
+{
+	vTestIntegratedDeferredQueueMixedClearLongRunFlow();
+	vTestIntegratedDeferredQueueTelemetryAccumulationFlow();
+	vTestIntegratedQueueOverflowAccumulationFlow();
+	vTestIntegratedOverflowBusyAccumulationFlow();
+	vTestIntegratedBusyRejectAlternatingResetFlow();
+}
+
 static void vTestIntegratedQueueBackpressureCloseoutFlow(void)
 {
 	vTestIntegratedDeferredQueueTelemetryFlow();
 	vTestIntegratedDeferredQueueFifoDispatchFlow();
 	vTestIntegratedDeferredQueueMixedClearOrderingFlow();
-	vTestIntegratedDeferredQueueMixedClearLongRunFlow();
-	vTestIntegratedDeferredQueueTelemetryAccumulationFlow();
-	vTestIntegratedQueueOverflowAccumulationFlow();
-	vTestIntegratedOverflowBusyAccumulationFlow();
 	vTestIntegratedQueueOverflowRejectFlow();
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
 	vTestIntegratedBusyRejectThresholdResetFlow();
 	vTestIntegratedBusyRejectThresholdInboundResetFlow();
-	vTestIntegratedBusyRejectAlternatingResetFlow();
+	vTestIntegratedQueueLongRunRepresentativeFlow();
 }
 
 static void vTestIntegratedInvalidConfirmationProtocolErrorFlow(void)
