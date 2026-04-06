@@ -22109,6 +22109,15 @@ static void vTestIntegratedFailoverRegressingConfirmationProtocolErrorFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "failover regressing confirmation integration lifecycle callback");
 }
 
+static void vTestIntegratedConnectResponseSequencingRepresentativeFlow(void)
+{
+	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
+	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
+	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
+	vTestIntegratedRegressingConfirmationProtocolErrorFlow();
+	vTestIntegratedFailoverRegressingConfirmationProtocolErrorFlow();
+}
+
 static void vTestIntegratedPumpReceiveStabilityFlow(void)
 {
 	rsrx_session_t xSession;
@@ -22461,8 +22470,8 @@ int main(void)
 	vTestIntegratedReceiveErrorBudgetResetFlow();
 	vTestIntegratedReceiveErrorFailoverCarryoverFlow();
 	vTestIntegratedMixedTransientBudgetResetFlow();
-	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
 	vTestIntegratedProtocolVariantCloseoutFlow();
+	vTestIntegratedConnectResponseSequencingRepresentativeFlow();
 	vTestIntegratedQueueBackpressureCloseoutFlow();
 	vTestIntegratedRuntimeOrderingCloseoutFlow();
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
@@ -22471,10 +22480,6 @@ int main(void)
 	vTestIntegratedFlapBypassCloseoutFlow();
 	vTestIntegratedRedundancyStabilityEnvelopeCloseoutFlow();
 	vTestIntegratedDuplicateInboundProtocolErrorFlow();
-	vTestIntegratedInvalidConfirmationProtocolErrorFlow();
-	vTestIntegratedFailoverInvalidConfirmationProtocolErrorFlow();
-	vTestIntegratedRegressingConfirmationProtocolErrorFlow();
-	vTestIntegratedFailoverRegressingConfirmationProtocolErrorFlow();
 	vTestIntegratedPumpReceiveStabilityFlow();
 	vTestIntegratedBoundedSoakPumpFlow();
 
