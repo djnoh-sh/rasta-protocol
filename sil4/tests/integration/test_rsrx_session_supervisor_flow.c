@@ -22118,6 +22118,13 @@ static void vTestIntegratedConnectResponseSequencingRepresentativeFlow(void)
 	vTestIntegratedFailoverRegressingConfirmationProtocolErrorFlow();
 }
 
+static void vTestIntegratedNonDataSequencedMessageRepresentativeFlow(void)
+{
+	vTestIntegratedPostRecoveryHeartbeatOrderingFlow();
+	vTestIntegratedRepeatedGapPostRecoveryHeartbeatOrderingFlow();
+	vTestIntegratedPostRecoveryRetransmissionRequestOrderingFlow();
+}
+
 static void vTestIntegratedPumpReceiveStabilityFlow(void)
 {
 	rsrx_session_t xSession;
@@ -22472,6 +22479,7 @@ int main(void)
 	vTestIntegratedMixedTransientBudgetResetFlow();
 	vTestIntegratedProtocolVariantCloseoutFlow();
 	vTestIntegratedConnectResponseSequencingRepresentativeFlow();
+	vTestIntegratedNonDataSequencedMessageRepresentativeFlow();
 	vTestIntegratedQueueBackpressureCloseoutFlow();
 	vTestIntegratedRuntimeOrderingCloseoutFlow();
 	vTestIntegratedHoldoffFlapRuntimeOrderingCloseoutFlow();
