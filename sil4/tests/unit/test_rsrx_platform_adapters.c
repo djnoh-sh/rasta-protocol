@@ -390,13 +390,20 @@ static void vTestApplicationDataSend(void)
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data third send queued");
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "application data queued telemetry second slot");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "application data max deferred telemetry second slot");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data fourth send queued");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 3U, "application data queued telemetry third slot");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 3U, "application data max deferred telemetry third slot");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
-		"application data fourth send overflow");
+		"application data fifth send overflow");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "application data busy telemetry one");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "application data queue overflow telemetry");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "application data busy streak one");
@@ -423,7 +430,7 @@ static void vTestApplicationDataSend(void)
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data send queued after dispatch");
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 3U, "application data queued telemetry after dispatch");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 4U, "application data queued telemetry after dispatch");
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(xTransportContext.uCallCount == 3U, "application data send count after clear");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 3U, "application data accepted telemetry after clear");
@@ -613,6 +620,7 @@ static void vTestApplicationDataDeferredQueueFifoDispatch(void)
 	static const uint8_t auFirstPayload[2] = { 0x41U, 0x42U };
 	static const uint8_t auSecondPayload[2] = { 0x51U, 0x52U };
 	static const uint8_t auThirdPayload[2] = { 0x61U, 0x62U };
+	static const uint8_t auFourthPayload[2] = { 0x71U, 0x72U };
 
 	xTransportPort.pvContext = &xTransportContext;
 	xTransportPort.pfSend = eTransportSend;
@@ -650,6 +658,12 @@ static void vTestApplicationDataDeferredQueueFifoDispatch(void)
 			auThirdPayload,
 			sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data fifo third queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFourthPayload,
+			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data fifo fourth queued");
 
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -672,6 +686,13 @@ static void vTestApplicationDataDeferredQueueFifoDispatch(void)
 		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auThirdPayload[0],
 		"application data fifo second dispatch payload");
 	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 2U, "application data fifo second dispatch telemetry");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(xTransportContext.uCallCount == 4U, "application data fifo third dispatch count");
+	vAssertTrue(
+		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auFourthPayload[0],
+		"application data fifo third dispatch payload");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 3U, "application data fifo third dispatch telemetry");
 }
 
 static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
@@ -688,6 +709,7 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
 	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
 	static const uint8_t auSixthPayload[2] = { 0x61U, 0x62U };
+	static const uint8_t auSeventhPayload[2] = { 0x71U, 0x72U };
 
 	xTransportPort.pvContext = &xTransportContext;
 	xTransportPort.pfSend = eTransportSend;
@@ -725,6 +747,12 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 			auThirdPayload,
 			sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data mixed clear long run third queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFourthPayload,
+			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run fourth queued");
 
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(xTransportContext.uCallCount == 2U, "application data mixed clear long run first feedback dispatch count");
@@ -747,25 +775,29 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 		"application data mixed clear long run first inbound dispatch payload");
 
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
-
+	vAssertTrue(xTransportContext.uCallCount == 4U, "application data mixed clear long run trailing manual dispatch count");
 	vAssertTrue(
-		rsrx_transport_adapter_send_application_data(
-			&xTransportAdapterContext,
-			auFourthPayload,
-			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"application data mixed clear long run fourth send");
+		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auFourthPayload[0],
+		"application data mixed clear long run trailing manual dispatch payload");
+
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auFifthPayload,
 			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"application data mixed clear long run fifth queued");
+		"application data mixed clear long run fifth send");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auSixthPayload,
 			sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data mixed clear long run sixth queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auSeventhPayload,
+			sizeof(auSeventhPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data mixed clear long run seventh queued");
 
 	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 3U;
 	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
@@ -783,10 +815,16 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auSixthPayload[0],
 		"application data mixed clear long run second feedback dispatch payload");
 
-	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "application data mixed clear long run dispatch telemetry");
-	vAssertTrue(pxTelemetry->uClearManualCount == 3U, "application data mixed clear long run manual clear telemetry");
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	vAssertTrue(xTransportContext.uCallCount == 7U, "application data mixed clear long run trailing second feedback dispatch count");
+	vAssertTrue(
+		xTransportContext.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auSeventhPayload[0],
+		"application data mixed clear long run trailing second feedback dispatch payload");
+
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 6U, "application data mixed clear long run dispatch telemetry");
+	vAssertTrue(pxTelemetry->uClearManualCount == 4U, "application data mixed clear long run manual clear telemetry");
 	vAssertTrue(pxTelemetry->uClearOnInboundCount == 2U, "application data mixed clear long run inbound clear telemetry");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "application data mixed clear long run max deferred retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 3U, "application data mixed clear long run max deferred retained");
 }
 
 static void vTestBusyRejectThresholdManualInboundResetSources(void)
@@ -802,6 +840,7 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
 	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
 	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
+	static const uint8_t auSixthPayload[2] = { 0x61U, 0x62U };
 
 	xTransportPort.pvContext = &xTransportContext;
 	xTransportPort.pfSend = eTransportSend;
@@ -843,14 +882,20 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auFourthPayload,
-			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
-		"busy reject manual inbound reset first reject");
-	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
+			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset fourth queued");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auFifthPayload,
 			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"busy reject manual inbound reset first reject");
+	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auSixthPayload,
+			sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"busy reject manual inbound reset second reject");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy reject manual inbound reset first streak");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy reject manual inbound reset first escalation");
@@ -863,14 +908,14 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
-			auFourthPayload,
-			sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+			auFifthPayload,
+			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"busy reject manual inbound reset post-manual queued");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
-			auFifthPayload,
-			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+			auSixthPayload,
+			sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"busy reject manual inbound reset post-manual reject");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy reject manual inbound reset post-manual streak restart");
 
@@ -891,8 +936,8 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
-			auFifthPayload,
-			sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+			auSixthPayload,
+			sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"busy reject manual inbound reset post-inbound queued");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
@@ -918,6 +963,8 @@ static void vTestDeferredQueueTelemetryAccumulationMatrix(void)
 	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
 	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
 	static const uint8_t auSixthPayload[2] = { 0x61U, 0x62U };
+	static const uint8_t auSeventhPayload[2] = { 0x71U, 0x72U };
+	static const uint8_t auEighthPayload[2] = { 0x81U, 0x82U };
 
 	xTransportPort.pvContext = &xTransportContext;
 	xTransportPort.pfSend = eTransportSend;
@@ -946,30 +993,38 @@ static void vTestDeferredQueueTelemetryAccumulationMatrix(void)
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auThirdPayload, sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"deferred queue telemetry accumulation third queued");
-
-	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
-	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
-	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
-
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"deferred queue telemetry accumulation fourth send");
+		"deferred queue telemetry accumulation fourth queued");
+
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFifthPayload, sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"deferred queue telemetry accumulation fifth queued");
+		"deferred queue telemetry accumulation fifth send");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSixthPayload, sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"deferred queue telemetry accumulation sixth queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSeventhPayload, sizeof(auSeventhPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation seventh queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auEighthPayload, sizeof(auEighthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"deferred queue telemetry accumulation eighth queued");
 
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 4U, "deferred queue telemetry accumulation queued count");
-	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 4U, "deferred queue telemetry accumulation dispatch count");
-	vAssertTrue(pxTelemetry->uAcceptedSendCount == 6U, "deferred queue telemetry accumulation accepted count");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "deferred queue telemetry accumulation max deferred count");
-	vAssertTrue(pxTelemetry->uClearManualCount == 6U, "deferred queue telemetry accumulation manual clear count");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 6U, "deferred queue telemetry accumulation queued count");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 6U, "deferred queue telemetry accumulation dispatch count");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 8U, "deferred queue telemetry accumulation accepted count");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 3U, "deferred queue telemetry accumulation max deferred count");
+	vAssertTrue(pxTelemetry->uClearManualCount == 8U, "deferred queue telemetry accumulation manual clear count");
 }
 
 static void vTestOverflowBusyAccumulationMatrix(void)
@@ -985,6 +1040,7 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 	static const uint8_t auThirdPayload[2] = { 0x31U, 0x32U };
 	static const uint8_t auFourthPayload[2] = { 0x41U, 0x42U };
 	static const uint8_t auFifthPayload[2] = { 0x51U, 0x52U };
+	static const uint8_t auSixthPayload[2] = { 0x61U, 0x62U };
 
 	xTransportPort.pvContext = &xTransportContext;
 	xTransportPort.pfSend = eTransportSend;
@@ -1014,7 +1070,10 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auThirdPayload, sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"overflow busy accumulation third queued");
 	vAssertTrue(
-		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation fourth queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFifthPayload, sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"overflow busy accumulation first reject");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "overflow busy accumulation overflow count one");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "overflow busy accumulation busy count one");
@@ -1023,17 +1082,21 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation streak reset");
 
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auThirdPayload, sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"overflow busy accumulation fourth send");
+		"overflow busy accumulation fifth send");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"overflow busy accumulation fifth queued");
+		"overflow busy accumulation sixth queued");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFifthPayload, sizeof(auFifthPayload)) == RSRX_TRANSPORT_STATUS_OK,
-		"overflow busy accumulation sixth queued");
+		"overflow busy accumulation seventh queued");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSixthPayload, sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation eighth queued");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFirstPayload, sizeof(auFirstPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"overflow busy accumulation second reject");
@@ -1048,14 +1111,14 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation count");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "overflow busy accumulation escalation latch");
 	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "overflow busy accumulation max streak");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "overflow busy accumulation max deferred retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 3U, "overflow busy accumulation max deferred retained");
 
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation final streak reset");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "overflow busy accumulation final latch reset");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 3U, "overflow busy accumulation overflow retained");
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation retained");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 2U, "overflow busy accumulation final max deferred retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 3U, "overflow busy accumulation final max deferred retained");
 }
 
 static void vTestOutboundQueueLongRunRepresentativeMatrix(void)
