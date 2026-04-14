@@ -10,12 +10,12 @@
 
 ## Checks
 1. `TC-OUT-016` 이후 `R-004`가 current outbound queue representative family inventory가 아니라 next queue policy growth만 가리키는지 점검한다.
-2. residual wording이 deeper backlog, beyond-FIFO fairness, queue-growth 이후 runtime-feedback semantics를 직접 가리키고, 이후 depth `4` closeout update와도 충돌하지 않는지 확인한다.
+2. residual wording이 deeper backlog, beyond-FIFO fairness, queue-growth 이후 runtime-feedback semantics를 직접 가리키고, 이후 depth `5` closeout update와도 충돌하지 않는지 확인한다.
 
 ## Findings
 1. current outbound queue family는 representative closeout 상태로 읽는 편이 더 적합하다.
 2. `R-004` residual은 current FIFO/long-run/report branch 추가가 아니라 deeper backlog, beyond-FIFO fairness, queue-growth 이후 semantics를 직접 가리키도록 압축됐다.
-3. 이후 actual backlog growth가 depth `4`까지 반영되더라도 이 review의 결론은 그대로 유지되고, current family inventory가 아니라 next queue policy growth를 가리킨다는 해석과 충돌하지 않는다.
+3. 이후 actual backlog growth가 depth `5`까지 반영되더라도 이 review의 결론은 그대로 유지되고, current family inventory가 아니라 next queue policy growth를 가리킨다는 해석과 충돌하지 않는다.
 
 ## Conclusion
 - Pass. `R-004` now reads as next queue policy growth only.
