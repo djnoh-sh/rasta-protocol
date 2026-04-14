@@ -10,7 +10,7 @@
 #include "rsrx_protocol_context.h"
 #include "rsrx_transport.h"
 
-#define D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY 5U
+#define D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY 6U
 
 typedef struct
 {
