@@ -10,12 +10,13 @@
 
 ## Checks
 1. `TC-OUT-015` 이후 `R-004`가 current outbound queue long-run family 내부 gap이 아니라 next queue policy growth만 가리키는지 점검한다.
-2. `P4` 설명이 current queue representative wrapper family와 phase residual을 분리해 읽히는지 확인한다.
+2. `P4` 설명이 current queue representative wrapper family와 phase residual을 분리해 읽히고, 이후 depth `4` closeout update와도 충돌하지 않는지 확인한다.
 
 ## Findings
 1. current outbound queue family는 queue/backpressure closeout matrix, queue representative wrapper set, queue report representative matrix, outbound queue long-run representative matrix 기준으로 representative closeout 상태다.
 2. 따라서 `R-004` residual은 current queue long-run/report refinement가 아니라 deeper backlog, fairness, queue-growth 이후 retry/runtime feedback semantics로 읽는 쪽이 맞다.
-3. `P4`도 current queue inventory 추가보다 next queue policy growth를 직접 가리키는 상태로 유지된다.
+3. 이후 actual backlog growth가 depth `4`까지 반영되더라도 이 review의 결론은 그대로 유지되고, current family 내부 refinement가 아니라 next queue policy growth를 가리킨다는 해석과 충돌하지 않는다.
+4. `P4`도 current queue inventory 추가보다 next queue policy growth를 직접 가리키는 상태로 유지된다.
 
 ## Conclusion
 - Pass. `R-004` now points to next queue policy growth rather than current outbound queue representative wrapper backlog.
