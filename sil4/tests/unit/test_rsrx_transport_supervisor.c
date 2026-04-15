@@ -1221,6 +1221,7 @@ static void vTestSupervisorReportExposesBusyRejectTelemetry(void)
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "report busy telemetry tenth queued");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "report busy telemetry eleventh queued");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "report busy telemetry twelfth queued");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "report busy telemetry thirteenth queued");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_REJECTED, "report busy telemetry first reject");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_REJECTED, "report busy telemetry second reject");
 
