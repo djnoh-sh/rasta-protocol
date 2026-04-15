@@ -446,13 +446,20 @@ static void vTestApplicationDataSend(void)
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data eleventh send queued");
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 10U, "application data queued telemetry tenth slot");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 10U, "application data max deferred telemetry tenth slot");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"application data twelfth send queued");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 11U, "application data queued telemetry eleventh slot");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 11U, "application data max deferred telemetry eleventh slot");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
-		"application data twelfth send overflow");
+		"application data thirteenth send overflow");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "application data busy telemetry one");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "application data queue overflow telemetry");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "application data busy streak one");
@@ -479,7 +486,7 @@ static void vTestApplicationDataSend(void)
 			auDataPayload,
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data send queued after dispatch");
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 11U, "application data queued telemetry after dispatch");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 12U, "application data queued telemetry after dispatch");
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(xTransportContext.uCallCount == 3U, "application data send count after clear");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 3U, "application data accepted telemetry after clear");
@@ -897,6 +904,7 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 	static const uint8_t auEleventhPayload[2] = { 0xB1U, 0xB2U };
 	static const uint8_t auTwelfthPayload[2] = { 0xC1U, 0xC2U };
 	static const uint8_t auThirteenthPayload[2] = { 0xD1U, 0xD2U };
+	static const uint8_t auFourteenthPayload[2] = { 0xE1U, 0xE2U };
 
 	xTransportPort.pvContext = &xTransportContext;
 	xTransportPort.pfSend = eTransportSend;
@@ -982,18 +990,24 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 			auEleventhPayload,
 			sizeof(auEleventhPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"busy reject manual inbound reset eleventh queued");
-	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auTwelfthPayload,
-			sizeof(auTwelfthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
-		"busy reject manual inbound reset first reject");
+			sizeof(auTwelfthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"busy reject manual inbound reset twelfth queued");
+	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
 			auThirteenthPayload,
 			sizeof(auThirteenthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
+		"busy reject manual inbound reset first reject");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFourteenthPayload,
+			sizeof(auFourteenthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"busy reject manual inbound reset second reject");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy reject manual inbound reset first streak");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy reject manual inbound reset first escalation");
@@ -1195,12 +1209,16 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auThirdPayload, sizeof(auThirdPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"overflow busy accumulation eleventh queued");
 	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation twelfth queued");
+	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSecondPayload, sizeof(auSecondPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"overflow busy accumulation first reject");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "overflow busy accumulation overflow count one");
 	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "overflow busy accumulation busy count one");
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "overflow busy accumulation streak one");
 
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
@@ -1248,6 +1266,9 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSixthPayload, sizeof(auSixthPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"overflow busy accumulation fifteenth queued");
 	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auSeventhPayload, sizeof(auSeventhPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"overflow busy accumulation sixteenth queued");
+	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(&xTransportAdapterContext, auFourthPayload, sizeof(auFourthPayload)) == RSRX_TRANSPORT_STATUS_UNAVAILABLE,
 		"overflow busy accumulation second reject");
 	rsrx_transport_adapter_note_busy_reject_escalation(&xTransportAdapterContext);
@@ -1261,14 +1282,14 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation count");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "overflow busy accumulation escalation latch");
 	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "overflow busy accumulation max streak");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 10U, "overflow busy accumulation max deferred retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 11U, "overflow busy accumulation max deferred retained");
 
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 0U, "overflow busy accumulation final streak reset");
 	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "overflow busy accumulation final latch reset");
 	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 3U, "overflow busy accumulation overflow retained");
 	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "overflow busy accumulation escalation retained");
-	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 10U, "overflow busy accumulation final max deferred retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 11U, "overflow busy accumulation final max deferred retained");
 }
 
 static void vTestOutboundQueueLongRunRepresentativeMatrix(void)
