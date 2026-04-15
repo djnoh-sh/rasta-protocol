@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Stub`
 - Owner: `Project Team`
-- Last Updated: `2026-03-25`
+- Last Updated: `2026-04-15`
 
 ## Purpose
 
@@ -41,6 +41,11 @@
 | EVS-008 | `Open` | audit trail update | `EVS-001` and `EVS-003`~`EVS-007` 이후 수행 |
 
 ## Execution Notes
+
+- current readiness snapshot:
+  - `reports/operational_evidence_readiness_snapshot_2026-04-15.md`
+- current interpretation:
+  - helper-generated readiness result is still `Blocked`, so `EVS-001`, `EVS-003`, and `EVS-004` remain `Open` until actual artifacts arrive
 
 ### Baseline Fetch Track
 

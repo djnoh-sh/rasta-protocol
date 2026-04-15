@@ -138,6 +138,8 @@
 | EVID-CI-105 | `../reviews/RV-212_operational_evidence_review_link_guidance_review.md` | Draft | operational evidence review link guidance review |
 | EVID-CI-106 | `../reviews/RV-213_r005_execution_guidance_chain_closeout_review.md` | Draft | R-005 execution guidance chain closeout review |
 | EVID-CI-107 | `../reviews/RV-214_r005_recent_helper_summary_review.md` | Draft | R-005 recent helper summary review |
+| EVID-CI-108 | `reports/operational_evidence_readiness_snapshot_2026-04-15.md` | Draft | helper-generated current R-005 readiness snapshot |
+| EVID-CI-109 | `../reviews/RV-243_r005_operational_readiness_snapshot_review.md` | Draft | readiness snapshot review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
