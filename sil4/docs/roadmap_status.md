@@ -6,12 +6,12 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-14`
+- Last Updated: `2026-04-15`
 
 ## Summary
 
 - 현재 전체 진행률 추정: `92~94%`
-- 현재 단계: `P3/P4 representative closeout 이후 next policy growth 정리 + current outbound queue backlog depth 9 closeout + R-005 artifact-availability-only 단계`
+- 현재 단계: `P3/P4 representative closeout 이후 next policy growth 정리 + current outbound queue backlog depth 9 closeout + R-004 residual compression to post-depth-9 growth + R-005 artifact-availability-only 단계`
 - 다음 주력 단계: `actual CI/vendor evidence execution`, `redundancy next policy growth`, `current configured depth 9 이후 queue/runtime next parity growth`
 
 ## Overall Phase Status
@@ -30,7 +30,7 @@
 | --- | --- | --- | --- |
 | Rules and Governance | 과제 운영 규칙, 코딩 규칙, 작업공간 기준 | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` |
 | Requirements and HLD | SRS, hazard, architecture | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` |
-| Traceability | 요구사항-설계-코드-테스트 매핑 | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-035`, `RV-036`, `RV-037`, `RV-065`, `RV-068`, `RV-072`, `RV-074`, `RV-080` 기준으로 current closeout wrapper와 residual scope alignment까지 연결 |
+| Traceability | 요구사항-설계-코드-테스트 매핑 | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-227`, `RV-229`, `RV-231`, `RV-239` 기준으로 current closeout wrapper, residual scope alignment, current queue/backpressure depth `9` closeout linkage까지 연결 |
 | State Machine | 연결 상태와 전이 규칙 | In Progress | `rsrx_state_machine.*`, `test_rsrx_state_machine.c` |
 | Orchestrator | 상태 결정과 side effect dispatch 경계 | In Progress | `rsrx_orchestrator.*`, `test_rsrx_orchestrator.c` |
 | Platform Abstraction | clock/timer/diagnostics 계약 | Completed | `rsrx_platform.h`, `test_rsrx_platform_contract.c` |
@@ -43,7 +43,7 @@
 | Transport Supervisor | inbound frame to session handoff | In Progress | `rsrx_transport_supervisor.*`, `test_rsrx_transport_supervisor.c` |
 | Configuration Validation | startup gate | Completed | `rsrx_config_validator.*`, `test_rsrx_config_validator.c` |
 | Integration Verification | cross-module scenario test | In Progress | `tests/integration/test_rsrx_session_supervisor_flow.c`, `integration_harness_test_spec_draft.md` |
-| Safety Evidence | MISRA, static analysis, formal review records | In Progress | `docs/evidence/tooling/static_analysis_toolchain_baseline.md`, `docs/evidence/reports/static_analysis_report_2026-03-17_sa2_cppcheck.md`, `docs/reviews/RV-002_cppcheck_baseline_review.md`, `docs/reviews/RV-030_p3_p4_traceability_alignment_review.md` |
+| Safety Evidence | MISRA, static analysis, formal review records | In Progress | `docs/evidence/tooling/static_analysis_toolchain_baseline.md`, `docs/evidence/reports/static_analysis_report_2026-03-17_sa2_cppcheck.md`, `docs/reviews/RV-002_cppcheck_baseline_review.md`, `docs/reviews/RV-202`~`RV-214`, `docs/reviews/RV-239_deferred_queue_backlog_depth_nine_review.md` 기준으로 helper/execution-chain closeout과 current backlog review linkage까지 확보됐고 residual은 actual artifact availability에 집중돼 있다 |
 
 ## Completed Milestones
 
