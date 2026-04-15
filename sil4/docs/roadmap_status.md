@@ -118,14 +118,22 @@
 
 ## Not-Started Items
 
-| Item ID | Item | Why It Matters | Planned Entry Point |
-| --- | --- | --- | --- |
-| NS-001 | Detailed Sequence Validation | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | retransmission confirm variants와 richer recovery/failure ordering 추가 |
-| NS-002 | Transport Supervisor Completion | runtime feedback policy와 retry semantics 추가 필요 | runtime fault ordering과 queue/backpressure policy 확장 |
-| NS-003 | Redundancy/Channel Manager | 실제 RaSTA 특성 대응 핵심 | richer hysteresis, flap suppression 세분화, switching audit 정책 확장 |
-| NS-005 | Integration Test Harness Expansion | unit만으로는 안전 시나리오 커버 불가 | fake transport/fake time 기반 harness를 richer redundancy와 longer-run 시나리오로 확장 |
-| NS-006 | Static Analysis and MISRA Evidence | SIL4 과제의 핵심 증빙 | first workflow baseline fetch success evidence와 first actual vendor evidence set 확보 |
-| NS-007 | Review Records and Safety Evidence | 심사 대응 산출물 필요 | actual vendor finding review와 runtime CI evidence를 audit trail에 연결 |
+| Item ID | Item | Current Readiness | Why It Matters | Planned Entry Point |
+| --- | --- | --- | --- | --- |
+| NS-001 | Detailed Sequence Validation | `Ready but Deferred` | inbound/outbound sequence gap 판단과 confirm 검증이 아직 단순화돼 있음 | current sequencing representative closeout 이후 `retransmission confirm variants`와 `richer recovery/failure ordering` 추가 |
+| NS-002 | Transport Supervisor Completion | `Ready but Deferred` | runtime feedback policy와 retry semantics 추가 필요 | current runtime ordering/budget scope closeout 이후 `runtime fault ordering`과 `queue/backpressure policy` 확장 |
+| NS-003 | Redundancy/Channel Manager | `Ready but Deferred` | 실제 RaSTA 특성 대응 핵심 | current redundancy representative closeout 이후 `richer hysteresis`, `flap suppression 세분화`, `switching audit 정책 확장` |
+| NS-005 | Integration Test Harness Expansion | `Ready but Deferred` | unit만으로는 안전 시나리오 커버 불가 | current integration representative closeout 이후 fake transport/fake time 기반 harness를 richer redundancy와 longer-run 시나리오로 확장 |
+| NS-006 | Static Analysis and MISRA Evidence | `Blocked by External Artifact` | SIL4 과제의 핵심 증빙 | `docs/evidence/baseline_fetch_success_execution_runbook.md`의 baseline fetch actual evidence와 `docs/evidence/first_actual_vendor_execution_runbook.md`의 vendor actual evidence 실행. current external artifact는 `baseline_fetch_context.env`, `summary.env`, `baseline_summary.env`, `pr_annotation.md`, `vendor_export_context.env`, `raw vendor export or secured attachment reference`다 |
+| NS-007 | Review Records and Safety Evidence | `Partially Ready, Blocked by External Artifact for Closeout` | 심사 대응 산출물 필요 | `docs/evidence/first_actual_vendor_evidence_set_execution_tracker.md`, `docs/evidence/audit_trail_closeout.md`, `reviews/RV-TBD_baseline_fetch_success_runtime_review_stub.md`, `reviews/RV-TBD_first_actual_vendor_runtime_review_stub.md`를 actual baseline/vendor artifact로 채워 audit trail에 연결 |
+
+### Not-Started Interpretation
+
+- `Ready but Deferred`는 코드/테스트/문서 기반은 이미 있고, 현재는 우선순위상 다음 policy growth로 뒤에 둔 항목을 뜻한다.
+- `Blocked by External Artifact`는 helper/runbook/target document는 준비돼 있지만, 실제 external artifact가 아직 없어 closeout을 진행할 수 없는 항목을 뜻한다.
+- current external artifact waiting state는 `docs/evidence/reports/operational_evidence_readiness_snapshot_2026-04-15.md`에 고정돼 있다.
+- baseline fetch 쪽 external artifact는 `docs/evidence/baseline_fetch_success_execution_runbook.md`에 적힌 `sil4-ci-logs artifact`, `/tmp/rsrx-ci-logs/baseline_fetch_context.env`, `/tmp/rsrx-ci-logs/summary.env`, `/tmp/rsrx-ci-logs/baseline_summary.env`, `/tmp/rsrx-ci-logs/pr_annotation.md`, 관련 workflow log set을 뜻한다.
+- vendor evidence 쪽 external artifact는 `docs/evidence/first_actual_vendor_execution_runbook.md`에 적힌 `raw vendor export or secured attachment reference`, `vendor_export_context.env`, vendor rule/file/location metadata, capture or workflow run page를 뜻한다.
 
 ## Readiness Assessment
 
