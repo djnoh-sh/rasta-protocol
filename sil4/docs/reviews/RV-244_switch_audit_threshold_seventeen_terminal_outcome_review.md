@@ -15,8 +15,8 @@
 
 ## Findings
 
-1. `TC-SUP-059` extends the direct supervisor-side terminal outcome matrix to holdoff threshold `17`.
-2. `TC-INT-180` extends the integration-side terminal outcome flow to holdoff threshold `17`.
+1. `TC-SUP-060` extends the direct supervisor-side terminal outcome matrix to holdoff threshold `17`.
+2. `TC-INT-186` extends the integration-side terminal outcome flow to holdoff threshold `17`.
 3. the resulting direct threshold-aware terminal outcome coverage now spans `3..17` without changing the broader residual framing for `R-003`.
 
 ## Decision
