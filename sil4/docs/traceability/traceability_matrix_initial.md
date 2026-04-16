@@ -177,6 +177,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryHoldoffThresholdSeventeen` | TC-CHM-042 | RV-246 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryHoldoffThresholdSeventeenFlapReset` | TC-CHM-043 | RV-247 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryHoldoffThresholdEighteen` | TC-CHM-044 | RV-248 | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryHoldoffThresholdEighteenFlapReset` | TC-CHM-045 | RV-249 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c`, `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_outbound_send_telemetry_t::uMaxDeferredSendCount`, `rsrx_transport_supervisor_report_t::uMaxDeferredSendCount`, `rsrx_transport_adapter_send_application_data` | TC-OUT-012, TC-SUP-019, TC-INT-014, TC-INT-118 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionIsolationFlow` | TC-INT-073 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionRecoveryOrderingFlow` | TC-INT-074 |  | Draft |
@@ -371,6 +372,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPreferredRecoveryHoldoffThresholdFifteenFlapResetFlow` | TC-INT-152 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPreferredRecoveryHoldoffThresholdSixteenFlapResetFlow` | TC-INT-154 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPreferredRecoveryHoldoffThresholdSeventeenFlapResetFlow` | TC-INT-188 | RV-247 | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPreferredRecoveryHoldoffThresholdEighteenFlapResetFlow` | TC-INT-190 | RV-249 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPreferredRecoveryThresholdCloseoutFlow` | TC-INT-126 |  | Draft |
 | SR-003 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionFailoverUnconfirmedRecoveryProtocolErrorFlow` | TC-INT-050 |  | Draft |
 | SR-003 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionFailoverRepeatedGapUnconfirmedRecoveryProtocolErrorFlow` | TC-INT-051 |  | Draft |
