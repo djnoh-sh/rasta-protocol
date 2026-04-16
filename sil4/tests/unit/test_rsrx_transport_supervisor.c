@@ -2027,6 +2027,109 @@ static void vTestSupervisorSwitchAuditTriggerOriginMatrix(void)
 	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 1U, "switch audit trigger origin matrix channel-down-triggered terminal outcome count after bypass");
 }
 
+static void vTestSupervisorSwitchAuditActiveLossBypassLongRunMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[1] = { 0x72U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vSetActiveStandbyConfig(&xConfig);
+	xConfig.xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "switch audit active-loss bypass long-run matrix session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit active-loss bypass long-run matrix session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit active-loss bypass long-run matrix session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "switch audit active-loss bypass long-run matrix establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "switch audit active-loss bypass long-run matrix supervisor init");
+
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix first failover");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix first hold");
+
+	xTransport.uSecondaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix first bypass");
+
+	xTransport.uSecondaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix first restore refresh");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix second failover");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix second hold");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uSecondaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix second bypass");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 4U, "switch audit active-loss bypass long-run matrix second bypass switch count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 2U, "switch audit active-loss bypass long-run matrix preferred-triggered switch count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 2U, "switch audit active-loss bypass long-run matrix non-preferred-triggered switch count");
+	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 2U, "switch audit active-loss bypass long-run matrix holdoff preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 0U, "switch audit active-loss bypass long-run matrix completed holdoff preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 2U, "switch audit active-loss bypass long-run matrix bypass preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 2U, "switch audit active-loss bypass long-run matrix completed cycle count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "switch audit active-loss bypass long-run matrix ordinary completed cycle count");
+	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 2U, "switch audit active-loss bypass long-run matrix bypass completed cycle count");
+	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit active-loss bypass long-run matrix aborted cycle count");
+	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "switch audit active-loss bypass long-run matrix completed kind");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 2U, "switch audit active-loss bypass long-run matrix terminal outcome total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "switch audit active-loss bypass long-run matrix ordinary terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 2U, "switch audit active-loss bypass long-run matrix bypass terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uAbortedTerminalHoldoffOutcomeCount == 0U, "switch audit active-loss bypass long-run matrix aborted terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit active-loss bypass long-run matrix preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit active-loss bypass long-run matrix non-preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount == 0U, "switch audit active-loss bypass long-run matrix channel-up-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 2U, "switch audit active-loss bypass long-run matrix channel-down-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "switch audit active-loss bypass long-run matrix last terminal outcome");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "switch audit active-loss bypass long-run matrix last terminal trigger event");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "switch audit active-loss bypass long-run matrix last terminal trigger channel");
+	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_BYPASS_ACTIVE_LOSS, "switch audit active-loss bypass long-run matrix last switch reason");
+
+	xTransport.uSecondaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit active-loss bypass long-run matrix second restore refresh");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 4U, "switch audit active-loss bypass long-run matrix second refresh switch count");
+	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 4U, "switch audit active-loss bypass long-run matrix second refresh no-op count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredRefreshEventCount == 2U, "switch audit active-loss bypass long-run matrix preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 2U, "switch audit active-loss bypass long-run matrix non-preferred-triggered refresh count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 2U, "switch audit active-loss bypass long-run matrix preferred-triggered no-op count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 2U, "switch audit active-loss bypass long-run matrix non-preferred-triggered no-op count");
+	vAssertTrue(pxSupervisorReport->uHoldoffRefreshNoOpCount == 2U, "switch audit active-loss bypass long-run matrix holdoff no-op count");
+	vAssertTrue(pxSupervisorReport->uActiveRefreshNoOpCount == 2U, "switch audit active-loss bypass long-run matrix active no-op count");
+}
+
 static void vTestSupervisorSwitchAuditTerminalOutcomeMixedLongRunMatrix(void)
 {
 	rsrx_session_t xSession;
@@ -3115,6 +3218,7 @@ static void vTestSupervisorSwitchAuditHoldoffOutcomeMatrix(void)
 	vTestSupervisorSwitchAuditHoldoffProgressMatrix();
 	vTestSupervisorSwitchAuditHoldoffResetMatrix();
 	vTestSupervisorSwitchAuditTriggerOriginMatrix();
+	vTestSupervisorSwitchAuditActiveLossBypassLongRunMatrix();
 }
 
 static void vTestSupervisorSwitchAuditTerminalOutcomeThresholdElevenMixedLongRunMatrix(void);

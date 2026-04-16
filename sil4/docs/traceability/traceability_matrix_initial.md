@@ -26,7 +26,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedChannelRecoveryHoldoffFlow` | TC-INT-012 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapSoakFlow` | TC-INT-013 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffActiveLossBypassFlow` | TC-INT-104 |  | Draft |
-| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffActiveLossBypassLongRunFlow` | TC-INT-105 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffActiveLossBypassLongRunFlow` | TC-INT-105 | RV-251 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedActiveLossBypassReentersHoldoffFlow` | TC-INT-106 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapResetThenActiveLossBypassFlow` | TC-INT-107 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow` | TC-INT-108 |  | Draft |
@@ -307,7 +307,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionRecoveryOrderingFlow` | TC-INT-074 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionBudgetResetFlow` | TC-INT-075 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffActiveLossBypassFlow` | TC-INT-104 |  | Draft |
-| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffActiveLossBypassLongRunFlow` | TC-INT-105 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffActiveLossBypassLongRunFlow` | TC-INT-105 | RV-251 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedActiveLossBypassReentersHoldoffFlow` | TC-INT-106 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-SUP-033 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapResetThenActiveLossBypassFlow` | TC-INT-107 |  | Draft |
@@ -434,6 +434,8 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdSixteenMixedLongRunMatrix` | TC-SUP-058 | RV-184 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdSeventeenMixedLongRunMatrix` | TC-SUP-060 | RV-244 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdEighteenMixedLongRunMatrix` | TC-SUP-061 | RV-250 | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditActiveLossBypassLongRunMatrix` | TC-SUP-062 | RV-251 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdSixteenMixedLongRunFlow` | TC-INT-179 | RV-184 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdSeventeenMixedLongRunFlow` | TC-INT-186 | RV-244 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSwitchAuditTerminalOutcomeThresholdEighteenMixedLongRunFlow` | TC-INT-191 | RV-250 | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditActiveLossBypassLongRunMatrix` | TC-SUP-062 | RV-251 | Draft |

@@ -14301,6 +14301,24 @@ static void vTestIntegratedHoldoffActiveLossBypassLongRunFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff active-loss long-run integration second bypass");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff active-loss long-run integration recovered primary two");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 4U, "holdoff active-loss long-run integration second bypass switch count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredSwitchCount == 2U, "holdoff active-loss long-run integration second bypass preferred-triggered switch count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredSwitchCount == 2U, "holdoff active-loss long-run integration second bypass non-preferred-triggered switch count");
+	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 2U, "holdoff active-loss long-run integration second bypass holdoff preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 2U, "holdoff active-loss long-run integration second bypass bypass preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 2U, "holdoff active-loss long-run integration second bypass completed cycle count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryCompletedHoldoffCycleCount == 0U, "holdoff active-loss long-run integration second bypass ordinary completed cycle count");
+	vAssertTrue(pxSupervisorReport->uBypassCompletedHoldoffCycleCount == 2U, "holdoff active-loss long-run integration second bypass bypass completed cycle count");
+	vAssertTrue(pxSupervisorReport->uTerminalHoldoffOutcomeCount == 2U, "holdoff active-loss long-run integration second bypass terminal outcome total count");
+	vAssertTrue(pxSupervisorReport->uOrdinaryTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss long-run integration second bypass ordinary terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uBypassTerminalHoldoffOutcomeCount == 2U, "holdoff active-loss long-run integration second bypass bypass terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss long-run integration second bypass preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount == 2U, "holdoff active-loss long-run integration second bypass non-preferred-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount == 0U, "holdoff active-loss long-run integration second bypass channel-up-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount == 2U, "holdoff active-loss long-run integration second bypass channel-down-triggered terminal outcome count");
+	vAssertTrue(pxSupervisorReport->eLastCompletedHoldoffCycleKind == RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS, "holdoff active-loss long-run integration second bypass completed kind");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcome == RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED, "holdoff active-loss long-run integration second bypass terminal outcome");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN, "holdoff active-loss long-run integration second bypass terminal trigger event");
+	vAssertTrue(pxSupervisorReport->eLastTerminalHoldoffOutcomeTriggerChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff active-loss long-run integration second bypass terminal trigger channel");
 
 	xTransport.uSecondaryAvailable = 1U;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
