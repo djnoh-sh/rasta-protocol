@@ -18333,6 +18333,142 @@ static void vTestIntegratedPreferredRecoveryHoldoffThresholdSixteenFlapResetFlow
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "holdoff-16 flap integration no lifecycle callback");
 }
 
+static void vTestIntegratedPreferredRecoveryHoldoffThresholdSeventeenFlapResetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t xTransportEventFrame;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auPrimaryDataFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auOutboundPayload[8] = { 0xd1U, 0xd2U, 0xd3U, 0xd4U, 0xd5U, 0xd6U, 0xd7U, 0xd8U };
+	static const uint8_t auPrimaryPayload[2] = { 0xc1U, 0xc2U };
+	size_t xHandshakeLength;
+	size_t xPrimaryDataLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auOutboundPayload, sizeof(auOutboundPayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 17U);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "holdoff-17 flap integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "holdoff-17 flap integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "holdoff-17 flap integration session connect");
+
+	vEncodeFrame(RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, RSRX_REASON_HANDSHAKE_COMPLETED, 1U, 1U, (const uint8_t *)0, 0U, auHandshakeFrame, sizeof(auHandshakeFrame), &xHandshakeLength);
+	vEncodeFrame(RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, 2U, 1U, auPrimaryPayload, sizeof(auPrimaryPayload), auPrimaryDataFrame, sizeof(auPrimaryDataFrame), &xPrimaryDataLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "holdoff-17 flap integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "holdoff-17 flap integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "holdoff-17 flap integration established");
+
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xTransport.uPrimaryAvailable = 0U;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration failover");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration first secondary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration first switch count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration hold one");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration held secondary one");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration held switch count one");
+
+	/* cppcheck-suppress redundantAssignment */
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration flap reset");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration retained secondary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration reset switch count");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold one");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary one");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count one");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold two");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary two");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count two");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold three");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary three");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count three");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold four");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary four");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count four");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold five");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary five");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count five");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold six");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary six");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count six");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold seven");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary seven");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count seven");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold eight");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary eight");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count eight");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold nine");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary nine");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count nine");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold ten");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary ten");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count ten");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold eleven");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary eleven");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count eleven");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold twelve");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary twelve");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count twelve");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold thirteen");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary thirteen");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count thirteen");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold fourteen");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary fourteen");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count fourteen");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold fifteen");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary fifteen");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count fifteen");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed hold sixteen");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-17 flap integration renewed held secondary sixteen");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-17 flap integration renewed switch count sixteen");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "holdoff-17 flap integration renewed recovery");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-17 flap integration renewed recovered primary");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "holdoff-17 flap integration renewed recovery switch count");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xPrimaryDataLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "holdoff-17 flap integration primary success");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "holdoff-17 flap integration final established");
+	vAssertTrue(xApplication.uCallCount == 1U, "holdoff-17 flap integration application callback count");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "holdoff-17 flap integration no lifecycle callback");
+}
+
 static void vTestIntegratedPreferredRecoveryThresholdCloseoutFlow(void)
 {
 	vTestIntegratedPreferredRecoveryHoldoffThresholdThreeFlow();
@@ -18364,6 +18500,7 @@ static void vTestIntegratedPreferredRecoveryThresholdCloseoutFlow(void)
 	vTestIntegratedPreferredRecoveryHoldoffThresholdFourteenFlapResetFlow();
 	vTestIntegratedPreferredRecoveryHoldoffThresholdFifteenFlapResetFlow();
 	vTestIntegratedPreferredRecoveryHoldoffThresholdSixteenFlapResetFlow();
+	vTestIntegratedPreferredRecoveryHoldoffThresholdSeventeenFlapResetFlow();
 }
 
 static void vTestIntegratedSwitchAuditCloseoutFlow(void)
