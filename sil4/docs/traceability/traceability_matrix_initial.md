@@ -34,6 +34,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleFeedbackLongRunFlow` | TC-INT-110 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleMixedFeedbackBudgetResetLongRunFlow` | TC-INT-193 | RV-253 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleCompletionLongRunFlow` | TC-INT-112 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleCompletionBudgetResetLongRunFlow` | TC-INT-194 | RV-254 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverFlow` | TC-INT-113 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveResetFlow` | TC-INT-114 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverResetLongRunFlow` | TC-INT-192 | RV-252 | Draft |
@@ -318,6 +319,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleFeedbackLongRunFlow` | TC-INT-110 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleMixedFeedbackBudgetResetLongRunFlow` | TC-INT-193 | RV-253 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleCompletionLongRunFlow` | TC-INT-112 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassStaleCompletionBudgetResetLongRunFlow` | TC-INT-194 | RV-254 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverFlow` | TC-INT-113 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveResetFlow` | TC-INT-114 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverResetLongRunFlow` | TC-INT-192 | RV-252 | Draft |
