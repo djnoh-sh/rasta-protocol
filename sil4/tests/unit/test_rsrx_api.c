@@ -4,6 +4,7 @@
 #include "rsrx_channel_manager.h"
 #include "rsrx_api.h"
 #include "rsrx_codec.h"
+#include "rsrx_platform_adapters.h"
 
 typedef struct
 {
@@ -388,6 +389,7 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auFramePayload[3] = { 0x21U, 0x22U, 0x23U };
 	static const uint8_t auDataPayload[4] = { 0x61U, 0x62U, 0x63U, 0x64U };
+	uint32_t uDeferredIndex;
 
 	vPrepareEstablishedSession(
 		&xSession,
@@ -434,15 +436,18 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "outbound application queued telemetry after queue");
 	vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count after queue");
 	vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count after queue");
-	vAssertTrue(
-		rsrx_session_send_application_data(
-			&xSession,
-			auDataPayload,
-			sizeof(auDataPayload)) == RSRX_STATUS_OK,
-		"application data second deferred send queued");
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "outbound application queued telemetry after second queue");
-	vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count after second queue");
-	vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count after second queue");
+	for(uDeferredIndex = 2U; uDeferredIndex <= D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY; ++uDeferredIndex)
+	{
+		vAssertTrue(
+			rsrx_session_send_application_data(
+				&xSession,
+				auDataPayload,
+				sizeof(auDataPayload)) == RSRX_STATUS_OK,
+			"application data additional deferred send queued");
+		vAssertTrue(pxTelemetry->uQueuedSendCount == uDeferredIndex, "outbound application queued telemetry after capacity fill");
+		vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count after capacity fill");
+		vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count after capacity fill");
+	}
 	vAssertTrue(
 		rsrx_session_send_application_data(
 			&xSession,
@@ -490,6 +495,7 @@ static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auFramePayload[3] = { 0x24U, 0x25U, 0x26U };
 	static const uint8_t auDataPayload[2] = { 0x71U, 0x72U };
+	uint32_t uDeferredIndex;
 
 	vPrepareEstablishedSession(
 		&xSession,
@@ -521,13 +527,16 @@ static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 			sizeof(auDataPayload)) == RSRX_STATUS_OK,
 		"busy reject threshold queued send");
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "busy reject threshold queued telemetry");
-	vAssertTrue(
-		rsrx_session_send_application_data(
-			&xSession,
-			auDataPayload,
-			sizeof(auDataPayload)) == RSRX_STATUS_OK,
-		"busy reject threshold second queued send");
-	vAssertTrue(pxTelemetry->uQueuedSendCount == 2U, "busy reject threshold second queued telemetry");
+	for(uDeferredIndex = 2U; uDeferredIndex <= D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY; ++uDeferredIndex)
+	{
+		vAssertTrue(
+			rsrx_session_send_application_data(
+				&xSession,
+				auDataPayload,
+				sizeof(auDataPayload)) == RSRX_STATUS_OK,
+			"busy reject threshold additional queued send");
+		vAssertTrue(pxTelemetry->uQueuedSendCount == uDeferredIndex, "busy reject threshold capacity fill telemetry");
+	}
 	vAssertTrue(
 		rsrx_session_send_application_data(
 			&xSession,
