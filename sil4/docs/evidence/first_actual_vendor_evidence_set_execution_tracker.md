@@ -4,9 +4,9 @@
 
 - Document ID: `EVID-CI-048`
 - Version: `0.1.0`
-- Status: `Stub`
+- Status: `In Progress`
 - Owner: `Project Team`
-- Last Updated: `2026-04-15`
+- Last Updated: `2026-04-20`
 
 ## Purpose
 
@@ -31,8 +31,8 @@
 
 | Item ID | Current Status | Target Artifact | Execution Note |
 | --- | --- | --- | --- |
-| EVS-001 | `Open` | baseline fetch success runtime evidence | first successful baseline fetch run 대기 |
-| EVS-002 | `Open` | baseline fetch runtime review | `EVS-001` 채워진 뒤 review 실행 |
+| EVS-001 | `Closed` | `reports/baseline_fetch_success_evidence_2026-04-20_run_24662424670.md` | 2026-04-20: run `24662424670` fetched same-PR baseline from run `24661353609` |
+| EVS-002 | `Closed` | `../reviews/RV-BLRUN-20260420-24662424670_baseline_fetch_success_runtime_review.md` | 2026-04-20: baseline runtime review accepted the `delta-aware` evidence chain |
 | EVS-003 | `Open` | vendor raw evidence reference | first actual vendor export 대기 |
 | EVS-004 | `Open` | vendor finding report | first actual vendor export 대기 |
 | EVS-005 | `Open` | vendor runtime review | `EVS-004` 채워진 뒤 review 실행 |
@@ -45,15 +45,17 @@
 - current readiness snapshot:
   - `reports/operational_evidence_readiness_snapshot_2026-04-15.md`
 - current interpretation:
-  - helper-generated readiness result is still `Blocked`, so `EVS-001`, `EVS-003`, and `EVS-004` remain `Open` until actual artifacts arrive
+  - baseline fetch actual evidence is now available and `EVS-001`/`EVS-002` are closed
+  - vendor export remains unavailable, so `EVS-003` and `EVS-004` remain `Open`
 
 ### Baseline Fetch Track
 
 - prepared artifacts:
   - `reports/baseline_fetch_success_evidence_first_run_stub.md`
   - `reviews/RV-TBD_baseline_fetch_success_runtime_review_stub.md`
-- trigger to close:
-  - first `sil4-ci` run with successful baseline artifact fetch
+- actual closed artifacts:
+  - `reports/baseline_fetch_success_evidence_2026-04-20_run_24662424670.md`
+  - `../reviews/RV-BLRUN-20260420-24662424670_baseline_fetch_success_runtime_review.md`
 
 ### Vendor Finding Track
 

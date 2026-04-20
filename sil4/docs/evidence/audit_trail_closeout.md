@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-17`
+- Last Updated: `2026-04-20`
 
 ## Purpose
 
@@ -81,7 +81,7 @@
 - policy baseline: `Closed`
 - review linkage baseline: `Closed`
 - roadmap linkage baseline: `Closed`
-- runtime CI evidence: `Partially Open`
+- runtime CI evidence: `Baseline Available, Vendor Open`
 - first real vendor evidence: `Open`
 
 ## Operational Evidence Landing Zone
@@ -92,9 +92,17 @@ actual runtime/vendor evidence가 확보되면 아래 section을 직접 채운�
 
 | Artifact | Current State | Target |
 | --- | --- | --- |
-| Runtime report | `Stub Prepared` | `reports/baseline_fetch_success_evidence_first_run_stub.md` -> filled actual report |
-| Runtime review | `Stub Prepared` | `reviews/RV-TBD_baseline_fetch_success_runtime_review_stub.md` -> filled actual review |
-| Execution tracker | `Open` | `first_actual_vendor_evidence_set_execution_tracker.md`의 `EVS-001`, `EVS-002` 갱신 |
+| Runtime report | `Closed` | `reports/baseline_fetch_success_evidence_2026-04-20_run_24662424670.md` |
+| Runtime review | `Closed` | `../reviews/RV-BLRUN-20260420-24662424670_baseline_fetch_success_runtime_review.md` |
+| Execution tracker | `Closed for baseline track` | `first_actual_vendor_evidence_set_execution_tracker.md`의 `EVS-001`, `EVS-002` |
+
+### Baseline Fetch Actual Evidence Update (2026-04-20)
+
+- runtime report: `reports/baseline_fetch_success_evidence_2026-04-20_run_24662424670.md`
+- runtime review: `../reviews/RV-BLRUN-20260420-24662424670_baseline_fetch_success_runtime_review.md`
+- workflow run: `https://github.com/djnoh-sh/rasta-protocol/actions/runs/24662424670`
+- baseline source: same PR run `24661353609`
+- execution tracker: `first_actual_vendor_evidence_set_execution_tracker.md` `EVS-001` and `EVS-002`
 
 ### Vendor Finding Runtime Evidence
 
@@ -119,10 +127,9 @@ actual evidence가 채워지면 본 문서에는 최소 아래 reference를 추�
 
 초기 closeout 이후에도 아래는 열린 상태로 남는다.
 
-1. first workflow baseline fetch success evidence
-2. first real vendor finding actual report
-3. first real vendor finding actual review
-4. first real vendor finding actual matrix/deviation entry
+1. first real vendor finding actual report
+2. first real vendor finding actual review
+3. first real vendor finding actual matrix/deviation entry
 
 runtime evidence template reference:
 
@@ -140,9 +147,8 @@ runtime evidence template reference:
 
 ## Follow-up Actions
 
-1. 첫 baseline fetch success workflow run이 나오면 closeout 상태를 `operational evidence available`로 승격
-2. 첫 actual vendor finding이 들어오면 closeout 문서에 actual evidence 링크 추가
-3. 이후 필요 시 assessor-facing closeout 버전으로 분리
+1. 첫 actual vendor finding이 들어오면 closeout 문서에 actual evidence 링크 추가
+2. 이후 필요 시 assessor-facing closeout 버전으로 분리
 
 ## Optional Helpers
 

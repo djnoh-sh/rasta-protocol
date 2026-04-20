@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-17`
+- Last Updated: `2026-04-20`
 
 ## Purpose
 
@@ -88,6 +88,8 @@
 | EVID-CI-054 | `../reviews/RV-046_vendor_execution_runbook_review.md` | Draft | vendor execution runbook review |
 | EVID-CI-055 | `first_operational_evidence_execution_packet.md` | Draft | first operational evidence execution packet |
 | EVID-CI-056 | `../reviews/RV-047_execution_packet_review.md` | Draft | execution packet review |
+| EVID-CI-BLRUN-20260420-24662424670 | `reports/baseline_fetch_success_evidence_2026-04-20_run_24662424670.md` | Complete | first actual same-PR baseline fetch success runtime evidence |
+| RV-BLRUN-20260420-24662424670 | `../reviews/RV-BLRUN-20260420-24662424670_baseline_fetch_success_runtime_review.md` | Complete | first actual baseline fetch runtime review |
 | EVID-CI-057 | `first_operational_evidence_handoff_sheet.md` | Draft | first operational evidence handoff sheet |
 | EVID-CI-058 | `../reviews/RV-048_handoff_sheet_review.md` | Draft | handoff sheet review |
 | EVID-CI-059 | `../reviews/RV-049_baseline_fetch_evidence_helper_review.md` | Draft | baseline fetch evidence helper review |
@@ -154,13 +156,13 @@
 4. queue/backpressure policy evidence 추가 확장
 5. MISRA subset severity 세분화
 6. second-tool rule taxonomy mapping
-7. first workflow baseline fetch success evidence
+7. first workflow baseline fetch success evidence - complete via `EVID-CI-BLRUN-20260420-24662424670`
 8. first actual vendor evidence set
 9. first actual vendor evidence set checklist execution
-10. first baseline fetch success runtime report
+10. first baseline fetch success runtime report - complete via `reports/baseline_fetch_success_evidence_2026-04-20_run_24662424670.md`
 11. first actual vendor finding runtime report
 12. first actual vendor matrix entry
-13. first baseline fetch runtime review
+13. first baseline fetch runtime review - complete via `RV-BLRUN-20260420-24662424670`
 14. first actual vendor runtime review
 15. first evidence execution tracker status update
 16. first baseline fetch runbook execution
