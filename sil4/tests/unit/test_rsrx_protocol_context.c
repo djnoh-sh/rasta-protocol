@@ -74,6 +74,34 @@ static void vTestInboundConfirmationTracking(void)
 	vAssertTrue(xRequest.uConfirmationNumber == 9U, "confirmation tracks inbound sequence");
 }
 
+static void vTestOutboundSequenceWrapRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "wrap guard protocol init");
+	xContext.uNextTxSequenceNumber = UINT32_MAX - 1U;
+
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_HEARTBEAT,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "wrap guard last safe encode request");
+	vAssertTrue(xRequest.uSequenceNumber == (UINT32_MAX - 1U), "wrap guard last safe sequence");
+	vAssertTrue(xContext.uNextTxSequenceNumber == UINT32_MAX, "wrap guard next sequence reaches limit");
+
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_HEARTBEAT,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_REJECTED, "wrap guard rejects overflow boundary");
+	vAssertTrue(xContext.uNextTxSequenceNumber == UINT32_MAX, "wrap guard sequence retained on reject");
+}
+
 static void vTestRetransmissionRequestPayload(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -932,6 +960,7 @@ int main(void)
 {
 	vTestOutboundSequenceProgression();
 	vTestInboundConfirmationTracking();
+	vTestOutboundSequenceWrapRejected();
 	vTestRetransmissionRequestPayload();
 	vTestInboundConfirmationValidation();
 	vTestRecoverySuccessResolution();

@@ -191,6 +191,11 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
+	if(pxContext->uNextTxSequenceNumber == UINT32_MAX)
+	{
+		return RSRX_STATUS_REJECTED;
+	}
+
 	pxRequest->eMessageType = eMessageType;
 	pxRequest->eReason = eReason;
 	pxRequest->uSequenceNumber = pxContext->uNextTxSequenceNumber;
