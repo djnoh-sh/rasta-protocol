@@ -579,9 +579,10 @@ static uint32_t uSessionStatusIsHandled(
 		(eStatus == RSRX_STATUS_REJECTED));
 }
 
-static rsrx_supervisor_status_t eProcessSessionEventInternal(
+static rsrx_supervisor_status_t eProcessSessionEventWithDecisionInternal(
 	rsrx_transport_supervisor_context_t * pxContext,
 	rsrx_event_t eEvent,
+	rsrx_supervisor_decision_t eDecision,
 	const rsrx_transport_supervisor_report_t ** ppxReport)
 {
 	rsrx_status_t eSessionStatus;
@@ -597,11 +598,7 @@ static rsrx_supervisor_status_t eProcessSessionEventInternal(
 		*ppxReport = &pxContext->xLastReport;
 		return RSRX_SUPERVISOR_STATUS_SESSION_ERROR;
 	}
-	vRecordDecision(
-		pxContext,
-		(eSessionStatus == RSRX_STATUS_REJECTED) ?
-			RSRX_SUPERVISOR_DECISION_SESSION_REJECTED :
-			RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED);
+	vRecordDecision(pxContext, eDecision);
 	vRefreshChannelSwitchTelemetry(
 		pxContext,
 		eGetActiveChannelId(pxContext),
@@ -1153,9 +1150,10 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION);
 			rsrx_transport_adapter_clear_outstanding_send_on_feedback(
 				&pxContext->pxSession->xTransportAdapter);
-			return eProcessSessionEventInternal(
+			return eProcessSessionEventWithDecisionInternal(
 				pxContext,
 				RSRX_EVENT_PROTOCOL_ERROR,
+				RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED,
 				ppxReport);
 
 		case RSRX_TRANSPORT_EVENT_CHANNEL_DOWN:
@@ -1176,9 +1174,10 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 				*ppxReport = &pxContext->xLastReport;
 				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 			}
-			return eProcessSessionEventInternal(
+			return eProcessSessionEventWithDecisionInternal(
 				pxContext,
 				RSRX_EVENT_PROTOCOL_ERROR,
+				RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED,
 				ppxReport);
 
 		case RSRX_TRANSPORT_EVENT_CHANNEL_UP:

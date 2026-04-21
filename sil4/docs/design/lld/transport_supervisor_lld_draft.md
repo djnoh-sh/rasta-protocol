@@ -81,12 +81,12 @@
   - correlation이 맞는 `SEND_COMPLETED`가 outstanding send를 clear한 직후 deferred send가 존재하면 즉시 재송신되고, report는 refresh된 outstanding/deferred queue 상태를 반영한다.
   - correlation이 없는 `SEND_COMPLETED`/`SEND_FAILED`는 stale transport feedback으로 간주하고 ignored 처리한다.
   - `SEND_FAILED`는 active channel별 budget으로 관리한다. channel이 바뀐 뒤 첫 `SEND_FAILED`는 새 channel의 첫 실패로 취급한다.
-  - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달한다.
+  - `SEND_FAILED`는 budget 임계치 미만에서는 ignored event로 기록하고, 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달하며 report decision은 `SEND_FAILURE_ESCALATED`로 transport fault origin을 보존한다.
   - active channel이 아닌 channel에서 도착한 `SEND_FAILED`는 stale transport feedback으로 간주하고 budget을 변경하지 않은 채 ignored 처리한다.
   - report는 마지막 budget update 종류(`incremented`, `reset and increment on channel switch`, `reset on inbound frame`, `reset on send completed`, `reset on channel down`, `reset on escalation`), 현재 budget channel, 누적 reset count를 보존한다.
   - `CHANNEL_DOWN`은 transport adapter를 통해 현재 active channel을 다시 조회한다.
   - down된 channel 외에 대체 channel이 available이면 failover를 사용하고 event를 ignored로 처리한다.
-  - 대체 channel이 없을 때만 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달한다.
+  - 대체 channel이 없을 때만 conservative mapping으로 `PROTOCOL_ERROR`를 session에 전달하며 report decision은 `CHANNEL_DOWN_ESCALATED`로 channel fault origin을 보존한다.
   - `CHANNEL_UP`은 transport adapter를 통해 channel manager selection을 refresh하는 trigger로 사용한다.
   - `CHANNEL_UP` refresh가 성공하면 상태 전이 없이 active channel/telemetry만 갱신하고 ignored event로 종료한다.
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.

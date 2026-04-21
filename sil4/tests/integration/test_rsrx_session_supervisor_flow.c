@@ -6332,7 +6332,7 @@ static void vTestIntegratedChannelDownFailSafeFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xChannelDownFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "channel down integration event");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "channel down integration safe disconnect");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "channel down integration reason");
-	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_REJECTED, "channel down integration decision");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED, "channel down integration decision");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "channel down integration lifecycle callback");
 }
 
@@ -11477,7 +11477,7 @@ static void vTestIntegratedSendFailureBudgetFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xSendFailedFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "send failure integration second failure");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "send failure integration safe disconnect");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "send failure integration reason");
-	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_REJECTED, "send failure integration escalation decision");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED, "send failure integration escalation decision");
 	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "send failure integration budget reset");
 	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION, "send failure integration escalation budget update");
 	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 1U, "send failure integration reset count");
