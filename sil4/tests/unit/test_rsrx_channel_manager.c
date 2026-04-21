@@ -1319,6 +1319,44 @@ static void vTestPreferredRecoveryHoldoffThresholdEighteen(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-18 recovery switch count");
 }
 
+static void vTestPreferredRecoveryHoldoffThresholdNineteen(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+	uint32_t uHoldIndex;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 19U;
+
+	vAssertTrue(rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 primary down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-19 first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-19 failover switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 primary restored");
+
+	for(uHoldIndex = 1U; uHoldIndex < 19U; ++uHoldIndex)
+	{
+		vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 hold");
+		vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-19 held secondary");
+		vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-19 no switch");
+		vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-19 stable switch count");
+	}
+
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-19 recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff-19 switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-19 recovery switch count");
+}
+
 static void vTestPreferredRecoveryHoldoffThresholdThreeFlapReset(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -2703,6 +2741,59 @@ static void vTestPreferredRecoveryHoldoffThresholdEighteenFlapReset(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-18 flap recovery switch count");
 }
 
+static void vTestPreferredRecoveryHoldoffThresholdNineteenFlapReset(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+	uint32_t uHoldIndex;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 19U;
+
+	vAssertTrue(rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap primary down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-19 flap first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-19 flap first switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap primary restored");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-19 flap held secondary one");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-19 flap no switch one");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap reset down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap refresh");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-19 flap retained secondary");
+	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-19 flap no switch on reset");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-19 flap switch count after reset");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap primary restored again");
+
+	for(uHoldIndex = 1U; uHoldIndex < 19U; ++uHoldIndex)
+	{
+		vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap renewed hold");
+		vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-19 flap renewed held secondary");
+		vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-19 flap no switch renewed");
+		vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-19 flap renewed switch count");
+	}
+
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-19 flap renewed recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-19 flap renewed recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff-19 flap switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-19 flap recovery switch count");
+}
+
 static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 {
 	vTestPreferredRecoveryHoldoffThresholdThree();
@@ -2721,6 +2812,7 @@ static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 	vTestPreferredRecoveryHoldoffThresholdSixteen();
 	vTestPreferredRecoveryHoldoffThresholdSeventeen();
 	vTestPreferredRecoveryHoldoffThresholdEighteen();
+	vTestPreferredRecoveryHoldoffThresholdNineteen();
 	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFiveFlapReset();
@@ -2737,6 +2829,7 @@ static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 	vTestPreferredRecoveryHoldoffThresholdSixteenFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdSeventeenFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdEighteenFlapReset();
+	vTestPreferredRecoveryHoldoffThresholdNineteenFlapReset();
 }
 
 static void vTestPreferredRecoveryHysteresisResetMatrix(void)
