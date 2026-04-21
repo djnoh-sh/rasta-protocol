@@ -6,8 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-24`
-- Last Updated: `2026-03-25`
+- Last Updated: `2026-04-21`
 
 ## Scope
 
@@ -24,6 +23,7 @@
 | Test ID | Req ID | Objective | Precondition | Stimulus | Expected Result | Pass/Fail Criteria |
 | --- | --- | --- | --- | --- | --- | --- |
 | TC-CHM-001 | FR-003, IF-002 | preferred channel 초기 선택 검증 | primary/secondary available config 준비 | `init`, `select_channel` 호출 | primary 선택, failover 없음 | selected channel, available count, failover flag가 설계와 일치 |
+| TC-CHM-049 | FR-003, SR-003, IF-002 | invalid redundancy topology config 거부 검증 | duplicate channel id, active-standby single-channel, valid single-channel config 준비 | 각각 `rsrx_channel_manager_init` 호출 | duplicate channel id와 active-standby single-channel config는 `INVALID_ARGUMENT`로 거부되고, single-channel `SINGLE` mode는 허용된다 | topology validation이 ambiguous active-standby/duplicate channel selection을 startup에서 결정적으로 차단 |
 | TC-CHM-002 | FR-003 | active channel unavailable 시 failover 검증 | primary down, secondary up 상태 준비 | `update_channel`, `select_channel` 호출 | secondary 선택, failover 발생 | active channel, failover flag, cumulative switch count가 설계와 일치 |
 | TC-CHM-003 | SR-003 | all channel unavailable 처리 검증 | primary/secondary 모두 down 상태 준비 | `select_channel` 호출 | `UNAVAILABLE` 반환 | invalid channel과 unavailable status가 결정적으로 보고됨 |
 | TC-CHM-005 | FR-003 | preferred channel recovery auto-switch 검증 | secondary로 failover된 뒤 primary restored 상태 준비 | `update_channel`, `select_channel` 호출 | preferred primary로 자동 복귀 | selected channel, switch flag, cumulative switch count가 preferred recovery policy와 일치 |

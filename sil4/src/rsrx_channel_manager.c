@@ -4,6 +4,7 @@ static uint32_t uConfigIsValid(
 	const rsrx_channel_manager_config_t * pxConfig)
 {
 	uint32_t uIndex;
+	uint32_t uCompareIndex;
 
 	if((pxConfig == (const rsrx_channel_manager_config_t *)0) ||
 		(pxConfig->uChannelCount == 0U) ||
@@ -19,11 +20,26 @@ static uint32_t uConfigIsValid(
 		return 0U;
 	}
 
+	if((pxConfig->eMode == RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY) &&
+		(pxConfig->uChannelCount < D_RSRX_CHANNEL_MANAGER_MAX_CHANNELS))
+	{
+		return 0U;
+	}
+
 	for(uIndex = 0U; uIndex < pxConfig->uChannelCount; ++uIndex)
 	{
 		if(pxConfig->axChannels[uIndex].eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID)
 		{
 			return 0U;
+		}
+
+		for(uCompareIndex = uIndex + 1U; uCompareIndex < pxConfig->uChannelCount; ++uCompareIndex)
+		{
+			if(pxConfig->axChannels[uIndex].eChannelId ==
+				pxConfig->axChannels[uCompareIndex].eChannelId)
+			{
+				return 0U;
+			}
 		}
 	}
 

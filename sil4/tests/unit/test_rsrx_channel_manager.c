@@ -30,6 +30,32 @@ static rsrx_channel_manager_config_t xBuildConfig(void)
 	return xConfig;
 }
 
+static void vTestChannelManagerRejectsInvalidTopologyConfig(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+
+	xConfig = xBuildConfig();
+	xConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"duplicate channel id rejected");
+
+	xConfig = xBuildConfig();
+	xConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.uChannelCount = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"active-standby single channel rejected");
+
+	xConfig = xBuildConfig();
+	xConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
+	xConfig.uChannelCount = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"single channel topology accepted");
+}
+
 static void vTestPreferredRecoveryHoldoff(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3300,6 +3326,7 @@ int main(void)
 		"select primary after reset");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after reset");
 
+	vTestChannelManagerRejectsInvalidTopologyConfig();
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();

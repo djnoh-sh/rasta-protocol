@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-17`
+- Last Updated: `2026-04-21`
 
 ## Scope
 
@@ -38,8 +38,10 @@
 
 - 초기화:
   - channel count는 `1..2` 범위여야 한다.
+  - `ACTIVE_STANDBY` mode는 primary/secondary topology를 구분할 수 있도록 2개 channel을 요구한다.
   - preferred channel index는 유효 범위 내여야 한다.
   - 각 channel id는 `INVALID`가 아니어야 한다.
+  - configured channel id는 서로 중복될 수 없다.
 - 선택 정책:
   - `ACTIVE_STANDBY`에서는 active channel이 down이면 available한 preferred channel 또는 best available channel로 즉시 전환한다.
   - active channel이 살아 있는 상태에서 preferred channel이 복구되면 `uPreferredRecoveryHoldoffSelections`만큼 연속 관측된 뒤에만 preferred channel로 복귀한다.
@@ -69,3 +71,4 @@
 - `TC-CHM-004`: reset to preferred channel
 - `TC-CHM-005`: preferred channel recovery auto-switch
 - `TC-CHM-006`: preferred recovery holdoff
+- `TC-CHM-049`: invalid topology config rejection
