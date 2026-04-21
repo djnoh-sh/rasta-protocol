@@ -1357,6 +1357,44 @@ static void vTestPreferredRecoveryHoldoffThresholdNineteen(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-19 recovery switch count");
 }
 
+static void vTestPreferredRecoveryHoldoffThresholdTwenty(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+	uint32_t uHoldIndex;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 20U;
+
+	vAssertTrue(rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-20 init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-20 primary down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-20 failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-20 first secondary");
+	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-20 failover switch count");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-20 primary restored");
+
+	for(uHoldIndex = 1U; uHoldIndex < 20U; ++uHoldIndex)
+	{
+		vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-20 hold");
+		vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-20 held secondary");
+		vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff-20 no switch");
+		vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff-20 stable switch count");
+	}
+
+	vAssertTrue(rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "holdoff-20 recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-20 recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff-20 switch reported");
+	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff-20 recovery switch count");
+}
+
 static void vTestPreferredRecoveryHoldoffThresholdThreeFlapReset(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -2813,6 +2851,7 @@ static void vTestPreferredRecoveryThresholdCloseoutMatrix(void)
 	vTestPreferredRecoveryHoldoffThresholdSeventeen();
 	vTestPreferredRecoveryHoldoffThresholdEighteen();
 	vTestPreferredRecoveryHoldoffThresholdNineteen();
+	vTestPreferredRecoveryHoldoffThresholdTwenty();
 	vTestPreferredRecoveryHoldoffThresholdThreeFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFourFlapReset();
 	vTestPreferredRecoveryHoldoffThresholdFiveFlapReset();
