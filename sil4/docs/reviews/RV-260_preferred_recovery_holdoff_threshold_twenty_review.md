@@ -29,5 +29,5 @@
 
 ## Follow-Up
 
-- evaluate preferred recovery flap-reset parity beyond `2..19`
-- evaluate terminal outcome threshold-family growth beyond `3..19`
+- Do not continue numeric threshold growth by default.
+- Reopen preferred recovery flap-reset or terminal outcome threshold growth only when a new redundancy policy, configured limit, or failure-mode requirement needs evidence beyond the current representative range.

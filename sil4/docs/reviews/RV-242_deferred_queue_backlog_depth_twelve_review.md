@@ -23,4 +23,5 @@
 - No additional review findings were identified for this bounded queue depth increase.
 
 ## Residual Follow-Up
-- `R-004` residual scope is reduced to backlog growth beyond the current configured depth `12`, plus future fairness and runtime-feedback policy growth once deeper queue behavior is intentionally expanded.
+- `R-004` residual scope is reduced to future fairness, retry, and runtime-feedback policy growth.
+- Do not continue numeric queue-depth growth by default; reopen depth growth only when the configured queue policy itself changes.
