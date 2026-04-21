@@ -198,6 +198,19 @@ static void vTestInconsistentPayload(void)
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_FRAME_PAYLOAD, "inconsistent payload field");
 }
 
+static void vTestDefaultChannelMustBelongToTopology(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "default channel topology mismatch status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_DEFAULT_CHANNEL, "default channel topology mismatch field");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_config_validation_report_t xReport;
@@ -214,6 +227,7 @@ int main(void)
 	vTestInvalidIntervals();
 	vTestMissingApplicationCallback();
 	vTestInconsistentPayload();
+	vTestDefaultChannelMustBelongToTopology();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_config_validator_test: all tests passed\n");

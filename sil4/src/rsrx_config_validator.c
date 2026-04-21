@@ -24,6 +24,35 @@ static uint32_t uChannelManagerConfigIsValid(
 	return 1U;
 }
 
+static uint32_t uDefaultChannelBelongsToConfiguredTopology(
+	const rsrx_session_config_t * pxConfig,
+	rsrx_config_validation_report_t * pxReport)
+{
+	uint32_t uIndex;
+	uint32_t uFound;
+
+	uFound = 0U;
+	for(uIndex = 0U; uIndex < pxConfig->xChannelManagerConfig.uChannelCount; ++uIndex)
+	{
+		if(pxConfig->xChannelManagerConfig.axChannels[uIndex].eChannelId ==
+			pxConfig->eDefaultChannelId)
+		{
+			uFound = 1U;
+		}
+	}
+
+	if(uFound == 0U)
+	{
+		vSetReport(
+			pxReport,
+			RSRX_CONFIG_STATUS_INCONSISTENT_VALUE,
+			RSRX_CONFIG_FIELD_DEFAULT_CHANNEL);
+		return 0U;
+	}
+
+	return 1U;
+}
+
 static void vSetReport(
 	rsrx_config_validation_report_t * pxReport,
 	rsrx_config_status_t eStatus,
@@ -205,6 +234,11 @@ rsrx_config_status_t rsrx_validate_session_config(
 	}
 
 	if(uChannelManagerConfigIsValid(pxConfig, pxReport) == 0U)
+	{
+		return pxReport->eStatus;
+	}
+
+	if(uDefaultChannelBelongsToConfiguredTopology(pxConfig, pxReport) == 0U)
 	{
 		return pxReport->eStatus;
 	}

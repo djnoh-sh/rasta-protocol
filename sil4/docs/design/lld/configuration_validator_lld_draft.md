@@ -45,6 +45,7 @@
   - platform `clock/timer/diagnostics` 포트가 모두 정의됐는지 확인한다.
   - API callback과 lifecycle callback이 모두 정의됐는지 확인한다.
   - 기본 channel이 `INVALID`인지 검사한다.
+  - 기본 channel이 channel manager topology의 declared channel list에 포함되는지 검사한다.
   - payload pointer와 payload length가 일관적인지 검사한다.
   - supervision/retransmission/diagnostic flush interval이 0이 아닌지 검사한다.
   - 첫 번째 오류를 보고서에 기록하고 즉시 반환한다.
@@ -57,6 +58,7 @@
   - 필수 codec port 누락 검증
   - interval range 오류 검증
   - payload 일관성 오류 검증
+  - 기본 channel / channel manager topology 일관성 검증
   - invalid argument 검증
 - 분석 포인트:
   - 검증 함수는 side effect가 없어야 한다.
