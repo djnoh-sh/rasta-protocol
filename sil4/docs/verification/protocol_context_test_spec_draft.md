@@ -24,6 +24,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | TC-PC-001 | FR-003 | outbound sequence progression 검증 | 초기화된 protocol context | 연속 outbound encode request 생성 | sequence가 1부터 단조 증가 | sequence numbering이 결정적으로 증가한다 |
 | TC-PC-020 | FR-003, SR-003 | outbound sequence wraparound guard 검증 | `uNextTxSequenceNumber`가 `UINT32_MAX - 1`인 protocol context | 마지막 안전 encode request를 만든 뒤 다음 encode request를 다시 호출 | `UINT32_MAX - 1` sequence는 허용되고, 다음 호출은 `UINT32_MAX` boundary에서 `REJECTED`로 거부되며 counter가 유지된다 | sequence `0` wraparound가 발생하지 않고 outbound ordering ambiguity를 startup/runtime guard가 결정적으로 차단 |
+| TC-PC-021 | FR-003, SR-003 | inbound sequence wraparound guard 검증 | `uLastRxSequenceNumber`가 `UINT32_MAX`인 protocol context | sequence `0` inbound sequenced message를 판정 | `PROTOCOL_ERROR`로 분류 | inbound `last_rx + 1` arithmetic wraparound가 정상 next sequence로 수용되지 않는다 |
 | TC-PC-002 | FR-003 | inbound confirmation tracking 검증 | inbound decoded message 준비 | inbound record 후 outbound encode request 생성 | confirmation이 마지막 inbound sequence와 일치 | confirmation이 inbound context를 반영한다 |
 | TC-PC-003 | FR-004 | retransmission request base sequence 검증 | last inbound sequence가 기록된 protocol context | retransmission request 생성 | payload가 `last_rx + 1`을 big-endian으로 포함 | retransmission 기준점이 결정적으로 계산된다 |
 | TC-PC-005 | FR-003 | inbound confirmation validity 검증 | outbound sequence가 일부 생성된 protocol context | confirmation이 sent-high-watermark를 넘거나 regress하는 inbound message 판정 | `PROTOCOL_ERROR`로 분류 | confirmation monotonicity와 upper bound를 강제 |

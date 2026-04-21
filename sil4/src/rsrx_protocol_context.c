@@ -154,6 +154,12 @@ rsrx_status_t rsrx_protocol_context_resolve_inbound_event(
 				return RSRX_STATUS_OK;
 			}
 
+			if(pxContext->uLastRxSequenceNumber == UINT32_MAX)
+			{
+				*peEvent = RSRX_EVENT_PROTOCOL_ERROR;
+				return RSRX_STATUS_OK;
+			}
+
 			if(pxMessage->uSequenceNumber == (pxContext->uLastRxSequenceNumber + 1U))
 			{
 				*peEvent = pxMessage->eSuggestedEvent;

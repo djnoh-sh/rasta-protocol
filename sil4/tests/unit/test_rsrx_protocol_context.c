@@ -933,6 +933,26 @@ static void vTestInitialZeroSequenceRejected(void)
 	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "zero initial sequence rejected");
 }
 
+static void vTestInboundSequenceWrapRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "inbound wrap protocol init");
+	xContext.uLastRxSequenceNumber = UINT32_MAX;
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 0U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 1U;
+
+	vAssertTrue(rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK, "resolve inbound wrap sequence");
+	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "inbound wrap sequence rejected");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -967,6 +987,7 @@ int main(void)
 	vTestProtocolOrderingCloseoutMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
+	vTestInboundSequenceWrapRejected();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_protocol_context_test: all tests passed\n");

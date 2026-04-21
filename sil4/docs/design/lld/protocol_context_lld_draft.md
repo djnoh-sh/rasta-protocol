@@ -52,6 +52,7 @@
 - inbound sequence validation:
   - sequenced message의 첫 inbound sequence는 `1`이어야 한다.
   - 일반 상태에서 `last_rx + 1`이면 정상 수용, 더 크면 gap, 더 작으면 protocol error다.
+  - `last_rx`가 `UINT32_MAX`에 도달한 뒤에는 inbound sequence `0` wraparound를 정상 next sequence로 수용하지 않고 protocol error로 처리한다.
   - retransmission pending 상태에서는 `retransmission_base`와 같은 sequence라도 remote confirmation이 마지막 retransmission request tx sequence 이상일 때만 `RECOVERY_SUCCESS`다.
   - retransmission pending 상태에서 `retransmission_base`보다 작으면 protocol error, 더 크면 gap 유지다.
 - retransmission request:
@@ -65,6 +66,7 @@
 - 필요한 테스트:
   - outbound sequence progression 검증
   - outbound sequence wraparound guard 검증
+  - inbound sequence wraparound guard 검증
   - inbound confirmation tracking 검증
   - retransmission request payload/base sequence 검증
   - inbound confirmation validity 검증
