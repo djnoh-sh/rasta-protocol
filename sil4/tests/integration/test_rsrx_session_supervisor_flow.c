@@ -17,6 +17,7 @@ typedef struct
 	uint32_t uQueryCount;
 	uint32_t uPrimaryAvailable;
 	uint32_t uSecondaryAvailable;
+	uint32_t uForceMismatchedQueryId;
 } test_transport_context_t;
 
 typedef struct
@@ -92,6 +93,15 @@ static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_
 
 	if(pxState != (rsrx_transport_channel_state_t *)0)
 	{
+		if(pxContext->uForceMismatchedQueryId != 0U)
+		{
+			pxState->eChannelId = (pxState->eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY) ?
+				RSRX_TRANSPORT_CHANNEL_SECONDARY :
+				RSRX_TRANSPORT_CHANNEL_PRIMARY;
+			pxState->uIsAvailable = 1U;
+			pxContext->uQueryCount++;
+			return RSRX_TRANSPORT_STATUS_OK;
+		}
 		if(pxState->eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY)
 		{
 			pxState->uIsAvailable = pxContext->uSecondaryAvailable;
@@ -11674,6 +11684,93 @@ static void vTestIntegratedReceiveErrorBudgetFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_ERROR, "receive error integration escalation class");
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "receive error integration escalation reason");
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "receive error integration lifecycle on escalation");
+}
+
+static void vTestIntegratedTopologyMismatchQueryBudgetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	size_t xHandshakeLength;
+	uint32_t uQueryCountAfterHandshake;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyConfig(&xConfig);
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "topology mismatch integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "topology mismatch integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "topology mismatch integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "topology mismatch integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "topology mismatch integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "topology mismatch integration established");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "topology mismatch integration initial active primary");
+	uQueryCountAfterHandshake = xTransport.uQueryCount;
+
+	xTransport.uForceMismatchedQueryId = 1U;
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "topology mismatch integration first poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "topology mismatch integration first state retained");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "topology mismatch integration first decision");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "topology mismatch integration first budget count");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "topology mismatch integration no reset before escalation");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "topology mismatch integration active retained after first");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "topology mismatch integration no receive after query failure");
+	vAssertTrue(xTransport.uQueryCount == (uQueryCountAfterHandshake + 1U), "topology mismatch integration first query count");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "topology mismatch integration second poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "topology mismatch integration safe disconnect");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED, "topology mismatch integration escalation decision");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "topology mismatch integration protocol error");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "topology mismatch integration budget reset after escalation");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "topology mismatch integration reset count after escalation");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "topology mismatch integration escalation reason");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "topology mismatch integration still no receive after second query failure");
+	vAssertTrue(xTransport.uQueryCount == (uQueryCountAfterHandshake + 2U), "topology mismatch integration second query count");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "topology mismatch integration lifecycle callback");
+	vAssertTrue(xApplication.uCallCount == 0U, "topology mismatch integration no application callback");
 }
 
 static void vTestIntegratedReceiveErrorBudgetResetFlow(void)
@@ -24731,6 +24828,7 @@ int main(void)
 	vTestIntegratedSendFailureBudgetFlow();
 	vTestIntegratedSendFailureBudgetResetFlow();
 	vTestIntegratedReceiveErrorBudgetFlow();
+	vTestIntegratedTopologyMismatchQueryBudgetFlow();
 	vTestIntegratedReceiveErrorBudgetResetFlow();
 	vTestIntegratedReceiveErrorFailoverCarryoverFlow();
 	vTestIntegratedMixedTransientBudgetResetFlow();
