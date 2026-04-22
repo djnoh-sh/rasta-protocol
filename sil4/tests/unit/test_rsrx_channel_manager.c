@@ -118,6 +118,9 @@ static void vTestPreferredRecoveryHoldoff(void)
 		"holdoff failover select");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff failover secondary");
 	vAssertTrue(xResult.uTotalSwitchCount == 1U, "holdoff switch count after failover");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffActive == 0U, "holdoff inactive before preferred restore");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 0U, "holdoff progress reset after failover");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "holdoff target after failover");
 
 	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xState.uIsAvailable = 1U;
@@ -129,12 +132,19 @@ static void vTestPreferredRecoveryHoldoff(void)
 		"holdoff first stable select");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff remains secondary");
 	vAssertTrue(xResult.uFailoverOccurred == 0U, "holdoff no switch on first stable select");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffActive == 1U, "holdoff active during first stable select");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 1U, "holdoff progress first stable select");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "holdoff target first stable select");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 1U, "holdoff remaining first stable select");
 	vAssertTrue(
 		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
 		"holdoff second stable select");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff switches to primary");
 	vAssertTrue(xResult.uFailoverOccurred == 1U, "holdoff switch reported");
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "holdoff switch count after recovery");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffActive == 0U, "holdoff inactive after recovery");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 0U, "holdoff progress reset after recovery");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 2U, "holdoff remaining resets to target after recovery");
 }
 
 static void vTestPreferredRecoveryHoldoffThresholdThree(void)

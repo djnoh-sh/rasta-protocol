@@ -44,6 +44,10 @@ typedef struct
 	uint32_t uAvailableChannelCount;
 	uint32_t uFailoverOccurred;
 	uint32_t uTotalSwitchCount;
+	uint32_t uPreferredRecoveryHoldoffActive;
+	uint32_t uPreferredRecoveryHoldoffProgressCount;
+	uint32_t uPreferredRecoveryHoldoffTargetCount;
+	uint32_t uPreferredRecoveryHoldoffRemainingCount;
 } rsrx_channel_selection_result_t;
 
 typedef struct
