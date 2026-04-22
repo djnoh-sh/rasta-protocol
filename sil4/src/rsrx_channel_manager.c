@@ -129,12 +129,12 @@ rsrx_channel_manager_status_t rsrx_channel_manager_update_channel(
 	if((pxContext == (rsrx_channel_manager_context_t *)0) ||
 		(pxState == (const rsrx_transport_channel_state_t *)0) ||
 		(pxContext->uInitialized == 0U) ||
-		(uChannelIndex >= pxContext->xConfig.uChannelCount))
+		(uChannelIndex >= pxContext->xConfig.uChannelCount) ||
+		(pxState->eChannelId != pxContext->xConfig.axChannels[uChannelIndex].eChannelId))
 	{
 		return RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT;
 	}
 
-	pxContext->xConfig.axChannels[uChannelIndex].eChannelId = pxState->eChannelId;
 	pxContext->xConfig.axChannels[uChannelIndex].uIsAvailable = pxState->uIsAvailable;
 
 	return RSRX_CHANNEL_MANAGER_STATUS_OK;

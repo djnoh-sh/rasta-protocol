@@ -56,6 +56,32 @@ static void vTestChannelManagerRejectsInvalidTopologyConfig(void)
 		"single channel topology accepted");
 }
 
+static void vTestChannelManagerRejectsRuntimeTopologyMutation(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"runtime topology mutation init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"runtime topology mutation rejected");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"runtime topology mutation select after reject");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "runtime topology mutation active retained");
+	vAssertTrue(xResult.uAvailableChannelCount == 2U, "runtime topology mutation availability retained");
+	vAssertTrue(xResult.uTotalSwitchCount == 0U, "runtime topology mutation switch count retained");
+}
+
 static void vTestPreferredRecoveryHoldoff(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3327,6 +3353,7 @@ int main(void)
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after reset");
 
 	vTestChannelManagerRejectsInvalidTopologyConfig();
+	vTestChannelManagerRejectsRuntimeTopologyMutation();
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();

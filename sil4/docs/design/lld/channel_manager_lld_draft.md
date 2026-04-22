@@ -42,6 +42,9 @@
   - preferred channel index는 유효 범위 내여야 한다.
   - 각 channel id는 `INVALID`가 아니어야 한다.
   - configured channel id는 서로 중복될 수 없다.
+- runtime channel update:
+  - update 대상 index의 configured channel id와 transport-reported channel id가 다르면 update를 거부한다.
+  - runtime update는 channel availability만 변경하고 configured topology identity를 변경하지 않는다.
 - 선택 정책:
   - `ACTIVE_STANDBY`에서는 active channel이 down이면 available한 preferred channel 또는 best available channel로 즉시 전환한다.
   - active channel이 살아 있는 상태에서 preferred channel이 복구되면 `uPreferredRecoveryHoldoffSelections`만큼 연속 관측된 뒤에만 preferred channel로 복귀한다.
@@ -72,3 +75,4 @@
 - `TC-CHM-005`: preferred channel recovery auto-switch
 - `TC-CHM-006`: preferred recovery holdoff
 - `TC-CHM-049`: invalid topology config rejection
+- `TC-CHM-050`: runtime topology mutation rejection
