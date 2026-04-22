@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-03-13`
+- Last Updated: `2026-04-22`
 
 ## Scope
 
@@ -54,6 +54,7 @@
   - inbound decoded message는 protocol context의 confirmation 기준을 갱신하고 마지막 inbound message cache를 보존한다.
   - explicit outbound application send는 `rsrx_transport_adapter_send_application_data`가 담당한다.
   - direct-send helper는 `DATA` frame과 `APPLICATION_DATA_REQUESTED` reason을 사용한다.
+  - direct-send helper는 마지막 outbound reject 원인을 telemetry에 기록하고, accepted/queued application submit에서 원인을 clear한다.
   - `rsrx_transport_adapter_query_channel`은 channel manager가 구성된 경우 모든 configured channel의 runtime state를 조회해 manager context에 반영한 뒤 active channel을 선택한다.
   - runtime state refresh 중 transport-reported channel id가 configured channel id와 맞지 않아 channel manager update가 거부되면 adapter query는 `RX_ERROR`로 실패를 전파한다.
 - application executor support:
@@ -79,6 +80,7 @@
   - channel manager 기반 failover send selection 검증
   - channel manager runtime topology mutation rejection 전파 검증
   - direct outbound application send 검증
+  - outbound reject reason telemetry 검증
   - inbound message cache 조회 검증
   - timer action -> timer command 변환 검증
   - diagnostics action -> diagnostic record 변환 검증

@@ -48,6 +48,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestBusyRejectThresholdManualInboundResetSources` | TC-OUT-011 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestDeferredQueueTelemetryAccumulationMatrix` | TC-OUT-012 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOverflowBusyAccumulationMatrix` | TC-OUT-013 |  | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-013 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestApplicationDataSend` | TC-OUT-017 | RV-273 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueLongRunRepresentativeMatrix` | TC-OUT-015 | RV-228 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueFairnessRepresentativeMatrix` | TC-OUT-016 | RV-230 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueBackpressureCloseoutMatrix` | TC-OUT-014 | RV-242 | Draft |
@@ -152,7 +153,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdFourteenMixedLongRunMatrix` | TC-SUP-056 | RV-182 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdFifteenMixedLongRunMatrix` | TC-SUP-057 | RV-183 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorRuntimeOrderingCloseoutMatrix` | TC-SUP-032 |  | Draft |
-| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-SUP-033 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-SUP-033 | RV-273 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorQueueReportMatrix` | TC-SUP-059 | RV-226 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryStabilityEnvelopeCloseoutMatrix` | TC-CHM-017 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestChannelManagerRejectsRuntimeTopologyMutation` | TC-CHM-050 | RV-267 | Draft |
@@ -424,6 +425,7 @@
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestBusyRejectThresholdManualInboundResetSources` | TC-OUT-011 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestDeferredQueueTelemetryAccumulationMatrix` | TC-OUT-012 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOverflowBusyAccumulationMatrix` | TC-OUT-013 |  | Draft |
+| IF-001 |  | HLD-001, LLD-013 | `sil4/tests/unit/test_rsrx_platform_adapters.c`, `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestApplicationDataSend`, `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-OUT-017, TC-SUP-033 | RV-273 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueLongRunRepresentativeMatrix` | TC-OUT-015 | RV-228 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueFairnessRepresentativeMatrix` | TC-OUT-016 | RV-230 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueBackpressureCloseoutMatrix` | TC-OUT-014 | RV-242 | Draft |

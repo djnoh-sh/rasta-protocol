@@ -384,6 +384,7 @@ static void vTestApplicationDataSend(void)
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U, "application data outstanding send set");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 1U, "application data accepted telemetry");
 	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "application data last send telemetry");
+	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "application data no reject reason after success");
 	vAssertTrue(
 		rsrx_transport_adapter_send_application_data(
 			&xTransportAdapterContext,
@@ -481,6 +482,7 @@ static void vTestApplicationDataSend(void)
 	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "application data busy streak one");
 	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 1U, "application data busy max one");
 	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "application data busy status telemetry");
+	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_QUEUE_OVERFLOW, "application data overflow reject reason");
 
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -503,6 +505,7 @@ static void vTestApplicationDataSend(void)
 			sizeof(auDataPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data send queued after dispatch");
 	vAssertTrue(pxTelemetry->uQueuedSendCount == 13U, "application data queued telemetry after dispatch");
+	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "application data queued clears reject reason");
 	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
 	vAssertTrue(xTransportContext.uCallCount == 3U, "application data send count after clear");
 	vAssertTrue(pxTelemetry->uAcceptedSendCount == 3U, "application data accepted telemetry after clear");

@@ -12,9 +12,20 @@
 
 #define D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY 12U
 
+typedef enum
+{
+	RSRX_OUTBOUND_REJECT_REASON_NONE = 0,
+	RSRX_OUTBOUND_REJECT_REASON_INVALID_ARGUMENT,
+	RSRX_OUTBOUND_REJECT_REASON_PROTOCOL_CONTEXT,
+	RSRX_OUTBOUND_REJECT_REASON_CODEC,
+	RSRX_OUTBOUND_REJECT_REASON_TRANSPORT_SEND,
+	RSRX_OUTBOUND_REJECT_REASON_QUEUE_OVERFLOW
+} rsrx_outbound_reject_reason_t;
+
 typedef struct
 {
 	rsrx_transport_status_t eLastSendStatus;
+	rsrx_outbound_reject_reason_t eLastRejectReason;
 	uint32_t uAcceptedSendCount;
 	uint32_t uQueuedSendCount;
 	uint32_t uMaxDeferredSendCount;

@@ -1318,6 +1318,7 @@ static void vTestSupervisorReportExposesBusyRejectTelemetry(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "report busy telemetry refresh");
 
 	vAssertTrue(pxSupervisorReport->uQueueOverflowRejectCount == 2U, "report busy telemetry overflow count");
+	vAssertTrue(pxSupervisorReport->eLastOutboundRejectReason == RSRX_OUTBOUND_REJECT_REASON_QUEUE_OVERFLOW, "report busy telemetry reject reason");
 	vAssertTrue(pxSupervisorReport->uBusyRejectedSendCount == 2U, "report busy telemetry busy reject count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveBusyRejectedSendCount == 0U, "report busy telemetry streak reset after clear");
 	vAssertTrue(pxSupervisorReport->uMaxConsecutiveBusyRejectedSendCount == 2U, "report busy telemetry max streak");

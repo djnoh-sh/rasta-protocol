@@ -33,7 +33,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_supervisor_status_t` | enum | supervisor 결과 코드 | decode/session 오류를 분리 |
-| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, receive error budget/stage telemetry, session report, channel switch telemetry, outbound queue telemetry 보유 | caller는 읽기 전용 사용 |
+| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, receive error budget/stage telemetry, session report, channel switch telemetry, outbound queue/reject-reason telemetry 보유 | caller는 읽기 전용 사용 |
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
@@ -94,6 +94,7 @@
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.
   - 각 경로는 report에 마지막 decision, decision class, current channel switch count, 이번 처리에서 switch가 발생했는지 여부를 남긴다.
   - 각 경로는 report에 현재 outstanding send 존재 여부, deferred queue 존재 여부, queued count, deferred dispatch count, overflow reject count를 함께 남긴다.
+  - outbound queue telemetry refresh는 adapter의 마지막 outbound reject reason도 report에 복사한다.
 - `rsrx_transport_supervisor_process_timer_expiry`:
   - supervisor는 timer source를 해석하지 않고 session timer API로 위임한다.
   - session이 `REJECTED`를 반환해도 supervisor 관점에서는 처리된 fail-safe 전이로 간주한다.
@@ -133,6 +134,7 @@
   - outstanding send correlation과 send feedback 처리 일관성
   - report의 channel switch telemetry와 channel manager state 일관성
   - report의 outbound queue telemetry와 adapter runtime state 일관성
+  - report의 outbound reject reason telemetry와 adapter telemetry 일관성
   - query/receive 순서와 channel availability gate의 결정성
   - transport feedback event의 보수적 매핑 정책
   - transient send failure와 persistent send failure 구분 정책

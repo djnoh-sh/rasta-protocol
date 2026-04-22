@@ -147,12 +147,15 @@ static void vDropDeferredSendFront(
 static void vDispatchDeferredSendIfPresent(
 	rsrx_transport_adapter_context_t * pxContext)
 {
+	rsrx_outbound_reject_reason_t ePreviousRejectReason;
+
 	if((pxContext == (rsrx_transport_adapter_context_t *)0) ||
 		(pxContext->uHasDeferredSend == 0U))
 	{
 		return;
 	}
 
+	ePreviousRejectReason = pxContext->xOutboundTelemetry.eLastRejectReason;
 	if(eEncodeAndSend(
 		pxContext,
 		pxContext->aeDeferredMessageTypes[0],
@@ -162,6 +165,7 @@ static void vDispatchDeferredSendIfPresent(
 	{
 		vDropDeferredSendFront(pxContext);
 		pxContext->xOutboundTelemetry.uDeferredDispatchCount++;
+		pxContext->xOutboundTelemetry.eLastRejectReason = ePreviousRejectReason;
 	}
 }
 
@@ -217,6 +221,8 @@ static rsrx_transport_status_t eEncodeAndSend(
 		if(pxContext != (rsrx_transport_adapter_context_t *)0)
 		{
 			pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+			pxContext->xOutboundTelemetry.eLastRejectReason =
+				RSRX_OUTBOUND_REJECT_REASON_INVALID_ARGUMENT;
 		}
 		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	}
@@ -246,12 +252,16 @@ static rsrx_transport_status_t eEncodeAndSend(
 			}
 			vRefreshDeferredQueueState(pxContext);
 			pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_OK;
+			pxContext->xOutboundTelemetry.eLastRejectReason =
+				RSRX_OUTBOUND_REJECT_REASON_NONE;
 			pxContext->xOutboundTelemetry.uQueuedSendCount++;
 			pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 			return RSRX_TRANSPORT_STATUS_OK;
 		}
 
 		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+		pxContext->xOutboundTelemetry.eLastRejectReason =
+			RSRX_OUTBOUND_REJECT_REASON_QUEUE_OVERFLOW;
 		pxContext->xOutboundTelemetry.uBusyRejectedSendCount++;
 		pxContext->xOutboundTelemetry.uQueueOverflowRejectCount++;
 		pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount++;
@@ -273,6 +283,8 @@ static rsrx_transport_status_t eEncodeAndSend(
 		&xEncodeRequest) != RSRX_STATUS_OK)
 	{
 		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+		pxContext->xOutboundTelemetry.eLastRejectReason =
+			RSRX_OUTBOUND_REJECT_REASON_PROTOCOL_CONTEXT;
 		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
 	}
 
@@ -283,6 +295,8 @@ static rsrx_transport_status_t eEncodeAndSend(
 	if(pxContext->xCodecPort.pfEncode(&xEncodeRequest, &xEncodeBuffer) != RSRX_CODEC_STATUS_OK)
 	{
 		pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_TX_ERROR;
+		pxContext->xOutboundTelemetry.eLastRejectReason =
+			RSRX_OUTBOUND_REJECT_REASON_CODEC;
 		return RSRX_TRANSPORT_STATUS_TX_ERROR;
 	}
 
@@ -308,12 +322,16 @@ static rsrx_transport_status_t eEncodeAndSend(
 	if(eSendStatus != RSRX_TRANSPORT_STATUS_OK)
 	{
 		pxContext->xOutboundTelemetry.eLastSendStatus = eSendStatus;
+		pxContext->xOutboundTelemetry.eLastRejectReason =
+			RSRX_OUTBOUND_REJECT_REASON_TRANSPORT_SEND;
 		return eSendStatus;
 	}
 
 	pxContext->eLastOutstandingSendChannelId = xRequest.eChannelId;
 	pxContext->uHasOutstandingSend = 1U;
 	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_OK;
+	pxContext->xOutboundTelemetry.eLastRejectReason =
+		RSRX_OUTBOUND_REJECT_REASON_NONE;
 	pxContext->xOutboundTelemetry.uAcceptedSendCount++;
 	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
 
@@ -394,6 +412,8 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->uDeferredSendCount = 0U;
 	pxContext->uHasDeferredSend = 0U;
 	pxContext->xOutboundTelemetry.eLastSendStatus = RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	pxContext->xOutboundTelemetry.eLastRejectReason =
+		RSRX_OUTBOUND_REJECT_REASON_NONE;
 	pxContext->xOutboundTelemetry.uAcceptedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uQueuedSendCount = 0U;
 	pxContext->xOutboundTelemetry.uMaxDeferredSendCount = 0U;
