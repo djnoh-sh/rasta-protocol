@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-03-17`
+- Last Updated: `2026-04-22`
 
 ## Scope
 
@@ -33,7 +33,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_supervisor_status_t` | enum | supervisor 결과 코드 | decode/session 오류를 분리 |
-| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, receive error budget telemetry, session report, channel switch telemetry, outbound queue telemetry 보유 | caller는 읽기 전용 사용 |
+| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, receive error budget/stage telemetry, session report, channel switch telemetry, outbound queue telemetry 보유 | caller는 읽기 전용 사용 |
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
@@ -62,6 +62,7 @@
   - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
   - query 또는 receive의 generic error는 내부 receive error budget으로 관리한다.
   - adapter가 channel topology mismatch를 `RX_ERROR`로 전파한 경우도 query-stage receive error budget path로 처리하고 receive는 수행하지 않는다.
+  - receive error budget path는 마지막 오류가 channel query 단계인지 frame receive 단계인지 report에 남긴다.
   - 임계치 미만의 receive error는 ignored event로 처리하고 상태를 유지한다.
   - 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달해 fail-safe 전이를 유발한다.
   - successful frame, no-frame, channel-down은 receive error budget을 reset한다.
@@ -126,6 +127,7 @@
   - cumulative decision counter의 단조 증가 보장
   - send failure budget update/reset telemetry의 일관성
   - receive error budget increment/reset/escalation 일관성
+  - receive error stage telemetry가 query-stage fault와 receive-stage fault를 구분하는지
   - budget channel과 active channel의 일관성
   - inactive/stale channel transport feedback의 보수적 무시 정책
   - outstanding send correlation과 send feedback 처리 일관성

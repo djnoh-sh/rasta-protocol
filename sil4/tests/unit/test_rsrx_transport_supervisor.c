@@ -743,6 +743,38 @@ static void vTestSupervisorPollReceiveErrorBudgeted(void)
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "poll receive error reset count zero");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "poll receive error budgeted decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "poll receive error budgeted class");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_FRAME_RECEIVE, "poll receive error stage");
+}
+
+static void vTestSupervisorPollQueryErrorStageTelemetry(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x63U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	xTransport.eQueryStatus = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll query error session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll query error session start");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll query error supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll query error budgeted status");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll query error count one");
+	vAssertTrue(xTransport.uReceiveCount == 0U, "poll query error skips receive");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "poll query error decision");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_CHANNEL_QUERY, "poll query error stage");
 }
 
 static void vTestSupervisorPollReceiveErrorEscalatesAndResets(void)
@@ -782,6 +814,7 @@ static void vTestSupervisorPollReceiveErrorEscalatesAndResets(void)
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_REJECTED, "poll receive escalate session status");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED, "poll receive escalate decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_ERROR, "poll receive escalate class");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_FRAME_RECEIVE, "poll receive escalate stage retained");
 	vAssertTrue(pxSupervisorReport->uErrorDecisionCount == 1U, "poll receive escalate error count");
 }
 
@@ -835,6 +868,7 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix no frame clears count");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "poll retry matrix no frame reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "poll retry matrix no frame decision");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll retry matrix no frame clears stage");
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll retry matrix second error");
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll retry matrix second error count");
@@ -851,6 +885,7 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix success clears count");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "poll retry matrix success reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "poll retry matrix success decision");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll retry matrix success clears stage");
 	vAssertTrue(xCallbacks.uApplicationCount == 1U, "poll retry matrix success callback");
 
 	xTransport.eQueryStatus = RSRX_TRANSPORT_STATUS_OK;
@@ -860,6 +895,7 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix channel gated count zero");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "poll retry matrix channel gated no extra reset");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "poll retry matrix channel gated decision");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll retry matrix channel gated clears stage");
 }
 
 static void vTestSupervisorChannelDownUsesFailover(void)
@@ -5088,6 +5124,7 @@ int main(void)
 	vTestSupervisorPollReceiveChannelDown();
 	vTestSupervisorPollReceiveNoFrame();
 	vTestSupervisorPollReceiveErrorBudgeted();
+	vTestSupervisorPollQueryErrorStageTelemetry();
 	vTestSupervisorPollReceiveErrorEscalatesAndResets();
 	vTestSupervisorChannelDownUsesFailover();
 	vTestSupervisorChannelUpRefreshesSelection();

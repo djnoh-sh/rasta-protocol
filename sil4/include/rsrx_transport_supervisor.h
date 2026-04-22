@@ -62,6 +62,13 @@ typedef enum
 
 typedef enum
 {
+	RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE = 0,
+	RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_CHANNEL_QUERY,
+	RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_FRAME_RECEIVE
+} rsrx_supervisor_receive_error_stage_t;
+
+typedef enum
+{
 	RSRX_SUPERVISOR_SWITCH_KIND_NONE = 0,
 	RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER,
 	RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY
@@ -112,6 +119,7 @@ typedef struct
 	rsrx_supervisor_decision_t eLastDecision;
 	rsrx_supervisor_decision_class_t eLastDecisionClass;
 	rsrx_supervisor_budget_update_t eLastBudgetUpdate;
+	rsrx_supervisor_receive_error_stage_t eLastReceiveErrorStage;
 	rsrx_transport_channel_id_t eBudgetChannelId;
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;

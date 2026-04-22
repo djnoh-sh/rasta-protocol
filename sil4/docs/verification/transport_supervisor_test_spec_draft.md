@@ -6,8 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-17`
- - Last Updated: `2026-03-20`
+- Last Updated: `2026-04-22`
 
 ## Scope
 
@@ -33,6 +32,7 @@
 | TC-SUP-008 | SR-002 | poll receive channel down/no-frame 검증 | unavailable channel 또는 receive unavailable 준비 | `poll_receive` 호출 | `CHANNEL_DOWN` 또는 `NO_FRAME` 반환 | channel gate가 decode/session 호출보다 우선 적용되고 decision이 보고된다 |
 | TC-SUP-020 | SR-002 | poll receive transient error budget 검증 | available channel, generic receive error 준비 | `poll_receive` 호출 | 첫 receive error는 ignored event로 budget 처리 | transient receive error가 즉시 fail-safe로 확대되지 않고 decision/telemetry가 남는다 |
 | TC-SUP-021 | SR-002 | poll receive repeated error escalation 검증 | `ESTABLISHED` 상태 session, generic receive error 반복 준비 | `poll_receive`를 연속 호출 | budget 도달 시 `PROTOCOL_ERROR`로 fail-safe 전이 | receive error budget reset, effective event, session status, error class telemetry가 설계와 일치 |
+| TC-SUP-064 | FR-003, SR-002 | receive error stage telemetry 검증 | query-stage `RX_ERROR`와 receive-stage `RX_ERROR`를 각각 재현 가능한 session-supervisor 준비 | `poll_receive` 호출 | query-stage 오류는 receive 호출 없이 `CHANNEL_QUERY` stage로 budget 처리되고, receive-stage 오류는 `FRAME_RECEIVE` stage로 budget/escalation 처리된다 | report의 `eLastReceiveErrorStage`가 query fault와 frame receive fault를 구분하고 non-error terminal path에서는 `NONE`으로 clear된다 |
 | TC-SUP-013 | FR-003, SR-002 | bounded pump receive drain 검증 | `ESTABLISHED` 상태 session, scripted receive/decode 준비 | `pump_receive(max_polls)` 호출 | 여러 frame 처리 후 `NO_FRAME`에서 정상 종료 | pump iteration/frame count와 terminal decision이 설계와 일치 |
 | TC-SUP-014 | SR-002 | bounded pump invalid argument 검증 | null context 또는 zero max poll | `pump_receive` 호출 | `INVALID_ARGUMENT` 반환 | bounded runtime loop entry가 결정적으로 방어된다 |
 | TC-SUP-009 | SR-002 | transport send failure budget 검증 | `ESTABLISHED` 상태 session 준비 | `SEND_FAILED` transport event를 연속 처리 | 첫 실패는 ignored, budget 도달 시 `SAFE_DISCONNECT` 전이 | transient failure와 persistent failure를 구분하고 decision/effective event, budget update/reset telemetry를 보고 |
