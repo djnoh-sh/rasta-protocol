@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-03-13`
+- Last Updated: `2026-04-22`
 
 ## Scope
 
@@ -45,6 +45,7 @@
   - platform `clock/timer/diagnostics` 포트가 모두 정의됐는지 확인한다.
   - API callback과 lifecycle callback이 모두 정의됐는지 확인한다.
   - 기본 channel이 `INVALID`인지 검사한다.
+  - channel manager startup validation을 재사용해 ambiguous redundancy topology를 거부한다.
   - 기본 channel이 channel manager topology의 declared channel list에 포함되는지 검사한다.
   - payload pointer와 payload length가 일관적인지 검사한다.
   - supervision/retransmission/diagnostic flush interval이 0이 아닌지 검사한다.
@@ -59,6 +60,7 @@
   - interval range 오류 검증
   - payload 일관성 오류 검증
   - 기본 channel / channel manager topology 일관성 검증
+  - duplicate channel priority topology 거부 검증
   - invalid argument 검증
 - 분석 포인트:
   - 검증 함수는 side effect가 없어야 한다.

@@ -211,6 +211,24 @@ static void vTestDefaultChannelMustBelongToTopology(void)
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_DEFAULT_CHANNEL, "default channel topology mismatch field");
 }
 
+static void vTestDuplicateChannelPriorityRejected(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.xChannelManagerConfig.uChannelCount = 2U;
+	xConfig.xChannelManagerConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xConfig.xChannelManagerConfig.axChannels[1].uIsAvailable = 1U;
+	xConfig.xChannelManagerConfig.axChannels[1].uPriority =
+		xConfig.xChannelManagerConfig.axChannels[0].uPriority;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INVALID_RANGE, "duplicate priority status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_DEFAULT_CHANNEL, "duplicate priority field");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_config_validation_report_t xReport;
@@ -228,6 +246,7 @@ int main(void)
 	vTestMissingApplicationCallback();
 	vTestInconsistentPayload();
 	vTestDefaultChannelMustBelongToTopology();
+	vTestDuplicateChannelPriorityRejected();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_config_validator_test: all tests passed\n");

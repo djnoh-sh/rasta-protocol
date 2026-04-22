@@ -40,6 +40,12 @@ static uint32_t uConfigIsValid(
 			{
 				return 0U;
 			}
+
+			if(pxConfig->axChannels[uIndex].uPriority ==
+				pxConfig->axChannels[uCompareIndex].uPriority)
+			{
+				return 0U;
+			}
 		}
 	}
 

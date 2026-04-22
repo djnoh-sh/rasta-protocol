@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-13`
+- Last Updated: `2026-04-22`
 
 ## Scope
 
@@ -28,3 +28,4 @@
 | TC-CFG-005 | FR-006, SR-003 | payload 일관성 오류 검증 | payload pointer는 null이고 length는 0보다 큰 config 준비 | `rsrx_validate_session_config` 호출 | `INCONSISTENT_VALUE`, field=`FRAME_PAYLOAD` 반환 | 상충된 설정 조합이 결정적으로 거부된다 |
 | TC-CFG-006 | SR-003 | invalid argument 검증 | null config | `rsrx_validate_session_config` 호출 | `INVALID_ARGUMENT` 반환 | UB 없이 명시적 오류 반환 |
 | TC-CFG-007 | FR-006, SR-003, IF-002 | default channel topology 일관성 검증 | 기본 channel이 channel manager declared channel list에 없는 config 준비 | `rsrx_validate_session_config` 호출 | `INCONSISTENT_VALUE`, field=`DEFAULT_CHANNEL` 반환 | default outbound channel과 redundancy topology가 불일치하는 설정은 startup에서 결정적으로 거부된다 |
+| TC-CFG-008 | FR-006, SR-003, IF-002 | duplicate channel priority topology 거부 검증 | active-standby channel manager config의 두 channel priority가 같은 session config 준비 | `rsrx_validate_session_config` 호출 | `INVALID_RANGE`, field=`DEFAULT_CHANNEL` 반환 | ambiguous redundancy topology가 session startup gate에서도 결정적으로 거부된다 |

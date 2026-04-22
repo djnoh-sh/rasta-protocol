@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-21`
+- Last Updated: `2026-04-22`
 
 ## Scope
 
@@ -42,6 +42,7 @@
   - preferred channel index는 유효 범위 내여야 한다.
   - 각 channel id는 `INVALID`가 아니어야 한다.
   - configured channel id는 서로 중복될 수 없다.
+  - configured channel priority는 서로 중복될 수 없다.
 - runtime channel update:
   - update 대상 index의 configured channel id와 transport-reported channel id가 다르면 update를 거부한다.
   - runtime update는 channel availability만 변경하고 configured topology identity를 변경하지 않는다.
@@ -76,3 +77,4 @@
 - `TC-CHM-006`: preferred recovery holdoff
 - `TC-CHM-049`: invalid topology config rejection
 - `TC-CHM-050`: runtime topology mutation rejection
+- `TC-CHM-051`: duplicate channel priority topology rejection

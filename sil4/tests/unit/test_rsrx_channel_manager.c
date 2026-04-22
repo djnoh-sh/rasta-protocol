@@ -82,6 +82,18 @@ static void vTestChannelManagerRejectsRuntimeTopologyMutation(void)
 	vAssertTrue(xResult.uTotalSwitchCount == 0U, "runtime topology mutation switch count retained");
 }
 
+static void vTestChannelManagerRejectsDuplicatePriorityTopology(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+
+	xConfig = xBuildConfig();
+	xConfig.axChannels[1].uPriority = xConfig.axChannels[0].uPriority;
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"duplicate channel priority rejected");
+}
+
 static void vTestPreferredRecoveryHoldoff(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3354,6 +3366,7 @@ int main(void)
 
 	vTestChannelManagerRejectsInvalidTopologyConfig();
 	vTestChannelManagerRejectsRuntimeTopologyMutation();
+	vTestChannelManagerRejectsDuplicatePriorityTopology();
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();
