@@ -343,10 +343,13 @@ static rsrx_transport_status_t eRefreshChannelManagerState(
 		{
 			return RSRX_TRANSPORT_STATUS_RX_ERROR;
 		}
-		(void)rsrx_channel_manager_update_channel(
+		if(rsrx_channel_manager_update_channel(
 			pxContext->pxChannelManager,
 			uIndex,
-			&xProbeState);
+			&xProbeState) != RSRX_CHANNEL_MANAGER_STATUS_OK)
+		{
+			return RSRX_TRANSPORT_STATUS_RX_ERROR;
+		}
 	}
 
 	return RSRX_TRANSPORT_STATUS_OK;

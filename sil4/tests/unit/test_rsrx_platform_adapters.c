@@ -29,6 +29,7 @@ typedef struct
 	uint32_t uCallCount;
 	uint32_t uPrimaryAvailable;
 	uint32_t uSecondaryAvailable;
+	uint32_t uForceMismatchedQueryId;
 } test_transport_context_t;
 
 typedef struct
@@ -91,6 +92,14 @@ static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_
 	const test_transport_context_t * pxContext = (const test_transport_context_t *)pvContext;
 	if(pxState != (rsrx_transport_channel_state_t *)0)
 	{
+		if(pxContext->uForceMismatchedQueryId != 0U)
+		{
+			pxState->eChannelId = (pxState->eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY) ?
+				RSRX_TRANSPORT_CHANNEL_SECONDARY :
+				RSRX_TRANSPORT_CHANNEL_PRIMARY;
+			pxState->uIsAvailable = 1U;
+			return RSRX_TRANSPORT_STATUS_OK;
+		}
 		if(pxState->eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY)
 		{
 			pxState->uIsAvailable = pxContext->uSecondaryAvailable;
@@ -183,7 +192,7 @@ static void vTestPlatformExecutorTableBuild(void)
 	test_clock_context_t xClockContext = { 100U, 0U };
 	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 0U };
 	test_action_context_t xApplicationContext = { RSRX_ACTION_NONE, 0U };
 	test_action_context_t xApiContext = { RSRX_ACTION_NONE, 0U };
 	test_action_context_t xLifecycleContext = { RSRX_ACTION_NONE, 0U };
@@ -249,7 +258,7 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	test_clock_context_t xClockContext = { 1000U, 0U };
 	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 0U };
 	rsrx_platform_port_table_t xPorts;
 	rsrx_transport_port_t xTransportPort;
 	rsrx_transition_result_t xTransition;
@@ -334,7 +343,7 @@ static void vTestApplicationDataSend(void)
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
 	static const uint8_t auDataPayload[3] = { 0x31U, 0x32U, 0x33U };
@@ -505,7 +514,7 @@ static void vTestChannelManagerDrivenFailoverSelection(void)
 {
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 0U, 1U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 0U, 1U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	rsrx_transition_result_t xTransition;
 	rsrx_transport_channel_state_t xChannelState;
@@ -566,11 +575,48 @@ static void vTestChannelManagerDrivenFailoverSelection(void)
 	vAssertTrue(xTransportContext.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "preferred recovery send channel");
 }
 
+static void vTestChannelManagerQueryRejectsTopologyMutation(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 1U };
+	rsrx_transport_port_t xTransportPort;
+	rsrx_transport_channel_state_t xChannelState;
+	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitActiveStandbyChannelManager(&xChannelManagerContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter init for query mutation reject");
+
+	vAssertTrue(
+		rsrx_transport_adapter_query_channel(
+			&xTransportAdapterContext,
+			&xChannelState) == RSRX_TRANSPORT_STATUS_RX_ERROR,
+		"query mutation rejected as rx error");
+	vAssertTrue(
+		rsrx_channel_manager_get_active_channel(&xChannelManagerContext) == RSRX_TRANSPORT_CHANNEL_PRIMARY,
+		"query mutation active channel retained");
+	vAssertTrue(xTransportContext.uCallCount == 0U, "query mutation no send");
+}
+
 static void vTestPreferredRecoveryHoldoffSelection(void)
 {
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 0U, 1U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 0U, 1U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	rsrx_transition_result_t xTransition;
 	rsrx_transport_channel_state_t xChannelState;
@@ -640,7 +686,7 @@ static void vTestBusyRejectEscalationTelemetry(void)
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0x55U, 0xAAU };
 
@@ -677,7 +723,7 @@ static void vTestApplicationDataDeferredQueueFifoDispatch(void)
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0x91U, 0x92U };
 	static const uint8_t auFirstPayload[2] = { 0x41U, 0x42U };
@@ -763,7 +809,7 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0xA1U, 0xA2U };
 	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
@@ -895,7 +941,7 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0x71U, 0x72U };
 	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
@@ -1080,7 +1126,7 @@ static void vTestDeferredQueueTelemetryAccumulationMatrix(void)
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0x91U, 0x92U };
 	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
@@ -1158,7 +1204,7 @@ static void vTestOverflowBusyAccumulationMatrix(void)
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
 	rsrx_channel_manager_context_t xChannelManagerContext;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 0U, 0U };
 	rsrx_transport_port_t xTransportPort;
 	static const uint8_t auFramePayload[2] = { 0xA1U, 0xA2U };
 	static const uint8_t auFirstPayload[2] = { 0x11U, 0x12U };
@@ -1345,6 +1391,7 @@ int main(void)
 	vTestOverflowBusyAccumulationMatrix();
 	vTestOutboundQueueBackpressureCloseoutMatrix();
 	vTestChannelManagerDrivenFailoverSelection();
+	vTestChannelManagerQueryRejectsTopologyMutation();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();
 
