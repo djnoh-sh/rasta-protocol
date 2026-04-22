@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-04-21`
+- Last Updated: `2026-04-22`
 
 ## Scope
 
@@ -57,6 +57,7 @@
   - retransmission pending 상태에서 `retransmission_base`보다 작으면 protocol error, 더 크면 gap 유지다.
 - retransmission request:
   - 첫 요청 시 `last_rx_sequence + 1`을 base sequence로 저장한다.
+  - `last_rx_sequence`가 `UINT32_MAX`인 상태에서 새 retransmission base를 계산해야 하면 sequence `0` wraparound를 만들지 않고 encode request 생성을 `REJECTED`로 거부한다.
   - retransmission request를 송신할 때 해당 tx sequence를 별도로 저장한다.
   - request payload는 4-byte big-endian base sequence를 사용한다.
   - `clear_retransmission` 이후에는 다음 요청에서 base를 다시 계산한다.
@@ -67,6 +68,7 @@
   - outbound sequence progression 검증
   - outbound sequence wraparound guard 검증
   - inbound sequence wraparound guard 검증
+  - retransmission base sequence wraparound guard 검증
   - inbound confirmation tracking 검증
   - retransmission request payload/base sequence 검증
   - inbound confirmation validity 검증

@@ -213,6 +213,11 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 	{
 		if(pxContext->uRetransmissionPending == 0U)
 		{
+			if(pxContext->uLastRxSequenceNumber == UINT32_MAX)
+			{
+				return RSRX_STATUS_REJECTED;
+			}
+
 			pxContext->uRetransmissionBaseSequenceNumber =
 				pxContext->uLastRxSequenceNumber + 1U;
 			pxContext->uRetransmissionPending = 1U;

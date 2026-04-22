@@ -953,6 +953,28 @@ static void vTestInboundSequenceWrapRejected(void)
 	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "inbound wrap sequence rejected");
 }
 
+static void vTestRetransmissionBaseWrapRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "retransmission base wrap protocol init");
+	xContext.uLastRxSequenceNumber = UINT32_MAX;
+	xContext.uLastTxConfirmationNumber = UINT32_MAX;
+
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+		RSRX_REASON_SEQUENCE_GAP_DETECTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_REJECTED, "retransmission base wrap rejected");
+	vAssertTrue(xContext.uRetransmissionPending == 0U, "retransmission base wrap keeps pending clear");
+	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 0U, "retransmission base wrap keeps base clear");
+	vAssertTrue(xContext.uLastRetransmissionRequestTxSequenceNumber == 0U, "retransmission base wrap keeps request tx clear");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 1U, "retransmission base wrap keeps next tx sequence");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -988,6 +1010,7 @@ int main(void)
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
 	vTestInboundSequenceWrapRejected();
+	vTestRetransmissionBaseWrapRejected();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_protocol_context_test: all tests passed\n");
