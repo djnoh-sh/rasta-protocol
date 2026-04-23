@@ -682,6 +682,7 @@ static void vTestSupervisorPollReceiveChannelDown(void)
 	vAssertTrue(xTransport.uReceiveCount == 0U, "poll down receive not called");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 0U, "poll down channel unavailable");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "poll down decision");
+	vAssertTrue(pxSupervisorReport->uChannelUnavailableSelectionCount == 1U, "poll down unavailable selection count");
 }
 
 static void vTestSupervisorPollReceiveNoFrame(void)
@@ -904,6 +905,7 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "poll retry matrix channel gated decision");
 	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll retry matrix channel gated clears stage");
 	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_CHANNEL_DOWN, "poll retry matrix channel gated query status");
+	vAssertTrue(pxSupervisorReport->uChannelUnavailableSelectionCount == 1U, "poll retry matrix unavailable selection count");
 }
 
 static void vTestSupervisorChannelDownUsesFailover(void)

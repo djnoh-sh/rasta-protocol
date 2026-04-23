@@ -3351,6 +3351,7 @@ int main(void)
 		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_UNAVAILABLE,
 		"no available channel");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "invalid channel on unavailable");
+	vAssertTrue(xResult.uUnavailableSelectionCount == 1U, "unavailable selection count one");
 
 	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xState.uIsAvailable = 1U;
@@ -3363,6 +3364,7 @@ int main(void)
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after restore");
 	vAssertTrue(xResult.uFailoverOccurred == 1U, "channel switch reported on preferred recovery");
 	vAssertTrue(xResult.uTotalSwitchCount == 2U, "switch count after preferred recovery");
+	vAssertTrue(xResult.uUnavailableSelectionCount == 1U, "unavailable selection count retained after recovery");
 	vAssertTrue(
 		rsrx_channel_manager_get_active_channel(&xContext) == RSRX_TRANSPORT_CHANNEL_PRIMARY,
 		"active primary after restore");
@@ -3373,6 +3375,7 @@ int main(void)
 		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
 		"select primary after reset");
 	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "selected primary after reset");
+	vAssertTrue(xResult.uUnavailableSelectionCount == 1U, "unavailable selection count retained after reset");
 
 	vTestChannelManagerRejectsInvalidTopologyConfig();
 	vTestChannelManagerRejectsRuntimeTopologyMutation();

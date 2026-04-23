@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-22`
+- Last Updated: `2026-04-23`
 
 ## Scope
 
@@ -27,7 +27,7 @@
 | TC-CHM-050 | FR-003, SR-003, IF-002 | runtime topology mutation 거부 검증 | primary/secondary active-standby config가 init 완료된 상태 | primary index에 secondary channel id를 가진 update를 호출한 뒤 select 수행 | update는 `INVALID_ARGUMENT`로 거부되고 기존 primary topology와 availability/switch count가 유지된다 | runtime update가 configured channel identity를 변질시키지 않고 availability-only update contract를 유지한다 |
 | TC-CHM-051 | FR-003, SR-003, IF-002 | duplicate channel priority topology 거부 검증 | active-standby channel id는 서로 다르지만 priority가 같은 config 준비 | `rsrx_channel_manager_init` 호출 | `INVALID_ARGUMENT`로 거부된다 | failover best-channel selection이 duplicate priority/array-order tie에 의존하지 않도록 startup에서 차단된다 |
 | TC-CHM-002 | FR-003 | active channel unavailable 시 failover 검증 | primary down, secondary up 상태 준비 | `update_channel`, `select_channel` 호출 | secondary 선택, failover 발생 | active channel, failover flag, cumulative switch count가 설계와 일치 |
-| TC-CHM-003 | SR-003 | all channel unavailable 처리 검증 | primary/secondary 모두 down 상태 준비 | `select_channel` 호출 | `UNAVAILABLE` 반환 | invalid channel과 unavailable status가 결정적으로 보고됨 |
+| TC-CHM-003 | SR-003 | all channel unavailable telemetry 검증 | primary/secondary 모두 down 상태 준비 | `select_channel` 호출 | `UNAVAILABLE` 반환 | invalid channel, unavailable status, cumulative unavailable selection count가 결정적으로 보고되고 recovery/reset 이후에도 audit count가 유지됨 |
 | TC-CHM-005 | FR-003 | preferred channel recovery auto-switch 검증 | secondary로 failover된 뒤 primary restored 상태 준비 | `update_channel`, `select_channel` 호출 | preferred primary로 자동 복귀 | selected channel, switch flag, cumulative switch count가 preferred recovery policy와 일치 |
 | TC-CHM-006 | FR-003 | preferred recovery holdoff 검증 | secondary로 failover된 뒤 primary restored, holdoff `2` config 준비 | `select_channel`을 2회 연속 호출 | 첫 호출은 secondary 유지, 두 번째 호출에서 primary 복귀 | holdoff count 전에는 switch가 억제되고 threshold 도달 후에만 복귀하며 cumulative switch count가 기대값과 일치 |
 | TC-CHM-052 | FR-003, SR-003, IF-002 | preferred recovery holdoff result telemetry 검증 | secondary로 failover된 뒤 primary restored, holdoff `2` config 준비 | failover, first stable select, recovery select를 순차 실행 | failover 전후 result가 holdoff active flag, progress, target, remaining count를 deterministic하게 보고한다 | holdoff active/progress/target/remaining telemetry가 selection policy와 supervisor audit cross-check에 사용할 수 있는 값으로 유지된다 |

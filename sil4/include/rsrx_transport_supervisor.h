@@ -135,6 +135,7 @@ typedef struct
 	uint32_t uErrorDecisionCount;
 	uint32_t uChannelSwitchCount;
 	uint32_t uLastChannelSwitchOccurred;
+	uint32_t uChannelUnavailableSelectionCount;
 	uint32_t uFailoverSwitchCount;
 	uint32_t uPreferredRecoverySwitchCount;
 	uint32_t uImmediatePreferredRecoverySwitchCount;

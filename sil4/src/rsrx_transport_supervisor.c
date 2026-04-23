@@ -39,6 +39,7 @@ static void vResetSupervisorReport(
 	pxReport->uErrorDecisionCount = 0U;
 	pxReport->uChannelSwitchCount = 0U;
 	pxReport->uLastChannelSwitchOccurred = 0U;
+	pxReport->uChannelUnavailableSelectionCount = 0U;
 	pxReport->uFailoverSwitchCount = 0U;
 	pxReport->uPreferredRecoverySwitchCount = 0U;
 	pxReport->uImmediatePreferredRecoverySwitchCount = 0U;
@@ -222,6 +223,8 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->pxSession->xChannelManager.uTotalSwitchCount;
 	pxContext->xLastReport.uLastChannelSwitchOccurred =
 		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
+	pxContext->xLastReport.uChannelUnavailableSelectionCount =
+		pxContext->pxSession->xChannelManager.uUnavailableSelectionCount;
 	pxContext->xLastReport.eLastSwitchTriggerEventType = eTriggerEventType;
 	pxContext->xLastReport.eLastSwitchTriggerChannelId = eTriggerChannelId;
 	if(eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP)

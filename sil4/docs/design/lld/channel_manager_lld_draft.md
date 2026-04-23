@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-22`
+- Last Updated: `2026-04-23`
 
 ## Scope
 
@@ -31,8 +31,8 @@
 | `rsrx_redundancy_mode_t` | enum | redundancy mode 식별 | single, active-standby |
 | `rsrx_channel_descriptor_t` | struct | channel id, availability, priority 보관 | config-owned descriptor |
 | `rsrx_channel_manager_config_t` | struct | 채널 구성과 선호 채널 보관 | startup validated input |
-| `rsrx_channel_selection_result_t` | struct | 선택 결과, failover 여부, cumulative switch telemetry, preferred recovery holdoff progress telemetry 보고 | caller-visible decision |
-| `rsrx_channel_manager_context_t` | struct | runtime active channel, holdoff 상태, cumulative switch count 보관 | no dynamic memory |
+| `rsrx_channel_selection_result_t` | struct | 선택 결과, failover 여부, cumulative switch/unavailable telemetry, preferred recovery holdoff progress telemetry 보고 | caller-visible decision |
+| `rsrx_channel_manager_context_t` | struct | runtime active channel, holdoff 상태, cumulative switch/unavailable selection count 보관 | no dynamic memory |
 
 ## Behavioral Rules
 
@@ -55,7 +55,7 @@
   - 새 channel이 이전 active와 다르면 `uFailoverOccurred`를 `1`로 보고한다.
   - 새 channel이 이전 active와 다를 때마다 `uTotalSwitchCount`를 증가시키고 selection result에도 현재 누적값을 복사한다.
   - preferred recovery holdoff가 적용 가능한 동안 selection result는 active flag, progress, target, remaining count를 보고한다.
-  - 어떤 channel도 available하지 않으면 `UNAVAILABLE`을 반환한다.
+  - 어떤 channel도 available하지 않으면 `UNAVAILABLE`을 반환하고 unavailable selection count를 누적한다.
 - reset 정책:
   - runtime active channel을 preferred channel로 되돌린다.
   - reset은 channel availability를 변경하지 않는다.
@@ -67,13 +67,14 @@
 - preferred channel recovery는 `ACTIVE_STANDBY`에서 holdoff 규칙을 만족한 뒤 자동 반영된다.
 - channel switch 여부는 `uFailoverOccurred`로 보고되며, 현재 단계에서는 failover와 preferred recovery를 구분하지 않는다.
 - cumulative switch telemetry는 reset 이후에도 유지되며, runtime 동안 발생한 failover/recovery 전환 횟수를 audit용으로 제공한다.
+- cumulative unavailable selection telemetry는 reset 이후에도 유지되며, all-channel-unavailable observation 횟수를 audit용으로 제공한다.
 - holdoff progress telemetry는 channel manager selection result에서 직접 제공되며, supervisor audit telemetry와 cross-check 가능해야 한다.
 
 ## Planned Verification
 
 - `TC-CHM-001`: init/select primary contract
 - `TC-CHM-002`: failover to secondary
-- `TC-CHM-003`: all channels unavailable
+- `TC-CHM-003`: all channels unavailable telemetry
 - `TC-CHM-004`: reset to preferred channel
 - `TC-CHM-005`: preferred channel recovery auto-switch
 - `TC-CHM-006`: preferred recovery holdoff

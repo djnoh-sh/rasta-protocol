@@ -44,6 +44,7 @@ typedef struct
 	uint32_t uAvailableChannelCount;
 	uint32_t uFailoverOccurred;
 	uint32_t uTotalSwitchCount;
+	uint32_t uUnavailableSelectionCount;
 	uint32_t uPreferredRecoveryHoldoffActive;
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;
@@ -57,6 +58,7 @@ typedef struct
 	uint32_t uLastSelectionWasFailover;
 	uint32_t uPreferredRecoveryStableSelectionCount;
 	uint32_t uTotalSwitchCount;
+	uint32_t uUnavailableSelectionCount;
 	uint32_t uInitialized;
 } rsrx_channel_manager_context_t;
 

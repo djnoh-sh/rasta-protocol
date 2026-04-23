@@ -156,6 +156,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_init(
 	pxContext->uLastSelectionWasFailover = 0U;
 	pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 	pxContext->uTotalSwitchCount = 0U;
+	pxContext->uUnavailableSelectionCount = 0U;
 	pxContext->uInitialized = 1U;
 
 	return RSRX_CHANNEL_MANAGER_STATUS_OK;
@@ -258,6 +259,11 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 		pxResult->uAvailableChannelCount = 0U;
 		pxResult->uFailoverOccurred = 0U;
 		pxResult->uTotalSwitchCount = pxContext->uTotalSwitchCount;
+		if(pxContext->uUnavailableSelectionCount < UINT32_MAX)
+		{
+			pxContext->uUnavailableSelectionCount++;
+		}
+		pxResult->uUnavailableSelectionCount = pxContext->uUnavailableSelectionCount;
 		pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 		vPopulateHoldoffTelemetry(pxContext, pxResult);
 		return RSRX_CHANNEL_MANAGER_STATUS_UNAVAILABLE;
@@ -276,6 +282,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 	pxResult->uAvailableChannelCount = uCountAvailableChannels(pxContext);
 	pxResult->uFailoverOccurred = pxContext->uLastSelectionWasFailover;
 	pxResult->uTotalSwitchCount = pxContext->uTotalSwitchCount;
+	pxResult->uUnavailableSelectionCount = pxContext->uUnavailableSelectionCount;
 	vPopulateHoldoffTelemetry(pxContext, pxResult);
 
 	return RSRX_CHANNEL_MANAGER_STATUS_OK;
