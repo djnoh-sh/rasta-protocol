@@ -82,6 +82,11 @@ rsrx_status_t rsrx_protocol_context_record_inbound_message(
 		return RSRX_STATUS_OK;
 	}
 
+	if(uConfirmationIsValid(pxContext, pxMessage) == 0U)
+	{
+		return RSRX_STATUS_REJECTED;
+	}
+
 	if(pxMessage->uSequenceNumber > pxContext->uLastRxSequenceNumber)
 	{
 		pxContext->uLastRxSequenceNumber = pxMessage->uSequenceNumber;

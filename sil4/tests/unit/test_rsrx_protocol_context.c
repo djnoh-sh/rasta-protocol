@@ -182,6 +182,53 @@ static void vTestInboundConfirmationValidation(void)
 	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "regressing confirmation rejected");
 }
 
+static void vTestInvalidConfirmationRecordRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+	rsrx_decoded_message_t xMessage;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "record guard protocol init");
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_CONNECT_REQUEST,
+		RSRX_REASON_CONNECT_REQUESTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "record guard first outbound");
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_HEARTBEAT,
+		RSRX_REASON_HEARTBEAT_ACCEPTED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "record guard second outbound");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 2U;
+	xMessage.xPayloadLength = 0U;
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record guard valid baseline");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 1U, "record guard baseline last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 1U, "record guard baseline tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 2U, "record guard baseline remote confirmation");
+
+	xMessage.uSequenceNumber = 2U;
+	xMessage.uConfirmationNumber = 3U;
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_REJECTED, "record guard high confirmation rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 1U, "record guard high confirmation keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 1U, "record guard high confirmation keeps tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 2U, "record guard high confirmation keeps remote confirmation");
+
+	xMessage.uConfirmationNumber = 1U;
+	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_REJECTED, "record guard regressing confirmation rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 1U, "record guard regressing confirmation keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 1U, "record guard regressing confirmation keeps tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 2U, "record guard regressing confirmation keeps remote confirmation");
+}
+
 static void vTestRecoverySuccessResolution(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1020,6 +1067,7 @@ int main(void)
 	vTestOutboundSequenceWrapRejected();
 	vTestRetransmissionRequestPayload();
 	vTestInboundConfirmationValidation();
+	vTestInvalidConfirmationRecordRejected();
 	vTestRecoverySuccessResolution();
 	vTestProtocolOrderingCloseoutMatrix();
 	vTestDuplicateInboundSequenceRejected();
