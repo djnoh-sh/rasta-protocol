@@ -120,6 +120,7 @@ typedef struct
 	rsrx_supervisor_decision_class_t eLastDecisionClass;
 	rsrx_supervisor_budget_update_t eLastBudgetUpdate;
 	rsrx_supervisor_receive_error_stage_t eLastReceiveErrorStage;
+	rsrx_transport_status_t eLastReceiveTransportStatus;
 	rsrx_transport_channel_id_t eBudgetChannelId;
 	const rsrx_orchestrator_report_t * pxLastReport;
 	uint32_t uProcessedFrameCount;

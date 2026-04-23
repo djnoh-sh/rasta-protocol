@@ -24,6 +24,7 @@ static void vResetSupervisorReport(
 	pxReport->eLastDecisionClass = RSRX_SUPERVISOR_DECISION_CLASS_NONE;
 	pxReport->eLastBudgetUpdate = RSRX_SUPERVISOR_BUDGET_UPDATE_NONE;
 	pxReport->eLastReceiveErrorStage = RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE;
+	pxReport->eLastReceiveTransportStatus = RSRX_TRANSPORT_STATUS_OK;
 	pxReport->eBudgetChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxReport->pxLastReport = (const rsrx_orchestrator_report_t *)0;
 	pxReport->uProcessedFrameCount = 0U;
@@ -833,6 +834,7 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 		RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_INBOUND_FRAME);
 	pxContext->xLastReport.eLastReceiveErrorStage =
 		RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE;
+	pxContext->xLastReport.eLastReceiveTransportStatus = RSRX_TRANSPORT_STATUS_OK;
 	vResetReceiveErrorBudget(pxContext);
 
 	eSessionStatus = rsrx_session_process_event(
@@ -928,6 +930,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	eTransportStatus = rsrx_transport_adapter_query_channel(
 		&pxContext->pxSession->xTransportAdapter,
 		&pxContext->xLastReport.xLastChannelState);
+	pxContext->xLastReport.eLastReceiveTransportStatus = eTransportStatus;
 	vRefreshChannelSwitchTelemetry(
 		pxContext,
 		eGetActiveChannelId(pxContext),
@@ -982,6 +985,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	eTransportStatus = rsrx_transport_adapter_receive_frame(
 		&pxContext->pxSession->xTransportAdapter,
 		&xFrame);
+	pxContext->xLastReport.eLastReceiveTransportStatus = eTransportStatus;
 	if(eTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE)
 	{
 		pxContext->xLastReport.eLastReceiveErrorStage =

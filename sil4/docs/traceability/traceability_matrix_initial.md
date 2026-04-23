@@ -267,7 +267,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPumpReceiveMaxPollOrderingMatrix` | TC-SUP-031 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorRuntimeOrderingCloseoutMatrix` | TC-SUP-032 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorTransportFaultEscalationDecisionMatrix` | TC-SUP-063 | RV-264 | Draft |
-| SR-002 | HZ-002 | HLD-001, LLD-009 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPollReceiveErrorBudgeted`, `vTestSupervisorPollQueryErrorStageTelemetry`, `vTestSupervisorPollReceiveErrorEscalatesAndResets`, `vTestSupervisorPollReceiveRetryOrderingMatrix` | TC-SUP-064 | RV-272 | Draft |
+| SR-002 | HZ-002 | HLD-001, LLD-009 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorPollReceiveErrorBudgeted`, `vTestSupervisorPollQueryErrorStageTelemetry`, `vTestSupervisorPollReceiveErrorEscalatesAndResets`, `vTestSupervisorPollReceiveRetryOrderingMatrix` | TC-SUP-064 | RV-272, RV-276 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionRecoveryFlow` | TC-INT-002 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedTimeoutFailSafeFlow`, `vTestIntegratedChannelDownFailSafeFlow` | TC-INT-003, TC-INT-004 | RV-264 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSendFailureBudgetFlow` | TC-INT-006 | RV-264 | Draft |
