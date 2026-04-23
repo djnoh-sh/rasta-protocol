@@ -39,6 +39,15 @@ static uint32_t uRetransmissionRequestIsConfirmed(
 		pxContext->uLastRetransmissionRequestTxSequenceNumber);
 }
 
+static uint32_t uMessageTypeIsSequenced(
+	rsrx_message_type_t eMessageType)
+{
+	return (uint32_t)((eMessageType == RSRX_MESSAGE_TYPE_CONNECT_RESPONSE) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_HEARTBEAT) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_DATA) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST));
+}
+
 rsrx_status_t rsrx_protocol_context_init(
 	rsrx_protocol_context_t * pxContext)
 {
@@ -66,6 +75,11 @@ rsrx_status_t rsrx_protocol_context_record_inbound_message(
 		(pxMessage == (const rsrx_decoded_message_t *)0))
 	{
 		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(uMessageTypeIsSequenced(pxMessage->eMessageType) == 0U)
+	{
+		return RSRX_STATUS_OK;
 	}
 
 	if(pxMessage->uSequenceNumber > pxContext->uLastRxSequenceNumber)

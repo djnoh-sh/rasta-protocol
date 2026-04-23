@@ -879,6 +879,21 @@ static void vTestUnsequencedMessageFamilyPassThroughMatrix(void)
 			rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
 			"unsequenced message family pass-through matrix resolve");
 		vAssertTrue(eEvent == axCases[uIndex].eExpectedEvent, "unsequenced message family pass-through matrix event");
+		vAssertTrue(
+			rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK,
+			"unsequenced message family pass-through matrix record");
+		vAssertTrue(
+			xContext.uLastRxSequenceNumber == axCases[uIndex].uLastRxSequenceNumber,
+			"unsequenced message family record keeps last rx");
+		vAssertTrue(
+			xContext.uLastTxConfirmationNumber == axCases[uIndex].uLastRxSequenceNumber,
+			"unsequenced message family record keeps tx confirmation");
+		vAssertTrue(
+			xContext.uLastRemoteConfirmationNumber == axCases[uIndex].uLastRemoteConfirmationNumber,
+			"unsequenced message family record keeps remote confirmation");
+		vAssertTrue(
+			xContext.uRetransmissionPending == axCases[uIndex].uRetransmissionPending,
+			"unsequenced message family record keeps retransmission pending");
 	}
 }
 

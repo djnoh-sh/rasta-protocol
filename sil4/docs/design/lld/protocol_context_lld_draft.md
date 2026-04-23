@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-04-22`
+- Last Updated: `2026-04-23`
 
 ## Scope
 
@@ -49,6 +49,7 @@
   - 마지막으로 기록된 inbound sequence number를 사용한다.
   - inbound message의 remote confirmation은 마지막으로 관측한 값보다 작아질 수 없다.
   - inbound confirmation은 로컬이 실제로 송신한 마지막 sequence보다 클 수 없다.
+  - unsequenced inbound message는 sequence/confirmation tracking state를 갱신하지 않는다.
 - inbound sequence validation:
   - sequenced message의 첫 inbound sequence는 `1`이어야 한다.
   - 일반 상태에서 `last_rx + 1`이면 정상 수용, 더 크면 gap, 더 작으면 protocol error다.
@@ -61,6 +62,9 @@
   - retransmission request를 송신할 때 해당 tx sequence를 별도로 저장한다.
   - request payload는 4-byte big-endian base sequence를 사용한다.
   - `clear_retransmission` 이후에는 다음 요청에서 base를 다시 계산한다.
+- unsequenced inbound message:
+  - `CONNECT_REQUEST`, `DISCONNECT`, `DIAGNOSTIC`은 ordering resolve 단계에서 suggested event를 pass-through한다.
+  - record 단계에서도 last rx, tx confirmation, remote confirmation, retransmission pending state를 오염시키지 않는다.
 
 ## Verification Notes
 
@@ -74,6 +78,7 @@
   - inbound confirmation validity 검증
   - retransmission pending에서 recovery success 판정 검증
   - unconfirmed recovery frame 거부 검증
+  - unsequenced message pass-through와 record side-effect 차단 검증
   - invalid argument 검증
 - 분석 포인트:
   - counter 증가의 bounded behavior
