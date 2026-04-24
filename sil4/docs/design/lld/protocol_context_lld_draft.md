@@ -42,6 +42,7 @@
 ## Functional Behavior
 
 - outbound sequence number:
+  - outbound encode request는 supported outbound message type에서만 허용되고 `INVALID` 같은 잘못된 type은 `INVALID_ARGUMENT`로 거부한다.
   - 최초 값은 `1`이다.
   - outbound message를 생성할 때마다 증가한다.
   - 다음 outbound sequence가 `UINT32_MAX`에 도달한 상태에서는 wraparound를 만들지 않고 encode request 생성을 `REJECTED`로 거부한다.
@@ -71,6 +72,7 @@
 
 - 필요한 테스트:
   - outbound sequence progression 검증
+  - invalid outbound message type reject 검증
   - outbound sequence wraparound guard 검증
   - inbound sequence wraparound guard 검증
   - retransmission base sequence wraparound guard 검증

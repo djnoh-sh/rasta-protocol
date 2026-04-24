@@ -48,6 +48,17 @@ static uint32_t uMessageTypeIsSequenced(
 		(eMessageType == RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST));
 }
 
+static uint32_t uMessageTypeIsSupportedOutbound(
+	rsrx_message_type_t eMessageType)
+{
+	return (uint32_t)((eMessageType == RSRX_MESSAGE_TYPE_CONNECT_REQUEST) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_HEARTBEAT) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_DATA) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_DISCONNECT) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_DIAGNOSTIC));
+}
+
 rsrx_status_t rsrx_protocol_context_init(
 	rsrx_protocol_context_t * pxContext)
 {
@@ -212,6 +223,11 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 
 	if((pxContext == (rsrx_protocol_context_t *)0) ||
 		(pxRequest == (rsrx_encode_request_t *)0))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(uMessageTypeIsSupportedOutbound(eMessageType) == 0U)
 	{
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}

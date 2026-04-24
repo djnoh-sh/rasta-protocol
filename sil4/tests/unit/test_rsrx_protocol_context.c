@@ -102,6 +102,22 @@ static void vTestOutboundSequenceWrapRejected(void)
 	vAssertTrue(xContext.uNextTxSequenceNumber == UINT32_MAX, "wrap guard sequence retained on reject");
 }
 
+static void vTestInvalidOutboundMessageTypeRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "invalid outbound type init");
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_INVALID,
+		RSRX_REASON_NONE,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_INVALID_ARGUMENT, "invalid outbound type rejected");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 1U, "invalid outbound type keeps next tx sequence");
+}
+
 static void vTestRetransmissionRequestPayload(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1065,6 +1081,7 @@ int main(void)
 	vTestOutboundSequenceProgression();
 	vTestInboundConfirmationTracking();
 	vTestOutboundSequenceWrapRejected();
+	vTestInvalidOutboundMessageTypeRejected();
 	vTestRetransmissionRequestPayload();
 	vTestInboundConfirmationValidation();
 	vTestInvalidConfirmationRecordRejected();

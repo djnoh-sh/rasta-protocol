@@ -23,6 +23,7 @@
 | Test ID | Req ID | Objective | Precondition | Stimulus | Expected Result | Pass/Fail Criteria |
 | --- | --- | --- | --- | --- | --- | --- |
 | TC-PC-001 | FR-003 | outbound sequence progression 검증 | 초기화된 protocol context | 연속 outbound encode request 생성 | sequence가 1부터 단조 증가 | sequence numbering이 결정적으로 증가한다 |
+| TC-PC-024 | SR-003 | invalid outbound message type reject 검증 | 초기화된 protocol context | `MESSAGE_TYPE_INVALID`로 outbound encode request 생성 | `INVALID_ARGUMENT` 반환 | outbound type contract 밖의 잘못된 type은 sequence/confirmation state를 변경하지 않고 거부된다 |
 | TC-PC-020 | FR-003, SR-003 | outbound sequence wraparound guard 검증 | `uNextTxSequenceNumber`가 `UINT32_MAX - 1`인 protocol context | 마지막 안전 encode request를 만든 뒤 다음 encode request를 다시 호출 | `UINT32_MAX - 1` sequence는 허용되고, 다음 호출은 `UINT32_MAX` boundary에서 `REJECTED`로 거부되며 counter가 유지된다 | sequence `0` wraparound가 발생하지 않고 outbound ordering ambiguity를 startup/runtime guard가 결정적으로 차단 |
 | TC-PC-021 | FR-003, SR-003 | inbound sequence wraparound guard 검증 | `uLastRxSequenceNumber`가 `UINT32_MAX`인 protocol context | sequence `0` inbound sequenced message를 판정 | `PROTOCOL_ERROR`로 분류 | inbound `last_rx + 1` arithmetic wraparound가 정상 next sequence로 수용되지 않는다 |
 | TC-PC-022 | FR-003, FR-004, SR-003 | retransmission base wraparound guard 검증 | `uLastRxSequenceNumber`가 `UINT32_MAX`이고 retransmission pending이 없는 protocol context | retransmission request encode request 생성 | `REJECTED`로 거부되고 pending/base/latest request tx/next tx sequence가 유지된다 | retransmission base가 sequence `0`으로 wraparound되지 않고 recovery 기준점 ambiguity가 차단된다 |
