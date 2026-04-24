@@ -682,6 +682,7 @@ static void vTestSupervisorPollReceiveChannelDown(void)
 	vAssertTrue(xTransport.uReceiveCount == 0U, "poll down receive not called");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 0U, "poll down channel unavailable");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "poll down decision");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 0U, "poll down available channel count");
 	vAssertTrue(pxSupervisorReport->uChannelUnavailableSelectionCount == 1U, "poll down unavailable selection count");
 }
 
@@ -961,6 +962,7 @@ static void vTestSupervisorChannelDownUsesFailover(void)
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 2U, "channel failover ignored count");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "channel failover switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel failover switch occurred");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "channel failover available channel count");
 	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel failover failover count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 0U, "channel failover preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 0U, "channel failover no-op count");
@@ -1031,6 +1033,7 @@ static void vTestSupervisorChannelUpRefreshesSelection(void)
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 2U, "channel up refresh ignored count");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel up refresh switch count");
 	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 1U, "channel up refresh switch occurred");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 2U, "channel up refresh available channel count");
 	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 1U, "channel up refresh failover count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "channel up refresh preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 1U, "channel up refresh immediate preferred recovery count");

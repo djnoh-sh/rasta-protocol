@@ -3,6 +3,9 @@
 #define D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET (2U)
 #define D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET (2U)
 
+static uint32_t uCountAvailableChannels(
+	const rsrx_transport_supervisor_context_t * pxContext);
+
 static void vResetSupervisorReport(
 	rsrx_transport_supervisor_report_t * pxReport)
 {
@@ -39,6 +42,7 @@ static void vResetSupervisorReport(
 	pxReport->uErrorDecisionCount = 0U;
 	pxReport->uChannelSwitchCount = 0U;
 	pxReport->uLastChannelSwitchOccurred = 0U;
+	pxReport->uAvailableChannelCount = 0U;
 	pxReport->uChannelUnavailableSelectionCount = 0U;
 	pxReport->uFailoverSwitchCount = 0U;
 	pxReport->uPreferredRecoverySwitchCount = 0U;
@@ -223,6 +227,7 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->pxSession->xChannelManager.uTotalSwitchCount;
 	pxContext->xLastReport.uLastChannelSwitchOccurred =
 		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
+	pxContext->xLastReport.uAvailableChannelCount = uCountAvailableChannels(pxContext);
 	pxContext->xLastReport.uChannelUnavailableSelectionCount =
 		pxContext->pxSession->xChannelManager.uUnavailableSelectionCount;
 	pxContext->xLastReport.eLastSwitchTriggerEventType = eTriggerEventType;
@@ -493,6 +498,37 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->xLastReport.eLastSwitchFromChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 		pxContext->xLastReport.eLastSwitchToChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	}
+}
+
+static uint32_t uCountAvailableChannels(
+	const rsrx_transport_supervisor_context_t * pxContext)
+{
+	const rsrx_channel_manager_context_t * pxChannelManager;
+	uint32_t uIndex;
+	uint32_t uCount;
+
+	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
+		(pxContext->pxSession == (const rsrx_session_t *)0))
+	{
+		return 0U;
+	}
+
+	pxChannelManager = &pxContext->pxSession->xChannelManager;
+	if(pxChannelManager->uInitialized == 0U)
+	{
+		return pxContext->xLastReport.xLastChannelState.uIsAvailable;
+	}
+
+	uCount = 0U;
+	for(uIndex = 0U; uIndex < pxChannelManager->xConfig.uChannelCount; ++uIndex)
+	{
+		if(pxChannelManager->xConfig.axChannels[uIndex].uIsAvailable != 0U)
+		{
+			uCount++;
+		}
+	}
+
+	return uCount;
 }
 
 static void vRefreshOutboundQueueTelemetry(
