@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-04-23`
+- Last Updated: `2026-04-24`
 
 ## Scope
 
@@ -48,6 +48,7 @@
   - 다음 outbound sequence가 `UINT32_MAX`에 도달한 상태에서는 wraparound를 만들지 않고 encode request 생성을 `REJECTED`로 거부한다.
 - confirmation number:
   - 마지막으로 기록된 inbound sequence number를 사용한다.
+  - record 단계는 protocol context inbound contract 바깥의 `INVALID` message type을 `INVALID_ARGUMENT`로 거부하고 tracking state를 변경하지 않는다.
   - inbound message의 remote confirmation은 마지막으로 관측한 값보다 작아질 수 없다.
   - inbound confirmation은 로컬이 실제로 송신한 마지막 sequence보다 클 수 없다.
   - record 단계에서도 invalid confirmation을 `REJECTED`로 거부하고 sequence/confirmation tracking state를 변경하지 않는다.
@@ -80,6 +81,7 @@
   - retransmission request payload/base sequence 검증
   - inbound confirmation validity 검증
   - invalid confirmation record side-effect 차단 검증
+  - invalid inbound message type record reject 검증
   - retransmission pending에서 recovery success 판정 검증
   - unconfirmed recovery frame 거부 검증
   - unsequenced message pass-through와 record side-effect 차단 검증

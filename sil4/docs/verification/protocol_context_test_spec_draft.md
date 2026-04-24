@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-23`
+- Last Updated: `2026-04-24`
 
 ## Scope
 
@@ -31,6 +31,7 @@
 | TC-PC-003 | FR-004 | retransmission request base sequence 검증 | last inbound sequence가 기록된 protocol context | retransmission request 생성 | payload가 `last_rx + 1`을 big-endian으로 포함 | retransmission 기준점이 결정적으로 계산된다 |
 | TC-PC-005 | FR-003 | inbound confirmation validity 검증 | outbound sequence가 일부 생성된 protocol context | confirmation이 sent-high-watermark를 넘거나 regress하는 inbound message 판정 | `PROTOCOL_ERROR`로 분류 | confirmation monotonicity와 upper bound를 강제 |
 | TC-PC-023 | FR-003, SR-003 | invalid confirmation record guard 검증 | valid inbound record 이후 remote confirmation high-watermark가 존재하는 protocol context | sent-high-watermark 초과 confirmation과 regressing confirmation을 가진 sequenced message를 record | `REJECTED` 반환 | invalid confirmation record가 last rx, tx confirmation, remote confirmation state를 변경하지 않는다 |
+| TC-PC-025 | FR-003, SR-003 | invalid inbound message type record reject 검증 | state가 채워진 protocol context | `MESSAGE_TYPE_INVALID` inbound message를 record | `INVALID_ARGUMENT` 반환 | inbound contract 바깥 type은 record 단계에서 tracking state를 변경하지 않고 거부된다 |
 | TC-PC-006 | FR-004 | recovery success resolution 검증 | retransmission pending 상태의 protocol context | base sequence와 일치하는 inbound message 판정 | `RECOVERY_SUCCESS`로 분류 | retransmission recovery completion이 결정적으로 판정 |
 | TC-PC-007 | FR-004 | unconfirmed recovery rejection 검증 | retransmission pending 상태의 protocol context | base sequence와 일치하지만 retransmission request confirmation이 부족한 inbound message 판정 | `PROTOCOL_ERROR`로 분류 | recovery success는 retransmission request가 remote에 반영된 경우에만 허용 |
 | TC-PC-010 | FR-004 | retransmission ordering matrix 검증 | retransmission pending 상태의 protocol context | base sequence, unconfirmed base sequence, invalid-confirmation base sequence, higher sequence, lower sequence를 표 기반으로 순차 판정 | `RECOVERY_SUCCESS`, `PROTOCOL_ERROR`, `SEQUENCE_GAP_DETECTED`가 규칙대로 결정된다 | retransmission pending ordering 분기가 table-driven unit test로 결정적으로 닫힌다 |

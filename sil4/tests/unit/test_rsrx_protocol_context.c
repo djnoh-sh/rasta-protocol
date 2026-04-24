@@ -245,6 +245,41 @@ static void vTestInvalidConfirmationRecordRejected(void)
 	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 2U, "record guard regressing confirmation keeps remote confirmation");
 }
 
+static void vTestInvalidInboundMessageTypeRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "invalid inbound type init");
+	xContext.uNextTxSequenceNumber = 4U;
+	xContext.uLastRxSequenceNumber = 7U;
+	xContext.uLastTxConfirmationNumber = 7U;
+	xContext.uLastRemoteConfirmationNumber = 3U;
+	xContext.uRetransmissionPending = 1U;
+	xContext.uRetransmissionBaseSequenceNumber = 8U;
+	xContext.uLastRetransmissionRequestTxSequenceNumber = 2U;
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	xMessage.eSuggestedEvent = RSRX_EVENT_INVALID;
+	xMessage.eReason = RSRX_REASON_NONE;
+	xMessage.uSequenceNumber = 99U;
+	xMessage.uConfirmationNumber = 99U;
+	xMessage.xPayloadLength = 0U;
+
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_INVALID_ARGUMENT,
+		"invalid inbound type rejected");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 4U, "invalid inbound type keeps next tx sequence");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 7U, "invalid inbound type keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 7U, "invalid inbound type keeps tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 3U, "invalid inbound type keeps remote confirmation");
+	vAssertTrue(xContext.uRetransmissionPending == 1U, "invalid inbound type keeps retransmission pending");
+	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 8U, "invalid inbound type keeps retransmission base");
+	vAssertTrue(
+		xContext.uLastRetransmissionRequestTxSequenceNumber == 2U,
+		"invalid inbound type keeps retransmission request tx");
+}
+
 static void vTestRecoverySuccessResolution(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1085,6 +1120,7 @@ int main(void)
 	vTestRetransmissionRequestPayload();
 	vTestInboundConfirmationValidation();
 	vTestInvalidConfirmationRecordRejected();
+	vTestInvalidInboundMessageTypeRejected();
 	vTestRecoverySuccessResolution();
 	vTestProtocolOrderingCloseoutMatrix();
 	vTestDuplicateInboundSequenceRejected();
