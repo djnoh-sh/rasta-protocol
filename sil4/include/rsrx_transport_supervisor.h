@@ -166,6 +166,7 @@ typedef struct
 	uint32_t uChannelUpTriggeredTerminalHoldoffOutcomeCount;
 	uint32_t uChannelDownTriggeredTerminalHoldoffOutcomeCount;
 	uint32_t uHoldoffResetCount;
+	uint32_t uPreferredRecoveryHoldoffActive;
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;
 	uint32_t uPreferredRecoveryHoldoffRemainingCount;

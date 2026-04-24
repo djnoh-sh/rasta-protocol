@@ -33,7 +33,7 @@
 | Element | Kind | Description | Constraints |
 | --- | --- | --- | --- |
 | `rsrx_supervisor_status_t` | enum | supervisor 결과 코드 | decode/session 오류를 분리 |
-| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, receive error budget/stage/status telemetry, session report, channel switch/available/unavailable telemetry, outbound queue/reject-reason telemetry 보유 | caller는 읽기 전용 사용 |
+| `rsrx_transport_supervisor_report_t` | struct | 마지막 frame, decoded message, effective event, decision, decision class, cumulative decision counter, send failure budget update/reset telemetry, receive error budget/stage/status telemetry, session report, channel switch/available/unavailable/holdoff-active telemetry, outbound queue/reject-reason telemetry 보유 | caller는 읽기 전용 사용 |
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
@@ -67,7 +67,7 @@
   - 임계치 도달 시 `PROTOCOL_ERROR`를 session에 전달해 fail-safe 전이를 유발한다.
   - successful frame, no-frame, channel-down은 receive error budget을 reset한다.
   - `FRAME_RECEIVED` event인 경우에만 `process_frame` 경로로 위임한다.
-  - poll count, 마지막 channel state, channel manager의 current available channel count와 누적 switch/unavailable selection count를 report에 남긴다.
+  - poll count, 마지막 channel state, channel manager의 current available channel count, preferred-recovery holdoff active state, 누적 switch/unavailable selection count를 report에 남긴다.
   - channel gate, no-frame, receive error budget path도 decision class/counter에 반영한다.
 - `rsrx_transport_supervisor_pump_receive`:
   - 최대 `uMaxPolls`만큼 `poll_receive`를 반복한다.
@@ -92,7 +92,7 @@
   - `CHANNEL_UP`은 transport adapter를 통해 channel manager selection을 refresh하는 trigger로 사용한다.
   - `CHANNEL_UP` refresh가 성공하면 상태 전이 없이 active channel/telemetry만 갱신하고 ignored event로 종료한다.
   - `FRAME_RECEIVED`는 direct frame path로 위임한다.
-  - 각 경로는 report에 마지막 decision, decision class, current channel switch count, current available channel count, 이번 처리에서 switch가 발생했는지 여부를 남긴다.
+  - 각 경로는 report에 마지막 decision, decision class, current channel switch count, current available channel count, preferred-recovery holdoff active state, 이번 처리에서 switch가 발생했는지 여부를 남긴다.
   - 각 경로는 report에 현재 outstanding send 존재 여부, deferred queue 존재 여부, queued count, deferred dispatch count, overflow reject count를 함께 남긴다.
   - outbound queue telemetry refresh는 adapter의 마지막 outbound reject reason도 report에 복사한다.
 - `rsrx_transport_supervisor_process_timer_expiry`:
@@ -132,7 +132,7 @@
   - budget channel과 active channel의 일관성
   - inactive/stale channel transport feedback의 보수적 무시 정책
   - outstanding send correlation과 send feedback 처리 일관성
-  - report의 channel switch/available-channel telemetry와 channel manager state 일관성
+  - report의 channel switch/available-channel/holdoff-active telemetry와 channel manager state 일관성
   - report의 outbound queue telemetry와 adapter runtime state 일관성
   - report의 outbound reject reason telemetry와 adapter telemetry 일관성
   - query/receive 순서와 channel availability gate의 결정성

@@ -1795,6 +1795,7 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit holdoff progress matrix failover");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit holdoff progress matrix failover progress zero");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffActive == 0U, "switch audit holdoff progress matrix failover inactive");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit holdoff progress matrix failover target");
 
 	xTransport.uPrimaryAvailable = 1U;
@@ -1830,6 +1831,7 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 0U, "switch audit holdoff progress matrix first hold completed holdoff preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 0U, "switch audit holdoff progress matrix first hold bypass preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit holdoff progress matrix first hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffActive == 1U, "switch audit holdoff progress matrix first hold active");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit holdoff progress matrix first hold target");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit holdoff progress matrix first hold remaining");
 
@@ -1863,6 +1865,7 @@ static void vTestSupervisorSwitchAuditHoldoffProgressMatrix(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 1U, "switch audit holdoff progress matrix recovery holdoff preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffPreferredRecoverySwitchCount == 1U, "switch audit holdoff progress matrix recovery completed holdoff preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uBypassPreferredRecoverySwitchCount == 0U, "switch audit holdoff progress matrix recovery bypass preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffActive == 0U, "switch audit holdoff progress matrix recovery inactive");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit holdoff progress matrix recovery progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit holdoff progress matrix recovery target retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit holdoff progress matrix recovery remaining reset");

@@ -73,6 +73,7 @@ static void vResetSupervisorReport(
 	pxReport->uChannelUpTriggeredTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uChannelDownTriggeredTerminalHoldoffOutcomeCount = 0U;
 	pxReport->uHoldoffResetCount = 0U;
+	pxReport->uPreferredRecoveryHoldoffActive = 0U;
 	pxReport->uPreferredRecoveryHoldoffProgressCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffRemainingCount = 0U;
@@ -223,11 +224,19 @@ static void vRefreshChannelSwitchTelemetry(
 			(pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount -
 				pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount) :
 			0U;
+	pxContext->xLastReport.uAvailableChannelCount = uCountAvailableChannels(pxContext);
+	pxContext->xLastReport.uPreferredRecoveryHoldoffActive = (uint32_t)(
+		(pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount > 0U) &&
+		(pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount <
+			pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount) &&
+		(eCurrentActiveChannelId != RSRX_TRANSPORT_CHANNEL_INVALID) &&
+		(ePreferredChannelId != RSRX_TRANSPORT_CHANNEL_INVALID) &&
+		(eCurrentActiveChannelId != ePreferredChannelId) &&
+		(pxContext->xLastReport.uAvailableChannelCount > 1U));
 	pxContext->xLastReport.uChannelSwitchCount =
 		pxContext->pxSession->xChannelManager.uTotalSwitchCount;
 	pxContext->xLastReport.uLastChannelSwitchOccurred =
 		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
-	pxContext->xLastReport.uAvailableChannelCount = uCountAvailableChannels(pxContext);
 	pxContext->xLastReport.uChannelUnavailableSelectionCount =
 		pxContext->pxSession->xChannelManager.uUnavailableSelectionCount;
 	pxContext->xLastReport.eLastSwitchTriggerEventType = eTriggerEventType;

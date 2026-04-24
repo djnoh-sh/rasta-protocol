@@ -18045,6 +18045,7 @@ static void vTestIntegratedPreferredRecoveryHoldoffThresholdElevenFlapResetFlow(
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-11 flap integration first secondary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-11 flap integration first switch count");
 	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "holdoff-11 flap integration first available channel count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffActive == 0U, "holdoff-11 flap integration first holdoff inactive");
 
 	xTransport.uPrimaryAvailable = 1U;
 	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
@@ -18052,6 +18053,7 @@ static void vTestIntegratedPreferredRecoveryHoldoffThresholdElevenFlapResetFlow(
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "holdoff-11 flap integration held secondary one");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 1U, "holdoff-11 flap integration held switch count one");
 	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 2U, "holdoff-11 flap integration hold available channel count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffActive == 1U, "holdoff-11 flap integration hold active");
 
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
@@ -18097,6 +18099,7 @@ static void vTestIntegratedPreferredRecoveryHoldoffThresholdElevenFlapResetFlow(
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "holdoff-11 flap integration renewed recovered primary");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "holdoff-11 flap integration renewed recovery switch count");
 	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 2U, "holdoff-11 flap integration renewed recovery available channel count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffActive == 0U, "holdoff-11 flap integration renewed recovery inactive");
 
 	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xTransport.axReceiveFrames[0].puPayload = auPrimaryDataFrame;
