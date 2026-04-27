@@ -139,6 +139,8 @@ static void vPopulateHoldoffTelemetry(
 
 	pxResult->uPreferredRecoveryHoldoffProgressCount =
 		pxContext->uPreferredRecoveryStableSelectionCount;
+	pxResult->uPreferredRecoveryPendingPenaltyCount =
+		pxContext->uPreferredRecoveryPendingPenaltySelections;
 	pxResult->uPreferredRecoveryHoldoffTargetCount =
 		uGetEffectiveHoldoffTarget(pxContext);
 	pxResult->uPreferredRecoveryHoldoffRemainingCount =
