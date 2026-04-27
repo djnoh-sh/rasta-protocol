@@ -100,6 +100,7 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, void * pvContext)
 	pxConfig->xChannelManagerConfig.uChannelCount = 1U;
 	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
 	pxConfig->xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
 	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;

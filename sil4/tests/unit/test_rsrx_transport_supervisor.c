@@ -260,6 +260,7 @@ static void vFillConfig(
 	pxConfig->xChannelManagerConfig.uChannelCount = 1U;
 	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
 	pxConfig->xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
 	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
@@ -311,6 +312,7 @@ static void vSetActiveStandbyConfig(
 	pxConfig->xChannelManagerConfig.uChannelCount = 2U;
 	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
 	pxConfig->xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
 	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
@@ -2053,6 +2055,78 @@ static void vTestSupervisorSwitchAuditHoldoffResetMatrix(void)
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 1U, "switch audit holdoff reset matrix reset count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit holdoff reset matrix progress after reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit holdoff reset matrix remaining after reset");
+}
+
+static void vTestSupervisorSwitchAuditFlapPenaltyMatrix(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[1] = { 0x6DU };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vSetActiveStandbyConfig(&xConfig);
+	xConfig.xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	xConfig.xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 1U;
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "switch audit flap penalty matrix session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit flap penalty matrix session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "switch audit flap penalty matrix session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "switch audit flap penalty matrix establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "switch audit flap penalty matrix supervisor init");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix failover");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit flap penalty matrix base target");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix first hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit flap penalty matrix first hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit flap penalty matrix first hold target");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit flap penalty matrix first hold remaining");
+
+	// cppcheck-suppress redundantAssignment
+	xTransport.uPrimaryAvailable = 0U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix abort");
+	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit flap penalty matrix abort count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "switch audit flap penalty matrix penalty target armed");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 3U, "switch audit flap penalty matrix penalty remaining armed");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix renewed hold one");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit flap penalty matrix renewed progress one");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "switch audit flap penalty matrix renewed target one");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit flap penalty matrix renewed remaining one");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix renewed hold two");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 2U, "switch audit flap penalty matrix renewed progress two");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit flap penalty matrix renewed remaining two");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix renewed recovery");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "switch audit flap penalty matrix preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit flap penalty matrix final progress reset");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit flap penalty matrix final target reset");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit flap penalty matrix final remaining reset");
 }
 
 static void vTestSupervisorSwitchAuditTriggerOriginMatrix(void)
@@ -5119,6 +5193,7 @@ static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
 	vTestSupervisorChannelEventOrderingMatrix();
 	vTestSupervisorSwitchAuditCloseoutMatrix();
 	vTestSupervisorSwitchAuditCumulativeMatrix();
+	vTestSupervisorSwitchAuditFlapPenaltyMatrix();
 	vTestSupervisorSwitchAuditEnvelopeMatrix();
 	vTestSupervisorTimerDelegationMatrix();
 	vTestSupervisorPollReceiveRetryOrderingMatrix();

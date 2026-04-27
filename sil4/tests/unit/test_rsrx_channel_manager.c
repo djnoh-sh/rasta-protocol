@@ -20,6 +20,7 @@ static rsrx_channel_manager_config_t xBuildConfig(void)
 	xConfig.uChannelCount = 2U;
 	xConfig.uPreferredChannelIndex = 0U;
 	xConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xConfig.axChannels[0].uIsAvailable = 1U;
 	xConfig.axChannels[0].uPriority = 0U;
@@ -145,6 +146,86 @@ static void vTestPreferredRecoveryHoldoff(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffActive == 0U, "holdoff inactive after recovery");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 0U, "holdoff progress reset after recovery");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 2U, "holdoff remaining resets to target after recovery");
+}
+
+static void vTestPreferredRecoveryFlapPenaltyHoldoff(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 1U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff failover");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap penalty holdoff first secondary");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "flap penalty holdoff base target after failover");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff primary restored");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff first hold");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap penalty holdoff retained secondary first");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 1U, "flap penalty holdoff progress first");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "flap penalty holdoff target first");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 1U, "flap penalty holdoff remaining first");
+
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff primary flap down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff flap reset");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap penalty holdoff retained secondary after flap");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 0U, "flap penalty holdoff progress reset after flap");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 3U, "flap penalty holdoff penalty target armed");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 3U, "flap penalty holdoff penalty remaining armed");
+
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff primary restored again");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff renewed hold one");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap penalty holdoff renewed retained one");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 1U, "flap penalty holdoff renewed progress one");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 3U, "flap penalty holdoff renewed target one");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 2U, "flap penalty holdoff renewed remaining one");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff renewed hold two");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY, "flap penalty holdoff renewed retained two");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 2U, "flap penalty holdoff renewed progress two");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 1U, "flap penalty holdoff renewed remaining two");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty holdoff renewed recovery");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "flap penalty holdoff renewed recovered primary");
+	vAssertTrue(xResult.uFailoverOccurred == 1U, "flap penalty holdoff renewed switch reported");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 0U, "flap penalty holdoff final progress reset");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "flap penalty holdoff final target reset");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 2U, "flap penalty holdoff final remaining reset");
 }
 
 static void vTestPreferredRecoveryHoldoffThresholdThree(void)
@@ -3381,6 +3462,7 @@ int main(void)
 	vTestChannelManagerRejectsRuntimeTopologyMutation();
 	vTestChannelManagerRejectsDuplicatePriorityTopology();
 	vTestPreferredRecoveryHoldoff();
+	vTestPreferredRecoveryFlapPenaltyHoldoff();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();
 	vTestPreferredRecoveryHoldoffThresholdFive();

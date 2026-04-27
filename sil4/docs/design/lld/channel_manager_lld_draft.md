@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-23`
+- Last Updated: `2026-04-27`
 
 ## Scope
 
@@ -30,9 +30,9 @@
 | --- | --- | --- | --- |
 | `rsrx_redundancy_mode_t` | enum | redundancy mode 식별 | single, active-standby |
 | `rsrx_channel_descriptor_t` | struct | channel id, availability, priority 보관 | config-owned descriptor |
-| `rsrx_channel_manager_config_t` | struct | 채널 구성과 선호 채널 보관 | startup validated input |
+| `rsrx_channel_manager_config_t` | struct | 채널 구성, 선호 채널, preferred recovery holdoff/flap penalty 설정 보관 | startup validated input |
 | `rsrx_channel_selection_result_t` | struct | 선택 결과, failover 여부, cumulative switch/unavailable telemetry, preferred recovery holdoff progress telemetry 보고 | caller-visible decision |
-| `rsrx_channel_manager_context_t` | struct | runtime active channel, holdoff 상태, cumulative switch/unavailable selection count 보관 | no dynamic memory |
+| `rsrx_channel_manager_context_t` | struct | runtime active channel, holdoff 상태, pending flap penalty, cumulative switch/unavailable selection count 보관 | no dynamic memory |
 
 ## Behavioral Rules
 
@@ -50,11 +50,13 @@
   - `ACTIVE_STANDBY`에서는 active channel이 down이면 available한 preferred channel 또는 best available channel로 즉시 전환한다.
   - active channel이 살아 있는 상태에서 preferred channel이 복구되면 `uPreferredRecoveryHoldoffSelections`만큼 연속 관측된 뒤에만 preferred channel로 복귀한다.
   - `uPreferredRecoveryHoldoffSelections == 0`이면 preferred recovery는 즉시 수행된다.
+  - holdoff가 진행 중인 상태에서 preferred channel이 다시 down되면 current holdoff progress는 reset되고, 다음 preferred recovery cycle의 effective holdoff target에는 `uPreferredRecoveryFlapPenaltySelections`가 추가된다.
+  - pending flap penalty는 preferred channel로 실제 복귀가 완료되거나 active loss bypass로 preferred channel이 선택되면 clear된다.
   - 그 외에는 현재 active channel이 available이면 그대로 유지한다.
   - active channel이 unavailable이면 available channel 중 priority가 가장 높은 channel을 선택한다.
   - 새 channel이 이전 active와 다르면 `uFailoverOccurred`를 `1`로 보고한다.
   - 새 channel이 이전 active와 다를 때마다 `uTotalSwitchCount`를 증가시키고 selection result에도 현재 누적값을 복사한다.
-  - preferred recovery holdoff가 적용 가능한 동안 selection result는 active flag, progress, target, remaining count를 보고한다.
+  - preferred recovery holdoff가 적용 가능한 동안 selection result는 active flag, progress, target, remaining count를 보고하며, target/remaining은 pending flap penalty가 있으면 증가된 effective holdoff target 기준으로 계산한다.
   - 어떤 channel도 available하지 않으면 `UNAVAILABLE`을 반환하고 unavailable selection count를 누적한다.
 - reset 정책:
   - runtime active channel을 preferred channel로 되돌린다.
@@ -69,6 +71,7 @@
 - cumulative switch telemetry는 reset 이후에도 유지되며, runtime 동안 발생한 failover/recovery 전환 횟수를 audit용으로 제공한다.
 - cumulative unavailable selection telemetry는 reset 이후에도 유지되며, all-channel-unavailable observation 횟수를 audit용으로 제공한다.
 - holdoff progress telemetry는 channel manager selection result에서 직접 제공되며, supervisor audit telemetry와 cross-check 가능해야 한다.
+- flap penalty가 configured된 경우 selection result의 holdoff target/remaining telemetry는 다음 preferred recovery cycle의 강화된 holdoff target을 caller에 직접 노출해야 한다.
 
 ## Planned Verification
 
@@ -79,6 +82,7 @@
 - `TC-CHM-005`: preferred channel recovery auto-switch
 - `TC-CHM-006`: preferred recovery holdoff
 - `TC-CHM-052`: preferred recovery holdoff result telemetry
+- `TC-CHM-053`: preferred recovery flap-penalty holdoff
 - `TC-CHM-049`: invalid topology config rejection
 - `TC-CHM-050`: runtime topology mutation rejection
 - `TC-CHM-051`: duplicate channel priority topology rejection

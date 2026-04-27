@@ -132,6 +132,7 @@ static void vInitSingleChannelManager(
 	xConfig.uChannelCount = 1U;
 	xConfig.uPreferredChannelIndex = 0U;
 	xConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	xConfig.axChannels[0].eChannelId = eChannelId;
 	xConfig.axChannels[0].uIsAvailable = 1U;
 	xConfig.axChannels[0].uPriority = 0U;
@@ -152,6 +153,7 @@ static void vInitActiveStandbyChannelManager(
 	xConfig.uChannelCount = 2U;
 	xConfig.uPreferredChannelIndex = 0U;
 	xConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xConfig.axChannels[0].uIsAvailable = 1U;
 	xConfig.axChannels[0].uPriority = 0U;
@@ -173,6 +175,7 @@ static void vInitActiveStandbyHoldoffChannelManager(
 	xConfig.uChannelCount = 2U;
 	xConfig.uPreferredChannelIndex = 0U;
 	xConfig.uPreferredRecoveryHoldoffSelections = uHoldoffSelections;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xConfig.axChannels[0].uIsAvailable = 1U;
 	xConfig.axChannels[0].uPriority = 0U;

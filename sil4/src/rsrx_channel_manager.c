@@ -1,5 +1,19 @@
 #include "rsrx_channel_manager.h"
 
+static uint32_t uGetEffectiveHoldoffTarget(
+	const rsrx_channel_manager_context_t * pxContext)
+{
+	uint32_t uTarget;
+
+	uTarget = pxContext->xConfig.uPreferredRecoveryHoldoffSelections;
+	if((UINT32_MAX - uTarget) < pxContext->uPreferredRecoveryPendingPenaltySelections)
+	{
+		return UINT32_MAX;
+	}
+
+	return uTarget + pxContext->uPreferredRecoveryPendingPenaltySelections;
+}
+
 static uint32_t uConfigIsValid(
 	const rsrx_channel_manager_config_t * pxConfig)
 {
@@ -126,7 +140,7 @@ static void vPopulateHoldoffTelemetry(
 	pxResult->uPreferredRecoveryHoldoffProgressCount =
 		pxContext->uPreferredRecoveryStableSelectionCount;
 	pxResult->uPreferredRecoveryHoldoffTargetCount =
-		pxContext->xConfig.uPreferredRecoveryHoldoffSelections;
+		uGetEffectiveHoldoffTarget(pxContext);
 	pxResult->uPreferredRecoveryHoldoffRemainingCount =
 		(pxResult->uPreferredRecoveryHoldoffTargetCount >
 			pxResult->uPreferredRecoveryHoldoffProgressCount) ?
@@ -155,6 +169,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_init(
 	pxContext->uActiveChannelIndex = pxConfig->uPreferredChannelIndex;
 	pxContext->uLastSelectionWasFailover = 0U;
 	pxContext->uPreferredRecoveryStableSelectionCount = 0U;
+	pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 	pxContext->uTotalSwitchCount = 0U;
 	pxContext->uUnavailableSelectionCount = 0U;
 	pxContext->uInitialized = 1U;
@@ -190,6 +205,8 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 	uint32_t uPreferredIndex;
 	uint32_t uActiveIsAvailable;
 	uint32_t uPreferredIsAvailable;
+	uint32_t uEffectiveHoldoffTarget;
+	uint32_t uHadHoldoffProgress;
 
 	if((pxContext == (rsrx_channel_manager_context_t *)0) ||
 		(pxResult == (rsrx_channel_selection_result_t *)0) ||
@@ -201,22 +218,26 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 	uPreviousIndex = pxContext->uActiveChannelIndex;
 	pxContext->uLastSelectionWasFailover = 0U;
 	uPreferredIndex = pxContext->xConfig.uPreferredChannelIndex;
+	uHadHoldoffProgress =
+		(uint32_t)(pxContext->uPreferredRecoveryStableSelectionCount > 0U);
 	uActiveIsAvailable = (uint32_t)(
 		(pxContext->uActiveChannelIndex < pxContext->xConfig.uChannelCount) &&
 		(pxContext->xConfig.axChannels[pxContext->uActiveChannelIndex].uIsAvailable != 0U));
 	uPreferredIsAvailable = (uint32_t)(
 		(uPreferredIndex < pxContext->xConfig.uChannelCount) &&
 		(pxContext->xConfig.axChannels[uPreferredIndex].uIsAvailable != 0U));
+	uEffectiveHoldoffTarget = uGetEffectiveHoldoffTarget(pxContext);
 
 	if((pxContext->xConfig.eMode == RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY) &&
 		(uPreferredIsAvailable != 0U) &&
 		(uPreferredIndex != pxContext->uActiveChannelIndex))
 	{
 		if((uActiveIsAvailable == 0U) ||
-			(pxContext->xConfig.uPreferredRecoveryHoldoffSelections == 0U))
+			(uEffectiveHoldoffTarget == 0U))
 		{
 			uSelectedIndex = uPreferredIndex;
 			pxContext->uPreferredRecoveryStableSelectionCount = 0U;
+			pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 			pxContext->uLastSelectionWasFailover =
 				(uint32_t)(uSelectedIndex != uPreviousIndex);
 		}
@@ -228,10 +249,11 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 			}
 
 			if(pxContext->uPreferredRecoveryStableSelectionCount >=
-				pxContext->xConfig.uPreferredRecoveryHoldoffSelections)
+				uEffectiveHoldoffTarget)
 			{
 				uSelectedIndex = uPreferredIndex;
 				pxContext->uPreferredRecoveryStableSelectionCount = 0U;
+				pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 				pxContext->uLastSelectionWasFailover =
 					(uint32_t)(uSelectedIndex != uPreviousIndex);
 			}
@@ -244,11 +266,20 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 	else if(uActiveIsAvailable != 0U)
 	{
 		uSelectedIndex = pxContext->uActiveChannelIndex;
+		if((uPreferredIsAvailable == 0U) && (uHadHoldoffProgress != 0U))
+		{
+			pxContext->uPreferredRecoveryPendingPenaltySelections =
+				pxContext->xConfig.uPreferredRecoveryFlapPenaltySelections;
+		}
 		pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 	}
 	else if(uFindBestAvailableChannel(pxContext, &uSelectedIndex) != 0U)
 	{
 		pxContext->uPreferredRecoveryStableSelectionCount = 0U;
+		if(uSelectedIndex == uPreferredIndex)
+		{
+			pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
+		}
 		pxContext->uLastSelectionWasFailover =
 			(uint32_t)(uSelectedIndex != uPreviousIndex);
 	}
@@ -313,6 +344,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_reset(
 	pxContext->uActiveChannelIndex = pxContext->xConfig.uPreferredChannelIndex;
 	pxContext->uLastSelectionWasFailover = 0U;
 	pxContext->uPreferredRecoveryStableSelectionCount = 0U;
+	pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 
 	return RSRX_CHANNEL_MANAGER_STATUS_OK;
 }

@@ -35,6 +35,7 @@ typedef struct
 	uint32_t uChannelCount;
 	uint32_t uPreferredChannelIndex;
 	uint32_t uPreferredRecoveryHoldoffSelections;
+	uint32_t uPreferredRecoveryFlapPenaltySelections;
 } rsrx_channel_manager_config_t;
 
 typedef struct
@@ -57,6 +58,7 @@ typedef struct
 	uint32_t uActiveChannelIndex;
 	uint32_t uLastSelectionWasFailover;
 	uint32_t uPreferredRecoveryStableSelectionCount;
+	uint32_t uPreferredRecoveryPendingPenaltySelections;
 	uint32_t uTotalSwitchCount;
 	uint32_t uUnavailableSelectionCount;
 	uint32_t uInitialized;

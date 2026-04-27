@@ -6,6 +6,20 @@
 static uint32_t uCountAvailableChannels(
 	const rsrx_transport_supervisor_context_t * pxContext);
 
+static uint32_t uGetEffectiveHoldoffTarget(
+	const rsrx_channel_manager_context_t * pxChannelManager)
+{
+	uint32_t uTarget;
+
+	uTarget = pxChannelManager->xConfig.uPreferredRecoveryHoldoffSelections;
+	if((UINT32_MAX - uTarget) < pxChannelManager->uPreferredRecoveryPendingPenaltySelections)
+	{
+		return UINT32_MAX;
+	}
+
+	return uTarget + pxChannelManager->uPreferredRecoveryPendingPenaltySelections;
+}
+
 static void vResetSupervisorReport(
 	rsrx_transport_supervisor_report_t * pxReport)
 {
@@ -217,7 +231,7 @@ static void vRefreshChannelSwitchTelemetry(
 	pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount =
 		pxContext->pxSession->xChannelManager.uPreferredRecoveryStableSelectionCount;
 	pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount =
-		pxContext->pxSession->xChannelManager.xConfig.uPreferredRecoveryHoldoffSelections;
+		uGetEffectiveHoldoffTarget(&pxContext->pxSession->xChannelManager);
 	pxContext->xLastReport.uPreferredRecoveryHoldoffRemainingCount =
 		(pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount >
 			pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount) ?

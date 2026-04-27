@@ -261,6 +261,7 @@ static void vFillConfig(
 	pxConfig->xChannelManagerConfig.uChannelCount = 1U;
 	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
 	pxConfig->xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
 	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
@@ -288,6 +289,7 @@ static void vSetActiveStandbyConfig(
 	pxConfig->xChannelManagerConfig.uChannelCount = 2U;
 	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
 	pxConfig->xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
 	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
 	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
@@ -6795,6 +6797,112 @@ static void vTestIntegratedChannelUpFlapResetFlow(void)
 	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up flap integration query confirms primary");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auOutboundPayload, sizeof(auOutboundPayload)) == RSRX_STATUS_OK, "channel up flap integration final send");
 	vAssertTrue(xTransport.xLastRequest.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up flap integration final send primary");
+}
+
+static void vTestIntegratedChannelUpFlapPenaltyFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	rsrx_transport_frame_t xTransportEventFrame;
+	rsrx_transport_frame_t axFrames[1];
+	rsrx_transport_status_t aeStatuses[1];
+	static const uint8_t auFramePayload[8] = { 0U };
+	size_t xHandshakeLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 1U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vSetActiveStandbyHoldoffConfig(&xConfig, 2U);
+	xConfig.xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 1U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "channel up flap penalty integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel up flap penalty integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "channel up flap penalty integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 1U);
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "channel up flap penalty integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "channel up flap penalty integration handshake pump");
+
+	xTransport.uPrimaryAvailable = 0U;
+	xTransport.uSecondaryAvailable = 1U;
+	xTransportEventFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransportEventFrame.puPayload = (const uint8_t *)0;
+	xTransportEventFrame.xPayloadLength = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration failover");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "channel up flap penalty integration base target");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration first hold");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "channel up flap penalty integration first hold progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "channel up flap penalty integration first hold target");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "channel up flap penalty integration first hold remaining");
+
+	// cppcheck-suppress redundantAssignment
+	xTransport.uPrimaryAvailable = 0U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration flap down");
+	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "channel up flap penalty integration abort count");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "channel up flap penalty integration penalty target armed");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 3U, "channel up flap penalty integration penalty remaining armed");
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransportEventFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration renewed hold one");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "channel up flap penalty integration renewed hold one progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "channel up flap penalty integration renewed hold one target");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "channel up flap penalty integration renewed hold one remaining");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration renewed hold two");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 2U, "channel up flap penalty integration renewed hold two progress");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "channel up flap penalty integration renewed hold two remaining");
+
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration renewed recovery");
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel up flap penalty integration switch after penalty holdoff");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "channel up flap penalty integration final progress reset");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "channel up flap penalty integration final target reset");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "channel up flap penalty integration final remaining reset");
+	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up flap penalty integration switched primary");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "channel up flap penalty integration established");
 }
 
 static void vTestIntegratedFailoverTransientRecoveryFlow(void)
@@ -24804,6 +24912,7 @@ int main(void)
 	vTestIntegratedChannelRecoveryHoldoffFlow();
 	vTestIntegratedChannelUpRefreshHoldoffFlow();
 	vTestIntegratedChannelUpFlapResetFlow();
+	vTestIntegratedChannelUpFlapPenaltyFlow();
 	vTestIntegratedFailoverTransientRecoveryFlow();
 	vTestIntegratedFailoverTransientSoakFlow();
 	vTestIntegratedSendFailureFailoverBudgetResetFlow();
