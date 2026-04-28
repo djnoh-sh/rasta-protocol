@@ -6875,6 +6875,7 @@ static void vTestIntegratedChannelUpFlapPenaltyFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration first hold");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "channel up flap penalty integration first hold progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 0U, "channel up flap penalty integration first hold pending");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 0U, "channel up flap penalty integration first hold arm count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "channel up flap penalty integration first hold target");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "channel up flap penalty integration first hold remaining");
 
@@ -6884,6 +6885,7 @@ static void vTestIntegratedChannelUpFlapPenaltyFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration flap down");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "channel up flap penalty integration abort count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "channel up flap penalty integration pending armed");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "channel up flap penalty integration arm count armed");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "channel up flap penalty integration penalty target armed");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 3U, "channel up flap penalty integration penalty remaining armed");
 
@@ -6892,18 +6894,21 @@ static void vTestIntegratedChannelUpFlapPenaltyFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration renewed hold one");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "channel up flap penalty integration renewed hold one progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "channel up flap penalty integration renewed pending one");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "channel up flap penalty integration renewed arm count one");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "channel up flap penalty integration renewed hold one target");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "channel up flap penalty integration renewed hold one remaining");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration renewed hold two");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 2U, "channel up flap penalty integration renewed hold two progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "channel up flap penalty integration renewed pending two");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "channel up flap penalty integration renewed arm count two");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "channel up flap penalty integration renewed hold two remaining");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty integration renewed recovery");
 	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 2U, "channel up flap penalty integration switch after penalty holdoff");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "channel up flap penalty integration final progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 0U, "channel up flap penalty integration final pending clear");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "channel up flap penalty integration final arm count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "channel up flap penalty integration final target reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "channel up flap penalty integration final remaining reset");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel up flap penalty integration switched primary");

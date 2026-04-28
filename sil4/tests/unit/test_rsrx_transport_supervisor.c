@@ -2101,6 +2101,7 @@ static void vTestSupervisorSwitchAuditFlapPenaltyMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix first hold");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit flap penalty matrix first hold progress");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 0U, "switch audit flap penalty matrix first hold pending");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 0U, "switch audit flap penalty matrix first hold arm count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit flap penalty matrix first hold target");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit flap penalty matrix first hold remaining");
 
@@ -2110,6 +2111,7 @@ static void vTestSupervisorSwitchAuditFlapPenaltyMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix abort");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit flap penalty matrix abort count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "switch audit flap penalty matrix pending armed");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "switch audit flap penalty matrix arm count armed");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "switch audit flap penalty matrix penalty target armed");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 3U, "switch audit flap penalty matrix penalty remaining armed");
 
@@ -2118,18 +2120,21 @@ static void vTestSupervisorSwitchAuditFlapPenaltyMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix renewed hold one");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 1U, "switch audit flap penalty matrix renewed progress one");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "switch audit flap penalty matrix renewed pending one");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "switch audit flap penalty matrix renewed arm count one");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 3U, "switch audit flap penalty matrix renewed target one");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit flap penalty matrix renewed remaining one");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix renewed hold two");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 2U, "switch audit flap penalty matrix renewed progress two");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "switch audit flap penalty matrix renewed pending two");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "switch audit flap penalty matrix renewed arm count two");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 1U, "switch audit flap penalty matrix renewed remaining two");
 
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty matrix renewed recovery");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoverySwitchCount == 1U, "switch audit flap penalty matrix preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffProgressCount == 0U, "switch audit flap penalty matrix final progress reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 0U, "switch audit flap penalty matrix final pending clear");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 1U, "switch audit flap penalty matrix final arm count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffTargetCount == 2U, "switch audit flap penalty matrix final target reset");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryHoldoffRemainingCount == 2U, "switch audit flap penalty matrix final remaining reset");
 }
