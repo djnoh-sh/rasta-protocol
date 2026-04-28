@@ -143,6 +143,8 @@ static void vPopulateHoldoffTelemetry(
 		pxContext->uPreferredRecoveryPendingPenaltySelections;
 	pxResult->uPreferredRecoveryPenaltyArmCount =
 		pxContext->uPreferredRecoveryPenaltyArmCount;
+	pxResult->uPreferredRecoveryPenaltyAppliedCycleCount =
+		pxContext->uPreferredRecoveryPenaltyAppliedCycleCount;
 	pxResult->uPreferredRecoveryPenaltyClearCount =
 		pxContext->uPreferredRecoveryPenaltyClearCount;
 	pxResult->uPreferredRecoveryPenaltyBypassClearCount =
@@ -179,6 +181,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_init(
 	pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 	pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 	pxContext->uPreferredRecoveryPenaltyArmCount = 0U;
+	pxContext->uPreferredRecoveryPenaltyAppliedCycleCount = 0U;
 	pxContext->uPreferredRecoveryPenaltyClearCount = 0U;
 	pxContext->uPreferredRecoveryPenaltyBypassClearCount = 0U;
 	pxContext->uTotalSwitchCount = 0U;
@@ -265,6 +268,12 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 		}
 		else
 		{
+			if((pxContext->uPreferredRecoveryStableSelectionCount == 0U) &&
+				(pxContext->uPreferredRecoveryPendingPenaltySelections > 0U) &&
+				(pxContext->uPreferredRecoveryPenaltyAppliedCycleCount < UINT32_MAX))
+			{
+				pxContext->uPreferredRecoveryPenaltyAppliedCycleCount++;
+			}
 			if(pxContext->uPreferredRecoveryStableSelectionCount < UINT32_MAX)
 			{
 				pxContext->uPreferredRecoveryStableSelectionCount++;
