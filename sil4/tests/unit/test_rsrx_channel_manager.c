@@ -447,6 +447,7 @@ static void vTestPreferredRecoveryFlapPenaltyAbortCount(void)
 		"flap penalty abort re-arm");
 	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "flap penalty abort pending retained after abort");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 2U, "flap penalty abort arm count incremented");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyRearmCount == 1U, "flap penalty abort rearm count incremented");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyAppliedCycleCount == 1U, "flap penalty abort applied count retained");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyAbortCount == 1U, "flap penalty abort count incremented");
 }

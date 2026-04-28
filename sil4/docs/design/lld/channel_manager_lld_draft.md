@@ -32,7 +32,7 @@
 | `rsrx_channel_descriptor_t` | struct | channel id, availability, priority 보관 | config-owned descriptor |
 | `rsrx_channel_manager_config_t` | struct | 채널 구성, 선호 채널, preferred recovery holdoff/flap penalty 설정 보관 | startup validated input |
 | `rsrx_channel_selection_result_t` | struct | 선택 결과, failover 여부, cumulative switch/unavailable telemetry, preferred recovery holdoff/pending-penalty telemetry 보고 | caller-visible decision |
-| `rsrx_channel_manager_context_t` | struct | runtime active channel, holdoff 상태, pending flap penalty, cumulative switch/unavailable/penalty arm/applied/abort/clear count 보관 | no dynamic memory |
+| `rsrx_channel_manager_context_t` | struct | runtime active channel, holdoff 상태, pending flap penalty, cumulative switch/unavailable/penalty arm/rearm/applied/abort/clear count 보관 | no dynamic memory |
 
 ## Behavioral Rules
 
@@ -56,7 +56,7 @@
   - active channel이 unavailable이면 available channel 중 priority가 가장 높은 channel을 선택한다.
   - 새 channel이 이전 active와 다르면 `uFailoverOccurred`를 `1`로 보고한다.
   - 새 channel이 이전 active와 다를 때마다 `uTotalSwitchCount`를 증가시키고 selection result에도 현재 누적값을 복사한다.
-  - preferred recovery holdoff가 적용 가능한 동안 selection result는 active flag, progress, pending penalty, penalty arm/applied/abort/clear count, target, remaining count를 보고하며, target/remaining은 pending flap penalty가 있으면 증가된 effective holdoff target 기준으로 계산한다.
+  - preferred recovery holdoff가 적용 가능한 동안 selection result는 active flag, progress, pending penalty, penalty arm/rearm/applied/abort/clear count, target, remaining count를 보고하며, target/remaining은 pending flap penalty가 있으면 증가된 effective holdoff target 기준으로 계산한다.
   - 어떤 channel도 available하지 않으면 `UNAVAILABLE`을 반환하고 unavailable selection count를 누적한다.
 - reset 정책:
   - runtime active channel을 preferred channel로 되돌린다.
@@ -71,7 +71,7 @@
 - cumulative switch telemetry는 reset 이후에도 유지되며, runtime 동안 발생한 failover/recovery 전환 횟수를 audit용으로 제공한다.
 - cumulative unavailable selection telemetry는 reset 이후에도 유지되며, all-channel-unavailable observation 횟수를 audit용으로 제공한다.
 - holdoff progress telemetry는 channel manager selection result에서 직접 제공되며, supervisor audit telemetry와 cross-check 가능해야 한다.
-- flap penalty가 configured된 경우 selection result의 pending penalty/penalty arm/applied/abort/clear count/holdoff target/remaining telemetry는 다음 preferred recovery cycle의 강화된 holdoff target과 cumulative arm/applied/abort/clear history를 caller에 직접 노출해야 한다.
+- flap penalty가 configured된 경우 selection result의 pending penalty/penalty arm/rearm/applied/abort/clear count/holdoff target/remaining telemetry는 다음 preferred recovery cycle의 강화된 holdoff target과 cumulative arm/rearm/applied/abort/clear history를 caller에 직접 노출해야 한다.
 
 ## Planned Verification
 

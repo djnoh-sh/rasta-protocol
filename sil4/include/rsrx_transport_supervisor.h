@@ -170,6 +170,7 @@ typedef struct
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryPendingPenaltyCount;
 	uint32_t uPreferredRecoveryPenaltyArmCount;
+	uint32_t uPreferredRecoveryPenaltyRearmCount;
 	uint32_t uPreferredRecoveryPenaltyAppliedCycleCount;
 	uint32_t uPreferredRecoveryPenaltyAbortCount;
 	uint32_t uPreferredRecoveryPenaltyClearCount;

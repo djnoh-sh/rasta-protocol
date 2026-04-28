@@ -2339,6 +2339,7 @@ static void vTestSupervisorSwitchAuditFlapPenaltyAbortMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "switch audit flap penalty abort re-arm");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "switch audit flap penalty abort pending retained after abort");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 2U, "switch audit flap penalty abort arm count incremented");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyRearmCount == 1U, "switch audit flap penalty abort rearm count incremented");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyAppliedCycleCount == 1U, "switch audit flap penalty abort applied count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyAbortCount == 1U, "switch audit flap penalty abort count incremented");
 	vAssertTrue(pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_RESET_CHANNEL_DOWN, "switch audit flap penalty abort reason");

@@ -7204,6 +7204,7 @@ static void vTestIntegratedChannelUpFlapPenaltyAbortFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xTransportEventFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "channel up flap penalty abort integration re-arm");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPendingPenaltyCount == 1U, "channel up flap penalty abort integration pending retained after abort");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyArmCount == 2U, "channel up flap penalty abort integration arm count incremented");
+	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyRearmCount == 1U, "channel up flap penalty abort integration rearm count incremented");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyAppliedCycleCount == 1U, "channel up flap penalty abort integration applied count retained");
 	vAssertTrue(pxSupervisorReport->uPreferredRecoveryPenaltyAbortCount == 1U, "channel up flap penalty abort integration abort count incremented");
 	vAssertTrue(rsrx_channel_manager_get_active_channel(&xSession.xChannelManager) == RSRX_TRANSPORT_CHANNEL_SECONDARY, "channel up flap penalty abort integration retained secondary");
