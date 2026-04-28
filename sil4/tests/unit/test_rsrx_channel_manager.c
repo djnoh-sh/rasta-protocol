@@ -186,6 +186,7 @@ static void vTestPreferredRecoveryFlapPenaltyHoldoff(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 1U, "flap penalty holdoff progress first");
 	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 0U, "flap penalty holdoff pending penalty clear first");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 0U, "flap penalty holdoff penalty arm count clear first");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty holdoff penalty clear count clear first");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "flap penalty holdoff target first");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 1U, "flap penalty holdoff remaining first");
 
@@ -200,6 +201,7 @@ static void vTestPreferredRecoveryFlapPenaltyHoldoff(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 0U, "flap penalty holdoff progress reset after flap");
 	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "flap penalty holdoff pending penalty armed");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty holdoff penalty arm count armed");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty holdoff penalty clear count retained on arm");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 3U, "flap penalty holdoff penalty target armed");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 3U, "flap penalty holdoff penalty remaining armed");
 
@@ -214,6 +216,7 @@ static void vTestPreferredRecoveryFlapPenaltyHoldoff(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 1U, "flap penalty holdoff renewed progress one");
 	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "flap penalty holdoff renewed pending one");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty holdoff renewed arm count one");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty holdoff renewed clear count one");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 3U, "flap penalty holdoff renewed target one");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 2U, "flap penalty holdoff renewed remaining one");
 
@@ -224,6 +227,7 @@ static void vTestPreferredRecoveryFlapPenaltyHoldoff(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 2U, "flap penalty holdoff renewed progress two");
 	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "flap penalty holdoff renewed pending two");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty holdoff renewed arm count two");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty holdoff renewed clear count two");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 1U, "flap penalty holdoff renewed remaining two");
 
 	vAssertTrue(
@@ -234,6 +238,7 @@ static void vTestPreferredRecoveryFlapPenaltyHoldoff(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffProgressCount == 0U, "flap penalty holdoff final progress reset");
 	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 0U, "flap penalty holdoff final pending clear");
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty holdoff final arm count retained");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 1U, "flap penalty holdoff final clear count retained");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "flap penalty holdoff final target reset");
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 2U, "flap penalty holdoff final remaining reset");
 }

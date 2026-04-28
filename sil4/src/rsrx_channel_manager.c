@@ -143,6 +143,8 @@ static void vPopulateHoldoffTelemetry(
 		pxContext->uPreferredRecoveryPendingPenaltySelections;
 	pxResult->uPreferredRecoveryPenaltyArmCount =
 		pxContext->uPreferredRecoveryPenaltyArmCount;
+	pxResult->uPreferredRecoveryPenaltyClearCount =
+		pxContext->uPreferredRecoveryPenaltyClearCount;
 	pxResult->uPreferredRecoveryHoldoffTargetCount =
 		uGetEffectiveHoldoffTarget(pxContext);
 	pxResult->uPreferredRecoveryHoldoffRemainingCount =
@@ -175,6 +177,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_init(
 	pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 	pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 	pxContext->uPreferredRecoveryPenaltyArmCount = 0U;
+	pxContext->uPreferredRecoveryPenaltyClearCount = 0U;
 	pxContext->uTotalSwitchCount = 0U;
 	pxContext->uUnavailableSelectionCount = 0U;
 	pxContext->uInitialized = 1U;
@@ -241,6 +244,11 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 			(uEffectiveHoldoffTarget == 0U))
 		{
 			uSelectedIndex = uPreferredIndex;
+			if((pxContext->uPreferredRecoveryPendingPenaltySelections > 0U) &&
+				(pxContext->uPreferredRecoveryPenaltyClearCount < UINT32_MAX))
+			{
+				pxContext->uPreferredRecoveryPenaltyClearCount++;
+			}
 			pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 			pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 			pxContext->uLastSelectionWasFailover =
@@ -257,6 +265,11 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 				uEffectiveHoldoffTarget)
 			{
 				uSelectedIndex = uPreferredIndex;
+				if((pxContext->uPreferredRecoveryPendingPenaltySelections > 0U) &&
+					(pxContext->uPreferredRecoveryPenaltyClearCount < UINT32_MAX))
+				{
+					pxContext->uPreferredRecoveryPenaltyClearCount++;
+				}
 				pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 				pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 				pxContext->uLastSelectionWasFailover =

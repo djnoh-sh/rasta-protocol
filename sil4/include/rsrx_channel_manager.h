@@ -50,6 +50,7 @@ typedef struct
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryPendingPenaltyCount;
 	uint32_t uPreferredRecoveryPenaltyArmCount;
+	uint32_t uPreferredRecoveryPenaltyClearCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;
 	uint32_t uPreferredRecoveryHoldoffRemainingCount;
 } rsrx_channel_selection_result_t;
@@ -62,6 +63,7 @@ typedef struct
 	uint32_t uPreferredRecoveryStableSelectionCount;
 	uint32_t uPreferredRecoveryPendingPenaltySelections;
 	uint32_t uPreferredRecoveryPenaltyArmCount;
+	uint32_t uPreferredRecoveryPenaltyClearCount;
 	uint32_t uTotalSwitchCount;
 	uint32_t uUnavailableSelectionCount;
 	uint32_t uInitialized;

@@ -170,6 +170,7 @@ typedef struct
 	uint32_t uPreferredRecoveryHoldoffProgressCount;
 	uint32_t uPreferredRecoveryPendingPenaltyCount;
 	uint32_t uPreferredRecoveryPenaltyArmCount;
+	uint32_t uPreferredRecoveryPenaltyClearCount;
 	uint32_t uPreferredRecoveryHoldoffTargetCount;
 	uint32_t uPreferredRecoveryHoldoffRemainingCount;
 	rsrx_supervisor_holdoff_cycle_state_t eLastHoldoffCycleState;
