@@ -92,6 +92,7 @@ static void vResetSupervisorReport(
 	pxReport->uPreferredRecoveryPendingPenaltyCount = 0U;
 	pxReport->uPreferredRecoveryPenaltyArmCount = 0U;
 	pxReport->uPreferredRecoveryPenaltyAppliedCycleCount = 0U;
+	pxReport->uPreferredRecoveryPenaltyAbortCount = 0U;
 	pxReport->uPreferredRecoveryPenaltyClearCount = 0U;
 	pxReport->uPreferredRecoveryPenaltyBypassClearCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
@@ -241,6 +242,8 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyArmCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyAppliedCycleCount =
 		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyAppliedCycleCount;
+	pxContext->xLastReport.uPreferredRecoveryPenaltyAbortCount =
+		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyAbortCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyClearCount =
 		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyClearCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyBypassClearCount =
