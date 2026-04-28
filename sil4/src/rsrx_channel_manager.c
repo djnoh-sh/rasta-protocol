@@ -145,6 +145,8 @@ static void vPopulateHoldoffTelemetry(
 		pxContext->uPreferredRecoveryPenaltyArmCount;
 	pxResult->uPreferredRecoveryPenaltyClearCount =
 		pxContext->uPreferredRecoveryPenaltyClearCount;
+	pxResult->uPreferredRecoveryPenaltyBypassClearCount =
+		pxContext->uPreferredRecoveryPenaltyBypassClearCount;
 	pxResult->uPreferredRecoveryHoldoffTargetCount =
 		uGetEffectiveHoldoffTarget(pxContext);
 	pxResult->uPreferredRecoveryHoldoffRemainingCount =
@@ -178,6 +180,7 @@ rsrx_channel_manager_status_t rsrx_channel_manager_init(
 	pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 	pxContext->uPreferredRecoveryPenaltyArmCount = 0U;
 	pxContext->uPreferredRecoveryPenaltyClearCount = 0U;
+	pxContext->uPreferredRecoveryPenaltyBypassClearCount = 0U;
 	pxContext->uTotalSwitchCount = 0U;
 	pxContext->uUnavailableSelectionCount = 0U;
 	pxContext->uInitialized = 1U;
@@ -244,7 +247,13 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 			(uEffectiveHoldoffTarget == 0U))
 		{
 			uSelectedIndex = uPreferredIndex;
-			if((pxContext->uPreferredRecoveryPendingPenaltySelections > 0U) &&
+			if((uActiveIsAvailable == 0U) &&
+				(pxContext->uPreferredRecoveryPendingPenaltySelections > 0U) &&
+				(pxContext->uPreferredRecoveryPenaltyBypassClearCount < UINT32_MAX))
+			{
+				pxContext->uPreferredRecoveryPenaltyBypassClearCount++;
+			}
+			else if((pxContext->uPreferredRecoveryPendingPenaltySelections > 0U) &&
 				(pxContext->uPreferredRecoveryPenaltyClearCount < UINT32_MAX))
 			{
 				pxContext->uPreferredRecoveryPenaltyClearCount++;
@@ -301,6 +310,11 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 		pxContext->uPreferredRecoveryStableSelectionCount = 0U;
 		if(uSelectedIndex == uPreferredIndex)
 		{
+			if((pxContext->uPreferredRecoveryPendingPenaltySelections > 0U) &&
+				(pxContext->uPreferredRecoveryPenaltyBypassClearCount < UINT32_MAX))
+			{
+				pxContext->uPreferredRecoveryPenaltyBypassClearCount++;
+			}
 			pxContext->uPreferredRecoveryPendingPenaltySelections = 0U;
 		}
 		pxContext->uLastSelectionWasFailover =

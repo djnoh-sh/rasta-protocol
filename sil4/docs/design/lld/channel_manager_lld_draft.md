@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-30`
+- Last Updated: `2026-05-01`
 
 ## Scope
 
@@ -83,6 +83,7 @@
 - `TC-CHM-006`: preferred recovery holdoff
 - `TC-CHM-052`: preferred recovery holdoff result telemetry
 - `TC-CHM-053`: preferred recovery flap-penalty holdoff
+- `TC-CHM-054`: preferred recovery flap-penalty bypass clear
 - `TC-CHM-049`: invalid topology config rejection
 - `TC-CHM-050`: runtime topology mutation rejection
 - `TC-CHM-051`: duplicate channel priority topology rejection

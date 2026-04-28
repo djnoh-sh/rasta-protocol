@@ -243,6 +243,76 @@ static void vTestPreferredRecoveryFlapPenaltyHoldoff(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffRemainingCount == 2U, "flap penalty holdoff final remaining reset");
 }
 
+static void vTestPreferredRecoveryFlapPenaltyBypassClear(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 1U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass failover");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass primary restored");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass hold");
+
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass primary flap down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass arm");
+	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "flap penalty bypass pending armed");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty bypass arm count armed");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty bypass ordinary clear count idle");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyBypassClearCount == 0U, "flap penalty bypass bypass clear count idle");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass primary restored again");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass renewed hold");
+	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "flap penalty bypass renewed pending");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 1U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass secondary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty bypass clear by bypass");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "flap penalty bypass recovered primary");
+	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 0U, "flap penalty bypass pending cleared");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty bypass arm count retained");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty bypass ordinary clear count retained");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyBypassClearCount == 1U, "flap penalty bypass bypass clear count incremented");
+}
+
 static void vTestPreferredRecoveryHoldoffThresholdThree(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3478,6 +3548,7 @@ int main(void)
 	vTestChannelManagerRejectsDuplicatePriorityTopology();
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryFlapPenaltyHoldoff();
+	vTestPreferredRecoveryFlapPenaltyBypassClear();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();
 	vTestPreferredRecoveryHoldoffThresholdFive();
