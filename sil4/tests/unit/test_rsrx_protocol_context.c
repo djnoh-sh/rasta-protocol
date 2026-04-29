@@ -995,6 +995,50 @@ static void vTestUnsequencedMessageFamilyPassThroughMatrix(void)
 	}
 }
 
+static void vTestConnectRequestRemainsUnsequencedBaseline(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "connect request baseline init");
+	xContext.uNextTxSequenceNumber = 5U;
+	xContext.uLastRxSequenceNumber = 0U;
+	xContext.uLastTxConfirmationNumber = 0U;
+	xContext.uLastRemoteConfirmationNumber = 0U;
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_REQUEST;
+	xMessage.eSuggestedEvent = RSRX_EVENT_CONNECT_REQUEST;
+	xMessage.eReason = RSRX_REASON_CONNECT_REQUESTED;
+	xMessage.uSequenceNumber = 7U;
+	xMessage.uConfirmationNumber = 9U;
+	xMessage.xPayloadLength = 0U;
+
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+		"connect request baseline resolve");
+	vAssertTrue(eEvent == RSRX_EVENT_CONNECT_REQUEST, "connect request baseline event");
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK,
+		"connect request baseline record");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 0U, "connect request baseline keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 0U, "connect request baseline keeps tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 0U, "connect request baseline keeps remote confirmation");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
+	xMessage.eSuggestedEvent = RSRX_EVENT_HANDSHAKE_SUCCESS;
+	xMessage.eReason = RSRX_REASON_HANDSHAKE_COMPLETED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
+		"connect response after unsequenced connect request resolve");
+	vAssertTrue(
+		eEvent == RSRX_EVENT_HANDSHAKE_SUCCESS,
+		"first sequenced inbound remains connect response after unsequenced connect request");
+}
+
 static void vTestDuplicateInboundSequenceRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1109,6 +1153,7 @@ static void vTestProtocolOrderingCloseoutMatrix(void)
 	vTestSequencedMessageFamilyOrderingMatrix();
 	vTestPostRecoveryMessageFamilyOrderingMatrix();
 	vTestUnsequencedMessageFamilyPassThroughMatrix();
+	vTestConnectRequestRemainsUnsequencedBaseline();
 }
 
 int main(void)

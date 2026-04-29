@@ -68,6 +68,8 @@
 - unsequenced inbound message:
   - `CONNECT_REQUEST`, `DISCONNECT`, `DIAGNOSTIC`은 ordering resolve 단계에서 suggested event를 pass-through한다.
   - record 단계에서도 last rx, tx confirmation, remote confirmation, retransmission pending state를 오염시키지 않는다.
+  - current baseline decision으로 `CONNECT_REQUEST`는 inbound admission trigger일 뿐 sequenced inbound family에 포함되지 않는다.
+  - 따라서 `CONNECT_REQUEST` 이후에도 first sequenced inbound acceptance 기준은 여전히 `CONNECT_RESPONSE`/`HEARTBEAT`/`DATA`/`RETRANSMISSION_REQUEST`의 sequence `1`이다.
 
 ## Verification Notes
 
@@ -85,6 +87,7 @@
   - retransmission pending에서 recovery success 판정 검증
   - unconfirmed recovery frame 거부 검증
   - unsequenced message pass-through와 record side-effect 차단 검증
+  - `CONNECT_REQUEST` unsequenced baseline decision 검증
   - invalid argument 검증
 - 분석 포인트:
   - counter 증가의 bounded behavior
