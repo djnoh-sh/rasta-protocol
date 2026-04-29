@@ -160,6 +160,24 @@ The following actions are officially supported by this response:
 5. Preserve codec/security/timestamp gap findings and align them to roadmap residual `R-006`.
 6. Remove or rewrite the redundancy-incomplete conclusion so it reflects current traceability, review, and integration coverage.
 
+## Accepted Items Already Reflected in the Roadmap
+
+The following accepted items from the external V&V reports have already been reflected into `sil4/docs/roadmap_status.md` as of 2026-04-29:
+
+1. `CONNECT_REQUEST` sequencing has been recorded as an explicit baseline-decision backlog item under `R-001`, rather than being left as an implicit unresolved observation.
+2. state-machine `HANDSHAKE_SUCCESS` action assertion strengthening has been recorded as an accepted test-strengthening backlog item under `R-007`.
+3. CMake-based warning-hardening evaluation has been recorded as an accepted build-hardening backlog item under `R-007`.
+4. CRC / MAC / timestamp / richer PDU parity remains formally tracked under `R-006` as future codec-security policy growth.
+5. the accepted V&V follow-ups have also been reflected in the roadmap next-order list so they are managed as explicit planned work rather than informal review notes.
+
+Official interpretation:
+
+- accepted items were carried into the roadmap only where they fit the current baseline contract
+- disputed handshake semantics were not promoted to confirmed-defect status
+- redundancy incompleteness was not carried into the roadmap because the current baseline already treats that family as representative closeout
+
+This means the project has not ignored the accepted content of the V&V reports. Instead, it has normalized that content into the existing roadmap structure using the current baseline contract vocabulary.
+
 ## Non-Actions from This Response
 
 This response does **not** by itself:
