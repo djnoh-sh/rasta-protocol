@@ -234,6 +234,11 @@ static void vTestConnectPath(void)
 		RSRX_ACTION_START_SUPERVISION_TIMER,
 		RSRX_ACTION_NOTIFY_API
 	};
+	static const rsrx_action_t xeExpectedHandshakeSuccessActions[] = {
+		RSRX_ACTION_RESET_SUPERVISION_TIMER,
+		RSRX_ACTION_NOTIFY_API,
+		RSRX_ACTION_LOG_DIAGNOSTIC
+	};
 
 	(void)rsrx_state_machine_init(&xContext);
 	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_INIT_SUCCESS, &xResult);
@@ -254,6 +259,17 @@ static void vTestConnectPath(void)
 	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "handshake_success event");
 	vAssertEqualState(RSRX_STATE_ESTABLISHED, xResult.eNextState, "state after handshake_success");
 	vAssertEqualReason(RSRX_REASON_HANDSHAKE_COMPLETED, xResult.eReason, "handshake reason");
+	vAssertEqualDiagnostic(
+		RSRX_DIAG_INFO_STATE_TRANSITION,
+		xResult.eDiagnostic,
+		"handshake_success diagnostic");
+	vAssertActionSequence(
+		&xResult,
+		xeExpectedHandshakeSuccessActions,
+		(uint32_t)(sizeof(xeExpectedHandshakeSuccessActions) /
+			sizeof(xeExpectedHandshakeSuccessActions[0])),
+		"handshake_success actions");
+	vAssertNoDuplicateActions(&xResult, "handshake_success actions must be unique");
 }
 
 static void vTestInboundConnectPath(void)
