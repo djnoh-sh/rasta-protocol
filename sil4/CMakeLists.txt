@@ -5,7 +5,24 @@ project(rsrx_rasta_reimplementation
 
 set(CMAKE_C_STANDARD 11)
 
-add_compile_options(-Wall -Wextra -Werror)
+option(RSRX_ENABLE_STRICT_WARNING_HARDENING
+	"Enable stricter compiler warning profile for evaluation builds"
+	OFF)
+
+set(RSRX_WARNING_FLAGS
+	-Wall
+	-Wextra
+	-Werror)
+
+if(RSRX_ENABLE_STRICT_WARNING_HARDENING)
+	if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+		list(APPEND RSRX_WARNING_FLAGS
+			-Wconversion
+			-Wsign-conversion)
+	endif()
+endif()
+
+add_compile_options(${RSRX_WARNING_FLAGS})
 
 include_directories(include)
 

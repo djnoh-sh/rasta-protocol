@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-17`
+- Last Updated: `2026-04-29`
 
 ## Purpose
 
@@ -24,6 +24,7 @@
 
 - Compiler:
   - `-Wall -Wextra -Werror`
+  - optional evaluation profile: `-Wconversion -Wsign-conversion` via `-DRSRX_ENABLE_STRICT_WARNING_HARDENING=ON`
 - `cppcheck`:
   - `--enable=warning,style,performance,portability`
   - `--std=c11`
@@ -55,3 +56,10 @@
 1. CI에서 동일 스크립트 실행
 2. `clang` 기반 보조 경고 게이트 검토
 3. 전용 MISRA analyzer 도입 후 baseline 재정의
+
+## 2026-04-29 Hardening Evaluation Note
+
+- external V&V follow-up에 따라 `Makefile`이 아니라 CMake 기준 warning-hardening evaluation을 수행한다.
+- baseline gate는 여전히 `-Wall -Wextra -Werror`다.
+- stricter conversion/sign profile은 `RSRX_ENABLE_STRICT_WARNING_HARDENING` option으로 분리한다.
+- current GCC baseline environment에서 strict profile build cleanliness를 별도 evidence report로 기록한다.

@@ -32,6 +32,8 @@
 | EVID-SA-013 | `../reviews/RV-004_cppcheck_residual_cleanup_review.md` | Draft | residual cleanup review 기록 |
 | EVID-SA-014 | `reports/static_analysis_report_2026-03-17_sa5_wider_cleanup.md` | Draft | wider baseline style finding 정리 결과 |
 | EVID-SA-015 | `../reviews/RV-005_cppcheck_wider_cleanup_review.md` | Draft | wider cleanup review 기록 |
+| EVID-SA-016 | `reports/static_analysis_report_2026-04-29_sa6_strict_warning_hardening.md` | Draft | CMake strict warning-hardening evaluation 결과 |
+| EVID-SA-017 | `../reviews/RV-293_cmake_warning_hardening_review.md` | Draft | strict warning-hardening evaluation review 기록 |
 | EVID-DES-001 | `reports/outbound_queue_policy_evidence_2026-03-17.md` | Draft | bounded outbound queue policy evidence note |
 | EVID-DES-002 | `../reviews/RV-006_outbound_queue_policy_review.md` | Draft | outbound queue policy safety review |
 | EVID-CI-001 | `ci_execution_linkage.md` | Draft | local verification과 CI workflow linkage 기준 |
