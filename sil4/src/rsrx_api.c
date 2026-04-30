@@ -489,8 +489,16 @@ rsrx_state_t rsrx_session_get_state(
 rsrx_status_t rsrx_session_reset(
 	rsrx_session_t * pxSession)
 {
+	rsrx_channel_manager_status_t eChannelStatus;
+
 	if((pxSession == (rsrx_session_t *)0) ||
 		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	eChannelStatus = rsrx_channel_manager_reset(&pxSession->xChannelManager);
+	if(eChannelStatus != RSRX_CHANNEL_MANAGER_STATUS_OK)
 	{
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
