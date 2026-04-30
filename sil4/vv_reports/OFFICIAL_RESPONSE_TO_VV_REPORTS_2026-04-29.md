@@ -197,3 +197,16 @@ The official project stance is:
 - accept the structural-safety strengths and codec/security residual observations
 - reject the outdated redundancy-incomplete conclusion
 - downgrade the handshake claims from confirmed defect language to parity-interpretation language unless and until the formal baseline contract is changed
+
+## Addendum: 2026-04-30 Follow-Up Closeout
+
+The V&V phase reports were revised on 2026-04-30 to align with the current roadmap and review state after the accepted follow-up work was completed.
+
+Closed follow-up items:
+
+1. `HANDSHAKE_SUCCESS` state-machine action assertion strengthening is closed by `RV-291`.
+2. `CONNECT_REQUEST` is explicitly fixed as an unsequenced baseline admission trigger and closed by `RV-292`.
+3. CMake strict warning-hardening evaluation is closed by `SA-REP-006` and `RV-293`.
+4. Redundancy remains classified as representative closeout for the current baseline scope, with future work limited to next policy growth and broader long-run generalization.
+
+The revised phase reports should therefore be read as baseline-aligned V&V inputs, not as open defect reports. Remaining certification-relevant gaps continue to be owned by the roadmap, primarily `R-005` for vendor evidence availability and `R-006` for codec/security/timestamp/PDU parity growth.
