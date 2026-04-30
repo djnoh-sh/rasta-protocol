@@ -452,6 +452,72 @@ static void vTestPreferredRecoveryFlapPenaltyAbortCount(void)
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyAbortCount == 1U, "flap penalty abort count incremented");
 }
 
+static void vTestPreferredRecoveryFlapPenaltyResetClearCount(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 1U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear failover");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear primary restored");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear first hold");
+
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear primary flap down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear arm");
+	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "flap penalty reset clear pending armed");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty reset clear arm count armed");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty reset clear ordinary clear idle before reset");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyBypassClearCount == 0U, "flap penalty reset clear bypass clear idle before reset");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyResetClearCount == 0U, "flap penalty reset clear reset clear idle before reset");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 3U, "flap penalty reset clear penalty target armed");
+
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear primary restored before reset");
+	vAssertTrue(
+		rsrx_channel_manager_reset(&xContext) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear reset");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty reset clear select after reset");
+	vAssertTrue(xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "flap penalty reset clear selected preferred after reset");
+	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 0U, "flap penalty reset clear pending cleared");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyArmCount == 1U, "flap penalty reset clear arm count retained");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyClearCount == 0U, "flap penalty reset clear ordinary clear retained");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyBypassClearCount == 0U, "flap penalty reset clear bypass clear retained");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyResetClearCount == 1U, "flap penalty reset clear count incremented");
+	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "flap penalty reset clear target reset to base");
+}
+
 static void vTestPreferredRecoveryHoldoffThresholdThree(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3690,6 +3756,7 @@ int main(void)
 	vTestPreferredRecoveryFlapPenaltyBypassClear();
 	vTestPreferredRecoveryFlapPenaltyAppliedCycleCount();
 	vTestPreferredRecoveryFlapPenaltyAbortCount();
+	vTestPreferredRecoveryFlapPenaltyResetClearCount();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();
 	vTestPreferredRecoveryHoldoffThresholdFive();

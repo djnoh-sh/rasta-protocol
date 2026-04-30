@@ -100,6 +100,7 @@ static void vResetSupervisorReport(
 	pxReport->uPreferredRecoveryPenaltyAbortCount = 0U;
 	pxReport->uPreferredRecoveryPenaltyClearCount = 0U;
 	pxReport->uPreferredRecoveryPenaltyBypassClearCount = 0U;
+	pxReport->uPreferredRecoveryPenaltyResetClearCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffTargetCount = 0U;
 	pxReport->uPreferredRecoveryHoldoffRemainingCount = 0U;
 	pxReport->eLastHoldoffCycleState = RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE;
@@ -255,6 +256,8 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyClearCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyBypassClearCount =
 		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyBypassClearCount;
+	pxContext->xLastReport.uPreferredRecoveryPenaltyResetClearCount =
+		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyResetClearCount;
 	pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount =
 		uGetEffectiveHoldoffTarget(&pxContext->pxSession->xChannelManager);
 	pxContext->xLastReport.uPreferredRecoveryHoldoffRemainingCount =
