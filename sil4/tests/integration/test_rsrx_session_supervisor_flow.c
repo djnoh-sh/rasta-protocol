@@ -17260,6 +17260,10 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff reset integration first hold non-preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 0U, "switch audit holdoff reset integration first hold reset count");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff reset integration first hold cycle count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredHoldoffCycleCount == 1U, "switch audit holdoff reset integration first hold preferred-triggered cycle count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredHoldoffCycleCount == 0U, "switch audit holdoff reset integration first hold non-preferred-triggered cycle count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredHoldoffCycleCount == 1U, "switch audit holdoff reset integration first hold channel-up-triggered cycle count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredHoldoffCycleCount == 0U, "switch audit holdoff reset integration first hold channel-down-triggered cycle count");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset integration first hold completed cycle count");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 0U, "switch audit holdoff reset integration first hold aborted cycle count");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS, "switch audit holdoff reset integration first hold state");
@@ -17293,6 +17297,10 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff reset integration reset non-preferred-triggered no-op count retained");
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 1U, "switch audit holdoff reset integration reset count");
 	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 1U, "switch audit holdoff reset integration cycle count retained on reset");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredHoldoffCycleCount == 1U, "switch audit holdoff reset integration reset preferred-triggered cycle count retained");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredHoldoffCycleCount == 0U, "switch audit holdoff reset integration reset non-preferred-triggered cycle count retained");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredHoldoffCycleCount == 1U, "switch audit holdoff reset integration reset channel-up-triggered cycle count retained");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredHoldoffCycleCount == 0U, "switch audit holdoff reset integration reset channel-down-triggered cycle count retained");
 	vAssertTrue(pxSupervisorReport->uCompletedHoldoffCycleCount == 0U, "switch audit holdoff reset integration completed cycle count retained on reset");
 	vAssertTrue(pxSupervisorReport->uAbortedHoldoffCycleCount == 1U, "switch audit holdoff reset integration aborted cycle count on reset");
 	vAssertTrue(pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED, "switch audit holdoff reset integration reset state");
@@ -17324,6 +17332,10 @@ static void vTestIntegratedSwitchAuditHoldoffResetFlow(void)
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredRefreshEventCount == 0U, "switch audit holdoff reset integration hold after reset non-preferred-triggered refresh count");
 	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredNoOpRefreshCount == 2U, "switch audit holdoff reset integration hold after reset preferred-triggered no-op count");
 	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredNoOpRefreshCount == 0U, "switch audit holdoff reset integration hold after reset non-preferred-triggered no-op count");
+	vAssertTrue(pxSupervisorReport->uPreferredChannelTriggeredHoldoffCycleCount == 2U, "switch audit holdoff reset integration hold after reset preferred-triggered cycle count");
+	vAssertTrue(pxSupervisorReport->uNonPreferredChannelTriggeredHoldoffCycleCount == 0U, "switch audit holdoff reset integration hold after reset non-preferred-triggered cycle count");
+	vAssertTrue(pxSupervisorReport->uChannelUpTriggeredHoldoffCycleCount == 2U, "switch audit holdoff reset integration hold after reset channel-up-triggered cycle count");
+	vAssertTrue(pxSupervisorReport->uChannelDownTriggeredHoldoffCycleCount == 0U, "switch audit holdoff reset integration hold after reset channel-down-triggered cycle count");
 	vAssertTrue(pxSupervisorReport->uImmediatePreferredRecoverySwitchCount == 0U, "switch audit holdoff reset integration hold after reset immediate preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uHoldoffPreferredRecoverySwitchCount == 0U, "switch audit holdoff reset integration hold after reset holdoff preferred recovery count");
 	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 1U, "switch audit holdoff reset integration reset count retained after hold");

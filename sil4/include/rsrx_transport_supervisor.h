@@ -153,6 +153,10 @@ typedef struct
 	uint32_t uHoldoffRefreshNoOpCount;
 	uint32_t uActiveRefreshNoOpCount;
 	uint32_t uHoldoffCycleCount;
+	uint32_t uPreferredChannelTriggeredHoldoffCycleCount;
+	uint32_t uNonPreferredChannelTriggeredHoldoffCycleCount;
+	uint32_t uChannelUpTriggeredHoldoffCycleCount;
+	uint32_t uChannelDownTriggeredHoldoffCycleCount;
 	uint32_t uCompletedHoldoffCycleCount;
 	uint32_t uOrdinaryCompletedHoldoffCycleCount;
 	uint32_t uBypassCompletedHoldoffCycleCount;

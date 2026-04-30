@@ -68,6 +68,7 @@
   - successful frame, no-frame, channel-down은 receive error budget을 reset한다.
   - `FRAME_RECEIVED` event인 경우에만 `process_frame` 경로로 위임한다.
   - poll count, 마지막 channel state, channel manager의 current available channel count, preferred-recovery holdoff active state, 누적 switch/unavailable selection count를 report에 남긴다.
+  - holdoff cycle이 처음 시작될 때는 누적 cycle count뿐 아니라 preferred-vs-non-preferred trigger bucket과 channel-up-vs-channel-down trigger bucket도 함께 증가시키고 마지막 start trigger event/channel을 보존한다.
   - channel gate, no-frame, receive error budget path도 decision class/counter에 반영한다.
 - `rsrx_transport_supervisor_pump_receive`:
   - 최대 `uMaxPolls`만큼 `poll_receive`를 반복한다.

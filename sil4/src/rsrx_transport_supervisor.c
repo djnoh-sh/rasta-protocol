@@ -74,6 +74,10 @@ static void vResetSupervisorReport(
 	pxReport->uHoldoffRefreshNoOpCount = 0U;
 	pxReport->uActiveRefreshNoOpCount = 0U;
 	pxReport->uHoldoffCycleCount = 0U;
+	pxReport->uPreferredChannelTriggeredHoldoffCycleCount = 0U;
+	pxReport->uNonPreferredChannelTriggeredHoldoffCycleCount = 0U;
+	pxReport->uChannelUpTriggeredHoldoffCycleCount = 0U;
+	pxReport->uChannelDownTriggeredHoldoffCycleCount = 0U;
 	pxReport->uCompletedHoldoffCycleCount = 0U;
 	pxReport->uOrdinaryCompletedHoldoffCycleCount = 0U;
 	pxReport->uBypassCompletedHoldoffCycleCount = 0U;
@@ -467,6 +471,29 @@ static void vRefreshChannelSwitchTelemetry(
 					(pxContext->xLastReport.uHoldoffCycleCount < UINT32_MAX))
 				{
 					pxContext->xLastReport.uHoldoffCycleCount++;
+					if(eTriggerChannelId == ePreferredChannelId)
+					{
+						if(pxContext->xLastReport.uPreferredChannelTriggeredHoldoffCycleCount < UINT32_MAX)
+						{
+							pxContext->xLastReport.uPreferredChannelTriggeredHoldoffCycleCount++;
+						}
+					}
+					else if(pxContext->xLastReport.uNonPreferredChannelTriggeredHoldoffCycleCount < UINT32_MAX)
+					{
+						pxContext->xLastReport.uNonPreferredChannelTriggeredHoldoffCycleCount++;
+					}
+					if(eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP)
+					{
+						if(pxContext->xLastReport.uChannelUpTriggeredHoldoffCycleCount < UINT32_MAX)
+						{
+							pxContext->xLastReport.uChannelUpTriggeredHoldoffCycleCount++;
+						}
+					}
+					else if((eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_DOWN) &&
+						(pxContext->xLastReport.uChannelDownTriggeredHoldoffCycleCount < UINT32_MAX))
+					{
+						pxContext->xLastReport.uChannelDownTriggeredHoldoffCycleCount++;
+					}
 					pxContext->xLastReport.eLastHoldoffCycleStartTriggerEventType =
 						eTriggerEventType;
 					pxContext->xLastReport.eLastHoldoffCycleStartTriggerChannelId =
