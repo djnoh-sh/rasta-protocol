@@ -658,6 +658,9 @@ static void vTestTransportAdapterRuntimeReset(void)
 		"transport adapter runtime reset deferred send");
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U, "transport adapter runtime reset outstanding present");
 	vAssertTrue(xTransportAdapterContext.uDeferredSendCount == 1U, "transport adapter runtime reset deferred present");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 1U, "transport adapter runtime reset accepted count before reset");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "transport adapter runtime reset queued count before reset");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 1U, "transport adapter runtime reset max deferred before reset");
 
 	rsrx_transport_adapter_reset_runtime_state(&xTransportAdapterContext);
 	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 0U, "transport adapter runtime reset outstanding cleared");
@@ -665,6 +668,9 @@ static void vTestTransportAdapterRuntimeReset(void)
 	vAssertTrue(xTransportAdapterContext.uHasDeferredSend == 0U, "transport adapter runtime reset deferred flag cleared");
 	vAssertTrue(xTransportAdapterContext.uHasLastInboundMessage == 0U, "transport adapter runtime reset inbound cache cleared");
 	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "transport adapter runtime reset reject reason cleared");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 1U, "transport adapter runtime reset accepted count retained");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "transport adapter runtime reset queued count retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 1U, "transport adapter runtime reset max deferred retained");
 	vAssertTrue(pxTelemetry->uRuntimeResetCount == 1U, "transport adapter runtime reset telemetry count");
 }
 
