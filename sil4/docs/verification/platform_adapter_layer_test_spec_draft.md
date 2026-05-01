@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-13`
+- Last Updated: `2026-05-01`
 
 ## Scope
 
@@ -31,4 +31,5 @@
 | TC-PA-007 | FR-003, IF-002 | preferred recovery send selection 검증 | secondary로 failover된 뒤 primary restored active-standby config와 transport adapter 준비 | `rsrx_transport_adapter_query_channel`, `START_HANDSHAKE` dispatch 수행 | preferred primary channel로 자동 복귀하고 primary로 send 수행 | selected channel과 send request channel이 preferred recovery policy와 일치 |
 | TC-PA-008 | FR-003, IF-002 | preferred recovery holdoff send selection 검증 | secondary로 failover된 뒤 primary restored, holdoff `2` active-standby config와 transport adapter 준비 | `query_channel`과 `START_HANDSHAKE` dispatch를 2회 수행 | 첫 회차는 secondary 유지, 두 번째 회차에서 primary 복귀 | holdoff 이전과 이후의 selected/send channel이 설계와 일치 |
 | TC-PA-009 | FR-003, IF-002 | channel manager topology mutation rejection 전파 검증 | active-standby channel manager와 mismatched channel id를 보고하는 transport query stub 준비 | `rsrx_transport_adapter_query_channel` 호출 | adapter query가 `RX_ERROR`로 실패하고 channel manager active channel은 변경되지 않음 | transport-reported topology mismatch가 무시되지 않고 runtime fault로 전파된다 |
+| TC-PA-010 | FR-003, IF-002 | transport adapter runtime reset 검증 | outstanding send와 deferred send가 존재하는 transport adapter 준비 | `rsrx_transport_adapter_reset_runtime_state` 호출 | outstanding/deferred outbound state, inbound cache, last reject reason이 clear되고 runtime-reset telemetry가 증가 | adapter reset contract가 public API reset 경로와 동일한 runtime cleanup을 직접 제공한다 |
 | TC-PA-003 | FR-007, SR-004 | diagnostics action 변환 검증 | diagnostics writer stub 준비 | `LOG_DIAGNOSTIC` dispatch | diagnostic record가 severity/state/status/reason 포함으로 기록 | record 필드가 설계와 일치 |

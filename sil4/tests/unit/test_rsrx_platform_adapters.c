@@ -618,6 +618,56 @@ static void vTestChannelManagerQueryRejectsTopologyMutation(void)
 	vAssertTrue(xTransportContext.uCallCount == 0U, "query mutation no send");
 }
 
+static void vTestTransportAdapterRuntimeReset(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	static const uint8_t auFramePayload[2] = { 0xAAU, 0x55U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitActiveStandbyChannelManager(&xChannelManagerContext);
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter runtime reset init");
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter runtime reset outstanding send");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auFramePayload,
+			sizeof(auFramePayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"transport adapter runtime reset deferred send");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U, "transport adapter runtime reset outstanding present");
+	vAssertTrue(xTransportAdapterContext.uDeferredSendCount == 1U, "transport adapter runtime reset deferred present");
+
+	rsrx_transport_adapter_reset_runtime_state(&xTransportAdapterContext);
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 0U, "transport adapter runtime reset outstanding cleared");
+	vAssertTrue(xTransportAdapterContext.uDeferredSendCount == 0U, "transport adapter runtime reset deferred cleared");
+	vAssertTrue(xTransportAdapterContext.uHasDeferredSend == 0U, "transport adapter runtime reset deferred flag cleared");
+	vAssertTrue(xTransportAdapterContext.uHasLastInboundMessage == 0U, "transport adapter runtime reset inbound cache cleared");
+	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "transport adapter runtime reset reject reason cleared");
+	vAssertTrue(pxTelemetry->uRuntimeResetCount == 1U, "transport adapter runtime reset telemetry count");
+}
+
 static void vTestPreferredRecoveryHoldoffSelection(void)
 {
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
@@ -1398,6 +1448,7 @@ int main(void)
 	vTestOutboundQueueBackpressureCloseoutMatrix();
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestChannelManagerQueryRejectsTopologyMutation();
+	vTestTransportAdapterRuntimeReset();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();
 
