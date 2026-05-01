@@ -803,6 +803,7 @@ static void vTestSessionResetClearsTransportAdapterRuntime(void)
 	vAssertTrue(xSession.xTransportAdapter.uDeferredSendCount == 0U, "reset adapter runtime deferred cleared");
 	vAssertTrue(xSession.xTransportAdapter.uHasLastInboundMessage == 0U, "reset adapter runtime inbound cache cleared");
 	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "reset adapter runtime reject reason cleared");
+	vAssertTrue(pxTelemetry->uRuntimeResetCount == 1U, "reset adapter runtime reset telemetry");
 }
 
 static void vTestSessionOutboundApplicationDataStateGuards(void)

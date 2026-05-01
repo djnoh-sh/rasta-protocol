@@ -39,6 +39,7 @@ typedef struct
 	uint32_t uClearOnInboundCount;
 	uint32_t uClearOnFeedbackCount;
 	uint32_t uClearManualCount;
+	uint32_t uRuntimeResetCount;
 } rsrx_outbound_send_telemetry_t;
 
 typedef struct

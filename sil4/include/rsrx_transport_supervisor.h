@@ -204,6 +204,7 @@ typedef struct
 	uint32_t uMaxDeferredSendCount;
 	uint32_t uDeferredDispatchCount;
 	uint32_t uQueueOverflowRejectCount;
+	uint32_t uOutboundRuntimeResetCount;
 	rsrx_outbound_reject_reason_t eLastOutboundRejectReason;
 	uint32_t uBusyRejectedSendCount;
 	uint32_t uConsecutiveBusyRejectedSendCount;

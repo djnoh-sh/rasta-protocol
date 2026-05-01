@@ -127,6 +127,7 @@ static void vResetSupervisorReport(
 	pxReport->uMaxDeferredSendCount = 0U;
 	pxReport->uDeferredDispatchCount = 0U;
 	pxReport->uQueueOverflowRejectCount = 0U;
+	pxReport->uOutboundRuntimeResetCount = 0U;
 	pxReport->eLastOutboundRejectReason = RSRX_OUTBOUND_REJECT_REASON_NONE;
 	pxReport->uBusyRejectedSendCount = 0U;
 	pxReport->uConsecutiveBusyRejectedSendCount = 0U;
@@ -648,6 +649,8 @@ static void vRefreshOutboundQueueTelemetry(
 	pxContext->xLastReport.uDeferredDispatchCount = pxTelemetry->uDeferredDispatchCount;
 	pxContext->xLastReport.uQueueOverflowRejectCount =
 		pxTelemetry->uQueueOverflowRejectCount;
+	pxContext->xLastReport.uOutboundRuntimeResetCount =
+		pxTelemetry->uRuntimeResetCount;
 	pxContext->xLastReport.eLastOutboundRejectReason =
 		pxTelemetry->eLastRejectReason;
 	pxContext->xLastReport.uBusyRejectedSendCount =

@@ -427,6 +427,7 @@ rsrx_transport_status_t rsrx_transport_adapter_init(
 	pxContext->xOutboundTelemetry.uClearOnInboundCount = 0U;
 	pxContext->xOutboundTelemetry.uClearOnFeedbackCount = 0U;
 	pxContext->xOutboundTelemetry.uClearManualCount = 0U;
+	pxContext->xOutboundTelemetry.uRuntimeResetCount = 0U;
 	pxContext->eDefaultChannelId = eDefaultChannelId;
 	pxContext->puFramePayload = puFramePayload;
 	pxContext->xFramePayloadLength = xFramePayloadLength;
@@ -633,6 +634,10 @@ void rsrx_transport_adapter_reset_runtime_state(
 	pxContext->xOutboundTelemetry.uLastBusyRejectEscalated = 0U;
 	pxContext->xOutboundTelemetry.eLastRejectReason =
 		RSRX_OUTBOUND_REJECT_REASON_NONE;
+	if(pxContext->xOutboundTelemetry.uRuntimeResetCount < UINT32_MAX)
+	{
+		pxContext->xOutboundTelemetry.uRuntimeResetCount++;
+	}
 }
 
 const rsrx_outbound_send_telemetry_t * rsrx_transport_adapter_get_outbound_telemetry(

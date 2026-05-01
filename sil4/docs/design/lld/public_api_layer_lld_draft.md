@@ -75,7 +75,7 @@
   - transport adapter를 통해 `DATA` frame encode/send를 수행한다.
 - `rsrx_session_reset`:
   - orchestrator state, transport-adapter runtime state, channel-manager runtime selection state를 함께 reset한다.
-  - outstanding/deferred outbound send와 protocol-context runtime tracking은 reset 이후 stale state로 남지 않아야 한다.
+  - outstanding/deferred outbound send와 protocol-context runtime tracking은 reset 이후 stale state로 남지 않아야 하며, outbound runtime reset count로 reset-origin을 관찰할 수 있어야 한다.
   - armed pending flap penalty가 있으면 channel-manager reset-clear telemetry를 통해 reset-origin clear가 관찰 가능해야 한다.
 
 ## Verification Notes
