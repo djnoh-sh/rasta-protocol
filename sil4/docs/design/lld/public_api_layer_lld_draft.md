@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-04-30`
+- Last Updated: `2026-05-01`
 
 ## Scope
 
@@ -48,7 +48,7 @@
 | `rsrx_session_process_timer_expiry` | function | timer expiry source를 protocol event로 변환 후 전달 | 지원 범위 밖 timer source는 거부 |
 | `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
 | `rsrx_session_get_state` | function | session 상태 조회 | 읽기 전용 |
-| `rsrx_session_reset` | function | session/orchestrator와 channel-manager runtime 상태 초기화 | bounded 동작 |
+| `rsrx_session_reset` | function | session/orchestrator, transport-adapter runtime, channel-manager runtime 상태 초기화 | bounded 동작 |
 
 ## Functional Behavior
 
@@ -74,7 +74,8 @@
   - `ESTABLISHED` 상태만 허용한다.
   - transport adapter를 통해 `DATA` frame encode/send를 수행한다.
 - `rsrx_session_reset`:
-  - orchestrator state와 channel-manager runtime selection state를 함께 reset한다.
+  - orchestrator state, transport-adapter runtime state, channel-manager runtime selection state를 함께 reset한다.
+  - outstanding/deferred outbound send와 protocol-context runtime tracking은 reset 이후 stale state로 남지 않아야 한다.
   - armed pending flap penalty가 있으면 channel-manager reset-clear telemetry를 통해 reset-origin clear가 관찰 가능해야 한다.
 
 ## Verification Notes
@@ -89,6 +90,7 @@
   - lifecycle callback 호출 검증
   - invalid argument 방어 검증
   - session reset이 channel-manager pending penalty를 함께 clear하는지 검증
+  - session reset이 transport-adapter outstanding/deferred runtime state를 함께 clear하는지 검증
 - 분석 포인트:
   - config validation 실패 시 partially initialized state가 남지 않는지 검토
   - session 초기화 순서와 partially initialized state 방지

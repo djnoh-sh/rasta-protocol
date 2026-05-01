@@ -120,6 +120,9 @@ void rsrx_transport_adapter_clear_outstanding_send(
 void rsrx_transport_adapter_clear_outstanding_send_on_feedback(
 	rsrx_transport_adapter_context_t * pxContext);
 
+void rsrx_transport_adapter_reset_runtime_state(
+	rsrx_transport_adapter_context_t * pxContext);
+
 const rsrx_outbound_send_telemetry_t * rsrx_transport_adapter_get_outbound_telemetry(
 	const rsrx_transport_adapter_context_t * pxContext);
 

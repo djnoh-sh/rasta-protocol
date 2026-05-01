@@ -497,6 +497,7 @@ rsrx_status_t rsrx_session_reset(
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
+	rsrx_transport_adapter_reset_runtime_state(&pxSession->xTransportAdapter);
 	eChannelStatus = rsrx_channel_manager_reset(&pxSession->xChannelManager);
 	if(eChannelStatus != RSRX_CHANNEL_MANAGER_STATUS_OK)
 	{

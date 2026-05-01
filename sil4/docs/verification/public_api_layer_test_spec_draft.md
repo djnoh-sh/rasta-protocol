@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-30`
+- Last Updated: `2026-05-01`
 
 ## Scope
 
@@ -35,3 +35,4 @@
 | TC-API-010 | FR-003, IF-001 | outbound application data send 검증 | `ESTABLISHED` 상태 session | `session_send_application_data` 호출 | `DATA` frame이 encode되어 transport로 전달 | reason, sequence, confirmation, payload가 설계와 일치 |
 | TC-API-011 | IF-001 | outbound application data state/payload guard 검증 | `INITIALIZED` 또는 `ESTABLISHED` 상태 session | invalid state 또는 invalid payload로 `session_send_application_data` 호출 | `INVALID_STATE` 또는 `INVALID_ARGUMENT` 반환 | direct-send contract의 입력 방어가 결정적이다 |
 | TC-API-012 | FR-003, IF-001, SR-003 | session reset channel-manager runtime state 검증 | active-standby session에서 pending flap penalty가 armed된 상태 | `rsrx_session_reset` 호출 후 channel-manager selection 수행 | pending penalty가 clear되고 reset-clear telemetry가 증가한다 | public API reset이 orchestrator뿐 아니라 redundancy runtime state도 deterministic하게 초기화한다 |
+| TC-API-013 | FR-003, IF-001 | session reset transport-adapter runtime state 검증 | established session에서 outstanding send와 deferred send가 존재하는 상태 | `rsrx_session_reset` 호출 | outstanding/deferred outbound state와 inbound cache가 clear된다 | public API reset 이후 stale outbound queue/protocol runtime state가 남지 않는다 |

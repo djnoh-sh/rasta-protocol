@@ -763,6 +763,48 @@ static void vTestSessionResetClearsChannelManagerPenalty(void)
 	vAssertTrue(xResult.uPreferredRecoveryPenaltyResetClearCount == 1U, "session reset increments reset clear count");
 }
 
+static void vTestSessionResetClearsTransportAdapterRuntime(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1210U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[1] = { 0x82U };
+	static const uint8_t auDataPayload[2] = { 0x83U, 0x84U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) == RSRX_STATUS_OK, "reset adapter runtime outstanding send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) == RSRX_STATUS_OK, "reset adapter runtime deferred send");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 1U, "reset adapter runtime outstanding present");
+	vAssertTrue(xSession.xTransportAdapter.uDeferredSendCount == 1U, "reset adapter runtime deferred present");
+
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "session reset clears adapter runtime");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 0U, "reset adapter runtime outstanding cleared");
+	vAssertTrue(xSession.xTransportAdapter.uDeferredSendCount == 0U, "reset adapter runtime deferred cleared");
+	vAssertTrue(xSession.xTransportAdapter.uHasLastInboundMessage == 0U, "reset adapter runtime inbound cache cleared");
+	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "reset adapter runtime reject reason cleared");
+}
+
 static void vTestSessionOutboundApplicationDataStateGuards(void)
 {
 	rsrx_session_t xSession;
@@ -799,6 +841,7 @@ int main(void)
 	vTestSessionRetransmissionTimerExpiry();
 	vTestInvalidArguments();
 	vTestSessionResetClearsChannelManagerPenalty();
+	vTestSessionResetClearsTransportAdapterRuntime();
 	vTestSessionOutboundApplicationDataStateGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");

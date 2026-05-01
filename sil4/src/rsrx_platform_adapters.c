@@ -604,6 +604,37 @@ void rsrx_transport_adapter_clear_outstanding_send_on_feedback(
 	vClearOutstandingSend(pxContext, 1U, 0U);
 }
 
+void rsrx_transport_adapter_reset_runtime_state(
+	rsrx_transport_adapter_context_t * pxContext)
+{
+	uint32_t uDeferredIndex;
+
+	if(pxContext == (rsrx_transport_adapter_context_t *)0)
+	{
+		return;
+	}
+
+	(void)rsrx_protocol_context_init(&pxContext->xProtocolContext);
+	pxContext->uHasLastInboundMessage = 0U;
+	pxContext->uHasOutstandingSend = 0U;
+	pxContext->eLastOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	for(uDeferredIndex = 0U;
+		uDeferredIndex < D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY;
+		++uDeferredIndex)
+	{
+		pxContext->aeDeferredMessageTypes[uDeferredIndex] =
+			RSRX_MESSAGE_TYPE_INVALID;
+		pxContext->aeDeferredReasons[uDeferredIndex] = RSRX_REASON_NONE;
+		pxContext->axDeferredPayloadLengths[uDeferredIndex] = 0U;
+	}
+	pxContext->uDeferredSendCount = 0U;
+	pxContext->uHasDeferredSend = 0U;
+	pxContext->xOutboundTelemetry.uConsecutiveBusyRejectedSendCount = 0U;
+	pxContext->xOutboundTelemetry.uLastBusyRejectEscalated = 0U;
+	pxContext->xOutboundTelemetry.eLastRejectReason =
+		RSRX_OUTBOUND_REJECT_REASON_NONE;
+}
+
 const rsrx_outbound_send_telemetry_t * rsrx_transport_adapter_get_outbound_telemetry(
 	const rsrx_transport_adapter_context_t * pxContext)
 {
