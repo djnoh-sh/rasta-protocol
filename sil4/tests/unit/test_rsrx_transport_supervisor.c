@@ -406,6 +406,49 @@ static void vTestSupervisorInvalidArguments(void)
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, (const rsrx_transport_frame_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame invalid args");
 }
 
+static void vTestSupervisorInitClearsReportBaseline(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor = { 0 };
+	rsrx_codec_port_t xCodec;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x42U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "init baseline session init");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+
+	xSupervisor.xLastReport.uProcessedFrameCount = 7U;
+	xSupervisor.xLastReport.uAcceptedDecisionCount = 3U;
+	xSupervisor.xLastReport.uIgnoredDecisionCount = 5U;
+	xSupervisor.xLastReport.uOutboundRuntimeResetCount = 2U;
+	xSupervisor.xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED;
+	xSupervisor.xLastReport.eLastDecisionClass =
+		RSRX_SUPERVISOR_DECISION_CLASS_ACCEPTED;
+	xSupervisor.xLastReport.eLastOutboundRejectReason =
+		RSRX_OUTBOUND_REJECT_REASON_QUEUE_OVERFLOW;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "init baseline supervisor init");
+	pxSupervisorReport = &xSupervisor.xLastReport;
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NONE, "init baseline decision");
+	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_NONE, "init baseline decision class");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "init baseline processed count");
+	vAssertTrue(pxSupervisorReport->uAcceptedDecisionCount == 0U, "init baseline accepted count");
+	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 0U, "init baseline ignored count");
+	vAssertTrue(pxSupervisorReport->uOutboundRuntimeResetCount == 0U, "init baseline runtime reset count");
+	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 0U, "init baseline outstanding");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "init baseline deferred count");
+	vAssertTrue(pxSupervisorReport->eLastOutboundRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "init baseline reject reason");
+}
+
 static void vTestSupervisorDecodeFailure(void)
 {
 	rsrx_session_t xSession;
@@ -5485,6 +5528,7 @@ int main(void)
 {
 	vTestSupervisorInboundHandshakePath();
 	vTestSupervisorInvalidArguments();
+	vTestSupervisorInitClearsReportBaseline();
 	vTestSupervisorDecodeFailure();
 	vTestSupervisorUnsupportedMessage();
 	vTestSupervisorSequenceGapDetection();
