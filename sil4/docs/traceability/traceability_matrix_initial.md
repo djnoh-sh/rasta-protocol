@@ -16,7 +16,7 @@
 | FR-003 | HZ-003 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_event`, `rsrx_session_reset` | TC-API-005, TC-API-012, TC-API-013 | RV-296, RV-297, RV-298 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-012 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_application_data_indication_t`, `vApplicationExecutorDispatch`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_platform_adapter_build_executor_table` | TC-APP-001, TC-APP-002 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_session_send_application_data`, `rsrx_transport_adapter_send_application_data` | TC-OUT-001, TC-OUT-004, TC-OUT-005, TC-OUT-006, TC-OUT-008, TC-OUT-009, TC-API-010, TC-PA-005 | RV-233 | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame`, `rsrx_transport_supervisor_poll_receive`, `rsrx_transport_supervisor_process_transport_event` | TC-SUP-001, TC-SUP-004, TC-SUP-007, TC-SUP-010, TC-SUP-015, TC-SUP-016, TC-SUP-017, TC-SUP-038, TC-SUP-064, TC-SUP-065, TC-SUP-066, TC-SUP-067, TC-SUP-068, TC-INT-187 | RV-272, RV-279, RV-280, RV-283, RV-284, RV-285, RV-286, RV-287, RV-288, RV-289, RV-290, RV-294 | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame`, `rsrx_transport_supervisor_poll_receive`, `rsrx_transport_supervisor_process_transport_event` | TC-SUP-001, TC-SUP-004, TC-SUP-007, TC-SUP-010, TC-SUP-015, TC-SUP-016, TC-SUP-017, TC-SUP-038, TC-SUP-064, TC-SUP-065, TC-SUP-066, TC-SUP-067, TC-SUP-068, TC-SUP-069, TC-INT-187 | RV-272, RV-279, RV-280, RV-283, RV-284, RV-285, RV-286, RV-287, RV-288, RV-289, RV-290, RV-294, RV-300 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-014 | `sil4/include/rsrx_channel_manager.h`, `sil4/src/rsrx_channel_manager.c` | `rsrx_channel_manager_init`, `rsrx_channel_manager_update_channel`, `rsrx_channel_manager_select_channel`, `rsrx_channel_manager_reset` | TC-CHM-001, TC-CHM-002, TC-CHM-004, TC-CHM-005, TC-CHM-006, TC-CHM-007, TC-CHM-008, TC-CHM-009, TC-CHM-010, TC-CHM-011, TC-CHM-053, TC-CHM-054, TC-CHM-055, TC-CHM-056, TC-CHM-057 | RV-283, RV-284, RV-285, RV-286, RV-287, RV-288, RV-289, RV-290, RV-295 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-014 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestChannelManagerRejectsInvalidTopologyConfig` | TC-CHM-049 | RV-262 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-014 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryHoldoff` | TC-CHM-052 | RV-274 | Draft |
@@ -168,7 +168,8 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorSwitchAuditTerminalOutcomeThresholdFifteenMixedLongRunMatrix` | TC-SUP-057 | RV-183 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorRuntimeOrderingCloseoutMatrix` | TC-SUP-032 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-SUP-033 | RV-273 | Draft |
-| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorQueueReportMatrix` | TC-SUP-059 | RV-226 | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesRuntimeResetTelemetry` | TC-SUP-069 | RV-300 | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorQueueReportMatrix` | TC-SUP-059 | RV-226, RV-300 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestPreferredRecoveryStabilityEnvelopeCloseoutMatrix` | TC-CHM-017 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestChannelManagerRejectsRuntimeTopologyMutation` | TC-CHM-050 | RV-267 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-014 | `sil4/tests/unit/test_rsrx_channel_manager.c` | `vTestChannelManagerRejectsDuplicatePriorityTopology` | TC-CHM-051 | RV-271 | Draft |
@@ -344,6 +345,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffActiveLossBypassLongRunFlow` | TC-INT-105 | RV-251 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedActiveLossBypassReentersHoldoffFlow` | TC-INT-106 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-SUP-033 |  | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesRuntimeResetTelemetry` | TC-SUP-069 | RV-300 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapResetThenActiveLossBypassFlow` | TC-INT-107 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapResetThenActiveLossBypassLongRunFlow` | TC-INT-108 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassMixedTransientLongRunFlow` | TC-INT-109 |  | Draft |
@@ -443,13 +445,14 @@
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestDeferredQueueTelemetryAccumulationMatrix` | TC-OUT-012 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOverflowBusyAccumulationMatrix` | TC-OUT-013 |  | Draft |
 | IF-001 |  | HLD-001, LLD-013 | `sil4/tests/unit/test_rsrx_platform_adapters.c`, `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestApplicationDataSend`, `vTestSupervisorReportExposesBusyRejectTelemetry` | TC-OUT-017, TC-SUP-033 | RV-273 | Draft |
+| IF-001 |  | HLD-001, LLD-013 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorReportExposesRuntimeResetTelemetry` | TC-SUP-069 | RV-300 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueLongRunRepresentativeMatrix` | TC-OUT-015 | RV-228 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueFairnessRepresentativeMatrix` | TC-OUT-016 | RV-230 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_platform_adapters.c` | `vTestOutboundQueueBackpressureCloseoutMatrix` | TC-OUT-014 | RV-242 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueOverflowRejectFlow` | TC-INT-015 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectThresholdEscalationFlow` | TC-INT-016 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedQueueBackpressureCloseoutFlow` | TC-INT-100 | RV-242 | Draft |
-| IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorQueueReportMatrix` | TC-SUP-059 | RV-226 | Draft |
+| IF-001 |  | HLD-001 | `sil4/tests/unit/test_rsrx_transport_supervisor.c` | `vTestSupervisorQueueReportMatrix` | TC-SUP-059 | RV-226, RV-300 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectThresholdResetFlow` | TC-INT-101 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectThresholdInboundResetFlow` | TC-INT-115 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedBusyRejectAlternatingResetFlow` | TC-INT-117 |  | Draft |

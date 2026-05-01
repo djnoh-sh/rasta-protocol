@@ -1341,6 +1341,55 @@ static void vTestSupervisorReportExposesBusyRejectTelemetry(void)
 	vAssertTrue(pxSupervisorReport->uLastBusyRejectEscalated == 0U, "report busy telemetry latch reset after clear");
 }
 
+static void vTestSupervisorReportExposesRuntimeResetTelemetry(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_transport_frame_t xFrame;
+	static const uint8_t auPayload[2] = { 0xA1U, 0xA2U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "report reset telemetry session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "report reset telemetry session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "report reset telemetry session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "report reset telemetry establish");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "report reset telemetry supervisor init");
+
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "report reset telemetry outstanding send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "report reset telemetry deferred send");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 1U, "report reset telemetry outstanding before reset");
+	vAssertTrue(xSession.xTransportAdapter.uDeferredSendCount == 1U, "report reset telemetry deferred before reset");
+
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "report reset telemetry reset");
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "report reset telemetry available");
+	vAssertTrue(pxTelemetry->uRuntimeResetCount == 1U, "report reset telemetry adapter count");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "report reset telemetry refresh");
+
+	vAssertTrue(pxSupervisorReport->uOutstandingSendPresent == 0U, "report reset telemetry report outstanding clear");
+	vAssertTrue(pxSupervisorReport->uDeferredSendPresent == 0U, "report reset telemetry report deferred clear");
+	vAssertTrue(pxSupervisorReport->uDeferredSendCount == 0U, "report reset telemetry report deferred count");
+	vAssertTrue(pxSupervisorReport->uOutboundRuntimeResetCount == 1U, "report reset telemetry report reset count");
+}
+
 static void vTestSupervisorSendFailureBudgetResetsAfterSuccess(void)
 {
 	rsrx_session_t xSession;
@@ -5407,6 +5456,7 @@ static void vTestSupervisorQueueReportMatrix(void)
 {
 	vTestSupervisorTransportSendCompletedCorrelated();
 	vTestSupervisorReportExposesBusyRejectTelemetry();
+	vTestSupervisorReportExposesRuntimeResetTelemetry();
 }
 
 static void vTestSupervisorRuntimeOrderingCloseoutMatrix(void)
