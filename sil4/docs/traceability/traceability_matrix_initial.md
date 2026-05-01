@@ -51,6 +51,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveResetFlow` | TC-INT-114 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverResetLongRunFlow` | TC-INT-192 | RV-252 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueTelemetryFlow` | TC-INT-014 |  | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSessionResetOutboundTelemetryFlow` | TC-INT-205 | RV-303 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueFifoDispatchFlow` | TC-INT-102 | RV-034 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearOrderingFlow` | TC-INT-103 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearLongRunFlow` | TC-INT-116 |  | Draft |
@@ -436,6 +437,7 @@
 | IF-001 |  | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_send_application_data` | TC-OUT-001, TC-OUT-002, TC-OUT-003, TC-OUT-005, TC-OUT-008, TC-OUT-009, TC-API-010, TC-API-011 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedPumpReceiveStabilityFlow` | TC-INT-008 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueTelemetryFlow` | TC-INT-014 |  | Draft |
+| IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSessionResetOutboundTelemetryFlow` | TC-INT-205 | RV-303 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueFifoDispatchFlow` | TC-INT-102 | RV-034 | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearOrderingFlow` | TC-INT-103 |  | Draft |
 | IF-001 |  | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearLongRunFlow` | TC-INT-116 |  | Draft |
