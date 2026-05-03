@@ -30,3 +30,4 @@
 | TC-CODEC-006 | FR-004 | buffer too small 검증 | 작은 encode buffer 준비 | encode 수행 | `BUFFER_TOO_SMALL` 반환 | 버퍼 초과 없이 결정적 오류 처리 |
 | TC-CODEC-007 | SR-001 | reserved header tamper reject 검증 | reserved header byte가 non-zero인 otherwise well-formed frame 준비 | decode 수행 | `DECODE_ERROR` 반환 | future extension/tamper로 해석될 수 있는 reserved header 오염을 수용하지 않음 |
 | TC-CODEC-008 | SR-001, FR-004 | encode null payload with length reject 검증 | payload pointer가 null이고 payload length가 non-zero인 encode request 준비 | encode 수행 | `INVALID_ARGUMENT` 반환 | non-zero payload length에서 null payload dereference가 발생하지 않음 |
+| TC-CODEC-009 | SR-001 | decode trailing bytes reject 검증 | declared payload length는 zero이나 frame에 trailing byte가 붙은 frame 준비 | decode 수행 | `DECODE_ERROR` 반환 | declared length와 actual frame length가 일치하지 않는 trailing data를 수용하지 않음 |
