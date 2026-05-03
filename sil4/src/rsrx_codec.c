@@ -91,7 +91,9 @@ rsrx_codec_status_t rsrx_codec_encode_message(
 
 	if((pxRequest == (const rsrx_encode_request_t *)0) ||
 		(pxBuffer == (rsrx_encode_buffer_t *)0) ||
-		(pxBuffer->puBuffer == (uint8_t *)0))
+		(pxBuffer->puBuffer == (uint8_t *)0) ||
+		((pxRequest->puPayload == (const uint8_t *)0) &&
+			(pxRequest->xPayloadLength > 0U)))
 	{
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
 	}

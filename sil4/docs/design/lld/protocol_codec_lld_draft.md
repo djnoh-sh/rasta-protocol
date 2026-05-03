@@ -49,6 +49,7 @@
 - encode:
   - message type과 sequence/confirmation/payload를 wire-format buffer로 직렬화한다.
   - encode 대상 버퍼는 caller가 제공한다.
+  - non-zero payload length에서는 payload pointer가 null이면 `INVALID_ARGUMENT`로 거부한다.
   - skeleton 구현은 고정 길이 header와 variable payload로 구성된 deterministic wire format을 사용한다.
 
 ## Design Rules
@@ -66,9 +67,11 @@
   - encode/decode round-trip 검증
   - unsupported message reject 검증
   - reserved header tamper reject 검증
+  - non-zero payload length와 null payload pointer 조합 reject 검증
   - buffer too small 검증
 - 분석 포인트:
   - payload 최대 길이 상한
+  - payload pointer/length consistency
   - reserved header bytes zero-baseline 유지
   - message type과 suggested event 매핑 정책
   - sequence/confirmation 필드 overflow 검토

@@ -104,12 +104,33 @@ static void vTestDecodeRejectsReservedHeaderBytes(void)
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "reserved header byte reject");
 }
 
+static void vTestEncodeRejectsNullPayloadWithLength(void)
+{
+	uint8_t auEncoded[64];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 1U;
+	xRequest.uConfirmationNumber = 1U;
+	xRequest.puPayload = (const uint8_t *)0;
+	xRequest.xPayloadLength = 1U;
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null payload with length reject");
+}
+
 int main(void)
 {
 	vTestEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestEncodeRejectsSmallBuffer();
 	vTestDecodeRejectsReservedHeaderBytes();
+	vTestEncodeRejectsNullPayloadWithLength();
 
 	(void)printf("rsrx_codec_test: all tests passed\n");
 
