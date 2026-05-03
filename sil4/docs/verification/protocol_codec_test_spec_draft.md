@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-13`
+- Last Updated: `2026-05-04`
 
 ## Scope
 
@@ -28,3 +28,4 @@
 | TC-CODEC-004 | FR-003, FR-004 | encode/decode round-trip 검증 | deterministic wire format 사용 | encode 후 decode 수행 | message type, event, reason, sequence, payload가 보존 | round-trip 결과가 설계와 일치 |
 | TC-CODEC-005 | SR-001 | unsupported message reject 검증 | invalid message type frame 준비 | decode 수행 | `UNSUPPORTED_MESSAGE` 반환 | 비허용 message 수용 금지 |
 | TC-CODEC-006 | FR-004 | buffer too small 검증 | 작은 encode buffer 준비 | encode 수행 | `BUFFER_TOO_SMALL` 반환 | 버퍼 초과 없이 결정적 오류 처리 |
+| TC-CODEC-007 | SR-001 | reserved header tamper reject 검증 | reserved header byte가 non-zero인 otherwise well-formed frame 준비 | decode 수행 | `DECODE_ERROR` 반환 | future extension/tamper로 해석될 수 있는 reserved header 오염을 수용하지 않음 |

@@ -73,6 +73,15 @@ static uint16_t usReadUint16(
 		(uint16_t)puBuffer[1]);
 }
 
+static uint32_t uReservedHeaderBytesAreZero(
+	const uint8_t * puBuffer)
+{
+	return (uint32_t)((puBuffer[2] == 0U) &&
+		(puBuffer[3] == 0U) &&
+		(puBuffer[14] == 0U) &&
+		(puBuffer[15] == 0U));
+}
+
 rsrx_codec_status_t rsrx_codec_encode_message(
 	const rsrx_encode_request_t * pxRequest,
 	rsrx_encode_buffer_t * pxBuffer)
@@ -145,6 +154,10 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	if(uMessageTypeIsSupported(eMessageType) == 0U)
 	{
 		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+	if(uReservedHeaderBytesAreZero(pxFrame->puPayload) == 0U)
+	{
+		return RSRX_CODEC_STATUS_DECODE_ERROR;
 	}
 
 	xPayloadLength = (size_t)usReadUint16(&pxFrame->puPayload[12]);

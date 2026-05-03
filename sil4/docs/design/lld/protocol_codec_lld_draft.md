@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-03-13`
+- Last Updated: `2026-05-04`
 
 ## Scope
 
@@ -45,6 +45,7 @@
 - decode:
   - transport frame을 typed decoded message로 변환한다.
   - decoded message는 state machine에 전달할 `suggested event`를 함께 제공한다.
+  - reserved header bytes는 zero baseline이어야 하며 non-zero 값은 `DECODE_ERROR`로 거부한다.
 - encode:
   - message type과 sequence/confirmation/payload를 wire-format buffer로 직렬화한다.
   - encode 대상 버퍼는 caller가 제공한다.
@@ -64,8 +65,10 @@
   - encode request/buffer 구조체 계약 검증
   - encode/decode round-trip 검증
   - unsupported message reject 검증
+  - reserved header tamper reject 검증
   - buffer too small 검증
 - 분석 포인트:
   - payload 최대 길이 상한
+  - reserved header bytes zero-baseline 유지
   - message type과 suggested event 매핑 정책
   - sequence/confirmation 필드 overflow 검토
