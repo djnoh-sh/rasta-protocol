@@ -142,6 +142,24 @@ static void vTestDecodeRejectsTrailingBytes(void)
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "trailing byte reject");
 }
 
+static void vTestDecodeRejectsTruncatedPayload(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES] = { 0 };
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
+	auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
+	auEncoded[13] = 1U;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "truncated payload reject");
+}
+
 int main(void)
 {
 	vTestEncodeDecodeRoundTrip();
@@ -150,6 +168,7 @@ int main(void)
 	vTestDecodeRejectsReservedHeaderBytes();
 	vTestEncodeRejectsNullPayloadWithLength();
 	vTestDecodeRejectsTrailingBytes();
+	vTestDecodeRejectsTruncatedPayload();
 
 	(void)printf("rsrx_codec_test: all tests passed\n");
 
