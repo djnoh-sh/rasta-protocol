@@ -50,6 +50,48 @@ static void vTestEncodeDecodeRoundTrip(void)
 	vAssertTrue(xMessage.auPayload[4] == 0x50U, "decoded payload content");
 }
 
+static void vTestDefaultPortEncodeDecodeRoundTrip(void)
+{
+	const rsrx_codec_port_t * pxPort;
+	uint8_t auPayload[2] = { 0xA1U, 0xB2U };
+	uint8_t auEncoded[64];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	pxPort = rsrx_codec_get_default_port();
+	vAssertTrue(pxPort != (const rsrx_codec_port_t *)0, "default codec port");
+	vAssertTrue(pxPort->pfEncode != (rsrx_encode_message_fn)0, "default codec port encode");
+	vAssertTrue(pxPort->pfDecode != (rsrx_decode_frame_fn)0, "default codec port decode");
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 3U;
+	xRequest.uConfirmationNumber = 2U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(pxPort->pfEncode(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK, "default port encode");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(pxPort->pfDecode(&xFrame, &xMessage) == RSRX_CODEC_STATUS_OK, "default port decode");
+	vAssertTrue(xMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "default port decoded type");
+	vAssertTrue(xMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "default port decoded event");
+	vAssertTrue(xMessage.uSequenceNumber == 3U, "default port decoded sequence");
+	vAssertTrue(xMessage.uConfirmationNumber == 2U, "default port decoded confirmation");
+	vAssertTrue(xMessage.xPayloadLength == sizeof(auPayload), "default port decoded payload length");
+	vAssertTrue(xMessage.auPayload[1] == 0xB2U, "default port decoded payload content");
+}
+
 static void vTestDecodeRejectsUnsupportedMessage(void)
 {
 	uint8_t auEncoded[16] = { 0 };
@@ -240,6 +282,7 @@ static void vTestDecodeRejectsOversizedDeclaredPayload(void)
 int main(void)
 {
 	vTestEncodeDecodeRoundTrip();
+	vTestDefaultPortEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();
 	vTestEncodeRejectsSmallBuffer();

@@ -39,6 +39,7 @@
 | `rsrx_encode_request_t` | struct | message encode 입력 | message type, reason, sequence, payload 포함 |
 | `rsrx_encode_buffer_t` | struct | encode 대상 버퍼 | caller-owned buffer 사용 |
 | `rsrx_codec_port_t` | struct | encode/decode 함수 집합 | 양 방향 callback 필수 |
+| `rsrx_codec_get_default_port` | function | default codec port provider | non-null encode/decode callback 제공 |
 
 ## Functional Behavior
 
@@ -61,6 +62,7 @@
 - codec은 transport port나 orchestrator를 직접 호출하지 않는다.
 - codec status는 state machine status와 혼용하지 않는다.
 - decoded payload는 bounded buffer 안에서만 다룬다.
+- default codec port는 직접 codec 함수와 동일한 encode/decode semantics를 제공한다.
 
 ## Verification Notes
 
@@ -71,6 +73,7 @@
   - encode/decode round-trip 검증
   - unsupported message reject 검증
   - supported message type별 suggested event mapping 검증
+  - default codec port encode/decode binding 검증
   - reserved header tamper reject 검증
   - non-zero payload length와 null payload pointer 조합 reject 검증
   - oversized encode payload length reject 검증
