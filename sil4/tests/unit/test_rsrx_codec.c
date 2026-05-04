@@ -160,6 +160,25 @@ static void vTestDecodeRejectsTruncatedPayload(void)
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "truncated payload reject");
 }
 
+static void vTestDecodeRejectsOversizedDeclaredPayload(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_FRAME_BYTES + 1U] = { 0 };
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
+	auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
+	auEncoded[12] = 0x02U;
+	auEncoded[13] = 0x01U;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "oversized declared payload reject");
+}
+
 int main(void)
 {
 	vTestEncodeDecodeRoundTrip();
@@ -169,6 +188,7 @@ int main(void)
 	vTestEncodeRejectsNullPayloadWithLength();
 	vTestDecodeRejectsTrailingBytes();
 	vTestDecodeRejectsTruncatedPayload();
+	vTestDecodeRejectsOversizedDeclaredPayload();
 
 	(void)printf("rsrx_codec_test: all tests passed\n");
 
