@@ -244,6 +244,43 @@ static void vTestEncodeRejectsNullPayloadWithLength(void)
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null payload with length reject");
 }
 
+static void vTestRejectsNullArguments(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES] = { 0 };
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 1U;
+	xRequest.uConfirmationNumber = 1U;
+	xRequest.puPayload = (const uint8_t *)0;
+	xRequest.xPayloadLength = 0U;
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
+	auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_encode_message((const rsrx_encode_request_t *)0, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null encode request reject");
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, (rsrx_encode_buffer_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null encode buffer reject");
+	xBuffer.puBuffer = (uint8_t *)0;
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null encode output buffer reject");
+	vAssertTrue(rsrx_codec_decode_frame((const rsrx_transport_frame_t *)0, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null decode frame reject");
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, (rsrx_decoded_message_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null decoded message reject");
+	xFrame.puPayload = (const uint8_t *)0;
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null frame payload reject");
+}
+
 static void vTestDecodeRejectsTrailingBytes(void)
 {
 	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES + 1U] = { 0 };
@@ -310,6 +347,7 @@ int main(void)
 	vTestEncodeRejectsUnsupportedMessageType();
 	vTestDecodeRejectsReservedHeaderBytes();
 	vTestEncodeRejectsNullPayloadWithLength();
+	vTestRejectsNullArguments();
 	vTestDecodeRejectsTrailingBytes();
 	vTestDecodeRejectsTruncatedPayload();
 	vTestDecodeRejectsOversizedDeclaredPayload();
