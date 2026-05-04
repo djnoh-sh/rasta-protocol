@@ -278,6 +278,38 @@ static void vTestRejectsUnsupportedReasonCode(void)
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "unsupported decode reason reject");
 }
 
+static void vTestMaxReasonCodeEncodeDecodeRoundTrip(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DIAGNOSTIC;
+	xRequest.eReason = RSRX_REASON_INVALID_STATE_VALUE;
+	xRequest.uSequenceNumber = 9U;
+	xRequest.uConfirmationNumber = 8U;
+	xRequest.puPayload = (const uint8_t *)0;
+	xRequest.xPayloadLength = 0U;
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK, "max reason encode");
+	vAssertTrue(xBuffer.xEncodedLength == D_RSRX_CODEC_HEADER_BYTES, "max reason encoded length");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_OK, "max reason decode");
+	vAssertTrue(xMessage.eMessageType == RSRX_MESSAGE_TYPE_DIAGNOSTIC, "max reason decoded type");
+	vAssertTrue(xMessage.eReason == RSRX_REASON_INVALID_STATE_VALUE, "max reason decoded reason");
+}
+
 static void vTestDecodeRejectsReservedHeaderBytes(void)
 {
 	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES] = { 0 };
@@ -465,6 +497,7 @@ int main(void)
 	vTestEncodeRejectsOversizedPayloadLength();
 	vTestEncodeRejectsUnsupportedMessageType();
 	vTestRejectsUnsupportedReasonCode();
+	vTestMaxReasonCodeEncodeDecodeRoundTrip();
 	vTestDecodeRejectsReservedHeaderBytes();
 	vTestDecodeRejectsReservedHeaderByteMatrix();
 	vTestEncodeRejectsNullPayloadWithLength();
