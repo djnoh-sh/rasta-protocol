@@ -49,7 +49,7 @@
   - frame length가 `D_RSRX_CODEC_HEADER_BYTES`보다 작으면 `DECODE_ERROR`로 거부한다.
   - decoded message는 state machine에 전달할 `suggested event`를 함께 제공한다.
   - supported message type은 고정된 state-machine suggested event로 mapping한다.
-  - reserved header bytes는 zero baseline이어야 하며 non-zero 값은 `DECODE_ERROR`로 거부한다.
+  - reserved header bytes at offsets `2`, `3`, `14`, and `15`는 zero baseline이어야 하며 non-zero 값은 `DECODE_ERROR`로 거부한다.
   - declared payload length와 actual frame length가 정확히 일치하지 않으면 trailing/short frame 모두 `DECODE_ERROR`로 거부한다.
   - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `DECODE_ERROR`로 거부한다.
   - declared payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
@@ -84,6 +84,7 @@
   - supported message type별 suggested event mapping 검증
   - default codec port encode/decode binding 검증
   - reserved header tamper reject 검증
+  - reserved header byte matrix reject 검증
   - non-zero payload length와 null payload pointer 조합 reject 검증
   - oversized encode payload length reject 검증
   - declared length와 actual frame length mismatch reject 검증

@@ -264,6 +264,35 @@ static void vTestDecodeRejectsReservedHeaderBytes(void)
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "reserved header byte reject");
 }
 
+static void vTestDecodeRejectsReservedHeaderByteMatrix(void)
+{
+	static const size_t axReservedOffsets[] = { 2U, 3U, 14U, 15U };
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES];
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+	size_t xIndex;
+	size_t xByteIndex;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	for(xIndex = 0U; xIndex < (sizeof(axReservedOffsets) / sizeof(axReservedOffsets[0])); ++xIndex)
+	{
+		for(xByteIndex = 0U; xByteIndex < sizeof(auEncoded); ++xByteIndex)
+		{
+			auEncoded[xByteIndex] = 0U;
+		}
+
+		auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
+		auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
+		auEncoded[axReservedOffsets[xIndex]] = 1U;
+
+		vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "reserved header byte matrix reject");
+	}
+}
+
 static void vTestEncodeRejectsNullPayloadWithLength(void)
 {
 	uint8_t auEncoded[64];
@@ -404,6 +433,7 @@ int main(void)
 	vTestEncodeRejectsOversizedPayloadLength();
 	vTestEncodeRejectsUnsupportedMessageType();
 	vTestDecodeRejectsReservedHeaderBytes();
+	vTestDecodeRejectsReservedHeaderByteMatrix();
 	vTestEncodeRejectsNullPayloadWithLength();
 	vTestRejectsNullArguments();
 	vTestDecodeRejectsTrailingBytes();
