@@ -39,3 +39,4 @@
 | TC-CODEC-015 | FR-004 | encode unsupported message type reject 검증 | encode request message type이 `RSRX_MESSAGE_TYPE_INVALID`인 request 준비 | encode 수행 | `UNSUPPORTED_MESSAGE` 반환 | outbound codec이 unsupported message type을 wire format으로 직렬화하지 않음 |
 | TC-CODEC-016 | FR-003, FR-004, SR-001 | codec null argument reject 검증 | encode request/buffer/output buffer 또는 decode frame/message/payload pointer가 null인 호출 준비 | encode/decode 수행 | `INVALID_ARGUMENT` 반환 | codec public API가 null pointer 입력을 역참조하지 않음 |
 | TC-CODEC-017 | SR-001 | decode short header reject 검증 | frame length가 `D_RSRX_CODEC_HEADER_BYTES - 1`인 frame 준비 | decode 수행 | `DECODE_ERROR` 반환 | 최소 header 길이보다 짧은 frame을 수용하지 않음 |
+| TC-CODEC-018 | FR-003, FR-004 | max payload encode/decode boundary 검증 | payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`인 request 준비 | encode 후 decode 수행 | `OK` 반환, encoded length가 `D_RSRX_CODEC_MAX_FRAME_BYTES`, payload 보존 | 최대 허용 payload 경계값은 정상 frame으로 수용됨 |

@@ -92,6 +92,46 @@ static void vTestDefaultPortEncodeDecodeRoundTrip(void)
 	vAssertTrue(xMessage.auPayload[1] == 0xB2U, "default port decoded payload content");
 }
 
+static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
+{
+	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+	size_t xIndex;
+
+	for(xIndex = 0U; xIndex < sizeof(auPayload); ++xIndex)
+	{
+		auPayload[xIndex] = (uint8_t)(xIndex & 0xFFU);
+	}
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 0x01020304U;
+	xRequest.uConfirmationNumber = 0x05060708U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK, "max payload encode");
+	vAssertTrue(xBuffer.xEncodedLength == D_RSRX_CODEC_MAX_FRAME_BYTES, "max payload encoded length");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_OK, "max payload decode");
+	vAssertTrue(xMessage.xPayloadLength == sizeof(auPayload), "max payload decoded length");
+	vAssertTrue(xMessage.auPayload[0] == 0x00U, "max payload first byte");
+	vAssertTrue(xMessage.auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES - 1U] == 0xFFU, "max payload last byte");
+}
+
 static void vTestDecodeRejectsUnsupportedMessage(void)
 {
 	uint8_t auEncoded[16] = { 0 };
@@ -357,6 +397,7 @@ int main(void)
 {
 	vTestEncodeDecodeRoundTrip();
 	vTestDefaultPortEncodeDecodeRoundTrip();
+	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();
 	vTestEncodeRejectsSmallBuffer();

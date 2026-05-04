@@ -52,6 +52,7 @@
   - reserved header bytes는 zero baseline이어야 하며 non-zero 값은 `DECODE_ERROR`로 거부한다.
   - declared payload length와 actual frame length가 정확히 일치하지 않으면 trailing/short frame 모두 `DECODE_ERROR`로 거부한다.
   - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `DECODE_ERROR`로 거부한다.
+  - declared payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
 - encode:
   - null request/buffer/output buffer pointer는 `INVALID_ARGUMENT`로 거부한다.
   - message type과 sequence/confirmation/payload를 wire-format buffer로 직렬화한다.
@@ -59,6 +60,7 @@
   - encode 대상 버퍼는 caller가 제공한다.
   - non-zero payload length에서는 payload pointer가 null이면 `INVALID_ARGUMENT`로 거부한다.
   - payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 `UNSUPPORTED_MESSAGE`로 거부한다.
+  - payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
   - skeleton 구현은 고정 길이 header와 variable payload로 구성된 deterministic wire format을 사용한다.
 
 ## Design Rules
@@ -86,6 +88,7 @@
   - oversized encode payload length reject 검증
   - declared length와 actual frame length mismatch reject 검증
   - oversized declared payload length reject 검증
+  - max payload encode/decode boundary 검증
   - buffer too small 검증
 - 분석 포인트:
   - payload 최대 길이 상한
