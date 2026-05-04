@@ -65,6 +65,43 @@ static void vTestDecodeRejectsUnsupportedMessage(void)
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "unsupported message reject");
 }
 
+static void vTestDecodeMapsSupportedMessageTypes(void)
+{
+	static const struct
+	{
+		rsrx_message_type_t eMessageType;
+		rsrx_event_t eExpectedEvent;
+	} axCases[] =
+	{
+		{ RSRX_MESSAGE_TYPE_CONNECT_REQUEST, RSRX_EVENT_VALID_INBOUND_CONNECT },
+		{ RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, RSRX_EVENT_HANDSHAKE_SUCCESS },
+		{ RSRX_MESSAGE_TYPE_HEARTBEAT, RSRX_EVENT_VALID_HEARTBEAT },
+		{ RSRX_MESSAGE_TYPE_DATA, RSRX_EVENT_VALID_DATA },
+		{ RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST, RSRX_EVENT_SEQUENCE_GAP_DETECTED },
+		{ RSRX_MESSAGE_TYPE_DISCONNECT, RSRX_EVENT_DISCONNECT_REQUEST },
+		{ RSRX_MESSAGE_TYPE_DIAGNOSTIC, RSRX_EVENT_PROTOCOL_ERROR }
+	};
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES] = { 0 };
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+	size_t xIndex;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	for(xIndex = 0U; xIndex < (sizeof(axCases) / sizeof(axCases[0])); ++xIndex)
+	{
+		auEncoded[0] = (uint8_t)axCases[xIndex].eMessageType;
+		auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
+
+		vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_OK, "supported message decode");
+		vAssertTrue(xMessage.eMessageType == axCases[xIndex].eMessageType, "supported message type");
+		vAssertTrue(xMessage.eSuggestedEvent == axCases[xIndex].eExpectedEvent, "supported message event mapping");
+	}
+}
+
 static void vTestEncodeRejectsSmallBuffer(void)
 {
 	uint8_t auPayload[2] = { 0x01U, 0x02U };
@@ -204,6 +241,7 @@ int main(void)
 {
 	vTestEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
+	vTestDecodeMapsSupportedMessageTypes();
 	vTestEncodeRejectsSmallBuffer();
 	vTestEncodeRejectsOversizedPayloadLength();
 	vTestDecodeRejectsReservedHeaderBytes();
