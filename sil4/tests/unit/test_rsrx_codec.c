@@ -86,6 +86,27 @@ static void vTestEncodeRejectsSmallBuffer(void)
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_BUFFER_TOO_SMALL, "small buffer reject");
 }
 
+static void vTestEncodeRejectsOversizedPayloadLength(void)
+{
+	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES + 1U] = { 0 };
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_FRAME_BYTES + 1U];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 1U;
+	xRequest.uConfirmationNumber = 1U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "oversized encode payload reject");
+}
+
 static void vTestDecodeRejectsReservedHeaderBytes(void)
 {
 	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES] = { 0 };
@@ -184,6 +205,7 @@ int main(void)
 	vTestEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestEncodeRejectsSmallBuffer();
+	vTestEncodeRejectsOversizedPayloadLength();
 	vTestDecodeRejectsReservedHeaderBytes();
 	vTestEncodeRejectsNullPayloadWithLength();
 	vTestDecodeRejectsTrailingBytes();
