@@ -7,6 +7,12 @@ static uint32_t uMessageTypeIsSupported(
 		(eMessageType <= RSRX_MESSAGE_TYPE_DIAGNOSTIC));
 }
 
+static uint32_t uReasonCodeIsSupported(
+	rsrx_reason_code_t eReason)
+{
+	return (uint32_t)(eReason <= RSRX_REASON_INVALID_STATE_VALUE);
+}
+
 static rsrx_event_t eMapMessageTypeToEvent(
 	rsrx_message_type_t eMessageType)
 {
@@ -99,6 +105,7 @@ rsrx_codec_status_t rsrx_codec_encode_message(
 	}
 
 	if((uMessageTypeIsSupported(pxRequest->eMessageType) == 0U) ||
+		(uReasonCodeIsSupported(pxRequest->eReason) == 0U) ||
 		(pxRequest->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES) ||
 		(pxRequest->xPayloadLength > (size_t)UINT16_MAX))
 	{
@@ -156,6 +163,10 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	if(uMessageTypeIsSupported(eMessageType) == 0U)
 	{
 		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+	if(uReasonCodeIsSupported((rsrx_reason_code_t)pxFrame->puPayload[1]) == 0U)
+	{
+		return RSRX_CODEC_STATUS_DECODE_ERROR;
 	}
 	if(uReservedHeaderBytesAreZero(pxFrame->puPayload) == 0U)
 	{

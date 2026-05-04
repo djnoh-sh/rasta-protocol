@@ -246,6 +246,38 @@ static void vTestEncodeRejectsUnsupportedMessageType(void)
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "unsupported encode message reject");
 }
 
+static void vTestRejectsUnsupportedReasonCode(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES] = { 0 };
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = (rsrx_reason_code_t)0xFFU;
+	xRequest.uSequenceNumber = 1U;
+	xRequest.uConfirmationNumber = 1U;
+	xRequest.puPayload = (const uint8_t *)0;
+	xRequest.xPayloadLength = 0U;
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "unsupported encode reason reject");
+
+	auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
+	auEncoded[1] = 0xFFU;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "unsupported decode reason reject");
+}
+
 static void vTestDecodeRejectsReservedHeaderBytes(void)
 {
 	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES] = { 0 };
@@ -432,6 +464,7 @@ int main(void)
 	vTestEncodeRejectsSmallBuffer();
 	vTestEncodeRejectsOversizedPayloadLength();
 	vTestEncodeRejectsUnsupportedMessageType();
+	vTestRejectsUnsupportedReasonCode();
 	vTestDecodeRejectsReservedHeaderBytes();
 	vTestDecodeRejectsReservedHeaderByteMatrix();
 	vTestEncodeRejectsNullPayloadWithLength();
