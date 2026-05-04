@@ -52,6 +52,7 @@
   - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `DECODE_ERROR`로 거부한다.
 - encode:
   - message type과 sequence/confirmation/payload를 wire-format buffer로 직렬화한다.
+  - unsupported message type은 `UNSUPPORTED_MESSAGE`로 거부한다.
   - encode 대상 버퍼는 caller가 제공한다.
   - non-zero payload length에서는 payload pointer가 null이면 `INVALID_ARGUMENT`로 거부한다.
   - payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 `UNSUPPORTED_MESSAGE`로 거부한다.
@@ -72,6 +73,7 @@
   - encode request/buffer 구조체 계약 검증
   - encode/decode round-trip 검증
   - unsupported message reject 검증
+  - unsupported encode message type reject 검증
   - supported message type별 suggested event mapping 검증
   - default codec port encode/decode binding 검증
   - reserved header tamper reject 검증
