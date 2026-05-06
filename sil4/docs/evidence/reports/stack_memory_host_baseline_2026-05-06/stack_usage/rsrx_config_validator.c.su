@@ -1,0 +1,6 @@
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_config_validator.c:8:17:uChannelManagerConfigIsValid	144	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_config_validator.c:27:17:uDefaultChannelBelongsToConfiguredTopology	48	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_config_validator.c:56:13:vSetReport	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_config_validator.c:68:17:uPayloadIsConsistent	32	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_config_validator.c:85:17:uIntervalsAreValid	32	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_config_validator.c:119:22:rsrx_validate_session_config	32	static

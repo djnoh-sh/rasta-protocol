@@ -45,8 +45,8 @@
 | EVS-006 | `Open` | actual vendor matrix entry | first actual vendor rule id 확보 대기 |
 | EVS-007 | `Open` | deviation or fix tracking link | first actual vendor decision 대기 |
 | EVS-008 | `Open` | audit trail update | `EVS-001` and `EVS-003`~`EVS-007` 이후 수행 |
-| EVS-009 | `Open` | stack-bound analysis artifact | stack usage or vendor stack analysis output 확보 대기 |
-| EVS-010 | `Open` | static memory map artifact | linker map or target memory allocation report 확보 대기 |
+| EVS-009 | `Host Baseline Available, Target/Vendor Open` | stack-bound analysis artifact | 2026-05-06 host stack-usage package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor stack analysis output remains open |
+| EVS-010 | `Host Baseline Available, Target/Vendor Open` | static memory map artifact | 2026-05-06 host linker-map package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor memory map remains open |
 | EVS-011 | `Open` | strict-warning default-gate decision | CI/release gate policy decision 대기 |
 
 ## Execution Notes
@@ -84,6 +84,9 @@
   - `stack_memory_evidence_runbook.md`
 - host baseline helper:
   - `../tools/run_stack_memory_evidence.sh`
+- host baseline execution:
+  - `reports/stack_memory_host_baseline_2026-05-06/summary.md`
+  - `../reviews/RV-330_stack_memory_host_baseline_review.md`
 - trigger to close:
   - stack-bound analysis output, static memory map output, and strict-warning CI/release gate decision are available with commit/build/tool references
 - host baseline note:

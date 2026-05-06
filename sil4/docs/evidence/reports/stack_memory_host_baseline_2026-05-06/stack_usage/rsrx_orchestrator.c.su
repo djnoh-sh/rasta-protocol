@@ -1,0 +1,8 @@
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:3:17:uExecutorIsValid	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:10:17:uExecutorTableIsValid	24	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:22:39:pxSelectExecutor	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:60:13:vResetReport	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:79:15:rsrx_orchestrator_init	48	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:94:15:rsrx_orchestrator_process_event	64	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:146:14:rsrx_orchestrator_get_state	32	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_orchestrator.c:157:15:rsrx_orchestrator_reset	32	static

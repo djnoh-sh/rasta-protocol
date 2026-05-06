@@ -1,0 +1,700 @@
+Archive member included to satisfy reference by file (symbol)
+
+librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+                              CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o (rsrx_transport_supervisor_init)
+librsrx_api.a(rsrx_api.c.o)   CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o (rsrx_session_init)
+librsrx_codec.a(rsrx_codec.c.o)
+                              CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o (rsrx_codec_encode_message)
+librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+                              librsrx_api.a(rsrx_api.c.o) (rsrx_transport_adapter_init)
+librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+                              librsrx_api.a(rsrx_api.c.o) (rsrx_orchestrator_init)
+librsrx_state_machine.a(rsrx_state_machine.c.o)
+                              librsrx_orchestrator.a(rsrx_orchestrator.c.o) (rsrx_state_machine_init)
+librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+                              librsrx_platform_adapters.a(rsrx_platform_adapters.c.o) (rsrx_protocol_context_init)
+librsrx_config_validator.a(rsrx_config_validator.c.o)
+                              librsrx_api.a(rsrx_api.c.o) (rsrx_validate_session_config)
+librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+                              librsrx_api.a(rsrx_api.c.o) (rsrx_channel_manager_init)
+
+Merging program properties
+
+
+As-needed library included to satisfy reference by file (symbol)
+
+libc.so.6                     CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o (puts@@GLIBC_2.2.5)
+
+Discarded input sections
+
+ .note.GNU-stack
+                0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ .note.gnu.property
+                0x0000000000000000       0x20 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+ .note.gnu.property
+                0x0000000000000000       0x20 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+ .note.gnu.property
+                0x0000000000000000       0x20 CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_api.a(rsrx_api.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_api.a(rsrx_api.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_codec.a(rsrx_codec.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_codec.a(rsrx_codec.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_state_machine.a(rsrx_state_machine.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_state_machine.a(rsrx_state_machine.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_config_validator.a(rsrx_config_validator.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_config_validator.a(rsrx_config_validator.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+ .note.gnu.property
+                0x0000000000000000       0x20 librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+ .note.gnu.property
+                0x0000000000000000       0x20 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+ .note.gnu.property
+                0x0000000000000000       0x20 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+LOAD CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+LOAD librsrx_transport_supervisor.a
+LOAD librsrx_api.a
+LOAD librsrx_codec.a
+LOAD librsrx_platform_adapters.a
+LOAD librsrx_orchestrator.a
+LOAD librsrx_state_machine.a
+LOAD librsrx_protocol_context.a
+LOAD librsrx_config_validator.a
+LOAD librsrx_channel_manager.a
+LOAD librsrx_codec.a
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/libgcc.a
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/libgcc_s.so
+START GROUP
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/libgcc_s.so.1
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/libgcc.a
+END GROUP
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/libc.so
+START GROUP
+LOAD /lib/x86_64-linux-gnu/libc.so.6
+LOAD /usr/lib/x86_64-linux-gnu/libc_nonshared.a
+LOAD /lib64/ld-linux-x86-64.so.2
+END GROUP
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/libgcc.a
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/libgcc_s.so
+START GROUP
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/libgcc_s.so.1
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/libgcc.a
+END GROUP
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+LOAD /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+                [!provide]                        PROVIDE (__executable_start = SEGMENT_START ("text-segment", 0x0))
+                0x0000000000000318                . = (SEGMENT_START ("text-segment", 0x0) + SIZEOF_HEADERS)
+
+.interp         0x0000000000000318       0x1c
+ *(.interp)
+ .interp        0x0000000000000318       0x1c /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.note.gnu.property
+                0x0000000000000338       0x30
+ .note.gnu.property
+                0x0000000000000338       0x30 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.note.gnu.build-id
+                0x0000000000000368       0x24
+ *(.note.gnu.build-id)
+ .note.gnu.build-id
+                0x0000000000000368       0x24 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.note.ABI-tag   0x000000000000038c       0x20
+ .note.ABI-tag  0x000000000000038c       0x20 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.hash
+ *(.hash)
+
+.gnu.hash       0x00000000000003b0       0x28
+ *(.gnu.hash)
+ .gnu.hash      0x00000000000003b0       0x28 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.dynsym         0x00000000000003d8      0x108
+ *(.dynsym)
+ .dynsym        0x00000000000003d8      0x108 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.dynstr         0x00000000000004e0       0xbc
+ *(.dynstr)
+ .dynstr        0x00000000000004e0       0xbc /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.gnu.version    0x000000000000059c       0x16
+ *(.gnu.version)
+ .gnu.version   0x000000000000059c       0x16 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.gnu.version_d  0x00000000000005b8        0x0
+ *(.gnu.version_d)
+ .gnu.version_d
+                0x00000000000005b8        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.gnu.version_r  0x00000000000005b8       0x40
+ *(.gnu.version_r)
+ .gnu.version_r
+                0x00000000000005b8       0x40 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.rela.dyn       0x00000000000005f8      0x108
+ *(.rela.init)
+ *(.rela.text .rela.text.* .rela.gnu.linkonce.t.*)
+ .rela.text     0x00000000000005f8        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.rela.fini)
+ *(.rela.rodata .rela.rodata.* .rela.gnu.linkonce.r.*)
+ *(.rela.data .rela.data.* .rela.gnu.linkonce.d.*)
+ .rela.data.rel.ro
+                0x00000000000005f8        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.local
+                0x00000000000005f8       0x18 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.ro.local
+                0x0000000000000610       0x30 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.rela.tdata .rela.tdata.* .rela.gnu.linkonce.td.*)
+ *(.rela.tbss .rela.tbss.* .rela.gnu.linkonce.tb.*)
+ *(.rela.ctors)
+ *(.rela.dtors)
+ *(.rela.got)
+ .rela.got      0x0000000000000640       0x78 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*)
+ .rela.bss      0x00000000000006b8       0x18 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.rela.ldata .rela.ldata.* .rela.gnu.linkonce.l.*)
+ *(.rela.lbss .rela.lbss.* .rela.gnu.linkonce.lb.*)
+ *(.rela.lrodata .rela.lrodata.* .rela.gnu.linkonce.lr.*)
+ *(.rela.ifunc)
+ .rela.ifunc    0x00000000000006d0        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.fini_array
+                0x00000000000006d0       0x18 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.init_array
+                0x00000000000006e8       0x18 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.rela.plt       0x0000000000000700       0x60
+ *(.rela.plt)
+ .rela.plt      0x0000000000000700       0x60 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.rela.iplt)
+
+.relr.dyn
+ *(.relr.dyn)
+                0x0000000000001000                . = ALIGN (CONSTANT (MAXPAGESIZE))
+
+.init           0x0000000000001000       0x1b
+ *(SORT_NONE(.init))
+ .init          0x0000000000001000       0x16 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+                0x0000000000001000                _init
+ .init          0x0000000000001016        0x5 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+
+.plt            0x0000000000001020       0x50
+ *(.plt)
+ .plt           0x0000000000001020       0x50 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.iplt)
+
+.plt.got        0x0000000000001070       0x10
+ *(.plt.got)
+ .plt.got       0x0000000000001070       0x10 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000001070                __cxa_finalize@@GLIBC_2.2.5
+
+.plt.sec        0x0000000000001080       0x40
+ *(.plt.sec)
+ .plt.sec       0x0000000000001080       0x40 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000001080                puts@@GLIBC_2.2.5
+                0x0000000000001090                __stack_chk_fail@@GLIBC_2.4
+                0x00000000000010a0                fprintf@@GLIBC_2.2.5
+                0x00000000000010b0                exit@@GLIBC_2.2.5
+
+.text           0x00000000000010c0    0x84538
+ *(.text.unlikely .text.*_unlikely .text.unlikely.*)
+ *(.text.exit .text.exit.*)
+ *(.text.startup .text.startup.*)
+ *(.text.hot .text.hot.*)
+ *(SORT_BY_NAME(.text.sorted.*))
+ *(.text .stub .text.* .gnu.linkonce.t.*)
+ .text          0x00000000000010c0       0x26 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x00000000000010c0                _start
+ .text          0x00000000000010e6        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+ *fill*         0x00000000000010e6        0xa
+ .text          0x00000000000010f0       0xb9 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+ .text          0x00000000000011a9    0x7cf4c CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+                0x000000000007def7                main
+ .text          0x000000000007e0f5     0x298f librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+                0x000000000007fe8e                rsrx_transport_supervisor_init
+                0x000000000007ff73                rsrx_transport_supervisor_process_frame
+                0x000000000007ffdc                rsrx_transport_supervisor_poll_receive
+                0x00000000000803ab                rsrx_transport_supervisor_pump_receive
+                0x000000000008051b                rsrx_transport_supervisor_process_transport_event
+                0x000000000008098f                rsrx_transport_supervisor_process_timer_expiry
+ .text          0x0000000000080a84      0xb3d librsrx_api.a(rsrx_api.c.o)
+                0x000000000008102c                rsrx_session_init
+                0x0000000000081316                rsrx_session_start
+                0x0000000000081341                rsrx_session_connect
+                0x000000000008136c                rsrx_session_disconnect
+                0x0000000000081397                rsrx_session_process_event
+                0x00000000000813c5                rsrx_session_process_timer_expiry
+                0x0000000000081432                rsrx_session_send_application_data
+                0x00000000000814d9                rsrx_session_get_outbound_telemetry
+                0x0000000000081513                rsrx_session_get_state
+                0x0000000000081553                rsrx_session_reset
+ .text          0x00000000000815c1      0x5fd librsrx_codec.a(rsrx_codec.c.o)
+                0x00000000000817e9                rsrx_codec_encode_message
+                0x00000000000819ba                rsrx_codec_decode_frame
+                0x0000000000081bad                rsrx_codec_get_default_port
+ .text          0x0000000000081bbe     0x177b librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+                0x00000000000826fe                rsrx_transport_adapter_init
+                0x0000000000082957                rsrx_transport_executor_dispatch
+                0x0000000000082a0d                rsrx_transport_adapter_record_inbound_message
+                0x0000000000082a8c                rsrx_transport_adapter_get_last_inbound_message
+                0x0000000000082abe                rsrx_transport_adapter_query_channel
+                0x0000000000082bc2                rsrx_transport_adapter_receive_frame
+                0x0000000000082c08                rsrx_transport_adapter_send_application_data
+                0x0000000000082c46                rsrx_transport_adapter_has_outstanding_send
+                0x0000000000082c6c                rsrx_transport_adapter_get_outstanding_send_channel
+                0x0000000000082ca0                rsrx_transport_adapter_clear_outstanding_send
+                0x0000000000082cc9                rsrx_transport_adapter_clear_outstanding_send_on_feedback
+                0x0000000000082cf2                rsrx_transport_adapter_reset_runtime_state
+                0x0000000000082e0b                rsrx_transport_adapter_get_outbound_telemetry
+                0x0000000000082e31                rsrx_transport_adapter_note_busy_reject_escalation
+                0x0000000000082e6e                rsrx_transport_adapter_clear_retransmission_context
+                0x0000000000082f88                rsrx_platform_adapter_init
+                0x0000000000083037                rsrx_platform_timer_executor_dispatch
+                0x0000000000083121                rsrx_platform_diagnostics_executor_dispatch
+                0x00000000000831f6                rsrx_platform_adapter_build_executor_table
+ .text          0x0000000000083339      0x3db librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+                0x00000000000834fe                rsrx_orchestrator_init
+                0x00000000000835aa                rsrx_orchestrator_process_event
+                0x00000000000836bc                rsrx_orchestrator_get_state
+                0x00000000000836e8                rsrx_orchestrator_reset
+ .text          0x0000000000083714      0x726 librsrx_state_machine.a(rsrx_state_machine.c.o)
+                0x0000000000083b62                rsrx_state_machine_init
+                0x0000000000083bb9                rsrx_state_machine_handle_event
+                0x0000000000083dc1                rsrx_state_machine_get_state
+                0x0000000000083de3                rsrx_state_machine_reset
+ .text          0x0000000000083e3a      0x68d librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+                0x0000000000083fdb                rsrx_protocol_context_init
+                0x0000000000084048                rsrx_protocol_context_record_inbound_message
+                0x000000000008411a                rsrx_protocol_context_resolve_inbound_event
+                0x0000000000084342                rsrx_protocol_context_build_encode_request
+                0x0000000000084485                rsrx_protocol_context_clear_retransmission
+ .text          0x00000000000844c7      0x4f9 librsrx_config_validator.a(rsrx_config_validator.c.o)
+                0x00000000000846f6                rsrx_validate_session_config
+ .text          0x00000000000849c0      0xc38 librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+                0x0000000000084e50                rsrx_channel_manager_init
+                0x0000000000084f64                rsrx_channel_manager_update_channel
+                0x0000000000084ff5                rsrx_channel_manager_select_channel
+                0x0000000000085519                rsrx_channel_manager_get_active_channel
+                0x0000000000085575                rsrx_channel_manager_reset
+ .text          0x00000000000855f8        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+ .text          0x00000000000855f8        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+ *(.gnu.warning)
+
+.fini           0x00000000000855f8        0xd
+ *(SORT_NONE(.fini))
+ .fini          0x00000000000855f8        0x8 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+                0x00000000000855f8                _fini
+ .fini          0x0000000000085600        0x5 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+                [!provide]                        PROVIDE (__etext = .)
+                [!provide]                        PROVIDE (_etext = .)
+                [!provide]                        PROVIDE (etext = .)
+                0x0000000000086000                . = ALIGN (CONSTANT (MAXPAGESIZE))
+                0x0000000000086000                . = SEGMENT_START ("rodata-segment", (ALIGN (CONSTANT (MAXPAGESIZE)) + (. & (CONSTANT (MAXPAGESIZE) - 0x1))))
+
+.rodata         0x0000000000086000    0x79f50
+ *(.rodata .rodata.* .gnu.linkonce.r.*)
+ .rodata.cst4   0x0000000000086000        0x4 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000086000                _IO_stdin_used
+ *fill*         0x0000000000086004        0x4
+ .rodata        0x0000000000086008    0x799a8 CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+ .rodata        0x00000000000ff9b0       0x18 librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+ .rodata        0x00000000000ff9c8       0x20 librsrx_codec.a(rsrx_codec.c.o)
+ .rodata        0x00000000000ff9e8       0x28 librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+ .rodata        0x00000000000ffa10       0x3c librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+ *fill*         0x00000000000ffa4c       0x14
+ .rodata        0x00000000000ffa60      0x4f0 librsrx_state_machine.a(rsrx_state_machine.c.o)
+
+.rodata1
+ *(.rodata1)
+
+.eh_frame_hdr   0x00000000000fff50      0xbb4
+ *(.eh_frame_hdr)
+ .eh_frame_hdr  0x00000000000fff50      0xbb4 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x00000000000fff50                __GNU_EH_FRAME_HDR
+ *(.eh_frame_entry .eh_frame_entry.*)
+
+.eh_frame       0x0000000000100b08     0x2ec8
+ *(.eh_frame)
+ .eh_frame      0x0000000000100b08       0x30 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                                         0x2c (size before relaxing)
+ *fill*         0x0000000000100b38        0x0
+ .eh_frame      0x0000000000100b38       0x28 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                                         0x40 (size before relaxing)
+ .eh_frame      0x0000000000100b60       0x18 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                                         0x30 (size before relaxing)
+ .eh_frame      0x0000000000100b78       0x18 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                                         0x30 (size before relaxing)
+ .eh_frame      0x0000000000100b90     0x1c08 CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+                                       0x1c20 (size before relaxing)
+ .eh_frame      0x0000000000102798      0x360 librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+                                        0x378 (size before relaxing)
+ .eh_frame      0x0000000000102af8      0x280 librsrx_api.a(rsrx_api.c.o)
+                                        0x298 (size before relaxing)
+ .eh_frame      0x0000000000102d78      0x180 librsrx_codec.a(rsrx_codec.c.o)
+                                        0x198 (size before relaxing)
+ .eh_frame      0x0000000000102ef8      0x488 librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+                                        0x4a0 (size before relaxing)
+ .eh_frame      0x0000000000103380      0x108 librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+                                        0x120 (size before relaxing)
+ .eh_frame      0x0000000000103488      0x1c0 librsrx_state_machine.a(rsrx_state_machine.c.o)
+                                        0x1d8 (size before relaxing)
+ .eh_frame      0x0000000000103648      0x180 librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+                                        0x198 (size before relaxing)
+ .eh_frame      0x00000000001037c8       0xc0 librsrx_config_validator.a(rsrx_config_validator.c.o)
+                                         0xd8 (size before relaxing)
+ .eh_frame      0x0000000000103888      0x144 librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+                                        0x160 (size before relaxing)
+ .eh_frame      0x00000000001039cc        0x4 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+ *(.eh_frame.*)
+
+.sframe         0x00000000001039d0        0x0
+ *(.sframe)
+ .sframe        0x00000000001039d0        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ .sframe        0x00000000001039d0        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.sframe.*)
+
+.gcc_except_table
+ *(.gcc_except_table .gcc_except_table.*)
+
+.gnu_extab
+ *(.gnu_extab*)
+
+.exception_ranges
+ *(.exception_ranges*)
+                0x0000000000104d90                . = DATA_SEGMENT_ALIGN (CONSTANT (MAXPAGESIZE), CONSTANT (COMMONPAGESIZE))
+
+.eh_frame
+ *(.eh_frame)
+ *(.eh_frame.*)
+
+.sframe
+ *(.sframe)
+ *(.sframe.*)
+
+.gnu_extab
+ *(.gnu_extab)
+
+.gcc_except_table
+ *(.gcc_except_table .gcc_except_table.*)
+
+.exception_ranges
+ *(.exception_ranges*)
+
+.tdata          0x0000000000104d90        0x0
+                [!provide]                        PROVIDE (__tdata_start = .)
+ *(.tdata .tdata.* .gnu.linkonce.td.*)
+
+.tbss
+ *(.tbss .tbss.* .gnu.linkonce.tb.*)
+ *(.tcommon)
+
+.preinit_array  0x0000000000104d90        0x0
+                [!provide]                        PROVIDE (__preinit_array_start = .)
+ *(.preinit_array)
+                [!provide]                        PROVIDE (__preinit_array_end = .)
+
+.init_array     0x0000000000104d90        0x8
+                [!provide]                        PROVIDE (__init_array_start = .)
+ *(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*))
+ *(.init_array EXCLUDE_FILE(*crtend?.o *crtend.o *crtbegin?.o *crtbegin.o) .ctors)
+ .init_array    0x0000000000104d90        0x8 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+                [!provide]                        PROVIDE (__init_array_end = .)
+
+.fini_array     0x0000000000104d98        0x8
+                [!provide]                        PROVIDE (__fini_array_start = .)
+ *(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*))
+ *(.fini_array EXCLUDE_FILE(*crtend?.o *crtend.o *crtbegin?.o *crtbegin.o) .dtors)
+ .fini_array    0x0000000000104d98        0x8 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+                [!provide]                        PROVIDE (__fini_array_end = .)
+
+.ctors
+ *crtbegin.o(.ctors)
+ *crtbegin?.o(.ctors)
+ *(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors)
+ *(SORT_BY_NAME(.ctors.*))
+ *(.ctors)
+
+.dtors
+ *crtbegin.o(.dtors)
+ *crtbegin?.o(.dtors)
+ *(EXCLUDE_FILE(*crtend?.o *crtend.o) .dtors)
+ *(SORT_BY_NAME(.dtors.*))
+ *(.dtors)
+
+.jcr
+ *(.jcr)
+
+.data.rel.ro    0x0000000000104da0       0x10
+ *(.data.rel.ro.local* .gnu.linkonce.d.rel.ro.local.*)
+ .data.rel.ro.local
+                0x0000000000104da0       0x10 librsrx_codec.a(rsrx_codec.c.o)
+ *(.data.rel.ro .data.rel.ro.* .gnu.linkonce.d.rel.ro.*)
+ .data.rel.ro   0x0000000000104db0        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+
+.dynamic        0x0000000000104db0      0x1f0
+ *(.dynamic)
+ .dynamic       0x0000000000104db0      0x1f0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000104db0                _DYNAMIC
+
+.got            0x0000000000104fa0       0x60
+ *(.got.plt)
+ .got.plt       0x0000000000104fa0       0x38 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000104fa0                _GLOBAL_OFFSET_TABLE_
+ *(.igot.plt)
+ *(.got)
+ .got           0x0000000000104fd8       0x28 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ *(.igot)
+                0x0000000000105000                . = DATA_SEGMENT_RELRO_END (., 0x0)
+
+.data           0x0000000000105000       0x10
+ *(.data .data.* .gnu.linkonce.d.*)
+ .data          0x0000000000105000        0x4 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000105000                data_start
+                0x0000000000105000                __data_start
+ .data          0x0000000000105004        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+ .data          0x0000000000105004        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+ *fill*         0x0000000000105004        0x4
+ .data.rel.local
+                0x0000000000105008        0x8 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+                0x0000000000105008                __dso_handle
+ .data          0x0000000000105010        0x0 CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+ .data          0x0000000000105010        0x0 librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+ .data          0x0000000000105010        0x0 librsrx_api.a(rsrx_api.c.o)
+ .data          0x0000000000105010        0x0 librsrx_codec.a(rsrx_codec.c.o)
+ .data          0x0000000000105010        0x0 librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+ .data          0x0000000000105010        0x0 librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+ .data          0x0000000000105010        0x0 librsrx_state_machine.a(rsrx_state_machine.c.o)
+ .data          0x0000000000105010        0x0 librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+ .data          0x0000000000105010        0x0 librsrx_config_validator.a(rsrx_config_validator.c.o)
+ .data          0x0000000000105010        0x0 librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+ .data          0x0000000000105010        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+ .data          0x0000000000105010        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+
+.tm_clone_table
+                0x0000000000105010        0x0
+ .tm_clone_table
+                0x0000000000105010        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+ .tm_clone_table
+                0x0000000000105010        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+
+.data1
+ *(.data1)
+                0x0000000000105010                _edata = .
+                [!provide]                        PROVIDE (edata = .)
+                0x0000000000105010                . = ALIGN (ALIGNOF (NEXT_SECTION))
+                0x0000000000105020                __bss_start = .
+
+.bss            0x0000000000105020       0x10
+ *(.dynbss)
+ *fill*         0x0000000000105020        0x0
+ .dynbss        0x0000000000105020        0x8 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000105020                stderr@@GLIBC_2.2.5
+ *(.bss .bss.* .gnu.linkonce.b.*)
+ .bss           0x0000000000105028        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o
+ .bss           0x0000000000105028        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o
+ .bss           0x0000000000105028        0x1 /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+ .bss           0x0000000000105029        0x0 CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+ .bss           0x0000000000105029        0x0 librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+ .bss           0x0000000000105029        0x0 librsrx_api.a(rsrx_api.c.o)
+ .bss           0x0000000000105029        0x0 librsrx_codec.a(rsrx_codec.c.o)
+ .bss           0x0000000000105029        0x0 librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+ .bss           0x0000000000105029        0x0 librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+ .bss           0x0000000000105029        0x0 librsrx_state_machine.a(rsrx_state_machine.c.o)
+ .bss           0x0000000000105029        0x4 librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+ .bss           0x000000000010502d        0x0 librsrx_config_validator.a(rsrx_config_validator.c.o)
+ .bss           0x000000000010502d        0x0 librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+ .bss           0x000000000010502d        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+ .bss           0x000000000010502d        0x0 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+ *(COMMON)
+                0x0000000000105030                . = ALIGN ((. != 0x0)?0x8:0x1)
+ *fill*         0x000000000010502d        0x3
+
+.lbss
+ *(.dynlbss)
+ *(.lbss .lbss.* .gnu.linkonce.lb.*)
+ *(LARGE_COMMON)
+                0x0000000000105030                . = ALIGN (0x8)
+                0x0000000000105030                . = SEGMENT_START ("ldata-segment", .)
+
+.lrodata
+ *(.lrodata .lrodata.* .gnu.linkonce.lr.*)
+
+.ldata          0x0000000000107030        0x0
+ *(.ldata .ldata.* .gnu.linkonce.l.*)
+                0x0000000000107030                . = ALIGN ((. != 0x0)?0x8:0x1)
+                0x0000000000107030                . = ALIGN (0x8)
+                0x0000000000105030                _end = .
+                [!provide]                        PROVIDE (end = .)
+                0x0000000000107030                . = DATA_SEGMENT_END (.)
+
+.stab
+ *(.stab)
+
+.stabstr
+ *(.stabstr)
+
+.stab.excl
+ *(.stab.excl)
+
+.stab.exclstr
+ *(.stab.exclstr)
+
+.stab.index
+ *(.stab.index)
+
+.stab.indexstr
+ *(.stab.indexstr)
+
+.comment        0x0000000000000000       0x2d
+ *(.comment)
+ .comment       0x0000000000000000       0x2d /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o
+                                         0x2e (size before relaxing)
+ .comment       0x000000000000002d       0x2e CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.o
+ .comment       0x000000000000002d       0x2e librsrx_transport_supervisor.a(rsrx_transport_supervisor.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_api.a(rsrx_api.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_codec.a(rsrx_codec.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_platform_adapters.a(rsrx_platform_adapters.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_orchestrator.a(rsrx_orchestrator.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_state_machine.a(rsrx_state_machine.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_protocol_context.a(rsrx_protocol_context.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_config_validator.a(rsrx_config_validator.c.o)
+ .comment       0x000000000000002d       0x2e librsrx_channel_manager.a(rsrx_channel_manager.c.o)
+ .comment       0x000000000000002d       0x2e /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o
+
+.gnu.build.attributes
+ *(.gnu.build.attributes .gnu.build.attributes.*)
+
+.debug
+ *(.debug)
+
+.line
+ *(.line)
+
+.debug_srcinfo
+ *(.debug_srcinfo)
+
+.debug_sfnames
+ *(.debug_sfnames)
+
+.debug_aranges
+ *(.debug_aranges)
+
+.debug_pubnames
+ *(.debug_pubnames)
+
+.debug_info
+ *(.debug_info .gnu.linkonce.wi.*)
+
+.debug_abbrev
+ *(.debug_abbrev)
+
+.debug_line
+ *(.debug_line .debug_line.* .debug_line_end)
+
+.debug_frame
+ *(.debug_frame)
+
+.debug_str
+ *(.debug_str)
+
+.debug_loc
+ *(.debug_loc)
+
+.debug_macinfo
+ *(.debug_macinfo)
+
+.debug_weaknames
+ *(.debug_weaknames)
+
+.debug_funcnames
+ *(.debug_funcnames)
+
+.debug_typenames
+ *(.debug_typenames)
+
+.debug_varnames
+ *(.debug_varnames)
+
+.debug_pubtypes
+ *(.debug_pubtypes)
+
+.debug_ranges
+ *(.debug_ranges)
+
+.debug_addr
+ *(.debug_addr)
+
+.debug_line_str
+ *(.debug_line_str)
+
+.debug_loclists
+ *(.debug_loclists)
+
+.debug_macro
+ *(.debug_macro)
+
+.debug_names
+ *(.debug_names)
+
+.debug_rnglists
+ *(.debug_rnglists)
+
+.debug_str_offsets
+ *(.debug_str_offsets)
+
+.debug_sup
+ *(.debug_sup)
+
+.gnu.attributes
+ *(.gnu.attributes)
+
+/DISCARD/
+ *(.note.GNU-stack)
+ *(.gnu_debuglink)
+ *(.gnu.lto_*)
+OUTPUT(rsrx_session_supervisor_flow_test elf64-x86-64)

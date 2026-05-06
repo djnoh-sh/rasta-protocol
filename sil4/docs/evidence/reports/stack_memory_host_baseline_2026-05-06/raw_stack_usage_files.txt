@@ -1,0 +1,10 @@
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_api.dir/src/rsrx_api.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_channel_manager.dir/src/rsrx_channel_manager.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_codec.dir/src/rsrx_codec.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_config_validator.dir/src/rsrx_config_validator.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_orchestrator.dir/src/rsrx_orchestrator.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_platform_adapters.dir/src/rsrx_platform_adapters.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_protocol_context.dir/src/rsrx_protocol_context.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_session_supervisor_flow_test.dir/tests/integration/test_rsrx_session_supervisor_flow.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_state_machine.dir/src/rsrx_state_machine.c.su
+/tmp/rsrx-stack-memory-build-2026-05-06/CMakeFiles/rsrx_transport_supervisor.dir/src/rsrx_transport_supervisor.c.su
