@@ -715,6 +715,13 @@ static void vTestSupervisorPollReceiveChannelDown(void)
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_EVENT_HANDSHAKE_SUCCESS,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U);
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll down session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll down session start");
@@ -725,8 +732,13 @@ static void vTestSupervisorPollReceiveChannelDown(void)
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "poll down status");
 	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll down poll count");
 	vAssertTrue(xTransport.uReceiveCount == 0U, "poll down receive not called");
+	vAssertTrue(g_xCodecContext.uCallCount == 0U, "poll down codec not called");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 0U, "poll down channel unavailable");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "poll down decision");
+	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_ERROR, "poll down decision class");
+	vAssertTrue(pxSupervisorReport->uErrorDecisionCount == 1U, "poll down error decision count");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll down error stage");
+	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_CHANNEL_DOWN, "poll down query status");
 	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 0U, "poll down available channel count");
 	vAssertTrue(pxSupervisorReport->uChannelUnavailableSelectionCount == 1U, "poll down unavailable selection count");
 }
