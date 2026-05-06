@@ -55,6 +55,16 @@ typedef struct
 
 typedef struct
 {
+	size_t xHeaderBytes;
+	size_t xMaxPayloadBytes;
+	size_t xMaxFrameBytes;
+	uint32_t uCrcPresent;
+	uint32_t uMacPresent;
+	uint32_t uTimestampPresent;
+} rsrx_codec_wire_profile_t;
+
+typedef struct
+{
 	uint8_t * puBuffer;
 	size_t xBufferCapacity;
 	size_t xEncodedLength;
@@ -83,5 +93,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	rsrx_decoded_message_t * pxMessage);
 
 const rsrx_codec_port_t * rsrx_codec_get_default_port(void);
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void);
 
 #endif

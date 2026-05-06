@@ -221,3 +221,18 @@ const rsrx_codec_port_t * rsrx_codec_get_default_port(void)
 
 	return &xCodecPort;
 }
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void)
+{
+	static const rsrx_codec_wire_profile_t xWireProfile =
+	{
+		D_RSRX_CODEC_HEADER_BYTES,
+		D_RSRX_CODEC_MAX_PAYLOAD_BYTES,
+		D_RSRX_CODEC_MAX_FRAME_BYTES,
+		0U,
+		0U,
+		0U
+	};
+
+	return &xWireProfile;
+}

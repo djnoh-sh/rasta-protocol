@@ -92,6 +92,21 @@ static void vTestDefaultPortEncodeDecodeRoundTrip(void)
 	vAssertTrue(xMessage.auPayload[1] == 0xB2U, "default port decoded payload content");
 }
 
+static void vTestWireProfileDocumentsCurrentSecurityFields(void)
+{
+	const rsrx_codec_wire_profile_t * pxProfile;
+
+	pxProfile = rsrx_codec_get_wire_profile();
+
+	vAssertTrue(pxProfile != (const rsrx_codec_wire_profile_t *)0, "wire profile present");
+	vAssertTrue(pxProfile->xHeaderBytes == D_RSRX_CODEC_HEADER_BYTES, "wire profile header bytes");
+	vAssertTrue(pxProfile->xMaxPayloadBytes == D_RSRX_CODEC_MAX_PAYLOAD_BYTES, "wire profile max payload bytes");
+	vAssertTrue(pxProfile->xMaxFrameBytes == D_RSRX_CODEC_MAX_FRAME_BYTES, "wire profile max frame bytes");
+	vAssertTrue(pxProfile->uCrcPresent == 0U, "wire profile crc absent");
+	vAssertTrue(pxProfile->uMacPresent == 0U, "wire profile mac absent");
+	vAssertTrue(pxProfile->uTimestampPresent == 0U, "wire profile timestamp absent");
+}
+
 static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
@@ -524,6 +539,7 @@ int main(void)
 {
 	vTestEncodeDecodeRoundTrip();
 	vTestDefaultPortEncodeDecodeRoundTrip();
+	vTestWireProfileDocumentsCurrentSecurityFields();
 	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();
