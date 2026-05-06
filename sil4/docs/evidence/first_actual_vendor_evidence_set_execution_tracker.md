@@ -28,6 +28,8 @@
   - `audit_trail_closeout.md`
 - stack/memory evidence requirements:
   - `stack_memory_evidence_requirements.md`
+- stack/memory evidence runbook:
+  - `stack_memory_evidence_runbook.md`
 
 ## Current Execution Status
 
@@ -76,6 +78,8 @@
 
 - requirement artifact:
   - `stack_memory_evidence_requirements.md`
+- execution runbook:
+  - `stack_memory_evidence_runbook.md`
 - trigger to close:
   - stack-bound analysis output, static memory map output, and strict-warning CI/release gate decision are available with commit/build/tool references
 

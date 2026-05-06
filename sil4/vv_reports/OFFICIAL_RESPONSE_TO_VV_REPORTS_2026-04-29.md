@@ -247,9 +247,11 @@ No V&V report file was edited as part of this response update.
 The accepted evidence follow-ups are now represented by:
 
 - `sil4/docs/evidence/stack_memory_evidence_requirements.md`
+- `sil4/docs/evidence/stack_memory_evidence_runbook.md`
 - `EVS-009` stack-bound analysis artifact
 - `EVS-010` static memory map artifact
 - `EVS-011` strict-warning CI/release default-gate decision
 - `RV-327` stack/memory evidence requirements review
+- `RV-328` stack/memory evidence runbook review
 
 These records define what must be obtained later. They are not a substitute for actual tool outputs or vendor artifacts.

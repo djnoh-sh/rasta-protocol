@@ -146,6 +146,8 @@
 | EVID-CI-109 | `../reviews/RV-243_r005_operational_readiness_snapshot_review.md` | Draft | readiness snapshot review |
 | EVID-CI-110 | `stack_memory_evidence_requirements.md` | Draft | V&V v1.4 stack-bound/static memory-map evidence requirements |
 | EVID-CI-111 | `../reviews/RV-327_stack_memory_evidence_requirements_review.md` | Draft | stack/memory evidence requirements review |
+| EVID-CI-112 | `stack_memory_evidence_runbook.md` | Draft | stack/memory evidence execution runbook |
+| EVID-CI-113 | `../reviews/RV-328_stack_memory_evidence_runbook_review.md` | Draft | stack/memory evidence runbook review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -204,3 +206,4 @@
 47. first stack-bound analysis artifact
 48. first static memory map artifact
 49. strict-warning CI/release default-gate decision
+50. first stack/memory evidence runbook execution
