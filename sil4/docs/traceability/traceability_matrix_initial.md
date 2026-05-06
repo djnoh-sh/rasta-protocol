@@ -52,6 +52,7 @@
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFlapBypassReceiveCarryoverResetLongRunFlow` | TC-INT-192 | RV-252 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueTelemetryFlow` | TC-INT-014 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedSessionResetOutboundTelemetryFlow` | TC-INT-205 | RV-303 | Draft |
+| FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedInvalidChannelDecodeFailureFlow` | TC-INT-206 | RV-322 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueFifoDispatchFlow` | TC-INT-102 | RV-034 | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearOrderingFlow` | TC-INT-103 |  | Draft |
 | FR-003 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDeferredQueueMixedClearLongRunFlow` | TC-INT-116 |  | Draft |
@@ -260,7 +261,7 @@
 | SR-001 | HZ-001 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-002, TC-SM-016 |  | Draft |
 | SR-001 | HZ-001 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_decoded_message_t`, `rsrx_codec_encode_message`, `rsrx_codec_decode_frame` | TC-CODEC-002, TC-CODEC-005, TC-CODEC-007, TC-CODEC-008, TC-CODEC-009, TC-CODEC-010, TC-CODEC-011, TC-CODEC-013, TC-CODEC-016, TC-CODEC-017, TC-CODEC-019, TC-CODEC-020, TC-CODEC-022, TC-CODEC-023 | RV-305, RV-306, RV-307, RV-308, RV-309, RV-311, RV-314, RV-315, RV-317, RV-318, RV-320, RV-321 | Draft |
 | SR-001 | HZ-001 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame` | TC-SUP-006 |  | Draft |
-| SR-001 | HZ-001 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDecodeFailureFlow` | TC-INT-005 |  | Draft |
+| SR-001 | HZ-001 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDecodeFailureFlow`, `vTestIntegratedInvalidChannelDecodeFailureFlow` | TC-INT-005, TC-INT-206 | RV-322 | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-003, TC-SM-013, TC-SM-017 |  | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-006 | `sil4/include/rsrx_transport.h` | `rsrx_transport_frame_t`, `rsrx_transport_channel_state_t` | TC-TR-003 |  | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_timer_expiry` | TC-API-007, TC-API-008 |  | Draft |
@@ -293,6 +294,7 @@
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedChannelFailoverFlow` | TC-INT-010 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRedundancyFlapSoakFlow` | TC-INT-013 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedReceiveErrorBudgetFlow`, `vTestIntegratedTopologyMismatchQueryBudgetFlow`, `vTestIntegratedReceiveErrorBudgetResetFlow`, `vTestIntegratedReceiveErrorFailoverCarryoverFlow`, `vTestIntegratedMixedTransientBudgetResetFlow` | TC-INT-017, TC-INT-200, TC-INT-018, TC-INT-024, TC-INT-035 | RV-030, RV-269 | Draft |
+| SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedInvalidChannelDecodeFailureFlow` | TC-INT-206 | RV-322 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedHoldoffStaleCompletionSoakFlow` | TC-INT-079 |  | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionTimeoutFailSafeFlow`, `vTestIntegratedRetransmissionFailoverRecoveryFlow`, `vTestIntegratedRetransmissionChannelUpHoldoffRecoveryFlow`, `vTestIntegratedRetransmissionChannelUpHoldoffTimeoutFlow`, `vTestIntegratedRetransmissionFailoverTimeoutFlow`, `vTestIntegratedRetransmissionFailoverRepeatedGapRecoveryFlow`, `vTestIntegratedRetransmissionFailoverRepeatedGapTimeoutFlow` | TC-INT-032, TC-INT-033, TC-INT-034, TC-INT-036, TC-INT-041, TC-INT-054, TC-INT-055 | RV-030 | Draft |
 | SR-002 | HZ-002 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedFailoverTransientRecoveryFlow`, `vTestIntegratedFailoverTransientSoakFlow`, `vTestIntegratedChannelUpRefreshHoldoffFlow`, `vTestIntegratedChannelUpFlapResetFlow` | TC-INT-025, TC-INT-026, TC-INT-027, TC-INT-029 | RV-030 | Draft |
