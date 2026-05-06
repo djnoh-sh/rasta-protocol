@@ -761,6 +761,49 @@ static void vTestSupervisorPollReceiveNoFrame(void)
 	vAssertTrue(xTransport.uReceiveCount == 1U, "poll idle receive count");
 }
 
+static void vTestSupervisorPollReceiveNonFrameNoFrameGating(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x62U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_SEND_COMPLETED);
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_EVENT_HANDSHAKE_SUCCESS,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll non-frame session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll non-frame session start");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll non-frame supervisor init");
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "poll non-frame status");
+	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll non-frame poll count");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "poll non-frame processed count");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "poll non-frame receive count");
+	vAssertTrue(g_xCodecContext.uCallCount == 0U, "poll non-frame codec not called");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "poll non-frame decision");
+	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "poll non-frame decision class");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll non-frame error stage");
+	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_OK, "poll non-frame receive status");
+	vAssertTrue(pxSupervisorReport->xLastFrame.eEventType == RSRX_TRANSPORT_EVENT_SEND_COMPLETED, "poll non-frame event preserved");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INITIALIZED, "poll non-frame state unchanged");
+}
+
 static void vTestSupervisorPollReceiveErrorBudgeted(void)
 {
 	rsrx_session_t xSession;
@@ -5536,6 +5579,7 @@ int main(void)
 	vTestSupervisorPollReceiveHandshake();
 	vTestSupervisorPollReceiveChannelDown();
 	vTestSupervisorPollReceiveNoFrame();
+	vTestSupervisorPollReceiveNonFrameNoFrameGating();
 	vTestSupervisorPollReceiveErrorBudgeted();
 	vTestSupervisorPollQueryErrorStageTelemetry();
 	vTestSupervisorPollReceiveErrorEscalatesAndResets();
