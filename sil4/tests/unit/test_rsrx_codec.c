@@ -107,6 +107,36 @@ static void vTestWireProfileDocumentsCurrentSecurityFields(void)
 	vAssertTrue(pxProfile->uTimestampPresent == 0U, "wire profile timestamp absent");
 }
 
+static void vTestCrc32PrimitiveKnownVector(void)
+{
+	static const uint8_t auKnownVector[] =
+	{
+		(uint8_t)'1',
+		(uint8_t)'2',
+		(uint8_t)'3',
+		(uint8_t)'4',
+		(uint8_t)'5',
+		(uint8_t)'6',
+		(uint8_t)'7',
+		(uint8_t)'8',
+		(uint8_t)'9'
+	};
+	uint32_t uCrc = 0U;
+
+	vAssertTrue(rsrx_codec_calculate_crc32(auKnownVector, sizeof(auKnownVector), &uCrc) == RSRX_CODEC_STATUS_OK, "crc32 known vector status");
+	vAssertTrue(uCrc == 0xCBF43926U, "crc32 known vector value");
+}
+
+static void vTestCrc32PrimitiveRejectsInvalidArguments(void)
+{
+	uint32_t uCrc = 0U;
+
+	vAssertTrue(rsrx_codec_calculate_crc32((const uint8_t *)0, 1U, &uCrc) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null data reject");
+	vAssertTrue(rsrx_codec_calculate_crc32((const uint8_t *)0, 0U, &uCrc) == RSRX_CODEC_STATUS_OK, "crc32 empty null data accepted");
+	vAssertTrue(uCrc == 0U, "crc32 empty value");
+	vAssertTrue(rsrx_codec_calculate_crc32((const uint8_t *)0, 0U, (uint32_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null output reject");
+}
+
 static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
@@ -540,6 +570,8 @@ int main(void)
 	vTestEncodeDecodeRoundTrip();
 	vTestDefaultPortEncodeDecodeRoundTrip();
 	vTestWireProfileDocumentsCurrentSecurityFields();
+	vTestCrc32PrimitiveKnownVector();
+	vTestCrc32PrimitiveRejectsInvalidArguments();
 	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();

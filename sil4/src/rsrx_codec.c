@@ -95,6 +95,29 @@ static uint32_t uReservedHeaderBytesAreZero(
 		(puBuffer[15] == 0U));
 }
 
+static uint32_t uUpdateCrc32Byte(
+	uint32_t uCrc,
+	uint8_t ucData)
+{
+	uint32_t uBitIndex;
+
+	uCrc ^= (uint32_t)ucData;
+
+	for(uBitIndex = 0U; uBitIndex < 8U; ++uBitIndex)
+	{
+		if((uCrc & 1U) != 0U)
+		{
+			uCrc = (uCrc >> 1U) ^ 0xEDB88320U;
+		}
+		else
+		{
+			uCrc >>= 1U;
+		}
+	}
+
+	return uCrc;
+}
+
 rsrx_codec_status_t rsrx_codec_encode_message(
 	const rsrx_encode_request_t * pxRequest,
 	rsrx_encode_buffer_t * pxBuffer)
@@ -235,4 +258,28 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void)
 	};
 
 	return &xWireProfile;
+}
+
+rsrx_codec_status_t rsrx_codec_calculate_crc32(
+	const uint8_t * puData,
+	size_t xDataLength,
+	uint32_t * puCrc)
+{
+	size_t xIndex;
+	uint32_t uCrc = 0xFFFFFFFFU;
+
+	if((puCrc == (uint32_t *)0) ||
+		((puData == (const uint8_t *)0) && (xDataLength > 0U)))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	for(xIndex = 0U; xIndex < xDataLength; ++xIndex)
+	{
+		uCrc = uUpdateCrc32Byte(uCrc, puData[xIndex]);
+	}
+
+	*puCrc = ~uCrc;
+
+	return RSRX_CODEC_STATUS_OK;
 }
