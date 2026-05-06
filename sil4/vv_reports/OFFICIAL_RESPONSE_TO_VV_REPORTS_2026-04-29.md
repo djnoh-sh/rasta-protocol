@@ -250,12 +250,14 @@ The accepted evidence follow-ups are now represented by:
 - `sil4/docs/evidence/stack_memory_evidence_runbook.md`
 - `sil4/tools/run_stack_memory_evidence.sh`
 - `sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/summary.md`
+- `sil4/docs/evidence/strict_warning_default_gate_policy_2026-05-06.md`
 - `EVS-009` stack-bound analysis artifact
 - `EVS-010` static memory map artifact
-- `EVS-011` strict-warning CI/release default-gate decision
+- `EVS-011` strict-warning CI/release default-gate decision - closed as `Evidence-only`
 - `RV-327` stack/memory evidence requirements review
 - `RV-328` stack/memory evidence runbook review
 - `RV-329` stack/memory evidence helper review
 - `RV-330` stack/memory host baseline evidence review
+- `RV-331` strict-warning default-gate policy review
 
 The host baseline package is an actual generated host-toolchain output. It is not a substitute for target-release or vendor-qualified stack/memory artifacts when those are required for certification closeout.

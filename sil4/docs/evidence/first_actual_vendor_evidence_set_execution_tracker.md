@@ -47,7 +47,7 @@
 | EVS-008 | `Open` | audit trail update | `EVS-001` and `EVS-003`~`EVS-007` 이후 수행 |
 | EVS-009 | `Host Baseline Available, Target/Vendor Open` | stack-bound analysis artifact | 2026-05-06 host stack-usage package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor stack analysis output remains open |
 | EVS-010 | `Host Baseline Available, Target/Vendor Open` | static memory map artifact | 2026-05-06 host linker-map package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor memory map remains open |
-| EVS-011 | `Open` | strict-warning default-gate decision | CI/release gate policy decision 대기 |
+| EVS-011 | `Closed` | `strict_warning_default_gate_policy_2026-05-06.md` | 2026-05-06: `Evidence-only` policy accepted by `RV-331`; refresh cadence defined |
 
 ## Execution Notes
 
@@ -91,6 +91,9 @@
   - stack-bound analysis output, static memory map output, and strict-warning CI/release gate decision are available with commit/build/tool references
 - host baseline note:
   - helper execution can create a host-toolchain stack/memory package, but target-release or vendor-qualified closeout still requires target/tool metadata when certification scope demands it
+- strict-warning default-gate decision:
+  - `strict_warning_default_gate_policy_2026-05-06.md`
+  - `../reviews/RV-331_strict_warning_default_gate_policy_review.md`
 
 ## Closeout Rule
 

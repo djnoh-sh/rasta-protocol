@@ -152,6 +152,8 @@
 | EVID-CI-115 | `../reviews/RV-329_stack_memory_evidence_helper_review.md` | Draft | stack/memory evidence helper review |
 | EVID-CI-116 | `reports/stack_memory_host_baseline_2026-05-06/summary.md` | Complete | first host stack/memory evidence helper execution |
 | EVID-CI-117 | `../reviews/RV-330_stack_memory_host_baseline_review.md` | Complete | first host stack/memory evidence execution review |
+| EVID-CI-118 | `strict_warning_default_gate_policy_2026-05-06.md` | Complete | strict-warning default-gate policy decision |
+| EVID-CI-119 | `../reviews/RV-331_strict_warning_default_gate_policy_review.md` | Complete | strict-warning default-gate policy review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -209,6 +211,6 @@
 46. first operational artifact runner smoke run
 47. first stack-bound analysis artifact
 48. first static memory map artifact
-49. strict-warning CI/release default-gate decision
+49. strict-warning CI/release default-gate decision - complete via `strict_warning_default_gate_policy_2026-05-06.md`
 50. first stack/memory evidence runbook execution
 51. first host stack/memory evidence helper execution - complete via `reports/stack_memory_host_baseline_2026-05-06/summary.md`
