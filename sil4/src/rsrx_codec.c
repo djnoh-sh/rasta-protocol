@@ -158,6 +158,10 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	{
 		return RSRX_CODEC_STATUS_DECODE_ERROR;
 	}
+	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
+	{
+		return RSRX_CODEC_STATUS_DECODE_ERROR;
+	}
 
 	eMessageType = (rsrx_message_type_t)pxFrame->puPayload[0];
 	if(uMessageTypeIsSupported(eMessageType) == 0U)

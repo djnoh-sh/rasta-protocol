@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-05-04`
+- Last Updated: `2026-05-06`
 
 ## Scope
 
@@ -47,6 +47,7 @@
   - transport frame을 typed decoded message로 변환한다.
   - null frame/message/payload pointer는 `INVALID_ARGUMENT`로 거부한다.
   - frame length가 `D_RSRX_CODEC_HEADER_BYTES`보다 작으면 `DECODE_ERROR`로 거부한다.
+  - transport event type이 `RSRX_TRANSPORT_EVENT_FRAME_RECEIVED`가 아니면 `DECODE_ERROR`로 거부한다.
   - decoded message는 state machine에 전달할 `suggested event`를 함께 제공한다.
   - supported message type은 고정된 state-machine suggested event로 mapping한다.
   - reason code가 정의된 `rsrx_reason_code_t` 범위를 벗어나면 `DECODE_ERROR`로 거부한다.
@@ -83,6 +84,7 @@
   - encode/decode round-trip 검증
   - encode/decode null argument reject 검증
   - short header frame reject 검증
+  - non-frame transport event reject 검증
   - unsupported message reject 검증
   - unsupported encode message type reject 검증
   - unsupported reason code reject 검증
