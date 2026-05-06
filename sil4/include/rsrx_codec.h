@@ -96,7 +96,11 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 
 const rsrx_codec_port_t * rsrx_codec_get_default_port(void);
 
+const rsrx_codec_port_t * rsrx_codec_get_crc32_port(void);
+
 const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void);
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void);
 
 rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,

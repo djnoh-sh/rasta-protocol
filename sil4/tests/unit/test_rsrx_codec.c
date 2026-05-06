@@ -107,6 +107,54 @@ static void vTestWireProfileDocumentsCurrentSecurityFields(void)
 	vAssertTrue(pxProfile->uTimestampPresent == 0U, "wire profile timestamp absent");
 }
 
+static void vTestCrc32PortAndProfile(void)
+{
+	const rsrx_codec_port_t * pxPort;
+	const rsrx_codec_wire_profile_t * pxProfile;
+	uint8_t auPayload[1] = { 0x7EU };
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	pxPort = rsrx_codec_get_crc32_port();
+	pxProfile = rsrx_codec_get_crc32_wire_profile();
+
+	vAssertTrue(pxPort != (const rsrx_codec_port_t *)0, "crc32 port present");
+	vAssertTrue(pxPort->pfEncode == rsrx_codec_encode_message_with_crc32, "crc32 port encode binding");
+	vAssertTrue(pxPort->pfDecode == rsrx_codec_decode_frame_with_crc32, "crc32 port decode binding");
+	vAssertTrue(pxProfile != (const rsrx_codec_wire_profile_t *)0, "crc32 profile present");
+	vAssertTrue(pxProfile->xHeaderBytes == D_RSRX_CODEC_HEADER_BYTES, "crc32 profile header bytes");
+	vAssertTrue(pxProfile->xMaxPayloadBytes == D_RSRX_CODEC_MAX_PAYLOAD_BYTES, "crc32 profile max payload bytes");
+	vAssertTrue(pxProfile->xMaxFrameBytes == D_RSRX_CODEC_MAX_CRC_FRAME_BYTES, "crc32 profile max frame bytes");
+	vAssertTrue(pxProfile->uCrcPresent == 1U, "crc32 profile crc present");
+	vAssertTrue(pxProfile->uMacPresent == 0U, "crc32 profile mac absent");
+	vAssertTrue(pxProfile->uTimestampPresent == 0U, "crc32 profile timestamp absent");
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 13U;
+	xRequest.uConfirmationNumber = 12U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(pxPort->pfEncode(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK, "crc32 port encode");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(pxPort->pfDecode(&xFrame, &xMessage) == RSRX_CODEC_STATUS_OK, "crc32 port decode");
+	vAssertTrue(xMessage.uSequenceNumber == 13U, "crc32 port decoded sequence");
+	vAssertTrue(xMessage.auPayload[0] == 0x7EU, "crc32 port decoded payload");
+}
+
 static void vTestCrc32PrimitiveKnownVector(void)
 {
 	static const uint8_t auKnownVector[] =
@@ -645,6 +693,7 @@ int main(void)
 	vTestEncodeDecodeRoundTrip();
 	vTestDefaultPortEncodeDecodeRoundTrip();
 	vTestWireProfileDocumentsCurrentSecurityFields();
+	vTestCrc32PortAndProfile();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();
 	vTestCrc32WireRoundTrip();
