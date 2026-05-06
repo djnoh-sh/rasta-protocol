@@ -748,6 +748,13 @@ static void vTestSupervisorPollReceiveNoFrame(void)
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
 	xTransport.eReceiveStatus = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_OK,
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_EVENT_HANDSHAKE_SUCCESS,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U);
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "poll idle session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "poll idle session start");
@@ -759,6 +766,12 @@ static void vTestSupervisorPollReceiveNoFrame(void)
 	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll idle poll count");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "poll idle processed count");
 	vAssertTrue(xTransport.uReceiveCount == 1U, "poll idle receive count");
+	vAssertTrue(g_xCodecContext.uCallCount == 0U, "poll idle codec not called");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "poll idle decision");
+	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "poll idle decision class");
+	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 1U, "poll idle ignored decision count");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll idle error stage");
+	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "poll idle receive status");
 }
 
 static void vTestSupervisorPollReceiveNonFrameNoFrameGating(void)
