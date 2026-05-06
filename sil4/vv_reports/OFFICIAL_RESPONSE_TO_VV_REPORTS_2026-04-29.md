@@ -234,10 +234,22 @@ The V&V team updated the phase reports to document version `1.4` with a more obj
 
 The following V&V v1.4 items were accepted into the roadmap vocabulary on 2026-05-06:
 
-1. Stack-bound analysis and static memory-map evidence are now explicitly listed under `R-005` as future external evidence artifacts.
-2. CI/release default gating for strict warning hardening is now listed under `R-005` as a future evidence-gate policy decision.
+1. Stack-bound analysis and static memory-map evidence are now explicitly listed under `R-005` as future external evidence artifacts and defined by `EVID-CI-110`.
+2. CI/release default gating for strict warning hardening is now listed under `R-005` as a future evidence-gate policy decision and tracked by `EVS-011`.
 3. State-machine action assertion density is retained as a closed baseline rule under `R-007`, and future state-machine growth must preserve that assertion density.
 4. CRC/MAC/timestamp/security-oriented negative-vector growth remains the primary codec/security residual under `R-006`.
 5. Multi-path routing is classified as future redundancy mode growth under `R-003`, not as evidence that current active-standby redundancy is incomplete.
 
 No V&V report file was edited as part of this response update.
+
+### 2026-05-06 Planning Artifact Follow-Up
+
+The accepted evidence follow-ups are now represented by:
+
+- `sil4/docs/evidence/stack_memory_evidence_requirements.md`
+- `EVS-009` stack-bound analysis artifact
+- `EVS-010` static memory map artifact
+- `EVS-011` strict-warning CI/release default-gate decision
+- `RV-327` stack/memory evidence requirements review
+
+These records define what must be obtained later. They are not a substitute for actual tool outputs or vendor artifacts.

@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-20`
+- Last Updated: `2026-05-06`
 
 ## Purpose
 
@@ -144,6 +144,8 @@
 | EVID-CI-107 | `../reviews/RV-214_r005_recent_helper_summary_review.md` | Draft | R-005 recent helper summary review |
 | EVID-CI-108 | `reports/operational_evidence_readiness_snapshot_2026-04-15.md` | Draft | helper-generated current R-005 readiness snapshot |
 | EVID-CI-109 | `../reviews/RV-243_r005_operational_readiness_snapshot_review.md` | Draft | readiness snapshot review |
+| EVID-CI-110 | `stack_memory_evidence_requirements.md` | Draft | V&V v1.4 stack-bound/static memory-map evidence requirements |
+| EVID-CI-111 | `../reviews/RV-327_stack_memory_evidence_requirements_review.md` | Draft | stack/memory evidence requirements review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -199,3 +201,6 @@
 44. first top-level artifact-dir env helper execution
 45. first top-level artifact-dir runner execution
 46. first operational artifact runner smoke run
+47. first stack-bound analysis artifact
+48. first static memory map artifact
+49. strict-warning CI/release default-gate decision

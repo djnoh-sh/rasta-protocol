@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-03-25`
+- Last Updated: `2026-05-06`
 
 ## Purpose
 
@@ -27,6 +27,9 @@ first actual vendor evidence set은 최소 아래 산출물을 포함한다.
 4. vendor matrix actual entry 1건 이상
 5. misra deviation log 또는 fix-required tracking linkage 1건
 6. audit trail closeout 문서에 actual evidence link 반영
+7. stack-bound analysis artifact 1건
+8. static memory map artifact 1건
+9. strict-warning CI/release default-gate decision 1건
 
 ## Checklist
 
@@ -40,6 +43,9 @@ first actual vendor evidence set은 최소 아래 산출물을 포함한다.
 | EVS-006 | vendor matrix actual entry | `vendor_rule_matrix_actual.md` 또는 operational matrix section | sample이 아니라 실제 vendor rule id와 status가 반영된 entry 1건 이상 | Open |
 | EVS-007 | deviation or fix tracking link | `misra_deviation_log.md` 또는 equivalent fix tracking record | first actual vendor finding이 deviation인지 fix-required인지가 audit trail에서 추적 가능해야 함 | Open |
 | EVS-008 | audit trail update | `audit_trail_closeout.md` | actual baseline fetch evidence와 actual vendor evidence link가 closeout 문서에 반영되어야 함 | Open |
+| EVS-009 | stack-bound analysis artifact | stack usage report or vendor stack analysis output | commit/build config/tool version/generated output path가 연결되고 수기 추정이 아님을 확인할 수 있어야 함 | Open |
+| EVS-010 | static memory map artifact | linker map file or target memory allocation report | executable build와 동일한 config에서 생성된 memory-region sizing을 추적할 수 있어야 함 | Open |
+| EVS-011 | strict-warning default-gate decision | CI/release policy record or reviewed deviation | `RSRX_ENABLE_STRICT_WARNING_HARDENING`을 mandatory/conditional/evidence-only 중 어떤 gate로 둘지 결정해야 함 | Open |
 
 ## Entry Criteria
 
@@ -47,13 +53,14 @@ first actual vendor evidence set은 최소 아래 산출물을 포함한다.
 
 1. `sil4-ci` workflow에서 baseline artifact fetch가 실제 성공한 첫 run이 나온 경우
 2. first actual vendor analyzer finding export가 확보된 경우
+3. stack/memory-map evidence tool output 또는 CI/release gate policy record가 확보된 경우
 
 ## Exit Criteria
 
 다음이 모두 충족되면 `R-005`의 첫 operational evidence gap은 축소된 것으로 본다.
 
 1. `EVS-001`, `EVS-002` 완료
-2. `EVS-003`~`EVS-008` 완료
+2. `EVS-003`~`EVS-011` 완료
 3. `roadmap_status.md`의 `R-005`가 template/sample gap이 아니라 operational evidence maintenance 수준으로 축소
 
 ## Notes

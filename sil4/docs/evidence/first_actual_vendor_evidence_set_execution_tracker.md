@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `In Progress`
 - Owner: `Project Team`
-- Last Updated: `2026-04-20`
+- Last Updated: `2026-05-06`
 
 ## Purpose
 
@@ -26,6 +26,8 @@
   - `vendor_rule_matrix_actual.md`
 - audit trail:
   - `audit_trail_closeout.md`
+- stack/memory evidence requirements:
+  - `stack_memory_evidence_requirements.md`
 
 ## Current Execution Status
 
@@ -39,6 +41,9 @@
 | EVS-006 | `Open` | actual vendor matrix entry | first actual vendor rule id 확보 대기 |
 | EVS-007 | `Open` | deviation or fix tracking link | first actual vendor decision 대기 |
 | EVS-008 | `Open` | audit trail update | `EVS-001` and `EVS-003`~`EVS-007` 이후 수행 |
+| EVS-009 | `Open` | stack-bound analysis artifact | stack usage or vendor stack analysis output 확보 대기 |
+| EVS-010 | `Open` | static memory map artifact | linker map or target memory allocation report 확보 대기 |
+| EVS-011 | `Open` | strict-warning default-gate decision | CI/release gate policy decision 대기 |
 
 ## Execution Notes
 
@@ -47,6 +52,7 @@
 - current interpretation:
   - baseline fetch actual evidence is now available and `EVS-001`/`EVS-002` are closed
   - vendor export remains unavailable, so `EVS-003` and `EVS-004` remain `Open`
+  - V&V v1.4 stack/memory/default-gate follow-ups are now tracked as `EVS-009`~`EVS-011`
 
 ### Baseline Fetch Track
 
@@ -66,12 +72,19 @@
 - trigger to close:
   - first actual vendor analyzer finding export
 
+### Stack/Memory Evidence Track
+
+- requirement artifact:
+  - `stack_memory_evidence_requirements.md`
+- trigger to close:
+  - stack-bound analysis output, static memory map output, and strict-warning CI/release gate decision are available with commit/build/tool references
+
 ## Closeout Rule
 
 본 tracker에서 아래 상태가 되면 `R-005`를 operational maintenance 수준으로 축소할 수 있다.
 
 1. `EVS-001`, `EVS-002`가 `Closed`
-2. `EVS-003`~`EVS-008`이 `Closed`
+2. `EVS-003`~`EVS-011`이 `Closed`
 3. roadmap과 audit trail이 actual evidence link 기준으로 갱신됨
 
 ## Update Policy
