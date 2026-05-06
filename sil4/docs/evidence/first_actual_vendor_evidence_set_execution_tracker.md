@@ -30,6 +30,8 @@
   - `stack_memory_evidence_requirements.md`
 - stack/memory evidence runbook:
   - `stack_memory_evidence_runbook.md`
+- host stack/memory evidence helper:
+  - `../tools/run_stack_memory_evidence.sh`
 
 ## Current Execution Status
 
@@ -80,8 +82,12 @@
   - `stack_memory_evidence_requirements.md`
 - execution runbook:
   - `stack_memory_evidence_runbook.md`
+- host baseline helper:
+  - `../tools/run_stack_memory_evidence.sh`
 - trigger to close:
   - stack-bound analysis output, static memory map output, and strict-warning CI/release gate decision are available with commit/build/tool references
+- host baseline note:
+  - helper execution can create a host-toolchain stack/memory package, but target-release or vendor-qualified closeout still requires target/tool metadata when certification scope demands it
 
 ## Closeout Rule
 

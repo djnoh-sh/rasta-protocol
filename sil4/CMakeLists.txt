@@ -9,6 +9,10 @@ option(RSRX_ENABLE_STRICT_WARNING_HARDENING
 	"Enable stricter compiler warning profile for evaluation builds"
 	OFF)
 
+option(RSRX_ENABLE_STACK_MEMORY_EVIDENCE
+	"Generate host stack-usage files and a representative linker map"
+	OFF)
+
 set(RSRX_WARNING_FLAGS
 	-Wall
 	-Wextra
@@ -24,7 +28,23 @@ endif()
 
 add_compile_options(${RSRX_WARNING_FLAGS})
 
+if(RSRX_ENABLE_STACK_MEMORY_EVIDENCE)
+	if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+		add_compile_options(-fstack-usage)
+	endif()
+endif()
+
 include_directories(include)
+
+function(rsrx_configure_representative_memory_map target_name)
+	if(RSRX_ENABLE_STACK_MEMORY_EVIDENCE)
+		if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+			set_target_properties(${target_name}
+				PROPERTIES
+					LINK_FLAGS "-Wl,-Map=${CMAKE_BINARY_DIR}/${target_name}.map")
+		endif()
+	endif()
+endfunction()
 
 add_library(rsrx_state_machine STATIC
 	src/rsrx_state_machine.c)
@@ -135,3 +155,4 @@ add_executable(rsrx_session_supervisor_flow_test
 	tests/integration/test_rsrx_session_supervisor_flow.c)
 
 target_link_libraries(rsrx_session_supervisor_flow_test rsrx_transport_supervisor rsrx_api rsrx_codec)
+rsrx_configure_representative_memory_map(rsrx_session_supervisor_flow_test)

@@ -29,6 +29,12 @@ Closure requires actual generated artifacts or a reviewed CI/release policy deci
 3. linker-generated map file from the target build
 4. CI or release policy record for `RSRX_ENABLE_STRICT_WARNING_HARDENING`
 
+For the host-toolchain baseline path, the project-provided helper is:
+
+- `sil4/tools/run_stack_memory_evidence.sh`
+
+This helper configures CMake with `RSRX_ENABLE_STACK_MEMORY_EVIDENCE=ON`, builds the representative integration executable, checks that compiler stack-usage files exist, and checks that a representative linker map exists.
+
 ## Track A: Stack-Bound Analysis
 
 Required inputs:
@@ -103,6 +109,16 @@ The first completed package should include:
 5. updated `first_actual_vendor_evidence_set_execution_tracker.md`
 6. updated `audit_trail_closeout.md`
 7. updated `roadmap_status.md`
+
+For a host-toolchain baseline run, the minimum generated package is:
+
+1. `summary.md`
+2. `summary.env`
+3. `stack_usage_files.txt`
+4. `rsrx_session_supervisor_flow_test.map`
+5. configure/build logs
+
+Target-release or vendor-qualified runs must still provide their own target/tool metadata.
 
 ## Non-Acceptance Rules
 
