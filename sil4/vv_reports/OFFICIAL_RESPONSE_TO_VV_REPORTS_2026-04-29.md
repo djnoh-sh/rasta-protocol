@@ -210,3 +210,34 @@ Closed follow-up items:
 4. Redundancy remains classified as representative closeout for the current baseline scope, with future work limited to next policy growth and broader long-run generalization.
 
 The revised phase reports should therefore be read as baseline-aligned V&V inputs, not as open defect reports. Remaining certification-relevant gaps continue to be owned by the roadmap, primarily `R-005` for vendor evidence availability and `R-006` for codec/security/timestamp/PDU parity growth.
+
+## Addendum: 2026-05-06 V&V v1.4 Update Review
+
+The V&V team updated the phase reports to document version `1.4` with a more objective finding structure. The project reviewed those updated reports on 2026-05-06 without modifying the V&V report files themselves.
+
+### Updated Finding Disposition
+
+| Finding | Report | Official Disposition | Planning Impact |
+| --- | --- | --- | --- |
+| Finding 1 | Phase 1 | Not accepted as a current confirmed defect | Keep as future handshake/protocol-parity interpretation candidate only. |
+| Finding 2 | Phase 1 | Not accepted as a current confirmed defect | Keep as future server-side handshake/parity interpretation candidate only. |
+| Finding 3 | Phase 1 | Partially accepted | Current baseline intentionally keeps `CONNECT_REQUEST` unsequenced; future stricter sequencing remains an `R-001` parity-growth topic. |
+| Finding 4 | Phase 2 | Accepted as evidence follow-up | Stack-bound and static memory-map artifacts are now explicitly treated as future evidence artifacts under `R-005`. |
+| Finding 5 | Phase 2 | Accepted as baseline strength | No new corrective action; continue defensive-programming practice. |
+| Finding 6 | Phase 2 | Accepted as evidence-gate follow-up | Strict warning hardening remains closed as an evaluation item, but CI/release default-gate policy is now tracked as a future evidence-gate decision under `R-005`. |
+| Finding 7 | Phase 3 | Accepted as baseline strength | No new corrective action; transport-supervisor fault-injection coverage remains representative-closeout for current scope. |
+| Finding 8 | Phase 3 | Accepted as maintenance criterion | State-machine action assertion density is closed by `RV-291`; future state-machine extensions must keep the same assertion density. |
+| Finding 9 | Phase 4 | Accepted as baseline strength with future growth | Redundancy remains representative-closeout; multi-path routing is future redundancy mode growth under `R-003`, not a current incompleteness defect. |
+| Finding 10 | Phase 4 | Accepted as certification-relevant residual | CRC/MAC/timestamp/security-oriented codec parity remains a major future-growth item under `R-006`. |
+
+### Accepted Items Reflected Into Planning
+
+The following V&V v1.4 items were accepted into the roadmap vocabulary on 2026-05-06:
+
+1. Stack-bound analysis and static memory-map evidence are now explicitly listed under `R-005` as future external evidence artifacts.
+2. CI/release default gating for strict warning hardening is now listed under `R-005` as a future evidence-gate policy decision.
+3. State-machine action assertion density is retained as a closed baseline rule under `R-007`, and future state-machine growth must preserve that assertion density.
+4. CRC/MAC/timestamp/security-oriented negative-vector growth remains the primary codec/security residual under `R-006`.
+5. Multi-path routing is classified as future redundancy mode growth under `R-003`, not as evidence that current active-standby redundancy is incomplete.
+
+No V&V report file was edited as part of this response update.
