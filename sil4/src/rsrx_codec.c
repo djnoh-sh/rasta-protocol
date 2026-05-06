@@ -13,6 +13,13 @@ static uint32_t uReasonCodeIsSupported(
 	return (uint32_t)(eReason <= RSRX_REASON_INVALID_STATE_VALUE);
 }
 
+static uint32_t uTransportChannelIsSupported(
+	rsrx_transport_channel_id_t eChannelId)
+{
+	return (uint32_t)((eChannelId > RSRX_TRANSPORT_CHANNEL_INVALID) &&
+		(eChannelId <= RSRX_TRANSPORT_CHANNEL_REDUNDANT));
+}
+
 static rsrx_event_t eMapMessageTypeToEvent(
 	rsrx_message_type_t eMessageType)
 {
@@ -159,6 +166,10 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 		return RSRX_CODEC_STATUS_DECODE_ERROR;
 	}
 	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
+	{
+		return RSRX_CODEC_STATUS_DECODE_ERROR;
+	}
+	if(uTransportChannelIsSupported(pxFrame->eChannelId) == 0U)
 	{
 		return RSRX_CODEC_STATUS_DECODE_ERROR;
 	}
