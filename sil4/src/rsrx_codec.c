@@ -283,3 +283,82 @@ rsrx_codec_status_t rsrx_codec_calculate_crc32(
 
 	return RSRX_CODEC_STATUS_OK;
 }
+
+rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer)
+{
+	rsrx_codec_status_t eStatus;
+	uint32_t uCrc;
+	size_t xPayloadFrameLength;
+
+	if(pxBuffer == (rsrx_encode_buffer_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_encode_message(pxRequest, pxBuffer);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	xPayloadFrameLength = pxBuffer->xEncodedLength;
+	if(pxBuffer->xBufferCapacity < (xPayloadFrameLength + D_RSRX_CODEC_CRC_BYTES))
+	{
+		pxBuffer->xEncodedLength = 0U;
+		return RSRX_CODEC_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	eStatus = rsrx_codec_calculate_crc32(pxBuffer->puBuffer, xPayloadFrameLength, &uCrc);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		pxBuffer->xEncodedLength = 0U;
+		return eStatus;
+	}
+
+	vWriteUint32(&pxBuffer->puBuffer[xPayloadFrameLength], uCrc);
+	pxBuffer->xEncodedLength = xPayloadFrameLength + D_RSRX_CODEC_CRC_BYTES;
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage)
+{
+	rsrx_transport_frame_t xPayloadFrame;
+	uint32_t uExpectedCrc;
+	uint32_t uActualCrc;
+	size_t xPayloadFrameLength;
+	rsrx_codec_status_t eStatus;
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxFrame->xPayloadLength < (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_CRC_BYTES))
+	{
+		return RSRX_CODEC_STATUS_DECODE_ERROR;
+	}
+
+	xPayloadFrameLength = pxFrame->xPayloadLength - D_RSRX_CODEC_CRC_BYTES;
+	uExpectedCrc = uReadUint32(&pxFrame->puPayload[xPayloadFrameLength]);
+
+	eStatus = rsrx_codec_calculate_crc32(pxFrame->puPayload, xPayloadFrameLength, &uActualCrc);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+	if(uActualCrc != uExpectedCrc)
+	{
+		return RSRX_CODEC_STATUS_DECODE_ERROR;
+	}
+
+	xPayloadFrame = *pxFrame;
+	xPayloadFrame.xPayloadLength = xPayloadFrameLength;
+
+	return rsrx_codec_decode_frame(&xPayloadFrame, pxMessage);
+}

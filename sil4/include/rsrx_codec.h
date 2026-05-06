@@ -10,6 +10,8 @@
 #define D_RSRX_CODEC_HEADER_BYTES (16U)
 #define D_RSRX_CODEC_MAX_PAYLOAD_BYTES (512U)
 #define D_RSRX_CODEC_MAX_FRAME_BYTES (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+#define D_RSRX_CODEC_CRC_BYTES (4U)
+#define D_RSRX_CODEC_MAX_CRC_FRAME_BYTES (D_RSRX_CODEC_MAX_FRAME_BYTES + D_RSRX_CODEC_CRC_BYTES)
 
 typedef enum
 {
@@ -100,5 +102,13 @@ rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,
 	size_t xDataLength,
 	uint32_t * puCrc);
+
+rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer);
+
+rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage);
 
 #endif

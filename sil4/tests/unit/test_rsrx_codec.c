@@ -137,6 +137,81 @@ static void vTestCrc32PrimitiveRejectsInvalidArguments(void)
 	vAssertTrue(rsrx_codec_calculate_crc32((const uint8_t *)0, 0U, (uint32_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null output reject");
 }
 
+static void vTestCrc32WireRoundTrip(void)
+{
+	uint8_t auPayload[3] = { 0xCAU, 0xFEU, 0x42U };
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 11U;
+	xRequest.uConfirmationNumber = 10U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message_with_crc32(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK, "crc32 wire encode");
+	vAssertTrue(xBuffer.xEncodedLength == (D_RSRX_CODEC_HEADER_BYTES + sizeof(auPayload) + D_RSRX_CODEC_CRC_BYTES), "crc32 wire encoded length");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_OK, "crc32 wire decode");
+	vAssertTrue(xMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "crc32 wire decoded type");
+	vAssertTrue(xMessage.uSequenceNumber == 11U, "crc32 wire decoded sequence");
+	vAssertTrue(xMessage.uConfirmationNumber == 10U, "crc32 wire decoded confirmation");
+	vAssertTrue(xMessage.xPayloadLength == sizeof(auPayload), "crc32 wire decoded payload length");
+	vAssertTrue(xMessage.auPayload[2] == 0x42U, "crc32 wire decoded payload content");
+}
+
+static void vTestCrc32WireRejectsTamperAndSmallBuffer(void)
+{
+	uint8_t auPayload[1] = { 0x5AU };
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	uint8_t auSmallEncoded[D_RSRX_CODEC_HEADER_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 4U;
+	xRequest.uConfirmationNumber = 3U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auSmallEncoded;
+	xBuffer.xBufferCapacity = sizeof(auSmallEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message_with_crc32(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_BUFFER_TOO_SMALL, "crc32 wire small buffer reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "crc32 wire small buffer clears length");
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message_with_crc32(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK, "crc32 wire encode for tamper");
+	auEncoded[D_RSRX_CODEC_HEADER_BYTES] ^= 0x01U;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "crc32 wire tamper reject");
+}
+
 static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
@@ -572,6 +647,8 @@ int main(void)
 	vTestWireProfileDocumentsCurrentSecurityFields();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();
+	vTestCrc32WireRoundTrip();
+	vTestCrc32WireRejectsTamperAndSmallBuffer();
 	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();
