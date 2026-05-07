@@ -286,6 +286,19 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void)
 	return &xWireProfile;
 }
 
+const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void)
+{
+	static const rsrx_codec_security_capabilities_t xCapabilities =
+	{
+		0U,
+		1U,
+		0U,
+		0U
+	};
+
+	return &xCapabilities;
+}
+
 rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,
 	size_t xDataLength,

@@ -69,6 +69,14 @@ typedef struct
 
 typedef struct
 {
+	uint32_t uDefaultCrcPresent;
+	uint32_t uOptionalCrc32Available;
+	uint32_t uMacAvailable;
+	uint32_t uTimestampAvailable;
+} rsrx_codec_security_capabilities_t;
+
+typedef struct
+{
 	uint8_t * puBuffer;
 	size_t xBufferCapacity;
 	size_t xEncodedLength;
@@ -103,6 +111,8 @@ const rsrx_codec_port_t * rsrx_codec_get_crc32_port(void);
 const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void);
 
 const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void);
+
+const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void);
 
 rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,

@@ -107,6 +107,19 @@ static void vTestWireProfileDocumentsCurrentSecurityFields(void)
 	vAssertTrue(pxProfile->uTimestampPresent == 0U, "wire profile timestamp absent");
 }
 
+static void vTestSecurityCapabilitiesDocumentCurrentPolicy(void)
+{
+	const rsrx_codec_security_capabilities_t * pxCapabilities;
+
+	pxCapabilities = rsrx_codec_get_security_capabilities();
+
+	vAssertTrue(pxCapabilities != (const rsrx_codec_security_capabilities_t *)0, "security capabilities present");
+	vAssertTrue(pxCapabilities->uDefaultCrcPresent == 0U, "security capabilities default crc absent");
+	vAssertTrue(pxCapabilities->uOptionalCrc32Available == 1U, "security capabilities optional crc32 available");
+	vAssertTrue(pxCapabilities->uMacAvailable == 0U, "security capabilities mac unavailable");
+	vAssertTrue(pxCapabilities->uTimestampAvailable == 0U, "security capabilities timestamp unavailable");
+}
+
 static void vTestCrc32PortAndProfile(void)
 {
 	const rsrx_codec_port_t * pxPort;
@@ -721,6 +734,7 @@ int main(void)
 	vTestEncodeDecodeRoundTrip();
 	vTestDefaultPortEncodeDecodeRoundTrip();
 	vTestWireProfileDocumentsCurrentSecurityFields();
+	vTestSecurityCapabilitiesDocumentCurrentPolicy();
 	vTestCrc32PortAndProfile();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();
