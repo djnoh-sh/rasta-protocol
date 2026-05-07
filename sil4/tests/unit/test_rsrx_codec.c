@@ -274,6 +274,20 @@ static void vTestCrc32WireReportsChecksumMismatch(void)
 	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_CRC_MISMATCH, "crc32 wire mismatch status");
 }
 
+static void vTestCrc32WireReportsTruncatedChecksum(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_CRC_BYTES - 1U] = { 0U };
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_CRC_TRUNCATED, "crc32 wire truncated status");
+}
+
 static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
@@ -713,6 +727,7 @@ int main(void)
 	vTestCrc32WireRoundTrip();
 	vTestCrc32WireRejectsSmallBuffer();
 	vTestCrc32WireReportsChecksumMismatch();
+	vTestCrc32WireReportsTruncatedChecksum();
 	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();
