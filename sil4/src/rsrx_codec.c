@@ -212,10 +212,13 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	}
 
 	xPayloadLength = (size_t)usReadUint16(&pxFrame->puPayload[12]);
-	if((xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES) ||
-		(pxFrame->xPayloadLength != (D_RSRX_CODEC_HEADER_BYTES + xPayloadLength)))
+	if(xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 	{
 		return RSRX_CODEC_STATUS_DECODE_ERROR;
+	}
+	if(pxFrame->xPayloadLength != (D_RSRX_CODEC_HEADER_BYTES + xPayloadLength))
+	{
+		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
 	}
 
 	pxMessage->eMessageType = eMessageType;

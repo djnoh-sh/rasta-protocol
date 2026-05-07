@@ -8,7 +8,7 @@
 
 ## Findings
 
-1. `TC-CODEC-010` verifies that a frame declaring one payload byte but carrying only the header is rejected with `DECODE_ERROR`.
+1. `TC-CODEC-010` verifies that a frame declaring one payload byte but carrying only the header is rejected with `LENGTH_MISMATCH`.
 2. Together with `TC-CODEC-009`, the length-mismatch evidence now covers both trailing-data and truncated-payload directions.
 3. This is a test/spec closeout for an existing exact-length decode guard; no wire-format change is introduced.
 
