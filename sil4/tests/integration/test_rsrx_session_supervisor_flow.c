@@ -11960,6 +11960,7 @@ static void vTestIntegratedCrc32CodecStatusFlow(void)
 		auFramePayload,
 		sizeof(auFramePayload));
 	xConfig.xCodecPort = xCodec;
+	xConfig.uRequireCrc = 1U;
 
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "crc32 codec status integration session init");
 	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "crc32 codec status integration session start");
