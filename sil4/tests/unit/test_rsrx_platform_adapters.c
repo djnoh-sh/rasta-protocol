@@ -253,6 +253,35 @@ static void vTestPlatformExecutorTableBuild(void)
 	vAssertTrue(xExecutors.xDiagnosticsExecutor.pfDispatch == rsrx_platform_diagnostics_executor_dispatch, "diagnostics executor binding");
 }
 
+static void vTestTransportAdapterRejectsIncompleteCodecPort(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	rsrx_codec_port_t xCodecPort = *rsrx_codec_get_default_port();
+	static const uint8_t auPayload[1] = { 0xA5U };
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+
+	xCodecPort.pfDecode = (rsrx_decode_frame_fn)0;
+
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			&xCodecPort,
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auPayload,
+			sizeof(auPayload)) == RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"incomplete codec port rejected");
+}
+
 static void vTestTransportTimerAndDiagnosticsDispatch(void)
 {
 	rsrx_platform_adapter_context_t xPlatformContext;
@@ -1444,6 +1473,7 @@ static void vTestOutboundQueueBackpressureCloseoutMatrix(void)
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
+	vTestTransportAdapterRejectsIncompleteCodecPort();
 	vTestTransportTimerAndDiagnosticsDispatch();
 	vTestApplicationDataSend();
 	vTestApplicationDataDeferredQueueFifoDispatch();

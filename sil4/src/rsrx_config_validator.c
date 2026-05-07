@@ -156,7 +156,8 @@ rsrx_config_status_t rsrx_validate_session_config(
 		return RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD;
 	}
 
-	if(pxConfig->xCodecPort.pfEncode == (rsrx_encode_message_fn)0)
+	if((pxConfig->xCodecPort.pfEncode == (rsrx_encode_message_fn)0) ||
+		(pxConfig->xCodecPort.pfDecode == (rsrx_decode_frame_fn)0))
 	{
 		vSetReport(
 			pxReport,

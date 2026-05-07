@@ -13,7 +13,8 @@ static uint32_t uCodecPortIsValid(
 	const rsrx_codec_port_t * pxPort)
 {
 	return (uint32_t)((pxPort != (const rsrx_codec_port_t *)0) &&
-		(pxPort->pfEncode != (rsrx_encode_message_fn)0));
+		(pxPort->pfEncode != (rsrx_encode_message_fn)0) &&
+		(pxPort->pfDecode != (rsrx_decode_frame_fn)0));
 }
 
 static uint32_t uPortTableIsValid(

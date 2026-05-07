@@ -157,6 +157,12 @@ static void vTestMissingCodecPort(void)
 
 	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing codec status");
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "missing codec field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xCodecPort.pfDecode = (rsrx_decode_frame_fn)0;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing codec decode status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "missing codec decode field");
 }
 
 static void vTestInvalidIntervals(void)
