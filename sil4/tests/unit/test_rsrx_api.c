@@ -720,6 +720,31 @@ static void vTestInvalidArguments(void)
 	vAssertTrue(rsrx_session_reset((rsrx_session_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "reset null");
 }
 
+static void vTestSessionInitRejectsCrcRequiredDefaultCodec(void)
+{
+	rsrx_session_t xSession = { 0 };
+	rsrx_session_config_t xConfig;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 100U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x42U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	xConfig.uRequireCrc = 1U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "crc required default codec init reject");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INVALID, "crc required rejected session invalid");
+
+	xConfig.xCodecPort = *rsrx_codec_get_crc32_port();
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "crc required crc32 codec init accept");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "crc required crc32 codec initial state");
+}
+
 static void vTestSessionResetClearsChannelManagerPenalty(void)
 {
 	rsrx_session_t xSession;
@@ -848,6 +873,7 @@ int main(void)
 	vTestSessionSupervisionTimerExpiry();
 	vTestSessionRetransmissionTimerExpiry();
 	vTestInvalidArguments();
+	vTestSessionInitRejectsCrcRequiredDefaultCodec();
 	vTestSessionResetClearsChannelManagerPenalty();
 	vTestSessionResetClearsTransportAdapterRuntime();
 	vTestSessionOutboundApplicationDataStateGuards();
