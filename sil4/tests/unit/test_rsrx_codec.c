@@ -534,7 +534,7 @@ static void vTestDecodeRejectsReservedHeaderBytes(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
-	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "reserved header byte reject");
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO, "reserved header byte reject");
 }
 
 static void vTestDecodeRejectsReservedHeaderByteMatrix(void)
@@ -562,7 +562,7 @@ static void vTestDecodeRejectsReservedHeaderByteMatrix(void)
 		auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
 		auEncoded[axReservedOffsets[xIndex]] = 1U;
 
-		vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "reserved header byte matrix reject");
+		vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO, "reserved header byte matrix reject");
 	}
 }
 

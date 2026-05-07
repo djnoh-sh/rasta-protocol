@@ -8,7 +8,7 @@
 
 ## Findings
 
-1. `TC-CODEC-007` verifies that non-zero reserved header bytes are rejected with `DECODE_ERROR`.
+1. `TC-CODEC-007` verifies that non-zero reserved header bytes are rejected with `RESERVED_HEADER_NONZERO`.
 2. Encoder behavior already writes reserved header bytes as zero; the new decode guard makes the zero-baseline bidirectional.
 3. This is a bounded codec-security negative vector and does not claim CRC/MAC/timestamp parity closure.
 
