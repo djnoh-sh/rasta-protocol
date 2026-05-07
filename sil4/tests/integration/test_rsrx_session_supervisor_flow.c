@@ -233,6 +233,34 @@ static void vEncodeFrame(
 	*pxEncodedLength = xBuffer.xEncodedLength;
 }
 
+static void vEncodeFrameWithCrc32(
+	rsrx_message_type_t eMessageType,
+	rsrx_reason_code_t eReason,
+	uint32_t uSequenceNumber,
+	uint32_t uConfirmationNumber,
+	const uint8_t * puPayload,
+	size_t xPayloadLength,
+	uint8_t * puBuffer,
+	size_t xBufferCapacity,
+	size_t * pxEncodedLength)
+{
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+
+	xRequest.eMessageType = eMessageType;
+	xRequest.eReason = eReason;
+	xRequest.uSequenceNumber = uSequenceNumber;
+	xRequest.uConfirmationNumber = uConfirmationNumber;
+	xRequest.puPayload = puPayload;
+	xRequest.xPayloadLength = xPayloadLength;
+	xBuffer.puBuffer = puBuffer;
+	xBuffer.xBufferCapacity = xBufferCapacity;
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(rsrx_codec_encode_message_with_crc32(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK, "encode crc32 frame");
+	*pxEncodedLength = xBuffer.xEncodedLength;
+}
+
 static void vFillConfig(
 	rsrx_session_config_t * pxConfig,
 	test_transport_context_t * pxTransport,
@@ -11891,6 +11919,98 @@ static void vTestIntegratedDecodeFailureFlow(void)
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "decode failure integration prior pump count retained");
 	vAssertTrue(xApplication.uCallCount == 0U, "decode failure integration no application callback");
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "decode failure integration no lifecycle callback");
+}
+
+static void vTestIntegratedCrc32CodecStatusFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_crc32_port();
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	uint8_t auDataFrame[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	static const uint8_t auDataPayload[1] = { 0xC1U };
+	static const uint8_t auFramePayload[8] = { 0U };
+	size_t xHandshakeLength;
+	size_t xDataLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	xConfig.xCodecPort = xCodec;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "crc32 codec status integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "crc32 codec status integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "crc32 codec status integration session connect");
+
+	vEncodeFrameWithCrc32(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "crc32 codec status integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "crc32 codec status integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "crc32 codec status integration established");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_OK, "crc32 codec status integration handshake status");
+
+	vEncodeFrameWithCrc32(
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		auDataPayload,
+		sizeof(auDataPayload),
+		auDataFrame,
+		sizeof(auDataFrame),
+		&xDataLength);
+	auDataFrame[D_RSRX_CODEC_HEADER_BYTES] ^= 0x01U;
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auDataFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xDataLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "crc32 codec status integration tamper poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "crc32 codec status integration state retained");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_DECODE_FAILED, "crc32 codec status integration decision");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_CRC_MISMATCH, "crc32 codec status integration mismatch status");
+	vAssertTrue(xApplication.uCallCount == 0U, "crc32 codec status integration no application callback");
+	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "crc32 codec status integration no lifecycle callback");
 }
 
 static void vTestIntegratedInvalidChannelDecodeFailureFlow(void)
@@ -25509,6 +25629,7 @@ int main(void)
 	vTestIntegratedRedundancyRecoveryStaleMixedFeedbackBudgetResetLongRunFlow();
 	vTestIntegratedChannelUpHoldoffTransientSoakFlow();
 	vTestIntegratedDecodeFailureFlow();
+	vTestIntegratedCrc32CodecStatusFlow();
 	vTestIntegratedInvalidChannelDecodeFailureFlow();
 	vTestIntegratedNonFrameReceiveNoFrameFlow();
 	vTestIntegratedSendFailureBudgetFlow();
