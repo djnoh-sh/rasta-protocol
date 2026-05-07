@@ -114,6 +114,8 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, void * pvContext)
 	pxConfig->uDiagnosticFlushIntervalNs = 300U;
 	pxConfig->uBusyRejectErrorThreshold = 0U;
 	pxConfig->uRequireCrc = 0U;
+	pxConfig->uRequireMac = 0U;
+	pxConfig->uRequireTimestamp = 0U;
 	pxConfig->pvApplicationDataContext = pvContext;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pvContext;
@@ -257,6 +259,25 @@ static void vTestCrcPolicyRequiresCrc32CodecPort(void)
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "crc required crc32 codec field");
 }
 
+static void vTestUnavailableSecurityPoliciesAreRejected(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireMac = 1U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "mac required status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "mac required field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireTimestamp = 1U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "timestamp required status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "timestamp required field");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_config_validation_report_t xReport;
@@ -276,6 +297,7 @@ int main(void)
 	vTestDefaultChannelMustBelongToTopology();
 	vTestDuplicateChannelPriorityRejected();
 	vTestCrcPolicyRequiresCrc32CodecPort();
+	vTestUnavailableSecurityPoliciesAreRejected();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_config_validator_test: all tests passed\n");

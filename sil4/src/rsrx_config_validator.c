@@ -68,6 +68,16 @@ static uint32_t uCodecPortSatisfiesSecurityPolicy(
 		return 0U;
 	}
 
+	if((pxConfig->uRequireMac != 0U) ||
+		(pxConfig->uRequireTimestamp != 0U))
+	{
+		vSetReport(
+			pxReport,
+			RSRX_CONFIG_STATUS_INCONSISTENT_VALUE,
+			RSRX_CONFIG_FIELD_CODEC_PORT);
+		return 0U;
+	}
+
 	return 1U;
 }
 

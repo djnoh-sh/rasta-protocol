@@ -175,6 +175,8 @@ static void vFillConfig(
 	pxConfig->uDiagnosticFlushIntervalNs = 400U;
 	pxConfig->uBusyRejectErrorThreshold = 0U;
 	pxConfig->uRequireCrc = 0U;
+	pxConfig->uRequireMac = 0U;
+	pxConfig->uRequireTimestamp = 0U;
 	pxConfig->pvApplicationDataContext = pxApplication;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pxApiCounter;
