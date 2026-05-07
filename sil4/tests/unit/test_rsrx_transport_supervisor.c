@@ -390,6 +390,7 @@ static void vTestSupervisorInboundHandshakePath(void)
 	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_HANDSHAKE_COMPLETED, "handover reason");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_HANDSHAKE_SUCCESS, "handover effective event");
 	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_OK, "handover session status");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_OK, "handover codec status");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "handover decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_ACCEPTED, "handover decision class");
 	vAssertTrue(pxSupervisorReport->uAcceptedDecisionCount == 1U, "handover accepted count");
@@ -433,6 +434,7 @@ static void vTestSupervisorInitClearsReportBaseline(void)
 	xSupervisor.xLastReport.eLastDecision = RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED;
 	xSupervisor.xLastReport.eLastDecisionClass =
 		RSRX_SUPERVISOR_DECISION_CLASS_ACCEPTED;
+	xSupervisor.xLastReport.eLastCodecStatus = RSRX_CODEC_STATUS_CRC_MISMATCH;
 	xSupervisor.xLastReport.eLastOutboundRejectReason =
 		RSRX_OUTBOUND_REJECT_REASON_QUEUE_OVERFLOW;
 
@@ -440,6 +442,7 @@ static void vTestSupervisorInitClearsReportBaseline(void)
 	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NONE, "init baseline decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_NONE, "init baseline decision class");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_OK, "init baseline codec status");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "init baseline processed count");
 	vAssertTrue(pxSupervisorReport->uAcceptedDecisionCount == 0U, "init baseline accepted count");
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 0U, "init baseline ignored count");
@@ -494,6 +497,7 @@ static void vTestSupervisorDecodeFailure(void)
 	vAssertTrue(pxSupervisorReport->xLastMessage.eSuggestedEvent == RSRX_EVENT_INVALID, "decode failure suggested event untouched");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_DECODE_FAILED, "decode failure decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_ERROR, "decode failure class");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_DECODE_ERROR, "decode failure codec status");
 	vAssertTrue(pxSupervisorReport->uErrorDecisionCount == 1U, "decode failure error count");
 	vAssertTrue(g_xCodecContext.uCallCount == 1U, "decode failure codec call");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "decode failure leaves session state");
@@ -541,6 +545,7 @@ static void vTestSupervisorUnsupportedMessage(void)
 	vAssertTrue(pxSupervisorReport != (const rsrx_transport_supervisor_report_t *)0, "unsupported message report");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "unsupported message count");
 	vAssertTrue(pxSupervisorReport->pxLastReport == (const rsrx_orchestrator_report_t *)0, "unsupported message session report absent");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "unsupported message codec status");
 	vAssertTrue(pxSupervisorReport->xLastMessage.eMessageType == RSRX_MESSAGE_TYPE_DIAGNOSTIC, "unsupported message type retained");
 	vAssertTrue(pxSupervisorReport->xLastMessage.eReason == RSRX_REASON_PROTOCOL_ERROR_DETECTED, "unsupported message reason retained");
 	vAssertTrue(g_xCodecContext.uCallCount == 1U, "unsupported message codec call");

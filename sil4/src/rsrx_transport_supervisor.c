@@ -35,6 +35,7 @@ static void vResetSupervisorReport(
 	pxReport->xLastMessage.uSequenceNumber = 0U;
 	pxReport->xLastMessage.uConfirmationNumber = 0U;
 	pxReport->xLastMessage.xPayloadLength = 0U;
+	pxReport->eLastCodecStatus = RSRX_CODEC_STATUS_OK;
 	pxReport->eLastEffectiveEvent = RSRX_EVENT_INVALID;
 	pxReport->eLastSessionStatus = RSRX_STATUS_OK;
 	pxReport->eLastDecision = RSRX_SUPERVISOR_DECISION_NONE;
@@ -926,6 +927,7 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 
 	pxContext->xLastReport.xLastFrame = *pxFrame;
 	eCodecStatus = pxContext->xCodec.pfDecode(pxFrame, &pxContext->xLastReport.xLastMessage);
+	pxContext->xLastReport.eLastCodecStatus = eCodecStatus;
 	if(eCodecStatus != RSRX_CODEC_STATUS_OK)
 	{
 		vRecordDecision(pxContext, RSRX_SUPERVISOR_DECISION_DECODE_FAILED);

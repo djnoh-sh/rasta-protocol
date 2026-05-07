@@ -114,6 +114,7 @@ typedef struct
 	rsrx_transport_channel_state_t xLastChannelState;
 	rsrx_transport_frame_t xLastFrame;
 	rsrx_decoded_message_t xLastMessage;
+	rsrx_codec_status_t eLastCodecStatus;
 	rsrx_event_t eLastEffectiveEvent;
 	rsrx_status_t eLastSessionStatus;
 	rsrx_supervisor_decision_t eLastDecision;
