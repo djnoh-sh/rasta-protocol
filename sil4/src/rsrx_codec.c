@@ -380,7 +380,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	}
 	if(uActualCrc != uExpectedCrc)
 	{
-		return RSRX_CODEC_STATUS_DECODE_ERROR;
+		return RSRX_CODEC_STATUS_CRC_MISMATCH;
 	}
 
 	xPayloadFrame = *pxFrame;

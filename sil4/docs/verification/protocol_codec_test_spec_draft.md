@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-06`
+- Last Updated: `2026-05-07`
 
 ## Scope
 
@@ -47,5 +47,6 @@
 | TC-CODEC-023 | FR-003, SR-001 | invalid transport channel decode reject 검증 | `eChannelId`가 `RSRX_TRANSPORT_CHANNEL_INVALID`인 otherwise well-formed frame 준비 | decode 수행 | `DECODE_ERROR` 반환 | codec decode가 invalid transport channel origin을 가진 frame을 수용하지 않음 |
 | TC-CODEC-024 | FR-003, FR-004, SR-001 | codec wire-profile security-field boundary 검증 | `rsrx_codec_get_wire_profile()` 호출 | profile 조회 | header/max size가 codec constants와 일치하고 CRC/MAC/timestamp present flag가 모두 `0` | current skeleton PDU가 CRC/MAC/timestamp를 제공하지 않는다는 boundary를 코드와 테스트에서 명시하고 future security parity growth와 구분한다 |
 | TC-CODEC-025 | FR-004, SR-001 | CRC32 primitive known-vector and argument guard 검증 | standard CRC32 known vector와 invalid argument 준비 | `rsrx_codec_calculate_crc32()` 호출 | `123456789` CRC가 `0xCBF43926`, null output/null non-empty input은 `INVALID_ARGUMENT`, empty input은 CRC `0` | future CRC wire-format integration 전에 deterministic CRC primitive와 public API guard를 먼저 고정한다 |
-| TC-CODEC-026 | FR-003, FR-004, SR-001 | optional CRC32 wire encode/decode 검증 | CRC32 전용 encode/decode API와 payload frame 준비 | `rsrx_codec_encode_message_with_crc32()` 후 `rsrx_codec_decode_frame_with_crc32()` 수행, payload tamper 및 small buffer 수행 | CRC frame round-trip은 성공하고, tamper frame은 `DECODE_ERROR`, CRC append 공간이 부족한 buffer는 `BUFFER_TOO_SMALL` | default skeleton wire path를 바꾸지 않고 optional CRC32 wire path의 append/verify 동작과 failure mode를 고정한다 |
+| TC-CODEC-026 | FR-003, FR-004, SR-001 | optional CRC32 wire encode/decode 검증 | CRC32 전용 encode/decode API와 payload frame 및 small buffer 준비 | `rsrx_codec_encode_message_with_crc32()` 후 `rsrx_codec_decode_frame_with_crc32()` 수행, small buffer encode 수행 | CRC frame round-trip은 성공하고, CRC append 공간이 부족한 buffer는 `BUFFER_TOO_SMALL` | default skeleton wire path를 바꾸지 않고 optional CRC32 wire path의 append 동작과 bounded-buffer failure mode를 고정한다 |
 | TC-CODEC-027 | FR-003, FR-004, SR-001 | CRC32 codec port/profile binding 검증 | `rsrx_codec_get_crc32_port()`와 `rsrx_codec_get_crc32_wire_profile()` 호출 | CRC32 port callback으로 encode/decode round-trip 수행 | CRC32 port는 CRC32 encode/decode 함수에 bind되고 profile은 CRC present, MAC/timestamp absent, max CRC frame size를 보고한다 | 상위 계층이 default skeleton path와 CRC32 path를 명시적으로 선택할 수 있는 binding contract를 제공한다 |
+| TC-CODEC-028 | FR-003, FR-004, SR-001 | CRC32 checksum mismatch status 검증 | CRC32 encode 후 payload byte를 변조한 frame 준비 | `rsrx_codec_decode_frame_with_crc32()` 수행 | CRC mismatch frame은 `RSRX_CODEC_STATUS_CRC_MISMATCH`를 반환한다 | checksum/tamper성 decode failure를 generic decode error와 구분하여 vendor-evidence-friendly negative vector와 richer status taxonomy를 제공한다 |
