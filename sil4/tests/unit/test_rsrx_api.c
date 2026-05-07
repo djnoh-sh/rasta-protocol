@@ -174,6 +174,7 @@ static void vFillConfig(
 	pxConfig->uRetransmissionIntervalNs = 300U;
 	pxConfig->uDiagnosticFlushIntervalNs = 400U;
 	pxConfig->uBusyRejectErrorThreshold = 0U;
+	pxConfig->uRequireCrc = 0U;
 	pxConfig->pvApplicationDataContext = pxApplication;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pxApiCounter;

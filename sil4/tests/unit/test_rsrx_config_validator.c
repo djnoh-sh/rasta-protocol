@@ -113,6 +113,7 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, void * pvContext)
 	pxConfig->uRetransmissionIntervalNs = 200U;
 	pxConfig->uDiagnosticFlushIntervalNs = 300U;
 	pxConfig->uBusyRejectErrorThreshold = 0U;
+	pxConfig->uRequireCrc = 0U;
 	pxConfig->pvApplicationDataContext = pvContext;
 	pxConfig->pfApplicationData = vApplicationDataNotify;
 	pxConfig->pvApiCallbackContext = pvContext;
@@ -236,6 +237,26 @@ static void vTestDuplicateChannelPriorityRejected(void)
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_DEFAULT_CHANNEL, "duplicate priority field");
 }
 
+static void vTestCrcPolicyRequiresCrc32CodecPort(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireCrc = 1U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "crc required default codec status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "crc required default codec field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireCrc = 1U;
+	xConfig.xCodecPort = *rsrx_codec_get_crc32_port();
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_OK, "crc required crc32 codec status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "crc required crc32 codec field");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_config_validation_report_t xReport;
@@ -254,6 +275,7 @@ int main(void)
 	vTestInconsistentPayload();
 	vTestDefaultChannelMustBelongToTopology();
 	vTestDuplicateChannelPriorityRejected();
+	vTestCrcPolicyRequiresCrc32CodecPort();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_config_validator_test: all tests passed\n");

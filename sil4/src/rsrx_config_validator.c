@@ -53,6 +53,24 @@ static uint32_t uDefaultChannelBelongsToConfiguredTopology(
 	return 1U;
 }
 
+static uint32_t uCodecPortSatisfiesSecurityPolicy(
+	const rsrx_session_config_t * pxConfig,
+	rsrx_config_validation_report_t * pxReport)
+{
+	if((pxConfig->uRequireCrc != 0U) &&
+		((pxConfig->xCodecPort.pfEncode != rsrx_codec_encode_message_with_crc32) ||
+			(pxConfig->xCodecPort.pfDecode != rsrx_codec_decode_frame_with_crc32)))
+	{
+		vSetReport(
+			pxReport,
+			RSRX_CONFIG_STATUS_INCONSISTENT_VALUE,
+			RSRX_CONFIG_FIELD_CODEC_PORT);
+		return 0U;
+	}
+
+	return 1U;
+}
+
 static void vSetReport(
 	rsrx_config_validation_report_t * pxReport,
 	rsrx_config_status_t eStatus,
@@ -240,6 +258,11 @@ rsrx_config_status_t rsrx_validate_session_config(
 	}
 
 	if(uDefaultChannelBelongsToConfiguredTopology(pxConfig, pxReport) == 0U)
+	{
+		return pxReport->eStatus;
+	}
+
+	if(uCodecPortSatisfiesSecurityPolicy(pxConfig, pxReport) == 0U)
 	{
 		return pxReport->eStatus;
 	}

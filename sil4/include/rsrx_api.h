@@ -55,6 +55,7 @@ typedef struct
 	rsrx_monotonic_time_ns_t uRetransmissionIntervalNs;
 	rsrx_monotonic_time_ns_t uDiagnosticFlushIntervalNs;
 	uint32_t uBusyRejectErrorThreshold;
+	uint32_t uRequireCrc;
 	void * pvApplicationDataContext;
 	rsrx_application_data_fn pfApplicationData;
 	void * pvApiCallbackContext;
