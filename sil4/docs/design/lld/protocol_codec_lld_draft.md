@@ -75,6 +75,8 @@
 - codec status는 state machine status와 혼용하지 않는다.
 - decoded payload는 bounded buffer 안에서만 다룬다.
 - default codec port는 직접 codec 함수와 동일한 encode/decode semantics를 제공한다.
+- default codec direct decode path는 current guard taxonomy에서 `DECODE_ERROR`로 collapse하지 않고 typed status를 반환한다.
+- `DECODE_ERROR`는 custom/alternate codec port가 더 세분화할 수 없는 decode failure를 supervisor에 보존하기 위한 compatibility status로 유지한다.
 
 ## Verification Notes
 
