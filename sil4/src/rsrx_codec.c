@@ -180,6 +180,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	rsrx_decoded_message_t * pxMessage)
 {
 	size_t xPayloadLength;
+	size_t xExpectedFrameLength;
 	size_t xIndex;
 	rsrx_message_type_t eMessageType;
 
@@ -222,9 +223,14 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	{
 		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
 	}
-	if(pxFrame->xPayloadLength != (D_RSRX_CODEC_HEADER_BYTES + xPayloadLength))
+	xExpectedFrameLength = D_RSRX_CODEC_HEADER_BYTES + xPayloadLength;
+	if(pxFrame->xPayloadLength > xExpectedFrameLength)
 	{
-		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
+		return RSRX_CODEC_STATUS_TRAILING_BYTES;
+	}
+	if(pxFrame->xPayloadLength < xExpectedFrameLength)
+	{
+		return RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD;
 	}
 
 	pxMessage->eMessageType = eMessageType;

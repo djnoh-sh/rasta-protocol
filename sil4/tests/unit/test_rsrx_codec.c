@@ -648,7 +648,7 @@ static void vTestDecodeRejectsTrailingBytes(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
-	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_LENGTH_MISMATCH, "trailing byte reject");
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_TRAILING_BYTES, "trailing byte reject");
 }
 
 static void vTestDecodeRejectsShortHeader(void)
@@ -717,7 +717,7 @@ static void vTestDecodeRejectsTruncatedPayload(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
-	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_LENGTH_MISMATCH, "truncated payload reject");
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD, "truncated payload reject");
 }
 
 static void vTestDecodeRejectsOversizedDeclaredPayload(void)

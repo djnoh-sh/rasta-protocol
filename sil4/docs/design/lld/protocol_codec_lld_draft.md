@@ -55,7 +55,8 @@
   - reason code가 정의된 `rsrx_reason_code_t` 범위를 벗어나면 `UNSUPPORTED_REASON`으로 거부한다.
   - 마지막 defined reason code인 `RSRX_REASON_INVALID_STATE_VALUE`는 정상 경계값으로 수용한다.
   - reserved header bytes at offsets `2`, `3`, `14`, and `15`는 zero baseline이어야 하며 non-zero 값은 `RESERVED_HEADER_NONZERO`로 거부한다.
-  - declared payload length와 actual frame length가 정확히 일치하지 않으면 trailing/short frame 모두 `LENGTH_MISMATCH`로 거부한다.
+  - declared payload length보다 actual frame이 길면 `TRAILING_BYTES`로 거부한다.
+  - declared payload length보다 actual frame이 짧으면 `TRUNCATED_PAYLOAD`로 거부한다.
   - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `PAYLOAD_TOO_LARGE`로 거부한다.
   - declared payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
 - encode:
@@ -101,7 +102,7 @@
   - reserved header byte matrix reject 검증
   - non-zero payload length와 null payload pointer 조합 reject 검증
   - oversized encode payload length reject 검증
-  - declared length와 actual frame length mismatch reject 검증
+  - trailing bytes와 truncated payload를 분리한 declared/actual frame length mismatch reject 검증
   - oversized declared payload length reject 검증
   - max payload encode/decode boundary 검증
   - buffer too small 검증
