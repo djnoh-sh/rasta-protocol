@@ -474,7 +474,7 @@ static void vTestRejectsUnsupportedReasonCode(void)
 	xBuffer.xBufferCapacity = sizeof(auEncoded);
 	xBuffer.xEncodedLength = 0U;
 
-	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "unsupported encode reason reject");
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_REASON, "unsupported encode reason reject");
 
 	auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
 	auEncoded[1] = 0xFFU;
@@ -484,7 +484,7 @@ static void vTestRejectsUnsupportedReasonCode(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
-	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "unsupported decode reason reject");
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_UNSUPPORTED_REASON, "unsupported decode reason reject");
 }
 
 static void vTestMaxReasonCodeEncodeDecodeRoundTrip(void)

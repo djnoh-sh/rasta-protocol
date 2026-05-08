@@ -8,9 +8,9 @@
 
 ## Findings
 
-1. `TC-CODEC-020` verifies that outbound encode rejects a reason code outside the defined `rsrx_reason_code_t` range.
-2. The same test verifies that inbound decode rejects an otherwise well-formed frame when the reason byte is outside the defined range.
-3. This closes a codec boundary gap where an undefined wire reason could otherwise be forwarded as a typed reason enum.
+1. `TC-CODEC-020` verifies that outbound encode rejects a reason code outside the defined `rsrx_reason_code_t` range with `UNSUPPORTED_REASON`.
+2. The same test verifies that inbound decode rejects an otherwise well-formed frame when the reason byte is outside the defined range with `UNSUPPORTED_REASON`.
+3. This closes a codec boundary gap where an undefined wire reason could otherwise be forwarded as a typed reason enum, while keeping reason-code failures distinct from unsupported message-type failures.
 
 ## Disposition
 
