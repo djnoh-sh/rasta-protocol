@@ -196,7 +196,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	}
 	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
 	{
-		return RSRX_CODEC_STATUS_DECODE_ERROR;
+		return RSRX_CODEC_STATUS_NON_FRAME_EVENT;
 	}
 	if(uTransportChannelIsSupported(pxFrame->eChannelId) == 0U)
 	{
