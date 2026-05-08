@@ -12100,6 +12100,7 @@ static void vTestIntegratedInvalidChannelDecodeFailureFlow(void)
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "invalid channel decode integration poll");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "invalid channel decode integration state retained");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_DECODE_FAILED, "invalid channel decode integration decision");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_INVALID_CHANNEL, "invalid channel decode integration codec status");
 	vAssertTrue(pxSupervisorReport->xLastFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "invalid channel decode integration report channel");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "invalid channel decode integration processed count retained");
 	vAssertTrue(xApplication.uCallCount == 0U, "invalid channel decode integration no application callback");

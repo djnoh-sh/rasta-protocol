@@ -200,7 +200,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	}
 	if(uTransportChannelIsSupported(pxFrame->eChannelId) == 0U)
 	{
-		return RSRX_CODEC_STATUS_DECODE_ERROR;
+		return RSRX_CODEC_STATUS_INVALID_CHANNEL;
 	}
 
 	eMessageType = (rsrx_message_type_t)pxFrame->puPayload[0];

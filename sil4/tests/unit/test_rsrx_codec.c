@@ -689,7 +689,7 @@ static void vTestDecodeRejectsInvalidChannelId(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
-	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "invalid channel reject");
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_INVALID_CHANNEL, "invalid channel reject");
 }
 
 static void vTestDecodeRejectsTruncatedPayload(void)
