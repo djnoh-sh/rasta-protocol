@@ -17,11 +17,13 @@ int main(void)
 	uint8_t auPayload[4] = { 0x11U, 0x22U, 0x33U, 0x44U };
 	uint8_t auBuffer[32] = { 0U };
 	uint32_t uExpectedEncodedLength;
+	volatile uint32_t uExpectedAbsent;
 	rsrx_decode_frame_fn pfExpectedDecode;
 	rsrx_decoded_message_t xDecodedMessage;
 	rsrx_encode_request_t xEncodeRequest;
 	rsrx_encode_buffer_t xEncodeBuffer;
 	rsrx_codec_port_t xCodecPort;
+	rsrx_codec_wire_profile_t xWireProfile;
 
 	xDecodedMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xDecodedMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -40,11 +42,23 @@ int main(void)
 	xEncodeBuffer.puBuffer = auBuffer;
 	xEncodeBuffer.xBufferCapacity = sizeof(auBuffer);
 	uExpectedEncodedLength = 0U;
+	uExpectedAbsent = 0U;
 	xEncodeBuffer.xEncodedLength = uExpectedEncodedLength;
 
 	xCodecPort.pfEncode = (rsrx_encode_message_fn)0;
 	pfExpectedDecode = (rsrx_decode_frame_fn)0;
 	xCodecPort.pfDecode = pfExpectedDecode;
+	xWireProfile.uProfileId = D_RSRX_CODEC_WIRE_PROFILE_DEFAULT;
+	xWireProfile.uProfileVersion = D_RSRX_CODEC_WIRE_PROFILE_VERSION;
+	xWireProfile.xHeaderBytes = D_RSRX_CODEC_HEADER_BYTES;
+	xWireProfile.xMaxPayloadBytes = D_RSRX_CODEC_MAX_PAYLOAD_BYTES;
+	xWireProfile.xMaxFrameBytes = D_RSRX_CODEC_MAX_FRAME_BYTES;
+	xWireProfile.xCrcBytes = (size_t)uExpectedAbsent;
+	xWireProfile.xMacBytes = (size_t)uExpectedAbsent;
+	xWireProfile.xTimestampBytes = (size_t)uExpectedAbsent;
+	xWireProfile.uCrcPresent = uExpectedAbsent;
+	xWireProfile.uMacPresent = uExpectedAbsent;
+	xWireProfile.uTimestampPresent = uExpectedAbsent;
 
 	vAssertTrue(xDecodedMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "decoded message type contract");
 	vAssertTrue(xDecodedMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "decoded message event contract");
@@ -65,6 +79,17 @@ int main(void)
 	vAssertTrue(xCodecPort.pfEncode == (rsrx_encode_message_fn)0, "codec port layout contract");
 	/* cppcheck-suppress knownConditionTrueFalse */
 	vAssertTrue(xCodecPort.pfDecode == pfExpectedDecode, "codec port decode layout contract");
+	vAssertTrue(xWireProfile.uProfileId == D_RSRX_CODEC_WIRE_PROFILE_DEFAULT, "wire profile id contract");
+	vAssertTrue(xWireProfile.uProfileVersion == D_RSRX_CODEC_WIRE_PROFILE_VERSION, "wire profile version contract");
+	vAssertTrue(xWireProfile.xHeaderBytes == D_RSRX_CODEC_HEADER_BYTES, "wire profile header contract");
+	vAssertTrue(xWireProfile.xMaxPayloadBytes == D_RSRX_CODEC_MAX_PAYLOAD_BYTES, "wire profile max payload contract");
+	vAssertTrue(xWireProfile.xMaxFrameBytes == D_RSRX_CODEC_MAX_FRAME_BYTES, "wire profile max frame contract");
+	vAssertTrue(xWireProfile.xCrcBytes == (size_t)uExpectedAbsent, "wire profile crc bytes contract");
+	vAssertTrue(xWireProfile.xMacBytes == (size_t)uExpectedAbsent, "wire profile mac bytes contract");
+	vAssertTrue(xWireProfile.xTimestampBytes == (size_t)uExpectedAbsent, "wire profile timestamp bytes contract");
+	vAssertTrue(xWireProfile.uCrcPresent == uExpectedAbsent, "wire profile crc present contract");
+	vAssertTrue(xWireProfile.uMacPresent == uExpectedAbsent, "wire profile mac present contract");
+	vAssertTrue(xWireProfile.uTimestampPresent == uExpectedAbsent, "wire profile timestamp present contract");
 
 	(void)printf("rsrx_codec_contract_test: all tests passed\n");
 

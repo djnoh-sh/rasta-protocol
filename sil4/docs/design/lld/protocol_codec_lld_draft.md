@@ -39,6 +39,7 @@
 | `rsrx_encode_request_t` | struct | message encode 입력 | message type, reason, sequence, payload 포함 |
 | `rsrx_encode_buffer_t` | struct | encode 대상 버퍼 | caller-owned buffer 사용 |
 | `rsrx_codec_port_t` | struct | encode/decode 함수 집합 | 양 방향 callback 필수 |
+| `rsrx_codec_wire_profile_t` | struct | selected wire profile identity/size/security-field contract | profile id/version, header/max sizes, CRC/MAC/timestamp field sizes와 presence flag 제공 |
 | `rsrx_codec_get_default_port` | function | default codec port provider | non-null encode/decode callback 제공 |
 
 ## Functional Behavior
@@ -77,6 +78,7 @@
 - default codec port는 직접 codec 함수와 동일한 encode/decode semantics를 제공한다.
 - default codec direct decode path는 current guard taxonomy에서 `DECODE_ERROR`로 collapse하지 않고 typed status를 반환한다.
 - `DECODE_ERROR`는 custom/alternate codec port가 더 세분화할 수 없는 decode failure를 supervisor에 보존하기 위한 compatibility status로 유지한다.
+- wire profile은 profile id/version과 CRC/MAC/timestamp field byte sizes를 함께 노출해 selected PDU boundary를 deployment/evidence layer가 추론 없이 확인할 수 있게 한다.
 
 ## Verification Notes
 
@@ -103,6 +105,7 @@
   - oversized declared payload length reject 검증
   - max payload encode/decode boundary 검증
   - buffer too small 검증
+  - default/CRC32 wire profile id/version/security-field byte size 검증
 - 분석 포인트:
   - payload 최대 길이 상한
   - payload pointer/length consistency

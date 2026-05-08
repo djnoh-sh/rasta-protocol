@@ -269,9 +269,14 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void)
 {
 	static const rsrx_codec_wire_profile_t xWireProfile =
 	{
+		D_RSRX_CODEC_WIRE_PROFILE_DEFAULT,
+		D_RSRX_CODEC_WIRE_PROFILE_VERSION,
 		D_RSRX_CODEC_HEADER_BYTES,
 		D_RSRX_CODEC_MAX_PAYLOAD_BYTES,
 		D_RSRX_CODEC_MAX_FRAME_BYTES,
+		0U,
+		0U,
+		0U,
 		0U,
 		0U,
 		0U
@@ -284,9 +289,14 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void)
 {
 	static const rsrx_codec_wire_profile_t xWireProfile =
 	{
+		D_RSRX_CODEC_WIRE_PROFILE_CRC32,
+		D_RSRX_CODEC_WIRE_PROFILE_VERSION,
 		D_RSRX_CODEC_HEADER_BYTES,
 		D_RSRX_CODEC_MAX_PAYLOAD_BYTES,
 		D_RSRX_CODEC_MAX_CRC_FRAME_BYTES,
+		D_RSRX_CODEC_CRC_BYTES,
+		0U,
+		0U,
 		1U,
 		0U,
 		0U

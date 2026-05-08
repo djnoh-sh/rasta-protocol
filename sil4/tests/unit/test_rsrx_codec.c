@@ -99,9 +99,14 @@ static void vTestWireProfileDocumentsCurrentSecurityFields(void)
 	pxProfile = rsrx_codec_get_wire_profile();
 
 	vAssertTrue(pxProfile != (const rsrx_codec_wire_profile_t *)0, "wire profile present");
+	vAssertTrue(pxProfile->uProfileId == D_RSRX_CODEC_WIRE_PROFILE_DEFAULT, "wire profile default id");
+	vAssertTrue(pxProfile->uProfileVersion == D_RSRX_CODEC_WIRE_PROFILE_VERSION, "wire profile version");
 	vAssertTrue(pxProfile->xHeaderBytes == D_RSRX_CODEC_HEADER_BYTES, "wire profile header bytes");
 	vAssertTrue(pxProfile->xMaxPayloadBytes == D_RSRX_CODEC_MAX_PAYLOAD_BYTES, "wire profile max payload bytes");
 	vAssertTrue(pxProfile->xMaxFrameBytes == D_RSRX_CODEC_MAX_FRAME_BYTES, "wire profile max frame bytes");
+	vAssertTrue(pxProfile->xCrcBytes == 0U, "wire profile crc bytes absent");
+	vAssertTrue(pxProfile->xMacBytes == 0U, "wire profile mac bytes absent");
+	vAssertTrue(pxProfile->xTimestampBytes == 0U, "wire profile timestamp bytes absent");
 	vAssertTrue(pxProfile->uCrcPresent == 0U, "wire profile crc absent");
 	vAssertTrue(pxProfile->uMacPresent == 0U, "wire profile mac absent");
 	vAssertTrue(pxProfile->uTimestampPresent == 0U, "wire profile timestamp absent");
@@ -138,9 +143,14 @@ static void vTestCrc32PortAndProfile(void)
 	vAssertTrue(pxPort->pfEncode == rsrx_codec_encode_message_with_crc32, "crc32 port encode binding");
 	vAssertTrue(pxPort->pfDecode == rsrx_codec_decode_frame_with_crc32, "crc32 port decode binding");
 	vAssertTrue(pxProfile != (const rsrx_codec_wire_profile_t *)0, "crc32 profile present");
+	vAssertTrue(pxProfile->uProfileId == D_RSRX_CODEC_WIRE_PROFILE_CRC32, "crc32 profile id");
+	vAssertTrue(pxProfile->uProfileVersion == D_RSRX_CODEC_WIRE_PROFILE_VERSION, "crc32 profile version");
 	vAssertTrue(pxProfile->xHeaderBytes == D_RSRX_CODEC_HEADER_BYTES, "crc32 profile header bytes");
 	vAssertTrue(pxProfile->xMaxPayloadBytes == D_RSRX_CODEC_MAX_PAYLOAD_BYTES, "crc32 profile max payload bytes");
 	vAssertTrue(pxProfile->xMaxFrameBytes == D_RSRX_CODEC_MAX_CRC_FRAME_BYTES, "crc32 profile max frame bytes");
+	vAssertTrue(pxProfile->xCrcBytes == D_RSRX_CODEC_CRC_BYTES, "crc32 profile crc bytes");
+	vAssertTrue(pxProfile->xMacBytes == 0U, "crc32 profile mac bytes absent");
+	vAssertTrue(pxProfile->xTimestampBytes == 0U, "crc32 profile timestamp bytes absent");
 	vAssertTrue(pxProfile->uCrcPresent == 1U, "crc32 profile crc present");
 	vAssertTrue(pxProfile->uMacPresent == 0U, "crc32 profile mac absent");
 	vAssertTrue(pxProfile->uTimestampPresent == 0U, "crc32 profile timestamp absent");

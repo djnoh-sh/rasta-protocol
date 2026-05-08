@@ -12,6 +12,9 @@
 #define D_RSRX_CODEC_MAX_FRAME_BYTES (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 #define D_RSRX_CODEC_CRC_BYTES (4U)
 #define D_RSRX_CODEC_MAX_CRC_FRAME_BYTES (D_RSRX_CODEC_MAX_FRAME_BYTES + D_RSRX_CODEC_CRC_BYTES)
+#define D_RSRX_CODEC_WIRE_PROFILE_DEFAULT (1U)
+#define D_RSRX_CODEC_WIRE_PROFILE_CRC32 (2U)
+#define D_RSRX_CODEC_WIRE_PROFILE_VERSION (1U)
 
 typedef enum
 {
@@ -66,9 +69,14 @@ typedef struct
 
 typedef struct
 {
+	uint32_t uProfileId;
+	uint32_t uProfileVersion;
 	size_t xHeaderBytes;
 	size_t xMaxPayloadBytes;
 	size_t xMaxFrameBytes;
+	size_t xCrcBytes;
+	size_t xMacBytes;
+	size_t xTimestampBytes;
 	uint32_t uCrcPresent;
 	uint32_t uMacPresent;
 	uint32_t uTimestampPresent;
