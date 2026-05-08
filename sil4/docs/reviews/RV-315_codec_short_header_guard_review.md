@@ -8,7 +8,7 @@
 
 ## Findings
 
-1. `TC-CODEC-017` verifies decode rejects a frame shorter than `D_RSRX_CODEC_HEADER_BYTES` with `DECODE_ERROR`.
+1. `TC-CODEC-017` verifies decode rejects a frame shorter than `D_RSRX_CODEC_HEADER_BYTES` with `SHORT_HEADER`.
 2. The test provides a non-null payload and decoded-message target, so the evidence targets the minimum header-length guard rather than null-argument handling.
 3. This closes the explicit lower-bound frame-length evidence gap without changing the wire format.
 

@@ -46,7 +46,7 @@
 - decode:
   - transport frame을 typed decoded message로 변환한다.
   - null frame/message/payload pointer는 `INVALID_ARGUMENT`로 거부한다.
-  - frame length가 `D_RSRX_CODEC_HEADER_BYTES`보다 작으면 `DECODE_ERROR`로 거부한다.
+  - frame length가 `D_RSRX_CODEC_HEADER_BYTES`보다 작으면 `SHORT_HEADER`로 거부한다.
   - transport event type이 `RSRX_TRANSPORT_EVENT_FRAME_RECEIVED`가 아니면 `DECODE_ERROR`로 거부한다.
   - transport channel id가 valid channel range 밖이면 `DECODE_ERROR`로 거부한다.
   - decoded message는 state machine에 전달할 `suggested event`를 함께 제공한다.

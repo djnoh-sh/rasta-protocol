@@ -189,7 +189,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 
 	if(pxFrame->xPayloadLength < D_RSRX_CODEC_HEADER_BYTES)
 	{
-		return RSRX_CODEC_STATUS_DECODE_ERROR;
+		return RSRX_CODEC_STATUS_SHORT_HEADER;
 	}
 	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
 	{
