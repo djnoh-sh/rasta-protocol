@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-05-06`
+- Last Updated: `2026-05-08`
 
 ## Scope
 
@@ -55,7 +55,7 @@
   - 마지막 defined reason code인 `RSRX_REASON_INVALID_STATE_VALUE`는 정상 경계값으로 수용한다.
   - reserved header bytes at offsets `2`, `3`, `14`, and `15`는 zero baseline이어야 하며 non-zero 값은 `RESERVED_HEADER_NONZERO`로 거부한다.
   - declared payload length와 actual frame length가 정확히 일치하지 않으면 trailing/short frame 모두 `LENGTH_MISMATCH`로 거부한다.
-  - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `DECODE_ERROR`로 거부한다.
+  - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `PAYLOAD_TOO_LARGE`로 거부한다.
   - declared payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
 - encode:
   - null request/buffer/output buffer pointer는 `INVALID_ARGUMENT`로 거부한다.
@@ -65,7 +65,7 @@
   - 마지막 defined reason code인 `RSRX_REASON_INVALID_STATE_VALUE`는 정상 경계값으로 직렬화한다.
   - encode 대상 버퍼는 caller가 제공한다.
   - non-zero payload length에서는 payload pointer가 null이면 `INVALID_ARGUMENT`로 거부한다.
-  - payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 `UNSUPPORTED_MESSAGE`로 거부한다.
+  - payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 `PAYLOAD_TOO_LARGE`로 거부한다.
   - payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
   - skeleton 구현은 고정 길이 header와 variable payload로 구성된 deterministic wire format을 사용한다.
 

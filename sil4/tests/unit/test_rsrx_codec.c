@@ -432,7 +432,7 @@ static void vTestEncodeRejectsOversizedPayloadLength(void)
 	xBuffer.xBufferCapacity = sizeof(auEncoded);
 	xBuffer.xEncodedLength = 0U;
 
-	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "oversized encode payload reject");
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE, "oversized encode payload reject");
 }
 
 static void vTestEncodeRejectsUnsupportedMessageType(void)
@@ -726,7 +726,7 @@ static void vTestDecodeRejectsOversizedDeclaredPayload(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
-	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_DECODE_ERROR, "oversized declared payload reject");
+	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE, "oversized declared payload reject");
 }
 
 int main(void)

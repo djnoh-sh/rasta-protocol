@@ -135,11 +135,14 @@ rsrx_codec_status_t rsrx_codec_encode_message(
 	}
 
 	if((uMessageTypeIsSupported(pxRequest->eMessageType) == 0U) ||
-		(uReasonCodeIsSupported(pxRequest->eReason) == 0U) ||
-		(pxRequest->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES) ||
-		(pxRequest->xPayloadLength > (size_t)UINT16_MAX))
+		(uReasonCodeIsSupported(pxRequest->eReason) == 0U))
 	{
 		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+	if((pxRequest->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES) ||
+		(pxRequest->xPayloadLength > (size_t)UINT16_MAX))
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
 	}
 
 	xRequiredBytes = D_RSRX_CODEC_HEADER_BYTES + pxRequest->xPayloadLength;
@@ -214,7 +217,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	xPayloadLength = (size_t)usReadUint16(&pxFrame->puPayload[12]);
 	if(xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 	{
-		return RSRX_CODEC_STATUS_DECODE_ERROR;
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
 	}
 	if(pxFrame->xPayloadLength != (D_RSRX_CODEC_HEADER_BYTES + xPayloadLength))
 	{
