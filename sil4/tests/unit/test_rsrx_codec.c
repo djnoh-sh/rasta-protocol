@@ -483,9 +483,10 @@ static void vTestEncodeRejectsOversizedPayloadLength(void)
 
 	xBuffer.puBuffer = auEncoded;
 	xBuffer.xBufferCapacity = sizeof(auEncoded);
-	xBuffer.xEncodedLength = 0U;
+	xBuffer.xEncodedLength = 99U;
 
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE, "oversized encode payload reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "oversized encode clears stale length");
 }
 
 static void vTestEncodeRejectsUnsupportedMessageType(void)
