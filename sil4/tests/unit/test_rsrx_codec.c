@@ -504,9 +504,10 @@ static void vTestEncodeRejectsUnsupportedMessageType(void)
 
 	xBuffer.puBuffer = auEncoded;
 	xBuffer.xBufferCapacity = sizeof(auEncoded);
-	xBuffer.xEncodedLength = 0U;
+	xBuffer.xEncodedLength = 99U;
 
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "unsupported encode message reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "unsupported encode message clears stale length");
 }
 
 static void vTestRejectsUnsupportedReasonCode(void)
