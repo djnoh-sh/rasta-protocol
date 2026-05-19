@@ -635,9 +635,10 @@ static void vTestEncodeRejectsNullPayloadWithLength(void)
 
 	xBuffer.puBuffer = auEncoded;
 	xBuffer.xBufferCapacity = sizeof(auEncoded);
-	xBuffer.xEncodedLength = 0U;
+	xBuffer.xEncodedLength = 99U;
 
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null payload with length reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "null payload with length clears stale length");
 }
 
 static void vTestRejectsNullArguments(void)
