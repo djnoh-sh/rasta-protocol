@@ -398,6 +398,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	rsrx_codec_status_t eStatus;
 
 	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxMessage == (rsrx_decoded_message_t *)0) ||
 		(pxFrame->puPayload == (const uint8_t *)0))
 	{
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;

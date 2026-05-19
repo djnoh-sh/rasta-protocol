@@ -311,6 +311,23 @@ static void vTestCrc32WireReportsTruncatedChecksum(void)
 	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_CRC_TRUNCATED, "crc32 wire truncated status");
 }
 
+static void vTestCrc32WireRejectsNullDecodeArguments(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_CRC_BYTES] = { 0U };
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(rsrx_codec_decode_frame_with_crc32((const rsrx_transport_frame_t *)0, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null frame reject");
+	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, (rsrx_decoded_message_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null message reject");
+	xFrame.puPayload = (const uint8_t *)0;
+	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null payload reject");
+}
+
 static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
@@ -752,6 +769,7 @@ int main(void)
 	vTestCrc32WireRejectsSmallBuffer();
 	vTestCrc32WireReportsChecksumMismatch();
 	vTestCrc32WireReportsTruncatedChecksum();
+	vTestCrc32WireRejectsNullDecodeArguments();
 	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();

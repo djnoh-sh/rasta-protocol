@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-08`
+- Last Updated: `2026-05-19`
 
 ## Scope
 
@@ -52,3 +52,4 @@
 | TC-CODEC-028 | FR-003, FR-004, SR-001 | CRC32 checksum mismatch status 검증 | CRC32 encode 후 payload byte를 변조한 frame 준비 | `rsrx_codec_decode_frame_with_crc32()` 수행 | CRC mismatch frame은 `RSRX_CODEC_STATUS_CRC_MISMATCH`를 반환한다 | checksum/tamper성 decode failure를 generic decode error와 구분하여 vendor-evidence-friendly negative vector와 richer status taxonomy를 제공한다 |
 | TC-CODEC-029 | FR-003, FR-004, SR-001 | CRC32 truncated checksum status 검증 | CRC32 checksum field가 4 bytes보다 짧은 frame 준비 | `rsrx_codec_decode_frame_with_crc32()` 수행 | CRC field가 부족한 frame은 `RSRX_CODEC_STATUS_CRC_TRUNCATED`를 반환한다 | checksum field absence/truncation을 generic malformed-frame decode error와 구분하여 CRC-specific negative vector를 명시한다 |
 | TC-CODEC-030 | FR-003, FR-004, SR-001 | codec security capability query 검증 | `rsrx_codec_get_security_capabilities()` 호출 | capability record 조회 | default CRC absent, optional CRC32 available, MAC/timestamp unavailable을 반환한다 | deployment policy가 default skeleton security-field absence와 optional CRC32 선택 가능성을 API level에서 구분해 확인할 수 있다 |
+| TC-CODEC-031 | FR-003, FR-004, SR-001 | CRC32 decode null argument reject 검증 | null frame, null decoded-message output, null payload pointer 준비 | `rsrx_codec_decode_frame_with_crc32()` 수행 | 각 null argument path가 `INVALID_ARGUMENT`를 반환한다 | CRC/truncation/mismatch 판정 전에 public API argument guard가 우선 적용된다 |

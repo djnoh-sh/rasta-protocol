@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-05-08`
+- Last Updated: `2026-05-19`
 
 ## Scope
 
@@ -59,6 +59,8 @@
   - declared payload length보다 actual frame이 짧으면 `TRUNCATED_PAYLOAD`로 거부한다.
   - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `PAYLOAD_TOO_LARGE`로 거부한다.
   - declared payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
+- CRC32 decode wrapper:
+  - null frame/message/payload pointer는 CRC/truncation/mismatch 판정보다 먼저 `INVALID_ARGUMENT`로 거부한다.
 - encode:
   - null request/buffer/output buffer pointer는 `INVALID_ARGUMENT`로 거부한다.
   - message type과 sequence/confirmation/payload를 wire-format buffer로 직렬화한다.
@@ -107,6 +109,7 @@
   - max payload encode/decode boundary 검증
   - buffer too small 검증
   - default/CRC32 wire profile id/version/security-field byte size 검증
+  - CRC32 decode null argument reject 검증
 - 분석 포인트:
   - payload 최대 길이 상한
   - payload pointer/length consistency
