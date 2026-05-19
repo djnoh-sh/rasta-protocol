@@ -441,6 +441,31 @@ static void vTestEncodeRejectsSmallBuffer(void)
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_BUFFER_TOO_SMALL, "small buffer reject");
 }
 
+static void vTestEncodeFailuresClearEncodedLength(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	xRequest.eReason = RSRX_REASON_NONE;
+	xRequest.uSequenceNumber = 1U;
+	xRequest.uConfirmationNumber = 0U;
+	xRequest.puPayload = (const uint8_t *)0;
+	xRequest.xPayloadLength = 0U;
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 99U;
+
+	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "direct encode failure status");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "direct encode failure clears length");
+
+	xBuffer.xEncodedLength = 99U;
+	vAssertTrue(rsrx_codec_encode_message_with_crc32(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE, "crc32 encode failure status");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "crc32 encode failure clears length");
+}
+
 static void vTestEncodeRejectsOversizedPayloadLength(void)
 {
 	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES + 1U] = { 0 };
@@ -774,6 +799,7 @@ int main(void)
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();
 	vTestEncodeRejectsSmallBuffer();
+	vTestEncodeFailuresClearEncodedLength();
 	vTestEncodeRejectsOversizedPayloadLength();
 	vTestEncodeRejectsUnsupportedMessageType();
 	vTestRejectsUnsupportedReasonCode();

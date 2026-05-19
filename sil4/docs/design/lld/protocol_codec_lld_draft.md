@@ -62,6 +62,7 @@
 - CRC32 decode wrapper:
   - null frame/message/payload pointer는 CRC/truncation/mismatch 판정보다 먼저 `INVALID_ARGUMENT`로 거부한다.
 - encode:
+  - buffer argument가 유효하면 encode 시작 시 `xEncodedLength`를 `0`으로 초기화하고, 성공 시에만 encoded length를 설정한다.
   - null request/buffer/output buffer pointer는 `INVALID_ARGUMENT`로 거부한다.
   - message type과 sequence/confirmation/payload를 wire-format buffer로 직렬화한다.
   - unsupported message type은 `UNSUPPORTED_MESSAGE`로 거부한다.
@@ -110,6 +111,7 @@
   - buffer too small 검증
   - default/CRC32 wire profile id/version/security-field byte size 검증
   - CRC32 decode null argument reject 검증
+  - encode failure path의 encoded length clear 검증
 - 분석 포인트:
   - payload 최대 길이 상한
   - payload pointer/length consistency

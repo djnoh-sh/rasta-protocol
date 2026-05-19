@@ -125,8 +125,14 @@ rsrx_codec_status_t rsrx_codec_encode_message(
 	size_t xRequiredBytes;
 	size_t xIndex;
 
+	if(pxBuffer == (rsrx_encode_buffer_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxBuffer->xEncodedLength = 0U;
+
 	if((pxRequest == (const rsrx_encode_request_t *)0) ||
-		(pxBuffer == (rsrx_encode_buffer_t *)0) ||
 		(pxBuffer->puBuffer == (uint8_t *)0) ||
 		((pxRequest->puPayload == (const uint8_t *)0) &&
 			(pxRequest->xPayloadLength > 0U)))
@@ -361,9 +367,12 @@ rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
 	}
 
+	pxBuffer->xEncodedLength = 0U;
+
 	eStatus = rsrx_codec_encode_message(pxRequest, pxBuffer);
 	if(eStatus != RSRX_CODEC_STATUS_OK)
 	{
+		pxBuffer->xEncodedLength = 0U;
 		return eStatus;
 	}
 
