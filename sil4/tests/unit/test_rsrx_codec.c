@@ -436,9 +436,10 @@ static void vTestEncodeRejectsSmallBuffer(void)
 
 	xBuffer.puBuffer = auEncoded;
 	xBuffer.xBufferCapacity = sizeof(auEncoded);
-	xBuffer.xEncodedLength = 0U;
+	xBuffer.xEncodedLength = 99U;
 
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_BUFFER_TOO_SMALL, "small buffer reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "small buffer clears stale length");
 }
 
 static void vTestEncodeFailuresClearEncodedLength(void)
