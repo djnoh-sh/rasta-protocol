@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-19`
+- Last Updated: `2026-05-20`
 
 ## Scope
 
@@ -41,7 +41,7 @@
 | TC-CODEC-017 | SR-001 | decode short header reject 검증 | frame length가 `D_RSRX_CODEC_HEADER_BYTES - 1`인 frame 준비 | decode 수행 | `SHORT_HEADER` 반환 | 최소 header 길이보다 짧은 frame을 generic decode error와 구분해 수용하지 않음 |
 | TC-CODEC-018 | FR-003, FR-004 | max payload encode/decode boundary 검증 | payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`인 request 준비 | encode 후 decode 수행 | `OK` 반환, encoded length가 `D_RSRX_CODEC_MAX_FRAME_BYTES`, payload 보존 | 최대 허용 payload 경계값은 정상 frame으로 수용됨 |
 | TC-CODEC-019 | SR-001 | reserved header byte matrix reject 검증 | reserved header offsets `2`, `3`, `14`, `15` 중 하나가 non-zero인 otherwise well-formed frame 준비 | decode 수행 | 각 frame이 `RESERVED_HEADER_NONZERO` 반환 | 모든 reserved header 위치가 zero-baseline 위반 시 tamper-specific codec status로 수용되지 않음 |
-| TC-CODEC-020 | FR-003, FR-004, SR-001 | unsupported reason code reject 검증 | reason byte/code가 defined `rsrx_reason_code_t` 범위 밖인 encode request 및 otherwise well-formed frame 준비 | encode/decode 수행 | encode/decode 모두 `UNSUPPORTED_REASON` 반환 | wire/header reason field가 정의되지 않은 상태 이유로 상위 계층에 전달되지 않으며 unsupported message type과 구분됨 |
+| TC-CODEC-020 | FR-003, FR-004, SR-001 | unsupported reason code reject 검증 | stale `xEncodedLength`를 가진 encode buffer와 reason byte/code가 defined `rsrx_reason_code_t` 범위 밖인 encode request 및 otherwise well-formed frame 준비 | encode/decode 수행 | encode/decode 모두 `UNSUPPORTED_REASON` 반환, encode failure는 `xEncodedLength` clear | wire/header reason field가 정의되지 않은 상태 이유로 상위 계층에 전달되지 않으며 unsupported message type과 구분되고 stale encoded length를 남기지 않음 |
 | TC-CODEC-021 | FR-003, FR-004 | max reason code encode/decode boundary 검증 | reason code가 마지막 defined value인 `RSRX_REASON_INVALID_STATE_VALUE`인 request 준비 | encode 후 decode 수행 | `OK` 반환, reason code 보존 | reason-code 범위 검사가 defined upper boundary를 off-by-one으로 거부하지 않음 |
 | TC-CODEC-022 | FR-003, SR-001 | non-frame transport event decode reject 검증 | `eEventType`이 `FRAME_RECEIVED`가 아닌 otherwise well-formed frame 준비 | decode 수행 | `NON_FRAME_EVENT` 반환 | codec decode가 channel/sender lifecycle event를 payload frame으로 오인하지 않으며 direct codec misuse를 generic decode error와 구분함 |
 | TC-CODEC-023 | FR-003, SR-001 | invalid transport channel decode reject 검증 | `eChannelId`가 `RSRX_TRANSPORT_CHANNEL_INVALID`인 otherwise well-formed frame 준비 | decode 수행 | `INVALID_CHANNEL` 반환 | codec decode가 invalid transport channel origin을 가진 frame을 generic decode error와 구분해 수용하지 않음 |
