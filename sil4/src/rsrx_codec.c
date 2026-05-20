@@ -95,6 +95,24 @@ static uint32_t uReservedHeaderBytesAreZero(
 		(puBuffer[15] == 0U));
 }
 
+static void vClearDecodedMessage(
+	rsrx_decoded_message_t * pxMessage)
+{
+	size_t xIndex;
+
+	pxMessage->eMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	pxMessage->eSuggestedEvent = RSRX_EVENT_INVALID;
+	pxMessage->eReason = RSRX_REASON_NONE;
+	pxMessage->uSequenceNumber = 0U;
+	pxMessage->uConfirmationNumber = 0U;
+	pxMessage->xPayloadLength = 0U;
+
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_MAX_PAYLOAD_BYTES; ++xIndex)
+	{
+		pxMessage->auPayload[xIndex] = 0U;
+	}
+}
+
 static uint32_t uUpdateCrc32Byte(
 	uint32_t uCrc,
 	uint8_t ucData)
@@ -196,6 +214,8 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	{
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
 	}
+
+	vClearDecodedMessage(pxMessage);
 
 	if(pxFrame->xPayloadLength < D_RSRX_CODEC_HEADER_BYTES)
 	{
@@ -412,6 +432,8 @@ rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	{
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
 	}
+
+	vClearDecodedMessage(pxMessage);
 
 	if(pxFrame->xPayloadLength < (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_CRC_BYTES))
 	{

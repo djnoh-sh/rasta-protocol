@@ -12,6 +12,31 @@ static void vAssertTrue(int iCondition, const char * pcMessage)
 	}
 }
 
+static void vSeedDecodedMessage(
+	rsrx_decoded_message_t * pxMessage)
+{
+	pxMessage->eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	pxMessage->eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	pxMessage->eReason = RSRX_REASON_DATA_ACCEPTED;
+	pxMessage->uSequenceNumber = 99U;
+	pxMessage->uConfirmationNumber = 88U;
+	pxMessage->xPayloadLength = 1U;
+	pxMessage->auPayload[0] = 0xA5U;
+}
+
+static void vAssertDecodedMessageCleared(
+	const rsrx_decoded_message_t * pxMessage,
+	const char * pcMessage)
+{
+	vAssertTrue(pxMessage->eMessageType == RSRX_MESSAGE_TYPE_INVALID, pcMessage);
+	vAssertTrue(pxMessage->eSuggestedEvent == RSRX_EVENT_INVALID, pcMessage);
+	vAssertTrue(pxMessage->eReason == RSRX_REASON_NONE, pcMessage);
+	vAssertTrue(pxMessage->uSequenceNumber == 0U, pcMessage);
+	vAssertTrue(pxMessage->uConfirmationNumber == 0U, pcMessage);
+	vAssertTrue(pxMessage->xPayloadLength == 0U, pcMessage);
+	vAssertTrue(pxMessage->auPayload[0] == 0U, pcMessage);
+}
+
 static void vTestEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[5] = { 0x10U, 0x20U, 0x30U, 0x40U, 0x50U };
@@ -715,7 +740,9 @@ static void vTestDecodeRejectsShortHeader(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_SHORT_HEADER, "short header reject");
+	vAssertDecodedMessageCleared(&xMessage, "short header clears stale decoded message");
 }
 
 static void vTestDecodeRejectsNonFrameReceivedEvent(void)
