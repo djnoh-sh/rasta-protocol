@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-05-19`
+- Last Updated: `2026-05-20`
 
 ## Scope
 
@@ -46,7 +46,7 @@
 
 - decode:
   - transport frame을 typed decoded message로 변환한다.
-  - null frame/message/payload pointer는 `INVALID_ARGUMENT`로 거부한다.
+  - null frame/message/payload pointer는 `INVALID_ARGUMENT`로 거부하며 decoded-message output이 유효한 null frame/payload failure는 output을 clear한다.
   - frame length가 `D_RSRX_CODEC_HEADER_BYTES`보다 작으면 `SHORT_HEADER`로 거부한다.
   - transport event type이 `RSRX_TRANSPORT_EVENT_FRAME_RECEIVED`가 아니면 `NON_FRAME_EVENT`로 거부한다.
   - transport channel id가 valid channel range 밖이면 `INVALID_CHANNEL`로 거부한다.
@@ -60,7 +60,7 @@
   - declared payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 frame length가 선언값과 일치하더라도 `PAYLOAD_TOO_LARGE`로 거부한다.
   - declared payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
 - CRC32 decode wrapper:
-  - null frame/message/payload pointer는 CRC/truncation/mismatch 판정보다 먼저 `INVALID_ARGUMENT`로 거부한다.
+  - null frame/message/payload pointer는 CRC/truncation/mismatch 판정보다 먼저 `INVALID_ARGUMENT`로 거부하며 decoded-message output이 유효한 null frame/payload failure는 output을 clear한다.
 - encode:
   - buffer argument가 유효하면 encode 시작 시 `xEncodedLength`를 `0`으로 초기화하고, 성공 시에만 encoded length를 설정한다.
   - null request/buffer/output buffer pointer는 `INVALID_ARGUMENT`로 거부한다.
@@ -111,6 +111,7 @@
   - buffer too small 검증
   - default/CRC32 wire profile id/version/security-field byte size 검증
   - CRC32 decode null argument reject 검증
+  - decode null argument failure의 stale decoded output clear 검증
   - encode failure path의 encoded length clear 검증
 - 분석 포인트:
   - payload 최대 길이 상한

@@ -349,10 +349,14 @@ static void vTestCrc32WireRejectsNullDecodeArguments(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame_with_crc32((const rsrx_transport_frame_t *)0, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null frame reject");
+	vAssertDecodedMessageCleared(&xMessage, "crc32 null frame clears stale decoded message");
 	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, (rsrx_decoded_message_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null message reject");
 	xFrame.puPayload = (const uint8_t *)0;
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "crc32 null payload reject");
+	vAssertDecodedMessageCleared(&xMessage, "crc32 null payload clears stale decoded message");
 }
 
 static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
@@ -704,10 +708,14 @@ static void vTestRejectsNullArguments(void)
 	xBuffer.xEncodedLength = 99U;
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null encode output buffer reject");
 	vAssertTrue(xBuffer.xEncodedLength == 0U, "null encode output buffer clears stale length");
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame((const rsrx_transport_frame_t *)0, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null decode frame reject");
+	vAssertDecodedMessageCleared(&xMessage, "null decode frame clears stale decoded message");
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, (rsrx_decoded_message_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null decoded message reject");
 	xFrame.puPayload = (const uint8_t *)0;
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null frame payload reject");
+	vAssertDecodedMessageCleared(&xMessage, "null frame payload clears stale decoded message");
 }
 
 static void vTestDecodeRejectsTrailingBytes(void)

@@ -208,14 +208,18 @@ rsrx_codec_status_t rsrx_codec_decode_frame(
 	size_t xIndex;
 	rsrx_message_type_t eMessageType;
 
-	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
-		(pxMessage == (rsrx_decoded_message_t *)0) ||
-		(pxFrame->puPayload == (const uint8_t *)0))
+	if(pxMessage == (rsrx_decoded_message_t *)0)
 	{
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
 	}
 
 	vClearDecodedMessage(pxMessage);
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
 
 	if(pxFrame->xPayloadLength < D_RSRX_CODEC_HEADER_BYTES)
 	{
@@ -426,14 +430,18 @@ rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	size_t xPayloadFrameLength;
 	rsrx_codec_status_t eStatus;
 
-	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
-		(pxMessage == (rsrx_decoded_message_t *)0) ||
-		(pxFrame->puPayload == (const uint8_t *)0))
+	if(pxMessage == (rsrx_decoded_message_t *)0)
 	{
 		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
 	}
 
 	vClearDecodedMessage(pxMessage);
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
 
 	if(pxFrame->xPayloadLength < (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_CRC_BYTES))
 	{
