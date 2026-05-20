@@ -95,6 +95,26 @@ static void vTestChannelManagerRejectsDuplicatePriorityTopology(void)
 		"duplicate channel priority rejected");
 }
 
+static void vTestChannelManagerRejectsUnsupportedRedundantChannelTopology(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+
+	xConfig = xBuildConfig();
+	xConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_REDUNDANT;
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"redundant channel id rejected in active standby topology");
+
+	xConfig = xBuildConfig();
+	xConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
+	xConfig.uChannelCount = 1U;
+	xConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_REDUNDANT;
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"redundant channel id rejected in single topology");
+}
+
 static void vTestPreferredRecoveryHoldoff(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3751,6 +3771,7 @@ int main(void)
 	vTestChannelManagerRejectsInvalidTopologyConfig();
 	vTestChannelManagerRejectsRuntimeTopologyMutation();
 	vTestChannelManagerRejectsDuplicatePriorityTopology();
+	vTestChannelManagerRejectsUnsupportedRedundantChannelTopology();
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryFlapPenaltyHoldoff();
 	vTestPreferredRecoveryFlapPenaltyBypassClear();

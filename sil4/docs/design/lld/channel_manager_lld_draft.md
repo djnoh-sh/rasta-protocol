@@ -39,6 +39,7 @@
 - 초기화:
   - channel count는 `1..2` 범위여야 한다.
   - `ACTIVE_STANDBY` mode는 primary/secondary topology를 구분할 수 있도록 2개 channel을 요구한다.
+  - current channel-manager topology는 `PRIMARY`와 `SECONDARY` channel id만 수용하며 `REDUNDANT` channel id는 future routing mode가 정의될 때까지 startup에서 거부한다.
   - preferred channel index는 유효 범위 내여야 한다.
   - 각 channel id는 `INVALID`가 아니어야 한다.
   - configured channel id는 서로 중복될 수 없다.
@@ -91,3 +92,4 @@
 - `TC-CHM-049`: invalid topology config rejection
 - `TC-CHM-050`: runtime topology mutation rejection
 - `TC-CHM-051`: duplicate channel priority topology rejection
+- `TC-CHM-058`: unsupported redundant-channel topology rejection

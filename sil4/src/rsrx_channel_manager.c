@@ -14,6 +14,13 @@ static uint32_t uGetEffectiveHoldoffTarget(
 	return uTarget + pxContext->uPreferredRecoveryPendingPenaltySelections;
 }
 
+static uint32_t uChannelIdIsSupportedTopologyMember(
+	rsrx_transport_channel_id_t eChannelId)
+{
+	return (uint32_t)((eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY) ||
+		(eChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY));
+}
+
 static uint32_t uConfigIsValid(
 	const rsrx_channel_manager_config_t * pxConfig)
 {
@@ -42,7 +49,7 @@ static uint32_t uConfigIsValid(
 
 	for(uIndex = 0U; uIndex < pxConfig->uChannelCount; ++uIndex)
 	{
-		if(pxConfig->axChannels[uIndex].eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID)
+		if(uChannelIdIsSupportedTopologyMember(pxConfig->axChannels[uIndex].eChannelId) == 0U)
 		{
 			return 0U;
 		}
