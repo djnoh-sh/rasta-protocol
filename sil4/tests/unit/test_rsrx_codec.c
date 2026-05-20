@@ -319,7 +319,9 @@ static void vTestCrc32WireReportsChecksumMismatch(void)
 	xFrame.xPayloadLength = xBuffer.xEncodedLength;
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_CRC_MISMATCH, "crc32 wire mismatch status");
+	vAssertDecodedMessageCleared(&xMessage, "crc32 mismatch clears stale decoded message");
 }
 
 static void vTestCrc32WireReportsTruncatedChecksum(void)
