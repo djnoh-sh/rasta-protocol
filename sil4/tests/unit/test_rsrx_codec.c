@@ -660,7 +660,7 @@ static void vTestRejectsNullArguments(void)
 
 	xBuffer.puBuffer = auEncoded;
 	xBuffer.xBufferCapacity = sizeof(auEncoded);
-	xBuffer.xEncodedLength = 0U;
+	xBuffer.xEncodedLength = 99U;
 
 	auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
 	auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
@@ -671,9 +671,12 @@ static void vTestRejectsNullArguments(void)
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
 	vAssertTrue(rsrx_codec_encode_message((const rsrx_encode_request_t *)0, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null encode request reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "null encode request clears stale length");
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, (rsrx_encode_buffer_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null encode buffer reject");
 	xBuffer.puBuffer = (uint8_t *)0;
+	xBuffer.xEncodedLength = 99U;
 	vAssertTrue(rsrx_codec_encode_message(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null encode output buffer reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "null encode output buffer clears stale length");
 	vAssertTrue(rsrx_codec_decode_frame((const rsrx_transport_frame_t *)0, &xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null decode frame reject");
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, (rsrx_decoded_message_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT, "null decoded message reject");
 	xFrame.puPayload = (const uint8_t *)0;
