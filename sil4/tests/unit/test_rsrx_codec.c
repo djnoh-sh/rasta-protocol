@@ -37,6 +37,29 @@ static void vAssertDecodedMessageCleared(
 	vAssertTrue(pxMessage->auPayload[0] == 0U, pcMessage);
 }
 
+static uint32_t uInjectedCrcCallCount = 0U;
+
+static rsrx_codec_status_t eInjectedCrc32Calculator(
+	const uint8_t * puData,
+	size_t xDataLength,
+	uint32_t * puCrc)
+{
+	uInjectedCrcCallCount++;
+	return rsrx_codec_calculate_crc32(puData, xDataLength, puCrc);
+}
+
+static rsrx_codec_status_t eFailingInjectedCrc32Calculator(
+	const uint8_t * puData,
+	size_t xDataLength,
+	uint32_t * puCrc)
+{
+	(void)puData;
+	(void)xDataLength;
+	(void)puCrc;
+	uInjectedCrcCallCount++;
+	return RSRX_CODEC_STATUS_DECODE_ERROR;
+}
+
 static void vTestEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[5] = { 0x10U, 0x20U, 0x30U, 0x40U, 0x50U };
@@ -201,6 +224,83 @@ static void vTestCrc32PortAndProfile(void)
 	vAssertTrue(pxPort->pfDecode(&xFrame, &xMessage) == RSRX_CODEC_STATUS_OK, "crc32 port decode");
 	vAssertTrue(xMessage.uSequenceNumber == 13U, "crc32 port decoded sequence");
 	vAssertTrue(xMessage.auPayload[0] == 0x7EU, "crc32 port decoded payload");
+}
+
+static void vTestCrc32InjectedCalculatorPortability(void)
+{
+	uint8_t auPayload[2] = { 0x5AU, 0xC3U };
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 23U;
+	xRequest.uConfirmationNumber = 22U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	uInjectedCrcCallCount = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_message_with_crc32_calculator(&xRequest, &xBuffer, eInjectedCrc32Calculator) ==
+			RSRX_CODEC_STATUS_OK,
+		"injected crc32 encode");
+	vAssertTrue(uInjectedCrcCallCount == 1U, "injected crc32 encode calculator called");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(
+		rsrx_codec_decode_frame_with_crc32_calculator(&xFrame, &xMessage, eInjectedCrc32Calculator) ==
+			RSRX_CODEC_STATUS_OK,
+		"injected crc32 decode");
+	vAssertTrue(uInjectedCrcCallCount == 2U, "injected crc32 decode calculator called");
+	vAssertTrue(xMessage.uSequenceNumber == 23U, "injected crc32 decoded sequence");
+	vAssertTrue(xMessage.auPayload[1] == 0xC3U, "injected crc32 decoded payload");
+
+	xBuffer.xEncodedLength = 99U;
+	uInjectedCrcCallCount = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_message_with_crc32_calculator(&xRequest, &xBuffer, eFailingInjectedCrc32Calculator) ==
+			RSRX_CODEC_STATUS_DECODE_ERROR,
+		"injected crc32 encode failure status");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "injected crc32 encode failure clears length");
+	vAssertTrue(uInjectedCrcCallCount == 1U, "injected crc32 encode failure calculator called");
+
+	vSeedDecodedMessage(&xMessage);
+	uInjectedCrcCallCount = 0U;
+	vAssertTrue(
+		rsrx_codec_decode_frame_with_crc32_calculator(&xFrame, &xMessage, eFailingInjectedCrc32Calculator) ==
+			RSRX_CODEC_STATUS_DECODE_ERROR,
+		"injected crc32 decode failure status");
+	vAssertDecodedMessageCleared(&xMessage, "injected crc32 decode failure clears stale decoded message");
+	vAssertTrue(uInjectedCrcCallCount == 1U, "injected crc32 decode failure calculator called");
+
+	xBuffer.xEncodedLength = 99U;
+	vAssertTrue(
+		rsrx_codec_encode_message_with_crc32_calculator(
+			&xRequest,
+			&xBuffer,
+			(rsrx_crc32_calculate_fn)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"injected crc32 null calculator encode reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "injected crc32 null calculator encode clears length");
+
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_decode_frame_with_crc32_calculator(
+			&xFrame,
+			&xMessage,
+			(rsrx_crc32_calculate_fn)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"injected crc32 null calculator decode reject");
+	vAssertDecodedMessageCleared(&xMessage, "injected crc32 null calculator decode clears stale decoded message");
 }
 
 static void vTestCrc32PrimitiveKnownVector(void)
@@ -883,6 +983,7 @@ int main(void)
 	vTestWireProfileDocumentsCurrentSecurityFields();
 	vTestSecurityCapabilitiesDocumentCurrentPolicy();
 	vTestCrc32PortAndProfile();
+	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();
 	vTestCrc32WireRoundTrip();

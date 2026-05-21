@@ -107,6 +107,11 @@ typedef rsrx_codec_status_t (*rsrx_decode_frame_fn)(
 	const rsrx_transport_frame_t * pxFrame,
 	rsrx_decoded_message_t * pxMessage);
 
+typedef rsrx_codec_status_t (*rsrx_crc32_calculate_fn)(
+	const uint8_t * puData,
+	size_t xDataLength,
+	uint32_t * puCrc);
+
 typedef struct
 {
 	rsrx_encode_message_fn pfEncode;
@@ -140,8 +145,18 @@ rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
 	const rsrx_encode_request_t * pxRequest,
 	rsrx_encode_buffer_t * pxBuffer);
 
+rsrx_codec_status_t rsrx_codec_encode_message_with_crc32_calculator(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer,
+	rsrx_crc32_calculate_fn pfCalculateCrc32);
+
 rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	const rsrx_transport_frame_t * pxFrame,
 	rsrx_decoded_message_t * pxMessage);
+
+rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32_calculator(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage,
+	rsrx_crc32_calculate_fn pfCalculateCrc32);
 
 #endif

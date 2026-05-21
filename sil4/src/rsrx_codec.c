@@ -382,6 +382,17 @@ rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
 	const rsrx_encode_request_t * pxRequest,
 	rsrx_encode_buffer_t * pxBuffer)
 {
+	return rsrx_codec_encode_message_with_crc32_calculator(
+		pxRequest,
+		pxBuffer,
+		rsrx_codec_calculate_crc32);
+}
+
+rsrx_codec_status_t rsrx_codec_encode_message_with_crc32_calculator(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer,
+	rsrx_crc32_calculate_fn pfCalculateCrc32)
+{
 	rsrx_codec_status_t eStatus;
 	uint32_t uCrc;
 	size_t xPayloadFrameLength;
@@ -392,6 +403,11 @@ rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
 	}
 
 	pxBuffer->xEncodedLength = 0U;
+
+	if(pfCalculateCrc32 == (rsrx_crc32_calculate_fn)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
 
 	eStatus = rsrx_codec_encode_message(pxRequest, pxBuffer);
 	if(eStatus != RSRX_CODEC_STATUS_OK)
@@ -407,7 +423,7 @@ rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
 		return RSRX_CODEC_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	eStatus = rsrx_codec_calculate_crc32(pxBuffer->puBuffer, xPayloadFrameLength, &uCrc);
+	eStatus = pfCalculateCrc32(pxBuffer->puBuffer, xPayloadFrameLength, &uCrc);
 	if(eStatus != RSRX_CODEC_STATUS_OK)
 	{
 		pxBuffer->xEncodedLength = 0U;
@@ -424,6 +440,17 @@ rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	const rsrx_transport_frame_t * pxFrame,
 	rsrx_decoded_message_t * pxMessage)
 {
+	return rsrx_codec_decode_frame_with_crc32_calculator(
+		pxFrame,
+		pxMessage,
+		rsrx_codec_calculate_crc32);
+}
+
+rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32_calculator(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage,
+	rsrx_crc32_calculate_fn pfCalculateCrc32)
+{
 	rsrx_transport_frame_t xPayloadFrame;
 	uint32_t uExpectedCrc;
 	uint32_t uActualCrc;
@@ -436,6 +463,11 @@ rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	}
 
 	vClearDecodedMessage(pxMessage);
+
+	if(pfCalculateCrc32 == (rsrx_crc32_calculate_fn)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
 
 	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
 		(pxFrame->puPayload == (const uint8_t *)0))
@@ -451,7 +483,7 @@ rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
 	xPayloadFrameLength = pxFrame->xPayloadLength - D_RSRX_CODEC_CRC_BYTES;
 	uExpectedCrc = uReadUint32(&pxFrame->puPayload[xPayloadFrameLength]);
 
-	eStatus = rsrx_codec_calculate_crc32(pxFrame->puPayload, xPayloadFrameLength, &uActualCrc);
+	eStatus = pfCalculateCrc32(pxFrame->puPayload, xPayloadFrameLength, &uActualCrc);
 	if(eStatus != RSRX_CODEC_STATUS_OK)
 	{
 		return eStatus;
