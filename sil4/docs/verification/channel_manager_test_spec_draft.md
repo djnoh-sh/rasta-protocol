@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-30`
+- Last Updated: `2026-05-21`
 
 ## Scope
 
@@ -27,6 +27,7 @@
 | TC-CHM-050 | FR-003, SR-003, IF-002 | runtime topology mutation 거부 검증 | primary/secondary active-standby config가 init 완료된 상태 | primary index에 secondary channel id를 가진 update를 호출한 뒤 select 수행 | update는 `INVALID_ARGUMENT`로 거부되고 기존 primary topology와 availability/switch count가 유지된다 | runtime update가 configured channel identity를 변질시키지 않고 availability-only update contract를 유지한다 |
 | TC-CHM-051 | FR-003, SR-003, IF-002 | duplicate channel priority topology 거부 검증 | active-standby channel id는 서로 다르지만 priority가 같은 config 준비 | `rsrx_channel_manager_init` 호출 | `INVALID_ARGUMENT`로 거부된다 | failover best-channel selection이 duplicate priority/array-order tie에 의존하지 않도록 startup에서 차단된다 |
 | TC-CHM-058 | FR-003, SR-003, IF-002 | unsupported redundant-channel topology 거부 검증 | active-standby와 single config에 `RSRX_TRANSPORT_CHANNEL_REDUNDANT` channel id를 삽입한 config 준비 | `rsrx_channel_manager_init` 호출 | `INVALID_ARGUMENT`로 거부된다 | future redundancy routing mode placeholder가 current primary/secondary channel-manager policy에 암묵적으로 수용되지 않는다 |
+| TC-CHM-059 | FR-003, SR-003, IF-002 | channel-manager public API guard 검증 | null context/config/state/result, uninitialized context, out-of-range update index 준비 | `init`, `update_channel`, `select_channel`, `get_active_channel`, `reset` guard 호출 | mutating API는 `INVALID_ARGUMENT`를 반환하고 `get_active_channel`은 `INVALID` channel을 반환한다 | channel-manager public API가 invalid caller inputs와 uninitialized context를 deterministic하게 거부하고 ambiguous active-channel state를 노출하지 않음 |
 | TC-CHM-002 | FR-003 | active channel unavailable 시 failover 검증 | primary down, secondary up 상태 준비 | `update_channel`, `select_channel` 호출 | secondary 선택, failover 발생 | active channel, failover flag, cumulative switch count가 설계와 일치 |
 | TC-CHM-003 | SR-003 | all channel unavailable telemetry 검증 | primary/secondary 모두 down 상태 준비 | `select_channel` 호출 | `UNAVAILABLE` 반환 | invalid channel, unavailable status, cumulative unavailable selection count가 결정적으로 보고되고 recovery/reset 이후에도 audit count가 유지됨 |
 | TC-CHM-005 | FR-003 | preferred channel recovery auto-switch 검증 | secondary로 failover된 뒤 primary restored 상태 준비 | `update_channel`, `select_channel` 호출 | preferred primary로 자동 복귀 | selected channel, switch flag, cumulative switch count가 preferred recovery policy와 일치 |

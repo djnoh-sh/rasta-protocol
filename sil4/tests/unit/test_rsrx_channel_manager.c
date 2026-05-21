@@ -115,6 +115,78 @@ static void vTestChannelManagerRejectsUnsupportedRedundantChannelTopology(void)
 		"redundant channel id rejected in single topology");
 }
 
+static void vTestChannelManagerRejectsInvalidApiArguments(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_context_t xUninitialized;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xUninitialized.uInitialized = 0U;
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init((rsrx_channel_manager_context_t *)0, &xConfig) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"null channel manager init context rejected");
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, (const rsrx_channel_manager_config_t *)0) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"null channel manager init config rejected");
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"api guard valid init");
+
+	vAssertTrue(
+		rsrx_channel_manager_update_channel((rsrx_channel_manager_context_t *)0, 0U, &xState) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"null update context rejected");
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, (const rsrx_transport_channel_state_t *)0) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"null update state rejected");
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xUninitialized, 0U, &xState) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"uninitialized update rejected");
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, xConfig.uChannelCount, &xState) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"out-of-range update index rejected");
+
+	vAssertTrue(
+		rsrx_channel_manager_select_channel((rsrx_channel_manager_context_t *)0, &xResult) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"null select context rejected");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, (rsrx_channel_selection_result_t *)0) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"null select result rejected");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xUninitialized, &xResult) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"uninitialized select rejected");
+
+	vAssertTrue(
+		rsrx_channel_manager_get_active_channel((const rsrx_channel_manager_context_t *)0) ==
+			RSRX_TRANSPORT_CHANNEL_INVALID,
+		"null get-active context returns invalid channel");
+	vAssertTrue(
+		rsrx_channel_manager_get_active_channel(&xUninitialized) == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"uninitialized get-active returns invalid channel");
+
+	vAssertTrue(
+		rsrx_channel_manager_reset((rsrx_channel_manager_context_t *)0) ==
+			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"null reset context rejected");
+	vAssertTrue(
+		rsrx_channel_manager_reset(&xUninitialized) == RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
+		"uninitialized reset rejected");
+}
+
 static void vTestPreferredRecoveryHoldoff(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3772,6 +3844,7 @@ int main(void)
 	vTestChannelManagerRejectsRuntimeTopologyMutation();
 	vTestChannelManagerRejectsDuplicatePriorityTopology();
 	vTestChannelManagerRejectsUnsupportedRedundantChannelTopology();
+	vTestChannelManagerRejectsInvalidApiArguments();
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryFlapPenaltyHoldoff();
 	vTestPreferredRecoveryFlapPenaltyBypassClear();
