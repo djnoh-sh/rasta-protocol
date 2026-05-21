@@ -12,12 +12,30 @@ static void vAssertTrue(int iCondition, const char * pcMessage)
 	}
 }
 
+static rsrx_codec_status_t eContractCrc32Calculator(
+	const uint8_t * puData,
+	size_t xDataLength,
+	uint32_t * puCrc)
+{
+	(void)puData;
+	(void)xDataLength;
+	if(puCrc == (uint32_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*puCrc = 0U;
+	return RSRX_CODEC_STATUS_OK;
+}
+
 int main(void)
 {
 	uint8_t auPayload[4] = { 0x11U, 0x22U, 0x33U, 0x44U };
 	uint8_t auBuffer[32] = { 0U };
 	uint32_t uExpectedEncodedLength;
 	volatile uint32_t uExpectedAbsent;
+	volatile size_t xExpectedCrcCalculatorTypeSize;
+	rsrx_crc32_calculate_fn pfExpectedCrc32Calculator;
 	rsrx_decode_frame_fn pfExpectedDecode;
 	rsrx_decoded_message_t xDecodedMessage;
 	rsrx_encode_request_t xEncodeRequest;
@@ -43,9 +61,11 @@ int main(void)
 	xEncodeBuffer.xBufferCapacity = sizeof(auBuffer);
 	uExpectedEncodedLength = 0U;
 	uExpectedAbsent = 0U;
+	xExpectedCrcCalculatorTypeSize = sizeof(pfExpectedCrc32Calculator);
 	xEncodeBuffer.xEncodedLength = uExpectedEncodedLength;
 
 	xCodecPort.pfEncode = (rsrx_encode_message_fn)0;
+	pfExpectedCrc32Calculator = eContractCrc32Calculator;
 	pfExpectedDecode = (rsrx_decode_frame_fn)0;
 	xCodecPort.pfDecode = pfExpectedDecode;
 	xWireProfile.uProfileId = D_RSRX_CODEC_WIRE_PROFILE_DEFAULT;
@@ -79,6 +99,8 @@ int main(void)
 	vAssertTrue(xCodecPort.pfEncode == (rsrx_encode_message_fn)0, "codec port layout contract");
 	/* cppcheck-suppress knownConditionTrueFalse */
 	vAssertTrue(xCodecPort.pfDecode == pfExpectedDecode, "codec port decode layout contract");
+	vAssertTrue(pfExpectedCrc32Calculator == eContractCrc32Calculator, "crc32 calculator type contract");
+	vAssertTrue(xExpectedCrcCalculatorTypeSize == sizeof(pfExpectedCrc32Calculator), "crc32 calculator size contract");
 	vAssertTrue(xWireProfile.uProfileId == D_RSRX_CODEC_WIRE_PROFILE_DEFAULT, "wire profile id contract");
 	vAssertTrue(xWireProfile.uProfileVersion == D_RSRX_CODEC_WIRE_PROFILE_VERSION, "wire profile version contract");
 	vAssertTrue(xWireProfile.xHeaderBytes == D_RSRX_CODEC_HEADER_BYTES, "wire profile header contract");
