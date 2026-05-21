@@ -74,6 +74,7 @@
 - cumulative unavailable selection telemetry는 reset 이후에도 유지되며, all-channel-unavailable observation 횟수를 audit용으로 제공한다.
 - holdoff progress telemetry는 channel manager selection result에서 직접 제공되며, supervisor audit telemetry와 cross-check 가능해야 한다.
 - flap penalty가 configured된 경우 selection result의 pending penalty/penalty arm/rearm/applied/abort/ordinary-clear/bypass-clear/reset-clear count/holdoff target/remaining telemetry는 다음 preferred recovery cycle의 강화된 holdoff target과 cumulative arm/rearm/applied/abort/clear history를 caller에 직접 노출해야 한다.
+- effective holdoff target 계산은 base holdoff와 pending penalty의 합이 `UINT32_MAX`를 넘을 때 wraparound하지 않고 `UINT32_MAX`로 포화되어야 한다.
 
 ## Planned Verification
 
@@ -89,6 +90,7 @@
 - `TC-CHM-055`: preferred recovery flap-penalty applied cycle count
 - `TC-CHM-056`: preferred recovery flap-penalty abort count
 - `TC-CHM-057`: preferred recovery flap-penalty reset clear count
+- `TC-CHM-060`: preferred recovery flap-penalty target saturation
 - `TC-CHM-049`: invalid topology config rejection
 - `TC-CHM-050`: runtime topology mutation rejection
 - `TC-CHM-051`: duplicate channel priority topology rejection

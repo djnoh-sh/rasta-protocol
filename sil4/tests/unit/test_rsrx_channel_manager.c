@@ -610,6 +610,68 @@ static void vTestPreferredRecoveryFlapPenaltyResetClearCount(void)
 	vAssertTrue(xResult.uPreferredRecoveryHoldoffTargetCount == 2U, "flap penalty reset clear target reset to base");
 }
 
+static void vTestPreferredRecoveryFlapPenaltyTargetSaturates(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+
+	xConfig = xBuildConfig();
+	xConfig.uPreferredRecoveryHoldoffSelections = UINT32_MAX - 1U;
+	xConfig.uPreferredRecoveryFlapPenaltySelections = 2U;
+
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty saturation init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty saturation primary down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty saturation failover");
+	vAssertTrue(
+		xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY,
+		"flap penalty saturation failover secondary");
+
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty saturation primary restored");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty saturation first hold");
+	vAssertTrue(
+		xResult.uPreferredRecoveryHoldoffTargetCount == (UINT32_MAX - 1U),
+		"flap penalty saturation base target retained before flap");
+
+	xState.uIsAvailable = 0U;
+	vAssertTrue(
+		rsrx_channel_manager_update_channel(&xContext, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty saturation primary flap down");
+	vAssertTrue(
+		rsrx_channel_manager_select_channel(&xContext, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"flap penalty saturation arm");
+	vAssertTrue(
+		xResult.eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_SECONDARY,
+		"flap penalty saturation retained secondary after flap");
+	vAssertTrue(
+		xResult.uPreferredRecoveryPendingPenaltyCount == 2U,
+		"flap penalty saturation pending penalty armed");
+	vAssertTrue(
+		xResult.uPreferredRecoveryPenaltyArmCount == 1U,
+		"flap penalty saturation arm counted");
+	vAssertTrue(
+		xResult.uPreferredRecoveryHoldoffTargetCount == UINT32_MAX,
+		"flap penalty saturation target saturated");
+	vAssertTrue(
+		xResult.uPreferredRecoveryHoldoffRemainingCount == UINT32_MAX,
+		"flap penalty saturation remaining saturated");
+}
+
 static void vTestPreferredRecoveryHoldoffThresholdThree(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3851,6 +3913,7 @@ int main(void)
 	vTestPreferredRecoveryFlapPenaltyAppliedCycleCount();
 	vTestPreferredRecoveryFlapPenaltyAbortCount();
 	vTestPreferredRecoveryFlapPenaltyResetClearCount();
+	vTestPreferredRecoveryFlapPenaltyTargetSaturates();
 	vTestPreferredRecoveryHoldoffThresholdThree();
 	vTestPreferredRecoveryHoldoffThresholdFour();
 	vTestPreferredRecoveryHoldoffThresholdFive();
