@@ -575,7 +575,9 @@ static void vTestRejectsUnsupportedReasonCode(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_UNSUPPORTED_REASON, "unsupported decode reason reject");
+	vAssertDecodedMessageCleared(&xMessage, "unsupported reason clears stale decoded message");
 }
 
 static void vTestMaxReasonCodeEncodeDecodeRoundTrip(void)
