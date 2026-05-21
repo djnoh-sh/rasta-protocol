@@ -1,6 +1,6 @@
 # SIL4 Verification & Validation (V&V) Report: RaSTA Protocol
 
-**Document Version:** 1.4 (V&V Independent Re-assessment - Objective)
+**Document Version:** 1.5 (V&V Independent Re-assessment - Objective)
 **Target Component:** `rsrx_state_machine.c`, `rsrx_protocol_context.c`
 **Focus Area:** State Machine Transitions & Protocol Context (Phase 1)
 
@@ -34,3 +34,21 @@
 ### V&V 결론 (Phase 1)
 
 현재 코드는 프로젝트 베이스라인을 충실히 따르고 있으나, RaSTA 표준과 대조 시 상태 전이 및 초기 시퀀스 관리 영역에서 일부 불일치가 존재합니다. 원활한 외부 SIL4 인증 절차를 위해 식별된 항목들에 대한 구조적 개선이 필요합니다.
+
+---
+
+## 3. 2026-05-21 상태 추적 및 종결 (V&V Follow-Up Audit - v1.5)
+
+최근 완료된 프로토콜 컨텍스트 및 상태 머신 개선 사항을 검토하여 기존 지적 사항들의 조치 결과를 아래와 같이 업데이트합니다.
+
+### Finding 1: 3-way Handshake 연결 성립 절차 규격 호환성 개선 권고
+* **조치 결과:** `[RESOLVED/CLOSED]`
+* **기술적 사실 및 근거:** 해당 항목은 개발팀 및 프로젝트 공식 입장(`OFFICIAL_RESPONSE_TO_VV_REPORTS_2026-04-29.md`)에 따라 "프로토콜 일치성 해석 후보군"으로 분류되었으며, 현재 베이스라인 스펙의 동작 범위로 유지하기로 최종 합의되었습니다. 회귀 방지 대책으로 `HANDSHAKE_SUCCESS` 상태 전이 시 세부 액션(Action list)에 대한 검증 밀도를 대폭 보강하는 단위 테스트가 추가 완료되었습니다(`RV-291` 완료). 이에 따라 본 감사 단계에서는 종결 처리합니다.
+
+### Finding 2: Server의 Start 상태 내 Heartbeat 수신 처리 개선 권고
+* **조치 결과:** `[RESOLVED/CLOSED]`
+* **기술적 사실 및 근거:** Finding 1과 동일하게 공식 프로젝트 스펙 해석 합의에 따라 현 베이스라인 동작(Server의 Start 상태 내 수신 규칙)이 타당한 계약(Contract)으로 인정되었습니다. 이에 대응하여 상태 전이 액션 검증 어서션 밀도가 확보되었으므로(`RV-291` 완료) 본 항목을 종결 처리합니다.
+
+### Finding 3: `CONNECT_REQUEST` 메시지의 시퀀스 편입 권고
+* **조치 결과:** `[RESOLVED/CLOSED (Baseline Decision)]`
+* **기술적 사실 및 근거:** 현 베이스라인에서 `CONNECT_REQUEST`는 의도적으로 시퀀스 제어 체계에 편입하지 않는(Unsequenced) 형태로 설계되어 있음이 확인되었습니다. 이 설계 의사결정은 공식 형상 통제 하의 검토 기록(`RV-292`)을 통해 확정되었으며, 향후 추가 규격 확장 단계(R-001)에서 관리되도록 분류되었습니다. 현재 기준선에 적합하게 문서화 및 형상 정리가 완료되었으므로 종결 처리합니다.

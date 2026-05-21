@@ -1,6 +1,6 @@
 # SIL4 Verification & Validation (V&V) Report: RaSTA Protocol
 
-**Document Version:** 1.4 (V&V Independent Re-assessment - Objective)
+**Document Version:** 1.5 (V&V Independent Re-assessment - Objective)
 **Target Component:** `rsrx_codec.c`, `rsrx_api.c`, `rsrx_orchestrator.c` 외 전체 소스 코드
 **Focus Area:** Structural Safety, Memory Management & Defensive Programming (Phase 2)
 
@@ -37,3 +37,21 @@
 ### V&V 결론 (Phase 2)
 
 현재 아키텍처는 동적 할당 배제 및 방어적 코딩 관점에서 SIL4 메모리 관리 요구사항을 기본적으로 충족합니다. 완전한 외부 심사 대비를 위해서는 스택 분석 등의 추가 증빙 자료 확보와 빌드 게이트 강화가 요구됩니다.
+
+---
+
+## 4. 2026-05-21 상태 추적 및 종결 (V&V Follow-Up Audit - v1.5)
+
+컴파일러 엄격한 경고 설정 및 메모리 사용 증빙 고도화 결과를 반영하여 기존 권고 사항들의 조치 결과를 아래와 같이 업데이트합니다.
+
+### Finding 4: 동적 메모리 할당 배제
+* **조치 결과:** `[COMPLIANT (Evidence Completed)]`
+* **기술적 사실 및 근거:** 정적 메모리 할당 원칙은 소스 코드 전체에 대해 준수되고 있습니다. 증빙 보완 권고에 부합하여, 스택 사용량 분석 및 링커 맵 파일 생성 규칙(`RSRX_ENABLE_STACK_MEMORY_EVIDENCE` 옵션 추가)이 2026-05-06에 규격화되었습니다. 호스트 환경의 스택 사용량 증빙 리포트 및 대표 링커 맵이 `sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/` 하위에 최종 정합 완료되었습니다.
+
+### Finding 5: 포인터 검증 및 버퍼 오버플로우 방어
+* **조치 결과:** `[COMPLIANT]`
+* **기술적 사실 및 근거:** API 내부 진입 시의 NULL 체크가 상시 수행 중이며, 이번 무결성 검증 추가 단계(`RV-332`~`RV-380`)에서도 모든 공개 API(`rsrx_api.c`, `rsrx_channel_manager.c`, `rsrx_transport_supervisor.c`)의 포인터 가드 및 상태 가설 매트릭스 테스트 커버리지가 확보되었습니다.
+
+### Finding 6: 엄격한 타입 형변환(Casting) 경고 옵션 정규화 권고
+* **조치 결과:** `[RESOLVED/CLOSED (Policy Decision Complete)]`
+* **기술적 사실 및 근거:** 엄격한 타입 형변환 경고 옵션(`-Wconversion`, `-Wsign-conversion`)의 CI default-gate 정규화는 2026-05-06에 공식 검토회의(`RV-331`)를 통해 `Evidence-only` 정책으로 합의 및 클ローズ되었습니다. 컴파일러 버전 변화에 따른 불필요한 빌드 차단을 방지하되, 주기적 릴리스 증빙 단계에서 정적 분석 자료를 제출하는 것으로 최종 정책(`EVID-CI-118`)이 정립되었습니다. 현 기본 빌드도 `-Wall -Wextra -Werror` 게이트 하에 경고 0건으로 통과하고 있으므로, 본 항목은 종결 처리합니다.
