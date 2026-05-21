@@ -111,6 +111,7 @@
   - buffer too small 검증
   - default/CRC32 wire profile id/version/security-field byte size 검증
   - CRC32 decode null argument reject 검증
+  - CRC32 wrapper가 valid checksum 이후 payload decode typed status를 보존하는지 검증
   - decode null argument failure의 stale decoded output clear 검증
   - encode failure path의 encoded length clear 검증
 - 분석 포인트:
