@@ -405,10 +405,53 @@ static void vTestSupervisorInboundHandshakePath(void)
 
 static void vTestSupervisorInvalidArguments(void)
 {
+	uint8_t auPayload[1] = { 0x11U };
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
 	rsrx_transport_supervisor_context_t xSupervisor = { 0 };
+	rsrx_transport_supervisor_context_t xUninitialized = { 0 };
+	rsrx_codec_port_t xCodec;
+	rsrx_transport_frame_t xFrame;
 	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+
 	vAssertTrue(rsrx_transport_supervisor_init((rsrx_transport_supervisor_context_t *)0, (rsrx_session_t *)0, (const rsrx_codec_port_t *)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "null supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, (rsrx_session_t *)0, (const rsrx_codec_port_t *)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "null supervisor session init");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = (rsrx_decode_frame_fn)0;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "null supervisor codec decode init");
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "supervisor guard session init");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "supervisor guard valid init");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, (const rsrx_transport_frame_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame invalid args");
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame null report");
+	vAssertTrue(rsrx_transport_supervisor_process_frame(&xUninitialized, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame uninitialized context");
+	vAssertTrue(rsrx_transport_supervisor_poll_receive((rsrx_transport_supervisor_context_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "poll receive null context");
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "poll receive null report");
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xUninitialized, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "poll receive uninitialized context");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event((rsrx_transport_supervisor_context_t *)0, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event null context");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, (const rsrx_transport_frame_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event null frame");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event null report");
+	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xUninitialized, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event uninitialized context");
+	vAssertTrue(rsrx_transport_supervisor_process_timer_expiry((rsrx_transport_supervisor_context_t *)0, RSRX_TIMER_EXPIRY_SUPERVISION, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "timer expiry null context");
+	vAssertTrue(rsrx_transport_supervisor_process_timer_expiry(&xSupervisor, RSRX_TIMER_EXPIRY_SUPERVISION, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "timer expiry null report");
+	vAssertTrue(rsrx_transport_supervisor_process_timer_expiry(&xUninitialized, RSRX_TIMER_EXPIRY_SUPERVISION, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "timer expiry uninitialized context");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump null report");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xUninitialized, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump uninitialized context");
 }
 
 static void vTestSupervisorInitClearsReportBaseline(void)
