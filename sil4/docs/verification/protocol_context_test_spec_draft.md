@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-04-24`
+- Last Updated: `2026-05-21`
 
 ## Scope
 
@@ -47,4 +47,4 @@
 | TC-PC-019 | FR-003 | unsequenced message family pass-through matrix 검증 | steady-state, post-recovery, retransmission pending protocol context와 `CONNECT_REQUEST`, `DISCONNECT`, `DIAGNOSTIC` inbound family | family마다 다양한 sequence/confirmation/protocol context 값을 가진 inbound message를 표 기반으로 순차 판정하고 record를 호출한다 | unsequenced inbound family는 sequence/confirmation ordering을 거치지 않고 각자의 suggested event를 그대로 유지하며, record 단계에서도 last rx, tx confirmation, remote confirmation, retransmission pending state를 변경하지 않는다 | current non-sequenced inbound family가 protocol ordering contract 바깥에서 deterministic pass-through semantics와 no-side-effect record semantics를 유지함을 닫는다 |
 | TC-PC-008 | FR-003, SR-003 | duplicate inbound sequence rejection 검증 | handshake와 첫 data가 기록된 protocol context | 동일 sequence의 data message를 다시 판정 | `PROTOCOL_ERROR`로 분류 | stale/duplicate inbound data는 정상 data로 재수용되지 않는다 |
 | TC-PC-009 | FR-003, SR-003 | initial zero sequence rejection 검증 | 아직 inbound sequence가 기록되지 않은 protocol context | sequence `0`의 첫 sequenced message를 판정 | `PROTOCOL_ERROR`로 분류 | 첫 inbound sequenced message는 `1`만 허용 |
-| TC-PC-004 | SR-003 | invalid argument 검증 | null context 또는 null request | context API 호출 | `INVALID_ARGUMENT` 반환 | UB 없이 명시적 오류 반환 |
+| TC-PC-004 | SR-003 | public API invalid argument guard 검증 | null context/message/event/request 또는 invalid resolve message type | init/record/resolve/build/clear public API 호출 | `INVALID_ARGUMENT` 반환, event/state side effect 없음 | 모든 protocol context public API guard가 UB 없이 명시적 오류를 반환하고 기존 context/event 값을 보존한다 |

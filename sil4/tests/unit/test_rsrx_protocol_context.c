@@ -1135,11 +1135,79 @@ static void vTestRetransmissionBaseWrapRejected(void)
 static void vTestInvalidArguments(void)
 {
 	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_encode_request_t xRequest;
+	rsrx_event_t eEvent;
 
 	vAssertTrue(rsrx_protocol_context_init((rsrx_protocol_context_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null init");
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "valid init");
-	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, (const rsrx_decoded_message_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null inbound");
-	vAssertTrue(rsrx_protocol_context_build_encode_request(&xContext, RSRX_MESSAGE_TYPE_DATA, RSRX_REASON_DATA_ACCEPTED, (const uint8_t *)0, 0U, (rsrx_encode_request_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null request");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+	eEvent = RSRX_EVENT_INIT_FAILURE;
+
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message((rsrx_protocol_context_t *)0, &xMessage) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"null record context");
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, (const rsrx_decoded_message_t *)0) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"null inbound");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 0U, "null inbound keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 0U, "null inbound keeps tx confirmation");
+
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(
+			(const rsrx_protocol_context_t *)0,
+			&xMessage,
+			&eEvent) == RSRX_STATUS_INVALID_ARGUMENT,
+		"null resolve context");
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(&xContext, (const rsrx_decoded_message_t *)0, &eEvent) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"null resolve message");
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, (rsrx_event_t *)0) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"null resolve event");
+	vAssertTrue(eEvent == RSRX_EVENT_INIT_FAILURE, "null resolve keeps event");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"invalid resolve message type");
+	vAssertTrue(eEvent == RSRX_EVENT_INIT_FAILURE, "invalid resolve type keeps event");
+
+	vAssertTrue(
+		rsrx_protocol_context_build_encode_request(
+			(rsrx_protocol_context_t *)0,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_INVALID_ARGUMENT,
+		"null encode context");
+	vAssertTrue(
+		rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			(rsrx_encode_request_t *)0) == RSRX_STATUS_INVALID_ARGUMENT,
+		"null request");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 1U, "null encode keeps next tx sequence");
+
+	vAssertTrue(
+		rsrx_protocol_context_clear_retransmission((rsrx_protocol_context_t *)0) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"null clear retransmission context");
 }
 
 static void vTestProtocolOrderingCloseoutMatrix(void)
