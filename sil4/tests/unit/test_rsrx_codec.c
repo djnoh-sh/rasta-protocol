@@ -335,7 +335,9 @@ static void vTestCrc32WireReportsTruncatedChecksum(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) == RSRX_CODEC_STATUS_CRC_TRUNCATED, "crc32 wire truncated status");
+	vAssertDecodedMessageCleared(&xMessage, "crc32 truncated clears stale decoded message");
 }
 
 static void vTestCrc32WireRejectsNullDecodeArguments(void)
