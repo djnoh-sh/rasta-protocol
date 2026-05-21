@@ -154,6 +154,35 @@ static void vTestRetransmissionRequestPayload(void)
 	vAssertTrue(uReadUint32BigEndian(xRequest.puPayload) == 13U, "retransmission base recomputed");
 }
 
+static void vTestClearRetransmissionPreservesSequenceState(void)
+{
+	rsrx_protocol_context_t xContext;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "clear state protocol init");
+	xContext.uNextTxSequenceNumber = 6U;
+	xContext.uLastRxSequenceNumber = 4U;
+	xContext.uLastTxConfirmationNumber = 4U;
+	xContext.uLastRemoteConfirmationNumber = 5U;
+	xContext.uLastRetransmissionRequestTxSequenceNumber = 3U;
+	xContext.uRetransmissionBaseSequenceNumber = 5U;
+	xContext.uRetransmissionPending = 1U;
+
+	vAssertTrue(rsrx_protocol_context_clear_retransmission(&xContext) == RSRX_STATUS_OK, "clear retransmission state");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 6U, "clear keeps next tx sequence");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 4U, "clear keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 4U, "clear keeps tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 5U, "clear keeps remote confirmation");
+	vAssertTrue(xContext.uLastRetransmissionRequestTxSequenceNumber == 0U, "clear resets retransmission request tx");
+	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 0U, "clear resets retransmission base");
+	vAssertTrue(xContext.uRetransmissionPending == 0U, "clear resets retransmission pending");
+
+	vAssertTrue(rsrx_protocol_context_clear_retransmission(&xContext) == RSRX_STATUS_OK, "clear retransmission idempotent");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 6U, "idempotent clear keeps next tx sequence");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 4U, "idempotent clear keeps last rx");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 5U, "idempotent clear keeps remote confirmation");
+	vAssertTrue(xContext.uRetransmissionPending == 0U, "idempotent clear keeps pending reset");
+}
+
 static void vTestInboundConfirmationValidation(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1231,6 +1260,7 @@ int main(void)
 	vTestOutboundSequenceWrapRejected();
 	vTestInvalidOutboundMessageTypeRejected();
 	vTestRetransmissionRequestPayload();
+	vTestClearRetransmissionPreservesSequenceState();
 	vTestInboundConfirmationValidation();
 	vTestInvalidConfirmationRecordRejected();
 	vTestInvalidInboundMessageTypeRejected();
