@@ -261,3 +261,47 @@ The accepted evidence follow-ups are now represented by:
 - `RV-331` strict-warning default-gate policy review
 
 The host baseline package is an actual generated host-toolchain output. It is not a substitute for target-release or vendor-qualified stack/memory artifacts when those are required for certification closeout.
+
+## Addendum: 2026-05-21 V&V v1.5 Follow-Up Review
+
+The V&V team updated all four phase reports to document version `1.5` on 2026-05-21. The project reviewed those updates without modifying the V&V report files themselves.
+
+### v1.5 Finding Disposition
+
+| Finding | Report | V&V v1.5 Result | Official Project Disposition |
+| --- | --- | --- | --- |
+| Finding 1 | Phase 1 | `RESOLVED/CLOSED` | Accepted as closed under the current baseline interpretation; not reclassified as a confirmed historical defect. |
+| Finding 2 | Phase 1 | `RESOLVED/CLOSED` | Accepted as closed under the current baseline interpretation; no state-machine contract change is introduced by this response. |
+| Finding 3 | Phase 1 | `RESOLVED/CLOSED (Baseline Decision)` | Accepted. `CONNECT_REQUEST` remains intentionally unsequenced in the current baseline and future stricter sequencing remains an `R-001` parity-growth topic. |
+| Finding 4 | Phase 2 | `COMPLIANT (Evidence Completed)` | Accepted for host-baseline evidence and evidence-process readiness; target/vendor-qualified stack and memory artifacts remain external evidence items under `R-005`. |
+| Finding 5 | Phase 2 | `COMPLIANT` | Accepted. Defensive public API guard coverage has been materially strengthened through `RV-332..RV-380`. |
+| Finding 6 | Phase 2 | `RESOLVED/CLOSED (Policy Decision Complete)` | Accepted. Strict warning default-gate policy remains closed as an evidence-only decision under `EVID-CI-118`; current build remains clean under the active warning gate. |
+| Finding 7 | Phase 3 | `COMPLIANT` | Accepted. Transport-supervisor fault-injection and codec-status reporting coverage remain representative-closeout for the current baseline. |
+| Finding 8 | Phase 3 | `RESOLVED/CLOSED` | Accepted. State-machine action assertion density remains closed by `RV-291`; future state-machine growth must preserve this standard. |
+| Finding 9 | Phase 4 | `COMPLIANT (Representative Closeout)` | Accepted. Current active-standby redundancy remains representative-closeout; multi-path routing remains future redundancy mode growth under `R-003`. |
+| Finding 10 | Phase 4 | `RESOLVED/CLOSED (CRC32 Implemented & Diagnostics Extended)` | Partially accepted as closed for current CRC32 capability, selected CRC32 integration, codec-status taxonomy, and startup policy gates. MAC, timestamp, and richer PDU/security parity remain future `R-006` growth. |
+
+### Official Interpretation of v1.5
+
+The v1.5 reports are now broadly baseline-aligned. They should be read as follow-up closure records for the current `sil4-evidence-baseline` scope, not as a request to reopen previously closed interpretation debates.
+
+Important boundaries:
+
+1. Closing Findings 1 and 2 does not redefine the current state-machine contract.
+2. Closing Finding 3 confirms the current unsequenced `CONNECT_REQUEST` baseline decision; it does not implement strict future sequencing.
+3. Closing Finding 4 is accepted for host/evidence-process readiness; target-release or vendor-qualified stack/memory artifacts are still required if certification scope demands them.
+4. Closing Finding 10 is accepted for CRC32 and diagnostics only; MAC, timestamp, and richer PDU parity remain explicitly outside the current implemented baseline.
+
+### Planning Impact
+
+No new roadmap risk is introduced by the v1.5 update.
+
+The current roadmap interpretation remains:
+
+- `R-001`: future protocol sequencing parity growth only
+- `R-003`: future redundancy mode growth only
+- `R-005`: remaining vendor/target evidence acquisition
+- `R-006`: remaining MAC/timestamp/PDU and future security-policy growth
+- `R-007`: accepted V&V follow-up closed, future maintenance only
+
+The project accepts the v1.5 reports as evidence that the earlier V&V observations have been normalized into the current baseline vocabulary.

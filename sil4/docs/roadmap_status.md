@@ -12,7 +12,7 @@
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 유지 중이며, residual은 구현 누락보다 next policy/security/evidence growth에 집중돼 있다.
-- 최근 업데이트: `TC-SUP-072` supervisor public API guard matrix로 null/uninitialized/zero-poll caller misuse rejection을 명시 검증했다.
+- 최근 업데이트: V&V phase reports v1.5 follow-up을 검토하고 공식 답변서에 baseline-aligned closeout 입장을 반영했다.
 - 다음 주력 단계: `actual CI/vendor evidence execution`, `redundancy next policy growth`, `codec/security/timestamp policy growth`, `protocol sequencing next parity growth`, `transport supervisor runtime feedback growth`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
@@ -44,7 +44,7 @@
 | Codec / Security | In Progress | `TC-CODEC-001..032`, `TC-INT-206`, `TC-INT-208`, `RV-337`, `RV-354..RV-367`, `RV-369..RV-378` | MAC/timestamp/PDU parity, additional tamper taxonomy, vendor security vectors |
 | Configuration Validation | Completed | `TC-CFG-003`, `TC-CFG-008..010` | deployment-specific policy additions |
 | Integration Verification | In Progress | `test_rsrx_session_supervisor_flow.c`, integration harness spec, `TC-INT-205..208` | target/longer-run integration expansion |
-| Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot | actual vendor finding export and target-qualified stack/memory-map artifacts |
+| Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot, V&V v1.5 official response | actual vendor finding export and target-qualified stack/memory-map artifacts |
 
 ## Current Evidence Baseline
 
