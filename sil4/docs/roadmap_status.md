@@ -12,7 +12,7 @@
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 유지 중이며, residual은 구현 누락보다 next policy/security/evidence growth에 집중돼 있다.
-- 최근 업데이트: AM263Px + SafeRTOS 적용을 portable core 구현과 별도 포팅/evidence workstream인 `R-008`로 분리했다.
+- 최근 업데이트: `R-008`에 AM263Px hardware-backed CRC/crypto adapter 활용 방침과 equivalence/self-test evidence 필요성을 추가했다.
 - 다음 주력 단계: `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS porting evidence planning`, `redundancy next policy growth`, `codec/security/timestamp policy growth`, `protocol sequencing next parity growth`, `transport supervisor runtime feedback growth`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
@@ -45,7 +45,7 @@
 | Configuration Validation | Completed | `TC-CFG-003`, `TC-CFG-008..010` | deployment-specific policy additions |
 | Integration Verification | In Progress | `test_rsrx_session_supervisor_flow.c`, integration harness spec, `TC-INT-205..208` | target/longer-run integration expansion |
 | Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot, V&V v1.5 official response | actual vendor finding export and target-qualified stack/memory-map artifacts |
-| AM263Px / SafeRTOS Porting | Not Started | portable core/adapter boundary is ready; target-specific layer intentionally not implemented in core | SafeRTOS task/timer/queue/critical-section binding, TI driver transport adapter, target stack/memory/timing evidence |
+| AM263Px / SafeRTOS Porting | Not Started | portable core/adapter boundary is ready; target-specific layer intentionally not implemented in core | SafeRTOS task/timer/queue/critical-section binding, TI driver transport adapter, optional hardware-backed CRC/crypto adapter, target stack/memory/timing evidence |
 
 ## Current Evidence Baseline
 
@@ -60,7 +60,7 @@
   - closed baseline fetch artifact: `sil4-ci-logs2/*`, source run `24661353609`, fetch run `24662424670`
   - remaining vendor evidence artifact: raw vendor export or secured attachment reference, `vendor_export_context.env`, vendor rule/file/location metadata, capture or workflow run page
   - remaining stack/memory artifact: target-release or vendor-qualified stack-bound/static memory-map package, not the host helper output
-  - remaining AM263Px/SafeRTOS artifact: target porting package with SafeRTOS task/queue/timer policy, TI driver transport binding evidence, linker map, stack usage, timing/WCET evidence, target integration logs
+  - remaining AM263Px/SafeRTOS artifact: target porting package with SafeRTOS task/queue/timer policy, TI driver transport binding evidence, optional hardware CRC/crypto adapter evidence, software-vs-hardware CRC equivalence logs, hardware self-test/timeout/diagnostic evidence, linker map, stack usage, timing/WCET evidence, target integration logs
 
 ## Current Risks
 
@@ -73,7 +73,7 @@
 | R-005 Evidence artifacts | Helper/tooling/runbooks, host stack/memory baseline, strict-warning policy, and baseline fetch artifact are prepared/closed as applicable. | first actual vendor finding export and target/vendor-qualified stack/memory-map evidence | vendor/target evidence execution |
 | R-006 Codec/security | Current codec skeleton, CRC32 optional path, typed status taxonomy, selected CRC integration, policy gates, encode/decode stale-output representative evidence, decode null-argument output clear, CRC32 truncated-output clear, CRC32 inner status preservation, reserved-header tamper output clear, unsupported-message/reason output clear, trailing/truncated/oversized payload output clear, and direct misuse event/channel output clear are in place. | actual MAC/timestamp/PDU parity, additional tamper taxonomy, vendor-oriented security negative vectors | codec-security parity definition |
 | R-007 V&V accepted follow-up | Handshake action assertion density, `CONNECT_REQUEST` unsequenced baseline, and CMake warning-hardening follow-up are closed. | future maintenance only | keep assertion/warning discipline |
-| R-008 AM263Px/SafeRTOS porting | Core protocol remains portable C with platform/transport/codec adapter boundaries; no AM263Px or SafeRTOS dependency is allowed in the core implementation. | target porting layer, SafeRTOS safety-manual compliance mapping, TI driver binding, target stack/memory/timing evidence, target integration/fault-injection logs | define target porting plan and evidence checklist |
+| R-008 AM263Px/SafeRTOS porting | Core protocol remains portable C with platform/transport/codec adapter boundaries; no AM263Px or SafeRTOS dependency is allowed in the core implementation. Hardware-backed CRC/crypto acceleration may be used only behind target-specific codec/security adapters with portable software fallback retained. | target porting layer, SafeRTOS safety-manual compliance mapping, TI driver binding, optional hardware CRC/crypto adapter, software-vs-hardware equivalence evidence, HW self-test/timeout/diagnostic evidence, target stack/memory/timing evidence, target integration/fault-injection logs | define target porting plan and evidence checklist |
 
 ## Not-Started / Waiting Items
 
@@ -81,8 +81,8 @@
 | --- | --- | --- |
 | Vendor finding export evidence | Waiting | vendor-qualified tool/license/export access |
 | Target-qualified stack/memory-map evidence | Waiting | target-release build/toolchain and qualified analyzer output |
-| AM263Px/SafeRTOS porting layer | Not Started | target transport choice, SafeRTOS integration policy, TI SDK/driver binding plan |
-| AM263Px/SafeRTOS target evidence | Waiting | target hardware/build environment, SafeRTOS safety evidence, linker/stack/timing capture process |
+| AM263Px/SafeRTOS porting layer | Not Started | target transport choice, SafeRTOS integration policy, TI SDK/driver binding plan, hardware CRC/crypto adapter selection |
+| AM263Px/SafeRTOS target evidence | Waiting | target hardware/build environment, SafeRTOS safety evidence, linker/stack/timing capture process, software-vs-hardware CRC equivalence and HW diagnostic capture process |
 | MAC/timestamp/PDU parity | Not Started | formal parity definition and security policy decision |
 | Future redundancy routing modes | Not Started | policy decision beyond current active-standby baseline |
 
@@ -112,6 +112,6 @@
 - 통과 조건:
   - `R-001..R-008`이 current closeout state와 실제 residual만 가리킬 것
   - accepted V&V follow-up이 baseline defect wording이 아니라 explicit backlog/evidence item으로 유지될 것
-  - AM263Px/SafeRTOS work가 core implementation dependency가 아니라 target porting/evidence workstream으로 유지될 것
+  - AM263Px/SafeRTOS work가 core implementation dependency가 아니라 target porting/evidence workstream으로 유지되고, hardware acceleration은 target adapter 뒤에만 위치할 것
   - numeric parity growth는 current target range에서 closeout으로 유지하고, 새 policy/failure-mode가 있을 때만 확장할 것
   - build, unit/integration test, `cppcheck`가 깨끗할 것
