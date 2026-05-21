@@ -779,7 +779,9 @@ static void vTestDecodeRejectsNonFrameReceivedEvent(void)
 	xFrame.xPayloadLength = sizeof(auEncoded);
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
 
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(rsrx_codec_decode_frame(&xFrame, &xMessage) == RSRX_CODEC_STATUS_NON_FRAME_EVENT, "non-frame event reject");
+	vAssertDecodedMessageCleared(&xMessage, "non-frame event clears stale decoded message");
 }
 
 static void vTestDecodeRejectsInvalidChannelId(void)
