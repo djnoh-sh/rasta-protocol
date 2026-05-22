@@ -493,6 +493,53 @@ static void vTestCrc32WirePreservesPayloadDecodeStatus(void)
 	vAssertDecodedMessageCleared(&xMessage, "crc32 wrapped reserved-header clears stale decoded message");
 }
 
+static void vTestCrc32WirePreservesTransportMetadataDecodeStatus(void)
+{
+	uint8_t auPayload[1] = { 0x61U };
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_CRC_FRAME_BYTES];
+	rsrx_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+
+	xRequest.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xRequest.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xRequest.uSequenceNumber = 31U;
+	xRequest.uConfirmationNumber = 30U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+
+	vAssertTrue(
+		rsrx_codec_encode_message_with_crc32(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK,
+		"crc32 metadata encode");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_COMPLETED;
+
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) ==
+			RSRX_CODEC_STATUS_NON_FRAME_EVENT,
+		"crc32 wrapped non-frame event status");
+	vAssertDecodedMessageCleared(&xMessage, "crc32 wrapped non-frame clears stale decoded message");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) ==
+			RSRX_CODEC_STATUS_INVALID_CHANNEL,
+		"crc32 wrapped invalid channel status");
+	vAssertDecodedMessageCleared(&xMessage, "crc32 wrapped invalid channel clears stale decoded message");
+}
+
 static void vTestMaxPayloadEncodeDecodeRoundTrip(void)
 {
 	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
@@ -992,6 +1039,7 @@ int main(void)
 	vTestCrc32WireReportsTruncatedChecksum();
 	vTestCrc32WireRejectsNullDecodeArguments();
 	vTestCrc32WirePreservesPayloadDecodeStatus();
+	vTestCrc32WirePreservesTransportMetadataDecodeStatus();
 	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
 	vTestDecodeMapsSupportedMessageTypes();
