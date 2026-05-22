@@ -595,6 +595,95 @@ static void vTestSupervisorInitClearsSwitchAuditBaseline(void)
 		"init switch audit to channel");
 }
 
+static void vTestSupervisorInitClearsRuntimeLoopBaseline(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor = { 0 };
+	rsrx_codec_port_t xCodec;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x44U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "init runtime loop session init");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+
+	xSupervisor.xLastReport.xLastChannelState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xSupervisor.xLastReport.xLastChannelState.uIsAvailable = 1U;
+	xSupervisor.xLastReport.xLastFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xSupervisor.xLastReport.xLastFrame.puPayload = auPayload;
+	xSupervisor.xLastReport.xLastFrame.xPayloadLength = sizeof(auPayload);
+	xSupervisor.xLastReport.xLastFrame.eEventType = RSRX_TRANSPORT_EVENT_SEND_FAILED;
+	xSupervisor.xLastReport.xLastMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xSupervisor.xLastReport.xLastMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xSupervisor.xLastReport.xLastMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xSupervisor.xLastReport.xLastMessage.uSequenceNumber = 9U;
+	xSupervisor.xLastReport.xLastMessage.uConfirmationNumber = 8U;
+	xSupervisor.xLastReport.xLastMessage.xPayloadLength = sizeof(auPayload);
+	xSupervisor.xLastReport.eLastEffectiveEvent = RSRX_EVENT_PROTOCOL_ERROR;
+	xSupervisor.xLastReport.eLastSessionStatus = RSRX_STATUS_REJECTED;
+	xSupervisor.xLastReport.eLastBudgetUpdate = RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED;
+	xSupervisor.xLastReport.eLastReceiveErrorStage =
+		RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_FRAME_RECEIVE;
+	xSupervisor.xLastReport.eLastReceiveTransportStatus = RSRX_TRANSPORT_STATUS_RX_ERROR;
+	xSupervisor.xLastReport.eBudgetChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xSupervisor.xLastReport.pxLastReport = (const rsrx_orchestrator_report_t *)&xSession;
+	xSupervisor.xLastReport.uPollCount = 4U;
+	xSupervisor.xLastReport.uConsecutiveSendFailureCount = 2U;
+	xSupervisor.xLastReport.uSendFailureBudgetResetCount = 1U;
+	xSupervisor.xLastReport.uConsecutiveReceiveErrorCount = 3U;
+	xSupervisor.xLastReport.uReceiveErrorBudgetResetCount = 1U;
+	xSupervisor.xLastReport.uRejectedDecisionCount = 2U;
+	xSupervisor.xLastReport.uErrorDecisionCount = 3U;
+	xSupervisor.xLastReport.uAvailableChannelCount = 2U;
+	xSupervisor.xLastReport.uChannelUnavailableSelectionCount = 1U;
+	xSupervisor.xLastReport.uLastPumpIterationCount = 5U;
+	xSupervisor.xLastReport.uLastPumpProcessedFrameCount = 4U;
+
+	vAssertTrue(
+		rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"init runtime loop supervisor init");
+	pxSupervisorReport = &xSupervisor.xLastReport;
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "init runtime loop channel id");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 0U, "init runtime loop channel availability");
+	vAssertTrue(pxSupervisorReport->xLastFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "init runtime loop frame channel");
+	vAssertTrue(pxSupervisorReport->xLastFrame.puPayload == (const uint8_t *)0, "init runtime loop frame payload");
+	vAssertTrue(pxSupervisorReport->xLastFrame.xPayloadLength == 0U, "init runtime loop frame length");
+	vAssertTrue(pxSupervisorReport->xLastFrame.eEventType == RSRX_TRANSPORT_EVENT_NONE, "init runtime loop frame event");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eMessageType == RSRX_MESSAGE_TYPE_INVALID, "init runtime loop message type");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eSuggestedEvent == RSRX_EVENT_INVALID, "init runtime loop suggested event");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eReason == RSRX_REASON_NONE, "init runtime loop reason");
+	vAssertTrue(pxSupervisorReport->xLastMessage.uSequenceNumber == 0U, "init runtime loop sequence");
+	vAssertTrue(pxSupervisorReport->xLastMessage.uConfirmationNumber == 0U, "init runtime loop confirmation");
+	vAssertTrue(pxSupervisorReport->xLastMessage.xPayloadLength == 0U, "init runtime loop message length");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_INVALID, "init runtime loop effective event");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_OK, "init runtime loop session status");
+	vAssertTrue(pxSupervisorReport->eLastBudgetUpdate == RSRX_SUPERVISOR_BUDGET_UPDATE_NONE, "init runtime loop budget update");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "init runtime loop receive stage");
+	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_OK, "init runtime loop receive status");
+	vAssertTrue(pxSupervisorReport->eBudgetChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "init runtime loop budget channel");
+	vAssertTrue(pxSupervisorReport->pxLastReport == (const rsrx_orchestrator_report_t *)0, "init runtime loop session report");
+	vAssertTrue(pxSupervisorReport->uPollCount == 0U, "init runtime loop poll count");
+	vAssertTrue(pxSupervisorReport->uConsecutiveSendFailureCount == 0U, "init runtime loop send failures");
+	vAssertTrue(pxSupervisorReport->uSendFailureBudgetResetCount == 0U, "init runtime loop send reset count");
+	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "init runtime loop receive failures");
+	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "init runtime loop receive reset count");
+	vAssertTrue(pxSupervisorReport->uRejectedDecisionCount == 0U, "init runtime loop rejected count");
+	vAssertTrue(pxSupervisorReport->uErrorDecisionCount == 0U, "init runtime loop error count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "init runtime loop available channel count");
+	vAssertTrue(pxSupervisorReport->uChannelUnavailableSelectionCount == 0U, "init runtime loop unavailable selection count");
+	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 0U, "init runtime loop pump iterations");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 0U, "init runtime loop pump processed");
+}
+
 static void vTestSupervisorDecodeFailure(void)
 {
 	rsrx_session_t xSession;
@@ -5746,6 +5835,7 @@ int main(void)
 	vTestSupervisorInvalidArguments();
 	vTestSupervisorInitClearsReportBaseline();
 	vTestSupervisorInitClearsSwitchAuditBaseline();
+	vTestSupervisorInitClearsRuntimeLoopBaseline();
 	vTestSupervisorDecodeFailure();
 	vTestSupervisorUnsupportedMessage();
 	vTestSupervisorSequenceGapDetection();
