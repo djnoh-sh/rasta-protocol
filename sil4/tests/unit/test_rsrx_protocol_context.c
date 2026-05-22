@@ -49,6 +49,32 @@ static void vTestOutboundSequenceProgression(void)
 	vAssertTrue(xRequest.xPayloadLength == sizeof(auPayload), "data payload length");
 }
 
+static void vTestProtocolContextInitClearsBaseline(void)
+{
+	rsrx_protocol_context_t xContext;
+
+	xContext.uNextTxSequenceNumber = 42U;
+	xContext.uLastRxSequenceNumber = 41U;
+	xContext.uLastTxConfirmationNumber = 40U;
+	xContext.uLastRemoteConfirmationNumber = 39U;
+	xContext.uLastRetransmissionRequestTxSequenceNumber = 38U;
+	xContext.uRetransmissionBaseSequenceNumber = 37U;
+	xContext.uRetransmissionPending = 1U;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init baseline");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 1U, "init baseline next tx");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 0U, "init baseline last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 0U, "init baseline tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 0U, "init baseline remote confirmation");
+	vAssertTrue(
+		xContext.uLastRetransmissionRequestTxSequenceNumber == 0U,
+		"init baseline retransmission request tx");
+	vAssertTrue(
+		xContext.uRetransmissionBaseSequenceNumber == 0U,
+		"init baseline retransmission base");
+	vAssertTrue(xContext.uRetransmissionPending == 0U, "init baseline retransmission pending");
+}
+
 static void vTestInboundConfirmationTracking(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1256,6 +1282,7 @@ static void vTestProtocolOrderingCloseoutMatrix(void)
 int main(void)
 {
 	vTestOutboundSequenceProgression();
+	vTestProtocolContextInitClearsBaseline();
 	vTestInboundConfirmationTracking();
 	vTestOutboundSequenceWrapRejected();
 	vTestInvalidOutboundMessageTypeRejected();
