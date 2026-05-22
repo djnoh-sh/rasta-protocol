@@ -187,6 +187,53 @@ static void vTestChannelManagerRejectsInvalidApiArguments(void)
 		"uninitialized reset rejected");
 }
 
+static void vTestChannelManagerResetPreservesAuditCounters(void)
+{
+	rsrx_channel_manager_context_t xContext;
+	rsrx_channel_manager_config_t xConfig;
+
+	xConfig = xBuildConfig();
+	vAssertTrue(
+		rsrx_channel_manager_init(&xContext, &xConfig) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"reset isolation init");
+
+	xContext.uActiveChannelIndex = 1U;
+	xContext.uLastSelectionWasFailover = 1U;
+	xContext.uPreferredRecoveryStableSelectionCount = 3U;
+	xContext.uPreferredRecoveryPendingPenaltySelections = 2U;
+	xContext.uPreferredRecoveryPenaltyArmCount = 5U;
+	xContext.uPreferredRecoveryPenaltyRearmCount = 4U;
+	xContext.uPreferredRecoveryPenaltyAppliedCycleCount = 3U;
+	xContext.uPreferredRecoveryPenaltyAbortCount = 2U;
+	xContext.uPreferredRecoveryPenaltyClearCount = 7U;
+	xContext.uPreferredRecoveryPenaltyBypassClearCount = 6U;
+	xContext.uPreferredRecoveryPenaltyResetClearCount = 1U;
+	xContext.uTotalSwitchCount = 8U;
+	xContext.uUnavailableSelectionCount = 9U;
+
+	vAssertTrue(
+		rsrx_channel_manager_reset(&xContext) == RSRX_CHANNEL_MANAGER_STATUS_OK,
+		"reset isolation reset");
+	vAssertTrue(xContext.uActiveChannelIndex == 0U, "reset isolation active channel reset");
+	vAssertTrue(xContext.uLastSelectionWasFailover == 0U, "reset isolation failover flag reset");
+	vAssertTrue(xContext.uPreferredRecoveryStableSelectionCount == 0U, "reset isolation holdoff progress reset");
+	vAssertTrue(xContext.uPreferredRecoveryPendingPenaltySelections == 0U, "reset isolation pending penalty reset");
+	vAssertTrue(xContext.uPreferredRecoveryPenaltyResetClearCount == 2U, "reset isolation reset-clear count increments");
+	vAssertTrue(xContext.uPreferredRecoveryPenaltyArmCount == 5U, "reset isolation arm count retained");
+	vAssertTrue(xContext.uPreferredRecoveryPenaltyRearmCount == 4U, "reset isolation rearm count retained");
+	vAssertTrue(
+		xContext.uPreferredRecoveryPenaltyAppliedCycleCount == 3U,
+		"reset isolation applied-cycle count retained");
+	vAssertTrue(xContext.uPreferredRecoveryPenaltyAbortCount == 2U, "reset isolation abort count retained");
+	vAssertTrue(xContext.uPreferredRecoveryPenaltyClearCount == 7U, "reset isolation ordinary clear count retained");
+	vAssertTrue(
+		xContext.uPreferredRecoveryPenaltyBypassClearCount == 6U,
+		"reset isolation bypass clear count retained");
+	vAssertTrue(xContext.uTotalSwitchCount == 8U, "reset isolation switch count retained");
+	vAssertTrue(xContext.uUnavailableSelectionCount == 9U, "reset isolation unavailable count retained");
+	vAssertTrue(xContext.uInitialized == 1U, "reset isolation initialized retained");
+}
+
 static void vTestPreferredRecoveryHoldoff(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -3907,6 +3954,7 @@ int main(void)
 	vTestChannelManagerRejectsDuplicatePriorityTopology();
 	vTestChannelManagerRejectsUnsupportedRedundantChannelTopology();
 	vTestChannelManagerRejectsInvalidApiArguments();
+	vTestChannelManagerResetPreservesAuditCounters();
 	vTestPreferredRecoveryHoldoff();
 	vTestPreferredRecoveryFlapPenaltyHoldoff();
 	vTestPreferredRecoveryFlapPenaltyBypassClear();
