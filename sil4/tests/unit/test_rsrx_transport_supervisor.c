@@ -499,6 +499,102 @@ static void vTestSupervisorInitClearsReportBaseline(void)
 	vAssertTrue(pxSupervisorReport->eLastOutboundRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "init baseline reject reason");
 }
 
+static void vTestSupervisorInitClearsSwitchAuditBaseline(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor = { 0 };
+	rsrx_codec_port_t xCodec;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	static const uint8_t auPayload[1] = { 0x43U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "init switch audit session init");
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+
+	xSupervisor.xLastReport.uChannelSwitchCount = 3U;
+	xSupervisor.xLastReport.uLastChannelSwitchOccurred = 1U;
+	xSupervisor.xLastReport.uFailoverSwitchCount = 2U;
+	xSupervisor.xLastReport.uPreferredRecoverySwitchCount = 1U;
+	xSupervisor.xLastReport.uNoOpRefreshCount = 4U;
+	xSupervisor.xLastReport.uHoldoffCycleCount = 5U;
+	xSupervisor.xLastReport.uCompletedHoldoffCycleCount = 6U;
+	xSupervisor.xLastReport.uTerminalHoldoffOutcomeCount = 7U;
+	xSupervisor.xLastReport.uHoldoffResetCount = 8U;
+	xSupervisor.xLastReport.eLastHoldoffCycleState =
+		RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS;
+	xSupervisor.xLastReport.eLastCompletedHoldoffCycleKind =
+		RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY;
+	xSupervisor.xLastReport.eLastTerminalHoldoffOutcome =
+		RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED;
+	xSupervisor.xLastReport.eLastSwitchKind = RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER;
+	xSupervisor.xLastReport.eLastSwitchReason =
+		RSRX_SUPERVISOR_SWITCH_REASON_FAILOVER_CHANNEL_DOWN;
+	xSupervisor.xLastReport.eLastSwitchTriggerEventType =
+		RSRX_TRANSPORT_EVENT_CHANNEL_DOWN;
+	xSupervisor.xLastReport.eLastSwitchTriggerChannelId =
+		RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xSupervisor.xLastReport.eLastSwitchFromChannelId =
+		RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xSupervisor.xLastReport.eLastSwitchToChannelId =
+		RSRX_TRANSPORT_CHANNEL_SECONDARY;
+
+	vAssertTrue(
+		rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"init switch audit supervisor init");
+	pxSupervisorReport = &xSupervisor.xLastReport;
+	vAssertTrue(pxSupervisorReport->uChannelSwitchCount == 0U, "init switch audit switch count");
+	vAssertTrue(pxSupervisorReport->uLastChannelSwitchOccurred == 0U, "init switch audit switch flag");
+	vAssertTrue(pxSupervisorReport->uFailoverSwitchCount == 0U, "init switch audit failover count");
+	vAssertTrue(
+		pxSupervisorReport->uPreferredRecoverySwitchCount == 0U,
+		"init switch audit preferred recovery count");
+	vAssertTrue(pxSupervisorReport->uNoOpRefreshCount == 0U, "init switch audit noop count");
+	vAssertTrue(pxSupervisorReport->uHoldoffCycleCount == 0U, "init switch audit holdoff cycle count");
+	vAssertTrue(
+		pxSupervisorReport->uCompletedHoldoffCycleCount == 0U,
+		"init switch audit completed cycle count");
+	vAssertTrue(
+		pxSupervisorReport->uTerminalHoldoffOutcomeCount == 0U,
+		"init switch audit terminal outcome count");
+	vAssertTrue(pxSupervisorReport->uHoldoffResetCount == 0U, "init switch audit reset count");
+	vAssertTrue(
+		pxSupervisorReport->eLastHoldoffCycleState == RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE,
+		"init switch audit holdoff state");
+	vAssertTrue(
+		pxSupervisorReport->eLastCompletedHoldoffCycleKind ==
+			RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE,
+		"init switch audit completed kind");
+	vAssertTrue(
+		pxSupervisorReport->eLastTerminalHoldoffOutcome ==
+			RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE,
+		"init switch audit terminal outcome");
+	vAssertTrue(pxSupervisorReport->eLastSwitchKind == RSRX_SUPERVISOR_SWITCH_KIND_NONE, "init switch audit kind");
+	vAssertTrue(
+		pxSupervisorReport->eLastSwitchReason == RSRX_SUPERVISOR_SWITCH_REASON_NONE,
+		"init switch audit reason");
+	vAssertTrue(
+		pxSupervisorReport->eLastSwitchTriggerEventType == RSRX_TRANSPORT_EVENT_NONE,
+		"init switch audit trigger event");
+	vAssertTrue(
+		pxSupervisorReport->eLastSwitchTriggerChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"init switch audit trigger channel");
+	vAssertTrue(
+		pxSupervisorReport->eLastSwitchFromChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"init switch audit from channel");
+	vAssertTrue(
+		pxSupervisorReport->eLastSwitchToChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"init switch audit to channel");
+}
+
 static void vTestSupervisorDecodeFailure(void)
 {
 	rsrx_session_t xSession;
@@ -5649,6 +5745,7 @@ int main(void)
 	vTestSupervisorInboundHandshakePath();
 	vTestSupervisorInvalidArguments();
 	vTestSupervisorInitClearsReportBaseline();
+	vTestSupervisorInitClearsSwitchAuditBaseline();
 	vTestSupervisorDecodeFailure();
 	vTestSupervisorUnsupportedMessage();
 	vTestSupervisorSequenceGapDetection();
