@@ -24,6 +24,7 @@
 | Test ID | Req ID | Objective | Precondition | Stimulus | Expected Result | Pass/Fail Criteria |
 | --- | --- | --- | --- | --- | --- | --- |
 | TC-API-001 | FR-001, IF-001 | session init/start/connect 경로 검증 | 유효 session config 준비 | `session_init`, `session_start`, `session_connect` 호출 | 상태가 `CONNECTING`까지 순차 전이 | callback, transport, timer 동작이 설계와 일치 |
+| TC-API-016 | FR-001, IF-001 | session init report baseline 검증 | dirty last report를 가진 session context와 유효 session config 준비 | `rsrx_session_init` 호출 | session이 initialized 되고 orchestrator state는 `UNINITIALIZED`, last report transition/status/reason/diagnostic/action counts는 neutral baseline으로 clear된다 | public API startup이 이전 report/runtime state를 새 session baseline에 누출하지 않는다 |
 | TC-API-002 | FR-005, SR-004 | session disconnect 경로 검증 | `ESTABLISHED` 상태 session | `session_disconnect` 호출 | `SAFE_DISCONNECT` 전이와 lifecycle callback 발생 | disconnect reason과 callback 동작이 설계와 일치 |
 | TC-API-003 | IF-001 | invalid argument 방어 검증 | null session 또는 미초기화 session | API 호출 | 정의된 invalid argument 처리 | UB 없이 결정적 오류 반환 |
 | TC-API-004 | IF-001 | inbound heartbeat handoff 검증 | `ESTABLISHED` 상태 session | `session_process_event(VALID_HEARTBEAT)` 호출 | 상태 유지, supervision timer 재시작, diagnostic 기록 | transport 추가 송신 없이 운영 이벤트가 반영된다 |

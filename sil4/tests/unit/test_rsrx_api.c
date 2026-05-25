@@ -250,6 +250,50 @@ static void vTestSessionStartupAndConnect(void)
 	vAssertTrue(xDiagnostics.uCallCount == 1U, "no new diagnostics on connect");
 }
 
+static void vTestSessionInitClearsReportBaseline(void)
+{
+	rsrx_session_t xSession = { 0 };
+	rsrx_session_config_t xConfig;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x5AU };
+
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	xSession.xLastReport.uDispatchedActionCount = 5U;
+	xSession.xLastReport.xTransition.ePreviousState = RSRX_STATE_ESTABLISHED;
+	xSession.xLastReport.xTransition.eNextState = RSRX_STATE_SAFE_DISCONNECT;
+	xSession.xLastReport.xTransition.eStatus = RSRX_STATUS_REJECTED;
+	xSession.xLastReport.xTransition.eReason = RSRX_REASON_PROTOCOL_ERROR_DETECTED;
+	xSession.xLastReport.xTransition.eDiagnostic = RSRX_DIAG_ERROR_PROTOCOL;
+	xSession.xLastReport.xTransition.xActions.uActionCount = 3U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init baseline init");
+	vAssertTrue(xSession.uInitialized == 1U, "session init baseline initialized");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "session init baseline state");
+	vAssertTrue(xSession.xLastReport.uDispatchedActionCount == 0U, "session init baseline dispatched count");
+	vAssertTrue(xSession.xLastReport.xTransition.ePreviousState == RSRX_STATE_INVALID, "session init baseline previous state");
+	vAssertTrue(xSession.xLastReport.xTransition.eNextState == RSRX_STATE_INVALID, "session init baseline next state");
+	vAssertTrue(xSession.xLastReport.xTransition.eStatus == RSRX_STATUS_OK, "session init baseline status");
+	vAssertTrue(xSession.xLastReport.xTransition.eReason == RSRX_REASON_NONE, "session init baseline reason");
+	vAssertTrue(xSession.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_NONE, "session init baseline diagnostic");
+	vAssertTrue(xSession.xLastReport.xTransition.xActions.uActionCount == 0U, "session init baseline action count");
+}
+
 static void vTestSessionDisconnectPath(void)
 {
 	rsrx_session_t xSession;
@@ -890,6 +934,7 @@ static void vTestSessionOutboundApplicationDataStateGuards(void)
 int main(void)
 {
 	vTestSessionStartupAndConnect();
+	vTestSessionInitClearsReportBaseline();
 	vTestSessionDisconnectPath();
 	vTestSessionInboundHeartbeatPath();
 	vTestSessionInboundDataPath();
