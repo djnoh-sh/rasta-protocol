@@ -601,6 +601,93 @@ static void vTestIntegratedSessionResetOutboundTelemetryFlow(void)
 	vAssertTrue(pxSupervisorReport->uMaxDeferredSendCount == 1U, "reset telemetry integration report max deferred retained");
 }
 
+static void vTestIntegratedSessionRestartAfterResetFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_transport_frame_t axFrames[2];
+	rsrx_transport_status_t aeStatuses[2];
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	size_t xHandshakeLength;
+	uint32_t uSendCountBeforeRestart;
+	uint32_t uApiCountBeforeRestart;
+	uint32_t uDiagnosticCountBeforeRestart;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "restart reset integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "restart reset integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "restart reset integration session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "restart reset integration establish");
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "restart reset integration supervisor init");
+
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_SUPERVISION, &pxSessionReport) == RSRX_STATUS_REJECTED, "restart reset integration timeout");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "restart reset integration fail-safe state");
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "restart reset integration reset");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "restart reset integration reset state");
+
+	uSendCountBeforeRestart = xTransport.uSendCount;
+	uApiCountBeforeRestart = xApiCounter.uCallCount;
+	uDiagnosticCountBeforeRestart = xDiagnostics.uCallCount;
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "restart reset integration post-reset start");
+	vAssertTrue(pxSessionReport->xTransition.eReason == RSRX_REASON_INIT_COMPLETED, "restart reset integration post-reset start reason");
+	vAssertTrue(xApiCounter.uCallCount == (uApiCountBeforeRestart + 1U), "restart reset integration post-reset api callback");
+	vAssertTrue(xDiagnostics.uCallCount == (uDiagnosticCountBeforeRestart + 1U), "restart reset integration post-reset diagnostic");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "restart reset integration post-reset connect");
+	vAssertTrue(xTransport.uSendCount == (uSendCountBeforeRestart + 1U), "restart reset integration post-reset connect send");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+	axFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[0].puPayload = auHandshakeFrame;
+	axFrames[0].xPayloadLength = xHandshakeLength;
+	axFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	axFrames[1].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	axFrames[1].puPayload = (const uint8_t *)0;
+	axFrames[1].xPayloadLength = 0U;
+	axFrames[1].eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	aeStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	aeStatuses[1] = RSRX_TRANSPORT_STATUS_UNAVAILABLE;
+	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 2U);
+
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "restart reset integration post-reset pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "restart reset integration re-established");
+	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "restart reset integration pump processed count");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "restart reset integration no extra lifecycle after timeout");
+}
+
 static void vTestIntegratedQueueOverflowRejectFlow(void)
 {
 	rsrx_session_t xSession;
@@ -25562,6 +25649,7 @@ int main(void)
 	vTestIntegratedSessionSupervisorFlow();
 	vTestIntegratedDeferredQueueTelemetryFlow();
 	vTestIntegratedSessionResetOutboundTelemetryFlow();
+	vTestIntegratedSessionRestartAfterResetFlow();
 	vTestIntegratedDeferredQueueFifoDispatchFlow();
 	vTestIntegratedQueueOverflowRejectFlow();
 	vTestIntegratedBusyRejectThresholdEscalationFlow();
