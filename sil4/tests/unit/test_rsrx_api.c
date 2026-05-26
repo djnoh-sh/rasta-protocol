@@ -953,6 +953,59 @@ static void vTestSessionResetClearsReportBaseline(void)
 	vAssertTrue(xSession.xLastReport.xTransition.xActions.eActions[0] == RSRX_ACTION_NONE, "reset report baseline action slot");
 }
 
+static void vTestSessionRestartAfterReset(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1230U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x86U };
+	uint32_t uApiCountBeforeRestart;
+	uint32_t uDiagnosticCountBeforeRestart;
+	uint32_t uTransportSendCountBeforeRestart;
+	uint32_t uTimerCommandCountBeforeRestart;
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_SUPERVISION, &pxReport) == RSRX_STATUS_REJECTED, "restart after reset dirty timeout");
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "restart after reset reset");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "restart after reset baseline state");
+
+	uApiCountBeforeRestart = xApiCounter.uCallCount;
+	uDiagnosticCountBeforeRestart = xDiagnostics.uCallCount;
+	uTransportSendCountBeforeRestart = xTransport.uSendCount;
+	uTimerCommandCountBeforeRestart = xTimer.uCallCount;
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK, "restart after reset start");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INITIALIZED, "restart after reset initialized state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_INIT_COMPLETED, "restart after reset start reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 2U, "restart after reset start dispatched count");
+	vAssertTrue(xApiCounter.uCallCount == (uApiCountBeforeRestart + 1U), "restart after reset api notification");
+	vAssertTrue(xDiagnostics.uCallCount == (uDiagnosticCountBeforeRestart + 1U), "restart after reset diagnostic write");
+
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "restart after reset connect");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "restart after reset connecting state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_CONNECT_REQUESTED, "restart after reset connect reason");
+	vAssertTrue(xTransport.uSendCount == (uTransportSendCountBeforeRestart + 1U), "restart after reset transport dispatch retained");
+	vAssertTrue(xTimer.uCallCount == (uTimerCommandCountBeforeRestart + 1U), "restart after reset timer dispatch retained");
+}
+
 static void vTestSessionOutboundApplicationDataStateGuards(void)
 {
 	rsrx_session_t xSession;
@@ -994,6 +1047,7 @@ int main(void)
 	vTestSessionResetClearsChannelManagerPenalty();
 	vTestSessionResetClearsTransportAdapterRuntime();
 	vTestSessionResetClearsReportBaseline();
+	vTestSessionRestartAfterReset();
 	vTestSessionOutboundApplicationDataStateGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
