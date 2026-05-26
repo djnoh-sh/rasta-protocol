@@ -197,6 +197,45 @@ static void vTestFailSafeDispatch(void)
 	vAssertEqualAction(RSRX_ACTION_ENTER_FAILSAFE, xLifecycleContext.eActions[1], "fail-safe lifecycle action");
 }
 
+static void vTestResetPreservesExecutorBinding(void)
+{
+	rsrx_orchestrator_context_t xContext;
+	rsrx_orchestrator_report_t xReport;
+	test_executor_context_t xTransportContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	test_executor_context_t xTimerContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	test_executor_context_t xApplicationContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	test_executor_context_t xApiContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	test_executor_context_t xDiagnosticsContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	test_executor_context_t xLifecycleContext = { { RSRX_ACTION_NONE }, 0U, RSRX_REASON_NONE, RSRX_DIAG_NONE };
+	rsrx_action_executor_table_t xExecutors = xCreateExecutorTable(
+		&xTransportContext,
+		&xTimerContext,
+		&xApplicationContext,
+		&xApiContext,
+		&xDiagnosticsContext,
+		&xLifecycleContext);
+	rsrx_status_t eStatus;
+
+	(void)rsrx_orchestrator_init(&xContext, &xExecutors);
+	(void)rsrx_orchestrator_process_event(&xContext, RSRX_EVENT_INIT_SUCCESS, &xReport);
+	(void)rsrx_orchestrator_process_event(&xContext, RSRX_EVENT_CONNECT_REQUEST, &xReport);
+	(void)rsrx_orchestrator_process_event(&xContext, RSRX_EVENT_TIMEOUT, &xReport);
+	vAssertEqualState(RSRX_STATE_SAFE_DISCONNECT, rsrx_orchestrator_get_state(&xContext), "reset precondition state");
+
+	eStatus = rsrx_orchestrator_reset(&xContext);
+	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "orchestrator reset status");
+	vAssertEqualState(RSRX_STATE_UNINITIALIZED, rsrx_orchestrator_get_state(&xContext), "orchestrator reset state");
+
+	xApiContext.uActionCount = 0U;
+	xDiagnosticsContext.uActionCount = 0U;
+	eStatus = rsrx_orchestrator_process_event(&xContext, RSRX_EVENT_INIT_SUCCESS, &xReport);
+	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "post-reset init status");
+	vAssertEqualUint32(2U, xReport.uDispatchedActionCount, "post-reset dispatched count");
+	vAssertEqualUint32(1U, xDiagnosticsContext.uActionCount, "post-reset diagnostics dispatch count");
+	vAssertEqualUint32(1U, xApiContext.uActionCount, "post-reset api dispatch count");
+	vAssertEqualReason(RSRX_REASON_INIT_COMPLETED, xApiContext.eLastReason, "post-reset executor reason");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_orchestrator_report_t xReport;
@@ -227,6 +266,7 @@ int main(void)
 {
 	vTestInitAndConnectDispatch();
 	vTestFailSafeDispatch();
+	vTestResetPreservesExecutorBinding();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_orchestrator_test: all tests passed\n");
