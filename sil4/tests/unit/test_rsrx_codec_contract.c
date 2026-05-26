@@ -42,6 +42,8 @@ int main(void)
 	rsrx_encode_buffer_t xEncodeBuffer;
 	rsrx_codec_port_t xCodecPort;
 	rsrx_codec_wire_profile_t xWireProfile;
+	rsrx_rasta_sr_encode_request_t xRastaSrEncodeRequest;
+	rsrx_rasta_sr_decoded_packet_t xRastaSrDecodedPacket;
 
 	xDecodedMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xDecodedMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -80,6 +82,32 @@ int main(void)
 	xWireProfile.uMacPresent = uExpectedAbsent;
 	xWireProfile.uTimestampPresent = uExpectedAbsent;
 
+	xRastaSrEncodeRequest.usPacketLength = (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auPayload));
+	xRastaSrEncodeRequest.usMessageType = 6240U;
+	xRastaSrEncodeRequest.uReceiverId = 0x11223344U;
+	xRastaSrEncodeRequest.uSenderId = 0x55667788U;
+	xRastaSrEncodeRequest.uSequenceNumber = 9U;
+	xRastaSrEncodeRequest.uConfirmedSequenceNumber = 8U;
+	xRastaSrEncodeRequest.uTimestamp = 7000U;
+	xRastaSrEncodeRequest.uConfirmedTimestamp = 6000U;
+	xRastaSrEncodeRequest.puPayload = auPayload;
+	xRastaSrEncodeRequest.xPayloadLength = sizeof(auPayload);
+	xRastaSrEncodeRequest.puChecksum = (const uint8_t *)0;
+	xRastaSrEncodeRequest.xChecksumLength = 0U;
+
+	xRastaSrDecodedPacket.usPacketLength = xRastaSrEncodeRequest.usPacketLength;
+	xRastaSrDecodedPacket.usMessageType = xRastaSrEncodeRequest.usMessageType;
+	xRastaSrDecodedPacket.uReceiverId = xRastaSrEncodeRequest.uReceiverId;
+	xRastaSrDecodedPacket.uSenderId = xRastaSrEncodeRequest.uSenderId;
+	xRastaSrDecodedPacket.uSequenceNumber = xRastaSrEncodeRequest.uSequenceNumber;
+	xRastaSrDecodedPacket.uConfirmedSequenceNumber = xRastaSrEncodeRequest.uConfirmedSequenceNumber;
+	xRastaSrDecodedPacket.uTimestamp = xRastaSrEncodeRequest.uTimestamp;
+	xRastaSrDecodedPacket.uConfirmedTimestamp = xRastaSrEncodeRequest.uConfirmedTimestamp;
+	xRastaSrDecodedPacket.xPayloadLength = sizeof(auPayload);
+	xRastaSrDecodedPacket.auPayload[0] = auPayload[0];
+	xRastaSrDecodedPacket.xChecksumLength = 0U;
+	xRastaSrDecodedPacket.uChecksumPresent = 0U;
+
 	vAssertTrue(xDecodedMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "decoded message type contract");
 	vAssertTrue(xDecodedMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "decoded message event contract");
 	vAssertTrue(xDecodedMessage.eReason == RSRX_REASON_DATA_ACCEPTED, "decoded message reason contract");
@@ -116,7 +144,32 @@ int main(void)
 	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR != D_RSRX_CODEC_WIRE_PROFILE_CRC32, "rasta sr profile id differs from crc32");
 	vAssertTrue(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES == 28U, "rasta sr header bytes contract");
 	vAssertTrue(D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES == 8U, "rasta sr timestamp bytes contract");
+	vAssertTrue(D_RSRX_CODEC_RASTA_SR_MAX_CHECKSUM_BYTES == 16U, "rasta sr max checksum bytes contract");
 	vAssertTrue(D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES == (D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES), "rasta sr max frame contract");
+	vAssertTrue(xRastaSrEncodeRequest.usPacketLength == (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auPayload)), "rasta sr encode length contract");
+	vAssertTrue(xRastaSrEncodeRequest.usMessageType == 6240U, "rasta sr encode type contract");
+	vAssertTrue(xRastaSrEncodeRequest.uReceiverId == 0x11223344U, "rasta sr encode receiver contract");
+	vAssertTrue(xRastaSrEncodeRequest.uSenderId == 0x55667788U, "rasta sr encode sender contract");
+	vAssertTrue(xRastaSrEncodeRequest.uSequenceNumber == 9U, "rasta sr encode sequence contract");
+	vAssertTrue(xRastaSrEncodeRequest.uConfirmedSequenceNumber == 8U, "rasta sr encode confirmed sequence contract");
+	vAssertTrue(xRastaSrEncodeRequest.uTimestamp == 7000U, "rasta sr encode timestamp contract");
+	vAssertTrue(xRastaSrEncodeRequest.uConfirmedTimestamp == 6000U, "rasta sr encode confirmed timestamp contract");
+	vAssertTrue(xRastaSrEncodeRequest.puPayload == auPayload, "rasta sr encode payload pointer contract");
+	vAssertTrue(xRastaSrEncodeRequest.xPayloadLength == sizeof(auPayload), "rasta sr encode payload length contract");
+	vAssertTrue(xRastaSrEncodeRequest.puChecksum == (const uint8_t *)0, "rasta sr encode checksum pointer contract");
+	vAssertTrue(xRastaSrEncodeRequest.xChecksumLength == (size_t)uExpectedAbsent, "rasta sr encode checksum length contract");
+	vAssertTrue(xRastaSrDecodedPacket.usPacketLength == xRastaSrEncodeRequest.usPacketLength, "rasta sr decoded length contract");
+	vAssertTrue(xRastaSrDecodedPacket.usMessageType == xRastaSrEncodeRequest.usMessageType, "rasta sr decoded type contract");
+	vAssertTrue(xRastaSrDecodedPacket.uReceiverId == xRastaSrEncodeRequest.uReceiverId, "rasta sr decoded receiver contract");
+	vAssertTrue(xRastaSrDecodedPacket.uSenderId == xRastaSrEncodeRequest.uSenderId, "rasta sr decoded sender contract");
+	vAssertTrue(xRastaSrDecodedPacket.uSequenceNumber == xRastaSrEncodeRequest.uSequenceNumber, "rasta sr decoded sequence contract");
+	vAssertTrue(xRastaSrDecodedPacket.uConfirmedSequenceNumber == xRastaSrEncodeRequest.uConfirmedSequenceNumber, "rasta sr decoded confirmed sequence contract");
+	vAssertTrue(xRastaSrDecodedPacket.uTimestamp == xRastaSrEncodeRequest.uTimestamp, "rasta sr decoded timestamp contract");
+	vAssertTrue(xRastaSrDecodedPacket.uConfirmedTimestamp == xRastaSrEncodeRequest.uConfirmedTimestamp, "rasta sr decoded confirmed timestamp contract");
+	vAssertTrue(xRastaSrDecodedPacket.xPayloadLength == sizeof(auPayload), "rasta sr decoded payload length contract");
+	vAssertTrue(xRastaSrDecodedPacket.auPayload[0] == auPayload[0], "rasta sr decoded payload storage contract");
+	vAssertTrue(xRastaSrDecodedPacket.xChecksumLength == 0U, "rasta sr decoded checksum length contract");
+	vAssertTrue(xRastaSrDecodedPacket.uChecksumPresent == uExpectedAbsent, "rasta sr decoded checksum present contract");
 
 	(void)printf("rsrx_codec_contract_test: all tests passed\n");
 

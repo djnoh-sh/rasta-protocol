@@ -14,6 +14,7 @@
 #define D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES (D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 #define D_RSRX_CODEC_CRC_BYTES (4U)
 #define D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES (8U)
+#define D_RSRX_CODEC_RASTA_SR_MAX_CHECKSUM_BYTES (16U)
 #define D_RSRX_CODEC_MAX_CRC_FRAME_BYTES (D_RSRX_CODEC_MAX_FRAME_BYTES + D_RSRX_CODEC_CRC_BYTES)
 #define D_RSRX_CODEC_WIRE_PROFILE_DEFAULT (1U)
 #define D_RSRX_CODEC_WIRE_PROFILE_CRC32 (2U)
@@ -72,6 +73,39 @@ typedef struct
 	const uint8_t * puPayload;
 	size_t xPayloadLength;
 } rsrx_encode_request_t;
+
+typedef struct
+{
+	uint16_t usPacketLength;
+	uint16_t usMessageType;
+	uint32_t uReceiverId;
+	uint32_t uSenderId;
+	uint32_t uSequenceNumber;
+	uint32_t uConfirmedSequenceNumber;
+	uint32_t uTimestamp;
+	uint32_t uConfirmedTimestamp;
+	const uint8_t * puPayload;
+	size_t xPayloadLength;
+	const uint8_t * puChecksum;
+	size_t xChecksumLength;
+} rsrx_rasta_sr_encode_request_t;
+
+typedef struct
+{
+	uint16_t usPacketLength;
+	uint16_t usMessageType;
+	uint32_t uReceiverId;
+	uint32_t uSenderId;
+	uint32_t uSequenceNumber;
+	uint32_t uConfirmedSequenceNumber;
+	uint32_t uTimestamp;
+	uint32_t uConfirmedTimestamp;
+	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
+	size_t xPayloadLength;
+	uint8_t auChecksum[D_RSRX_CODEC_RASTA_SR_MAX_CHECKSUM_BYTES];
+	size_t xChecksumLength;
+	uint32_t uChecksumPresent;
+} rsrx_rasta_sr_decoded_packet_t;
 
 typedef struct
 {

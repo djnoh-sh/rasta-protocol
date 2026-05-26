@@ -108,7 +108,7 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 ## Staged Implementation Plan
 
 1. `PDU-PARITY-001A`: Add RaSTA SR profile constants and reporting metadata without changing existing encode/decode behavior. Status: implemented by `D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR`, `D_RSRX_CODEC_RASTA_SR_HEADER_BYTES`, `D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES`, and `rsrx_codec_get_rasta_sr_wire_profile()`.
-2. `PDU-PARITY-001B`: Introduce explicit RaSTA SR encode/decode request/result structures containing length, type, IDs, sequence, confirmation, timestamps, payload, and checksum metadata.
+2. `PDU-PARITY-001B`: Introduce explicit RaSTA SR encode/decode request/result structures containing length, type, IDs, sequence, confirmation, timestamps, payload, and checksum metadata. Status: implemented by `rsrx_rasta_sr_encode_request_t`, `rsrx_rasta_sr_decoded_packet_t`, and `TC-CODEC-038`.
 3. `PDU-PARITY-001C`: Add RaSTA numeric message-type and disconnect-reason mapping tests.
 4. `PDU-PARITY-001D`: Implement no-checksum SR PDU encode/decode once endian policy is closed.
 5. `PDU-PARITY-001E`: Add selected SR checksum/hash profiles or startup rejection for unsupported configured profiles.
