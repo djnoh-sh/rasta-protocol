@@ -908,6 +908,51 @@ static void vTestSessionResetClearsTransportAdapterRuntime(void)
 	vAssertTrue(pxTelemetry->uRuntimeResetCount == 1U, "reset adapter runtime reset telemetry");
 }
 
+static void vTestSessionResetClearsReportBaseline(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1220U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x85U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_SUPERVISION, &pxReport) == RSRX_STATUS_REJECTED, "reset report baseline dirty timeout");
+	vAssertTrue(xSession.xLastReport.xTransition.eStatus == RSRX_STATUS_REJECTED, "reset report baseline dirty status");
+	vAssertTrue(xSession.xLastReport.xTransition.eReason == RSRX_REASON_TIMEOUT_EXPIRED, "reset report baseline dirty reason");
+	vAssertTrue(xSession.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_ERROR_TIMEOUT, "reset report baseline dirty diagnostic");
+	vAssertTrue(xSession.xLastReport.uDispatchedActionCount > 0U, "reset report baseline dirty dispatch count");
+
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "session reset clears report baseline");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "reset report baseline state");
+	vAssertTrue(xSession.xLastReport.uDispatchedActionCount == 0U, "reset report baseline dispatched count");
+	vAssertTrue(xSession.xLastReport.xTransition.ePreviousState == RSRX_STATE_INVALID, "reset report baseline previous state");
+	vAssertTrue(xSession.xLastReport.xTransition.eNextState == RSRX_STATE_INVALID, "reset report baseline next state");
+	vAssertTrue(xSession.xLastReport.xTransition.eStatus == RSRX_STATUS_OK, "reset report baseline status");
+	vAssertTrue(xSession.xLastReport.xTransition.eReason == RSRX_REASON_NONE, "reset report baseline reason");
+	vAssertTrue(xSession.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_NONE, "reset report baseline diagnostic");
+	vAssertTrue(xSession.xLastReport.xTransition.xActions.uActionCount == 0U, "reset report baseline action count");
+	vAssertTrue(xSession.xLastReport.xTransition.xActions.eActions[0] == RSRX_ACTION_NONE, "reset report baseline action slot");
+}
+
 static void vTestSessionOutboundApplicationDataStateGuards(void)
 {
 	rsrx_session_t xSession;
@@ -948,6 +993,7 @@ int main(void)
 	vTestSessionInitRejectsUnavailableSecurityPolicies();
 	vTestSessionResetClearsChannelManagerPenalty();
 	vTestSessionResetClearsTransportAdapterRuntime();
+	vTestSessionResetClearsReportBaseline();
 	vTestSessionOutboundApplicationDataStateGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");

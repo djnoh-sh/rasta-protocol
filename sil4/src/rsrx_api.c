@@ -29,6 +29,29 @@ static void vSetDirectReport(
 	pxSession->xLastReport.uDispatchedActionCount = 0U;
 }
 
+static void vResetLastReport(
+	rsrx_session_t * pxSession)
+{
+	uint32_t uIndex;
+
+	if(pxSession == (rsrx_session_t *)0)
+	{
+		return;
+	}
+
+	pxSession->xLastReport.uDispatchedActionCount = 0U;
+	pxSession->xLastReport.xTransition.ePreviousState = RSRX_STATE_INVALID;
+	pxSession->xLastReport.xTransition.eNextState = RSRX_STATE_INVALID;
+	pxSession->xLastReport.xTransition.eStatus = RSRX_STATUS_OK;
+	pxSession->xLastReport.xTransition.eReason = RSRX_REASON_NONE;
+	pxSession->xLastReport.xTransition.eDiagnostic = RSRX_DIAG_NONE;
+	pxSession->xLastReport.xTransition.xActions.uActionCount = 0U;
+	for(uIndex = 0U; uIndex < D_RSRX_ACTION_CAPACITY; ++uIndex)
+	{
+		pxSession->xLastReport.xTransition.xActions.eActions[uIndex] = RSRX_ACTION_NONE;
+	}
+}
+
 static rsrx_diagnostic_code_t eResolveBusyRejectDiagnostic(
 	const rsrx_session_t * pxSession)
 {
@@ -371,13 +394,7 @@ rsrx_status_t rsrx_session_init(
 	}
 
 	pxSession->uInitialized = 1U;
-	pxSession->xLastReport.uDispatchedActionCount = 0U;
-	pxSession->xLastReport.xTransition.ePreviousState = RSRX_STATE_INVALID;
-	pxSession->xLastReport.xTransition.eNextState = RSRX_STATE_INVALID;
-	pxSession->xLastReport.xTransition.eStatus = RSRX_STATUS_OK;
-	pxSession->xLastReport.xTransition.eReason = RSRX_REASON_NONE;
-	pxSession->xLastReport.xTransition.eDiagnostic = RSRX_DIAG_NONE;
-	pxSession->xLastReport.xTransition.xActions.uActionCount = 0U;
+	vResetLastReport(pxSession);
 
 	return RSRX_STATUS_OK;
 }
@@ -490,6 +507,7 @@ rsrx_status_t rsrx_session_reset(
 	rsrx_session_t * pxSession)
 {
 	rsrx_channel_manager_status_t eChannelStatus;
+	rsrx_status_t eResetStatus;
 
 	if((pxSession == (rsrx_session_t *)0) ||
 		(pxSession->uInitialized == 0U))
@@ -504,5 +522,11 @@ rsrx_status_t rsrx_session_reset(
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
-	return rsrx_orchestrator_reset(&pxSession->xOrchestrator);
+	eResetStatus = rsrx_orchestrator_reset(&pxSession->xOrchestrator);
+	if(eResetStatus == RSRX_STATUS_OK)
+	{
+		vResetLastReport(pxSession);
+	}
+
+	return eResetStatus;
 }

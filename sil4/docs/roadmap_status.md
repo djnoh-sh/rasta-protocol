@@ -12,7 +12,7 @@
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 유지 중이며, residual은 구현 누락보다 next policy/security/evidence growth에 집중돼 있다.
-- 최근 업데이트: `TC-OR-006`/`RV-394`로 orchestrator reset이 fail-safe state를 startup baseline으로 clear하면서 executor binding을 유지하는 contract를 고정했다.
+- 최근 업데이트: `TC-API-017`/`RV-395`로 public API reset이 fail-safe last report를 neutral startup/reporting baseline으로 clear하는 contract를 고정했다.
 - 다음 주력 단계: `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS porting evidence planning`, `redundancy next policy growth`, `codec/security/timestamp policy growth`, `protocol sequencing next parity growth`, `transport supervisor runtime feedback growth`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
@@ -32,10 +32,10 @@
 | --- | --- | --- | --- |
 | Rules and Governance | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` | 유지 관리 |
 | Requirements and HLD | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` | 인증/타깃 요구사항 정제 |
-| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-394` | 새 policy growth마다 review/spec linkage 유지 |
+| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-395` | 새 policy growth마다 review/spec linkage 유지 |
 | State Machine / Orchestrator | In Progress | `rsrx_state_machine.*`, `rsrx_orchestrator.*`, unit tests, reset baseline evidence `RV-393..RV-394` | future state/action 확장 시 assertion density 유지 |
 | Platform / Transport Abstraction | Completed | `rsrx_platform.h`, `rsrx_transport.h`, contract tests | 포팅 시 target adapter evidence |
-| Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..011`, `TC-API-014..016` | target runtime binding, selected codec policy 유지 |
+| Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..011`, `TC-API-014..017` | target runtime binding, selected codec policy 유지 |
 | Application Data Contract | Completed | application data LLD/spec, API/adapter tests | integration expansion only |
 | Protocol Context | In Progress | `TC-PC-004`, `TC-PC-019..028`, sequence/base/confirmation/API/recovery-cleanup/init-baseline guards | richer confirm/retransmission variants |
 | Transport Supervisor | In Progress | `TC-SUP-001..074`, runtime/channel/codec-status reports, public API guard evidence `RV-380`, init switch/runtime-loop baseline evidence `RV-388..RV-389` | richer runtime fault-ordering variants |
@@ -55,7 +55,7 @@
   - `cmake --build /tmp/sil4-build -j4`
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
-- Latest local verification was green after `RV-394`.
+- Latest local verification was green after `RV-395`.
 - External artifact references:
   - closed baseline fetch artifact: `sil4-ci-logs2/*`, source run `24661353609`, fetch run `24662424670`
   - remaining vendor evidence artifact: raw vendor export or secured attachment reference, `vendor_export_context.env`, vendor rule/file/location metadata, capture or workflow run page
