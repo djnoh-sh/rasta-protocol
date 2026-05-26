@@ -246,6 +246,111 @@ static void vTestRastaSrWireProfileDocumentsParityTarget(void)
 	vAssertTrue(pxProfile->uTimestampPresent == 1U, "rasta sr profile timestamp present");
 }
 
+static void vAssertMessageToRastaTypeMapping(
+	rsrx_message_type_t eMessageType,
+	uint16_t usExpectedRastaType,
+	const char * pcMessage)
+{
+	uint16_t usMappedType = 0U;
+
+	vAssertTrue(
+		rsrx_codec_map_message_type_to_rasta_sr_type(eMessageType, &usMappedType) == RSRX_CODEC_STATUS_OK,
+		pcMessage);
+	vAssertTrue(usMappedType == usExpectedRastaType, pcMessage);
+}
+
+static void vAssertRastaTypeToMessageMapping(
+	uint16_t usRastaType,
+	rsrx_message_type_t eExpectedMessageType,
+	const char * pcMessage)
+{
+	rsrx_message_type_t eMappedType = RSRX_MESSAGE_TYPE_INVALID;
+
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_type_to_message_type(usRastaType, &eMappedType) == RSRX_CODEC_STATUS_OK,
+		pcMessage);
+	vAssertTrue(eMappedType == eExpectedMessageType, pcMessage);
+}
+
+static void vAssertReasonToRastaDisconnectMapping(
+	rsrx_reason_code_t eReason,
+	uint16_t usExpectedRastaReason,
+	const char * pcMessage)
+{
+	uint16_t usMappedReason = 0U;
+
+	vAssertTrue(
+		rsrx_codec_map_reason_to_rasta_disconnect_reason(eReason, &usMappedReason) == RSRX_CODEC_STATUS_OK,
+		pcMessage);
+	vAssertTrue(usMappedReason == usExpectedRastaReason, pcMessage);
+}
+
+static void vTestRastaSrMessageTypeMapping(void)
+{
+	uint16_t usMappedType = 0xFFFFU;
+	rsrx_message_type_t eMappedType = RSRX_MESSAGE_TYPE_DATA;
+
+	vAssertMessageToRastaTypeMapping(RSRX_MESSAGE_TYPE_CONNECT_REQUEST, (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ, "connreq outbound mapping");
+	vAssertMessageToRastaTypeMapping(RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, (uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP, "connresp outbound mapping");
+	vAssertMessageToRastaTypeMapping(RSRX_MESSAGE_TYPE_HEARTBEAT, (uint16_t)RSRX_RASTA_SR_TYPE_HB, "heartbeat outbound mapping");
+	vAssertMessageToRastaTypeMapping(RSRX_MESSAGE_TYPE_DATA, (uint16_t)RSRX_RASTA_SR_TYPE_DATA, "data outbound mapping");
+	vAssertMessageToRastaTypeMapping(RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST, (uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ, "retrreq outbound mapping");
+	vAssertMessageToRastaTypeMapping(RSRX_MESSAGE_TYPE_DISCONNECT, (uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ, "discreq outbound mapping");
+
+	vAssertRastaTypeToMessageMapping((uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ, RSRX_MESSAGE_TYPE_CONNECT_REQUEST, "connreq inbound mapping");
+	vAssertRastaTypeToMessageMapping((uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP, RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, "connresp inbound mapping");
+	vAssertRastaTypeToMessageMapping((uint16_t)RSRX_RASTA_SR_TYPE_HB, RSRX_MESSAGE_TYPE_HEARTBEAT, "heartbeat inbound mapping");
+	vAssertRastaTypeToMessageMapping((uint16_t)RSRX_RASTA_SR_TYPE_DATA, RSRX_MESSAGE_TYPE_DATA, "data inbound mapping");
+	vAssertRastaTypeToMessageMapping((uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ, RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST, "retrreq inbound mapping");
+	vAssertRastaTypeToMessageMapping((uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ, RSRX_MESSAGE_TYPE_DISCONNECT, "discreq inbound mapping");
+
+	vAssertTrue(
+		rsrx_codec_map_message_type_to_rasta_sr_type(RSRX_MESSAGE_TYPE_DIAGNOSTIC, &usMappedType) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE,
+		"diagnostic unsupported outbound mapping");
+	vAssertTrue(usMappedType == 0U, "diagnostic unsupported clears mapped rasta type");
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_type_to_message_type((uint16_t)RSRX_RASTA_SR_TYPE_RETRRESP, &eMappedType) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE,
+		"retrresp unsupported inbound mapping");
+	vAssertTrue(eMappedType == RSRX_MESSAGE_TYPE_INVALID, "retrresp unsupported clears mapped message type");
+	vAssertTrue(
+		rsrx_codec_map_message_type_to_rasta_sr_type(RSRX_MESSAGE_TYPE_DATA, (uint16_t *)0) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"null rasta type output reject");
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_type_to_message_type((uint16_t)RSRX_RASTA_SR_TYPE_DATA, (rsrx_message_type_t *)0) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"null message output reject");
+}
+
+static void vTestRastaDisconnectReasonMapping(void)
+{
+	uint16_t usMappedReason = 0xFFFFU;
+
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_DISCONNECT_REQUESTED, (uint16_t)RSRX_RASTA_DISC_REASON_USERREQUEST, "disconnect user request mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_SHUTDOWN_REQUESTED, (uint16_t)RSRX_RASTA_DISC_REASON_USERREQUEST, "shutdown user request mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_INVALID_MESSAGE_RECEIVED, (uint16_t)RSRX_RASTA_DISC_REASON_UNEXPECTEDTYPE, "invalid message mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_INVALID_RESPONSE_RECEIVED, (uint16_t)RSRX_RASTA_DISC_REASON_UNEXPECTEDTYPE, "invalid response mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_SEQUENCE_GAP_DETECTED, (uint16_t)RSRX_RASTA_DISC_REASON_SEQNERROR, "sequence error mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_TIMEOUT_EXPIRED, (uint16_t)RSRX_RASTA_DISC_REASON_TIMEOUT, "timeout mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_INVALID_INPUT_ARGUMENT, (uint16_t)RSRX_RASTA_DISC_REASON_SERVICENOTALLOWED, "service not allowed mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_VERSION_MISMATCH_DETECTED, (uint16_t)RSRX_RASTA_DISC_REASON_INCOMPATIBLEVERSION, "incompatible version mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_RETRANSMISSION_FAILED, (uint16_t)RSRX_RASTA_DISC_REASON_RETRFAILED, "retransmission failed mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_PROTOCOL_ERROR_DETECTED, (uint16_t)RSRX_RASTA_DISC_REASON_PROTOCOLERROR, "protocol error mapping");
+	vAssertReasonToRastaDisconnectMapping(RSRX_REASON_CONSERVATIVE_FAILSAFE, (uint16_t)RSRX_RASTA_DISC_REASON_PROTOCOLERROR, "failsafe protocol error mapping");
+
+	vAssertTrue(
+		rsrx_codec_map_reason_to_rasta_disconnect_reason(RSRX_REASON_HEARTBEAT_ACCEPTED, &usMappedReason) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_REASON,
+		"non-disconnect reason unsupported mapping");
+	vAssertTrue(usMappedReason == 0U, "unsupported reason clears mapped rasta reason");
+	vAssertTrue(
+		rsrx_codec_map_reason_to_rasta_disconnect_reason(RSRX_REASON_TIMEOUT_EXPIRED, (uint16_t *)0) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"null disconnect reason output reject");
+}
+
 static void vTestCrc32InjectedCalculatorPortability(void)
 {
 	uint8_t auPayload[2] = { 0x5AU, 0xC3U };
@@ -1051,6 +1156,8 @@ int main(void)
 	vTestSecurityCapabilitiesDocumentCurrentPolicy();
 	vTestCrc32PortAndProfile();
 	vTestRastaSrWireProfileDocumentsParityTarget();
+	vTestRastaSrMessageTypeMapping();
+	vTestRastaDisconnectReasonMapping();
 	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();

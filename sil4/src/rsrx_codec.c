@@ -374,6 +374,150 @@ const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(
 	return &xCapabilities;
 }
 
+rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
+	rsrx_message_type_t eMessageType,
+	uint16_t * pusRastaType)
+{
+	if(pusRastaType == (uint16_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*pusRastaType = 0U;
+
+	switch(eMessageType)
+	{
+		case RSRX_MESSAGE_TYPE_CONNECT_REQUEST:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_CONNECT_RESPONSE:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_HEARTBEAT:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_HB;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_DATA:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_DISCONNECT:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_DIAGNOSTIC:
+		case RSRX_MESSAGE_TYPE_INVALID:
+		default:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+}
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_type_to_message_type(
+	uint16_t usRastaType,
+	rsrx_message_type_t * peMessageType)
+{
+	if(peMessageType == (rsrx_message_type_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*peMessageType = RSRX_MESSAGE_TYPE_INVALID;
+
+	switch(usRastaType)
+	{
+		case (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ:
+			*peMessageType = RSRX_MESSAGE_TYPE_CONNECT_REQUEST;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP:
+			*peMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_HB:
+			*peMessageType = RSRX_MESSAGE_TYPE_HEARTBEAT;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_DATA:
+			*peMessageType = RSRX_MESSAGE_TYPE_DATA;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ:
+			*peMessageType = RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ:
+			*peMessageType = RSRX_MESSAGE_TYPE_DISCONNECT;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_RETRRESP:
+		case (uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA:
+		default:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+}
+
+rsrx_codec_status_t rsrx_codec_map_reason_to_rasta_disconnect_reason(
+	rsrx_reason_code_t eReason,
+	uint16_t * pusRastaReason)
+{
+	if(pusRastaReason == (uint16_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*pusRastaReason = 0U;
+
+	switch(eReason)
+	{
+		case RSRX_REASON_DISCONNECT_REQUESTED:
+		case RSRX_REASON_SHUTDOWN_REQUESTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_USERREQUEST;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_INVALID_MESSAGE_RECEIVED:
+		case RSRX_REASON_INVALID_RESPONSE_RECEIVED:
+		case RSRX_REASON_UNEXPECTED_EVENT_REJECTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_UNEXPECTEDTYPE;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_SEQUENCE_GAP_DETECTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_SEQNERROR;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_TIMEOUT_EXPIRED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_TIMEOUT;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_INVALID_INPUT_ARGUMENT:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_SERVICENOTALLOWED;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_VERSION_MISMATCH_DETECTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_INCOMPATIBLEVERSION;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_RETRANSMISSION_FAILED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_RETRFAILED;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_PROTOCOL_ERROR_DETECTED:
+		case RSRX_REASON_CONSERVATIVE_FAILSAFE:
+		case RSRX_REASON_INVALID_EVENT_ENUM:
+		case RSRX_REASON_INVALID_STATE_VALUE:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_PROTOCOLERROR;
+			return RSRX_CODEC_STATUS_OK;
+
+		default:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_REASON;
+	}
+}
+
 rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,
 	size_t xDataLength,

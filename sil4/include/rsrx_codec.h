@@ -53,6 +53,30 @@ typedef enum
 	RSRX_MESSAGE_TYPE_DIAGNOSTIC
 } rsrx_message_type_t;
 
+typedef enum
+{
+	RSRX_RASTA_SR_TYPE_CONNREQ = 6200U,
+	RSRX_RASTA_SR_TYPE_CONNRESP = 6201U,
+	RSRX_RASTA_SR_TYPE_RETRREQ = 6212U,
+	RSRX_RASTA_SR_TYPE_RETRRESP = 6213U,
+	RSRX_RASTA_SR_TYPE_DISCREQ = 6216U,
+	RSRX_RASTA_SR_TYPE_HB = 6220U,
+	RSRX_RASTA_SR_TYPE_DATA = 6240U,
+	RSRX_RASTA_SR_TYPE_RETRDATA = 6241U
+} rsrx_rasta_sr_message_type_t;
+
+typedef enum
+{
+	RSRX_RASTA_DISC_REASON_USERREQUEST = 0U,
+	RSRX_RASTA_DISC_REASON_UNEXPECTEDTYPE = 2U,
+	RSRX_RASTA_DISC_REASON_SEQNERROR = 3U,
+	RSRX_RASTA_DISC_REASON_TIMEOUT = 4U,
+	RSRX_RASTA_DISC_REASON_SERVICENOTALLOWED = 5U,
+	RSRX_RASTA_DISC_REASON_INCOMPATIBLEVERSION = 6U,
+	RSRX_RASTA_DISC_REASON_RETRFAILED = 7U,
+	RSRX_RASTA_DISC_REASON_PROTOCOLERROR = 8U
+} rsrx_rasta_disconnect_reason_t;
+
 typedef struct
 {
 	rsrx_message_type_t eMessageType;
@@ -175,6 +199,18 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void);
 const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_sr_wire_profile(void);
 
 const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void);
+
+rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
+	rsrx_message_type_t eMessageType,
+	uint16_t * pusRastaType);
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_type_to_message_type(
+	uint16_t usRastaType,
+	rsrx_message_type_t * peMessageType);
+
+rsrx_codec_status_t rsrx_codec_map_reason_to_rasta_disconnect_reason(
+	rsrx_reason_code_t eReason,
+	uint16_t * pusRastaReason);
 
 rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,
