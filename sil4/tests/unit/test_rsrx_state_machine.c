@@ -445,6 +445,32 @@ static void vTestShutdownIgnoresInput(void)
 	vAssertActionCount(0U, xResult.xActions.uActionCount, "shutdown no action");
 }
 
+static void vTestResetClearsRuntimeBaseline(void)
+{
+	rsrx_state_machine_context_t xContext;
+	rsrx_transition_result_t xResult;
+	rsrx_status_t eStatus;
+
+	(void)rsrx_state_machine_init(&xContext);
+	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_INIT_SUCCESS, &xResult);
+	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_CONNECT_REQUEST, &xResult);
+	(void)rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_TIMEOUT, &xResult);
+
+	vAssertEqualState(RSRX_STATE_SAFE_DISCONNECT, xContext.eCurrentState, "reset baseline precondition state");
+	vAssertEqualStatus(RSRX_STATUS_REJECTED, xContext.eLastStatus, "reset baseline precondition status");
+	vAssertEqualReason(RSRX_REASON_TIMEOUT_EXPIRED, xContext.eLastReason, "reset baseline precondition reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_ERROR_TIMEOUT, xContext.eLastDiagnostic, "reset baseline precondition diagnostic");
+	vAssertActionCount(3U, xContext.uEventCounter, "reset baseline precondition event count");
+
+	eStatus = rsrx_state_machine_reset(&xContext);
+	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "reset baseline status");
+	vAssertEqualState(RSRX_STATE_UNINITIALIZED, xContext.eCurrentState, "reset baseline state");
+	vAssertEqualStatus(RSRX_STATUS_OK, xContext.eLastStatus, "reset baseline last status");
+	vAssertEqualReason(RSRX_REASON_NONE, xContext.eLastReason, "reset baseline last reason");
+	vAssertEqualDiagnostic(RSRX_DIAG_NONE, xContext.eLastDiagnostic, "reset baseline last diagnostic");
+	vAssertActionCount(0U, xContext.uEventCounter, "reset baseline event count");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_state_machine_context_t xContext;
@@ -481,6 +507,7 @@ int main(void)
 	vTestSafeDisconnectCleanup();
 	vTestActionOrderingAndUniqueness();
 	vTestShutdownIgnoresInput();
+	vTestResetClearsRuntimeBaseline();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_state_machine_test: all tests passed\n");
