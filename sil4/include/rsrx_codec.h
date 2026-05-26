@@ -8,12 +8,16 @@
 #include "rsrx_transport.h"
 
 #define D_RSRX_CODEC_HEADER_BYTES (16U)
+#define D_RSRX_CODEC_RASTA_SR_HEADER_BYTES (28U)
 #define D_RSRX_CODEC_MAX_PAYLOAD_BYTES (512U)
 #define D_RSRX_CODEC_MAX_FRAME_BYTES (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+#define D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES (D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 #define D_RSRX_CODEC_CRC_BYTES (4U)
+#define D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES (8U)
 #define D_RSRX_CODEC_MAX_CRC_FRAME_BYTES (D_RSRX_CODEC_MAX_FRAME_BYTES + D_RSRX_CODEC_CRC_BYTES)
 #define D_RSRX_CODEC_WIRE_PROFILE_DEFAULT (1U)
 #define D_RSRX_CODEC_WIRE_PROFILE_CRC32 (2U)
+#define D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR (3U)
 #define D_RSRX_CODEC_WIRE_PROFILE_VERSION (1U)
 
 typedef enum
@@ -133,6 +137,8 @@ const rsrx_codec_port_t * rsrx_codec_get_crc32_port(void);
 const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void);
 
 const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void);
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_sr_wire_profile(void);
 
 const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void);
 

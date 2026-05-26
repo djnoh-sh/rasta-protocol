@@ -226,6 +226,26 @@ static void vTestCrc32PortAndProfile(void)
 	vAssertTrue(xMessage.auPayload[0] == 0x7EU, "crc32 port decoded payload");
 }
 
+static void vTestRastaSrWireProfileDocumentsParityTarget(void)
+{
+	const rsrx_codec_wire_profile_t * pxProfile;
+
+	pxProfile = rsrx_codec_get_rasta_sr_wire_profile();
+
+	vAssertTrue(pxProfile != (const rsrx_codec_wire_profile_t *)0, "rasta sr profile present");
+	vAssertTrue(pxProfile->uProfileId == D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR, "rasta sr profile id");
+	vAssertTrue(pxProfile->uProfileVersion == D_RSRX_CODEC_WIRE_PROFILE_VERSION, "rasta sr profile version");
+	vAssertTrue(pxProfile->xHeaderBytes == D_RSRX_CODEC_RASTA_SR_HEADER_BYTES, "rasta sr profile header bytes");
+	vAssertTrue(pxProfile->xMaxPayloadBytes == D_RSRX_CODEC_MAX_PAYLOAD_BYTES, "rasta sr profile max payload bytes");
+	vAssertTrue(pxProfile->xMaxFrameBytes == D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES, "rasta sr profile max frame bytes");
+	vAssertTrue(pxProfile->xCrcBytes == 0U, "rasta sr profile crc bytes absent");
+	vAssertTrue(pxProfile->xMacBytes == 0U, "rasta sr profile mac bytes absent");
+	vAssertTrue(pxProfile->xTimestampBytes == D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES, "rasta sr profile timestamp bytes");
+	vAssertTrue(pxProfile->uCrcPresent == 0U, "rasta sr profile crc absent");
+	vAssertTrue(pxProfile->uMacPresent == 0U, "rasta sr profile mac absent");
+	vAssertTrue(pxProfile->uTimestampPresent == 1U, "rasta sr profile timestamp present");
+}
+
 static void vTestCrc32InjectedCalculatorPortability(void)
 {
 	uint8_t auPayload[2] = { 0x5AU, 0xC3U };
@@ -1030,6 +1050,7 @@ int main(void)
 	vTestWireProfileDocumentsCurrentSecurityFields();
 	vTestSecurityCapabilitiesDocumentCurrentPolicy();
 	vTestCrc32PortAndProfile();
+	vTestRastaSrWireProfileDocumentsParityTarget();
 	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();

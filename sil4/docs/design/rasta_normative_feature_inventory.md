@@ -70,4 +70,4 @@ The roadmap should therefore distinguish:
 - `MAC/security extension`: optional/project-specific unless a controlled requirement says otherwise.
 - `AM263Px/SafeRTOS hardware acceleration`: target adapter/evidence backlog, not portable core logic.
 
-`PDU-PARITY-001` is now narrowed to a structural SR PDU layout draft. The remaining open decision before code implementation is byte-order compatibility: the existing repo-source helpers serialize according to host endian, while SIL4 parity needs either an official fixed byte order, a documented compatibility profile, or captured deployment golden vectors.
+`PDU-PARITY-001A` is now implemented as profile metadata only. The remaining open decision before behavioral SR encode/decode implementation is byte-order compatibility: the existing repo-source helpers serialize according to host endian, while SIL4 parity needs either an official fixed byte order, a documented compatibility profile, or captured deployment golden vectors.

@@ -112,6 +112,11 @@ int main(void)
 	vAssertTrue(xWireProfile.uCrcPresent == uExpectedAbsent, "wire profile crc present contract");
 	vAssertTrue(xWireProfile.uMacPresent == uExpectedAbsent, "wire profile mac present contract");
 	vAssertTrue(xWireProfile.uTimestampPresent == uExpectedAbsent, "wire profile timestamp present contract");
+	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR != D_RSRX_CODEC_WIRE_PROFILE_DEFAULT, "rasta sr profile id differs from default");
+	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR != D_RSRX_CODEC_WIRE_PROFILE_CRC32, "rasta sr profile id differs from crc32");
+	vAssertTrue(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES == 28U, "rasta sr header bytes contract");
+	vAssertTrue(D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES == 8U, "rasta sr timestamp bytes contract");
+	vAssertTrue(D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES == (D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES), "rasta sr max frame contract");
 
 	(void)printf("rsrx_codec_contract_test: all tests passed\n");
 
