@@ -722,6 +722,89 @@ static void vTestRastaSrChecksumProfileAdmissionPolicy(void)
 		"rasta sr null checksum profile rejected");
 }
 
+static void vTestRastaSrTimestampAdmissionPolicy(void)
+{
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	rsrx_rasta_sr_timestamp_admission_policy_t xPolicy;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	xPacket.uTimestamp = 1000U;
+	xPacket.uConfirmedTimestamp = 995U;
+	xPolicy.uCurrentTimestamp = 1000U;
+	xPolicy.uAcceptedPastWindow = 100U;
+	xPolicy.uAcceptedFutureWindow = 10U;
+	xPolicy.uLastAcceptedTimestamp = 900U;
+
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) == RSRX_CODEC_STATUS_OK,
+		"rasta sr timestamp admission accepted");
+
+	xPacket.uTimestamp = 0U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_ZERO,
+		"rasta sr zero timestamp rejected");
+
+	xPacket.uTimestamp = 1011U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+		"rasta sr future timestamp rejected");
+
+	xPacket.uTimestamp = 899U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_REGRESSED,
+		"rasta sr regressed timestamp rejected before stale classification");
+
+	xPolicy.uLastAcceptedTimestamp = 0U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_STALE,
+		"rasta sr stale timestamp rejected");
+
+	xPacket.uTimestamp = 1000U;
+	xPacket.uConfirmedTimestamp = 1011U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+		"rasta sr future confirmed timestamp rejected");
+
+	xPacket.uConfirmedTimestamp = 995U;
+	xPolicy.uCurrentTimestamp = 0U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_ZERO,
+		"rasta sr zero current timestamp rejected");
+
+	xPolicy.uCurrentTimestamp = UINT32_MAX;
+	xPolicy.uAcceptedFutureWindow = 1U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr timestamp future boundary overflow rejected");
+
+	xPolicy.uCurrentTimestamp = 50U;
+	xPolicy.uAcceptedFutureWindow = 0U;
+	xPolicy.uAcceptedPastWindow = 51U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr timestamp past boundary underflow rejected");
+
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(
+			(const rsrx_rasta_sr_decoded_packet_t *)0,
+			&xPolicy) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr timestamp null packet rejected");
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(
+			&xPacket,
+			(const rsrx_rasta_sr_timestamp_admission_policy_t *)0) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr timestamp null policy rejected");
+}
+
 static void vTestCrc32InjectedCalculatorPortability(void)
 {
 	uint8_t auPayload[2] = { 0x5AU, 0xC3U };
@@ -1534,6 +1617,7 @@ int main(void)
 	vTestRastaSrNoChecksumEncodeRejectsInvalidInputs();
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
+	vTestRastaSrTimestampAdmissionPolicy();
 	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();

@@ -103,7 +103,7 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 | No 28-byte SR header profile | Implemented for no-checksum SR encode/decode; checksum-bearing profiles remain follow-up |
 | No RaSTA numeric type values | Implemented for supported current inbound/outbound SR message families |
 | No receiver/sender ID fields | Implemented in no-checksum SR encode/decode; authenticity/admission checks remain follow-up |
-| No timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields; replay/window validation remains follow-up |
+| No timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields with codec-level admission boundary; session handoff integration remains follow-up |
 | CRC32 wrapper is not SR safety-code parity | Explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains follow-up if selected |
 | Internal reason byte is not RaSTA DiscReq reason parity | Add disconnect reason mapping tests |
 
@@ -114,8 +114,8 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 3. `PDU-PARITY-001C`: Add RaSTA numeric message-type and disconnect-reason mapping tests. Status: implemented by `rsrx_rasta_sr_message_type_t`, `rsrx_rasta_disconnect_reason_t`, mapping APIs, and `TC-CODEC-039`.
 4. `PDU-PARITY-001D`: Implement no-checksum SR PDU encode/decode once endian policy is closed. Status: implemented by `rsrx_codec_encode_rasta_sr_no_checksum()`, `rsrx_codec_decode_rasta_sr_no_checksum()`, and `TC-CODEC-041`.
 5. `PDU-PARITY-001E`: Add selected SR checksum/hash profiles or startup rejection for unsupported configured profiles. Status: unsupported-profile admission boundary is implemented by `rsrx_rasta_sr_checksum_profile_t`, `rsrx_codec_validate_rasta_sr_checksum_profile()`, and `TC-CODEC-042`; actual hash calculation remains open unless a supported profile is selected.
-6. `PDU-PARITY-001F`: Integrate timestamp and confirmed-timestamp validation into protocol context/session admission.
+6. `PDU-PARITY-001F`: Integrate timestamp and confirmed-timestamp validation into protocol context/session admission. Status: codec-level admission boundary is implemented by `rsrx_rasta_sr_timestamp_admission_policy_t`, `rsrx_codec_validate_rasta_sr_timestamp_admission()`, and `TC-CODEC-043`; protocol/session handoff integration remains open.
 
 ## Review Position
 
-This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path and unsupported checksum-profile admission boundary are implemented. This does not claim MD4/BLAKE2b/SipHash calculation, timestamp admission/window validation, redundancy PDU, or MAC/security-extension completion.
+This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path, unsupported checksum-profile admission boundary, and codec-level timestamp admission boundary are implemented. This does not claim MD4/BLAKE2b/SipHash calculation, session handoff timestamp integration, redundancy PDU, or MAC/security-extension completion.

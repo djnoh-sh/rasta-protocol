@@ -40,7 +40,11 @@ typedef enum
 	RSRX_CODEC_STATUS_INVALID_CHANNEL,
 	RSRX_CODEC_STATUS_TRAILING_BYTES,
 	RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD,
-	RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE
+	RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+	RSRX_CODEC_STATUS_TIMESTAMP_ZERO,
+	RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+	RSRX_CODEC_STATUS_TIMESTAMP_STALE,
+	RSRX_CODEC_STATUS_TIMESTAMP_REGRESSED
 } rsrx_codec_status_t;
 
 typedef enum
@@ -92,6 +96,14 @@ typedef struct
 	rsrx_rasta_sr_checksum_algorithm_t eAlgorithm;
 	size_t xChecksumBytes;
 } rsrx_rasta_sr_checksum_profile_t;
+
+typedef struct
+{
+	uint32_t uCurrentTimestamp;
+	uint32_t uAcceptedPastWindow;
+	uint32_t uAcceptedFutureWindow;
+	uint32_t uLastAcceptedTimestamp;
+} rsrx_rasta_sr_timestamp_admission_policy_t;
 
 typedef struct
 {
@@ -226,6 +238,10 @@ rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
 
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	const rsrx_rasta_sr_checksum_profile_t * pxProfile);
+
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
 
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
 	rsrx_message_type_t eMessageType,

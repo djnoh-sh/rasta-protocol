@@ -34,6 +34,7 @@ int main(void)
 	uint8_t auBuffer[32] = { 0U };
 	uint32_t uExpectedEncodedLength;
 	volatile uint32_t uExpectedAbsent;
+	volatile uint32_t uExpectedLastAcceptedTimestamp;
 	volatile size_t xExpectedNoChecksumBytes;
 	volatile size_t xExpectedCrcCalculatorTypeSize;
 	rsrx_crc32_calculate_fn pfExpectedCrc32Calculator;
@@ -46,6 +47,7 @@ int main(void)
 	rsrx_rasta_sr_encode_request_t xRastaSrEncodeRequest;
 	rsrx_rasta_sr_decoded_packet_t xRastaSrDecodedPacket;
 	rsrx_rasta_sr_checksum_profile_t xRastaSrChecksumProfile;
+	rsrx_rasta_sr_timestamp_admission_policy_t xRastaSrTimestampPolicy;
 
 	xDecodedMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xDecodedMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -65,6 +67,7 @@ int main(void)
 	xEncodeBuffer.xBufferCapacity = sizeof(auBuffer);
 	uExpectedEncodedLength = 0U;
 	uExpectedAbsent = 0U;
+	uExpectedLastAcceptedTimestamp = 900U;
 	xExpectedNoChecksumBytes = 0U;
 	xExpectedCrcCalculatorTypeSize = sizeof(pfExpectedCrc32Calculator);
 	xEncodeBuffer.xEncodedLength = uExpectedEncodedLength;
@@ -112,6 +115,10 @@ int main(void)
 	xRastaSrDecodedPacket.uChecksumPresent = 0U;
 	xRastaSrChecksumProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE;
 	xRastaSrChecksumProfile.xChecksumBytes = xExpectedNoChecksumBytes;
+	xRastaSrTimestampPolicy.uCurrentTimestamp = 1000U;
+	xRastaSrTimestampPolicy.uAcceptedPastWindow = 100U;
+	xRastaSrTimestampPolicy.uAcceptedFutureWindow = 10U;
+	xRastaSrTimestampPolicy.uLastAcceptedTimestamp = uExpectedLastAcceptedTimestamp;
 
 	vAssertTrue(xDecodedMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "decoded message type contract");
 	vAssertTrue(xDecodedMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "decoded message event contract");
@@ -198,6 +205,10 @@ int main(void)
 	vAssertTrue(RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4 != RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum siphash contract");
 	vAssertTrue(xRastaSrChecksumProfile.eAlgorithm == RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum algorithm field contract");
 	vAssertTrue(xRastaSrChecksumProfile.xChecksumBytes == xExpectedNoChecksumBytes, "rasta sr checksum bytes field contract");
+	vAssertTrue(xRastaSrTimestampPolicy.uCurrentTimestamp == 1000U, "rasta sr timestamp current field contract");
+	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedPastWindow == 100U, "rasta sr timestamp past window field contract");
+	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedFutureWindow == 10U, "rasta sr timestamp future window field contract");
+	vAssertTrue(xRastaSrTimestampPolicy.uLastAcceptedTimestamp == uExpectedLastAcceptedTimestamp, "rasta sr timestamp last accepted field contract");
 
 	(void)printf("rsrx_codec_contract_test: all tests passed\n");
 

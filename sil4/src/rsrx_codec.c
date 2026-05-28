@@ -585,6 +585,61 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	}
 }
 
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy)
+{
+	uint32_t uPastBoundary;
+	uint32_t uFutureBoundary;
+
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_timestamp_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxPacket->uTimestamp == 0U) ||
+		(pxPolicy->uCurrentTimestamp == 0U))
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_ZERO;
+	}
+
+	if((UINT32_MAX - pxPolicy->uAcceptedFutureWindow) < pxPolicy->uCurrentTimestamp)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+	uFutureBoundary = pxPolicy->uCurrentTimestamp + pxPolicy->uAcceptedFutureWindow;
+
+	if(pxPolicy->uCurrentTimestamp < pxPolicy->uAcceptedPastWindow)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+	uPastBoundary = pxPolicy->uCurrentTimestamp - pxPolicy->uAcceptedPastWindow;
+
+	if((pxPolicy->uLastAcceptedTimestamp != 0U) &&
+		(pxPacket->uTimestamp <= pxPolicy->uLastAcceptedTimestamp))
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_REGRESSED;
+	}
+
+	if(pxPacket->uTimestamp > uFutureBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
+	}
+
+	if(pxPacket->uTimestamp < uPastBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_STALE;
+	}
+
+	if(pxPacket->uConfirmedTimestamp > uFutureBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
 	rsrx_message_type_t eMessageType,
 	uint16_t * pusRastaType)
