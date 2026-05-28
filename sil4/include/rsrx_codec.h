@@ -20,6 +20,7 @@
 #define D_RSRX_CODEC_WIRE_PROFILE_CRC32 (2U)
 #define D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR (3U)
 #define D_RSRX_CODEC_WIRE_PROFILE_VERSION (1U)
+#define D_RSRX_CODEC_RASTA_SR_BYTE_ORDER_BIG_ENDIAN (1U)
 
 typedef enum
 {
@@ -211,6 +212,22 @@ rsrx_codec_status_t rsrx_codec_map_rasta_sr_type_to_message_type(
 rsrx_codec_status_t rsrx_codec_map_reason_to_rasta_disconnect_reason(
 	rsrx_reason_code_t eReason,
 	uint16_t * pusRastaReason);
+
+rsrx_codec_status_t rsrx_codec_write_rasta_sr_uint16(
+	uint16_t usValue,
+	uint8_t * puBuffer);
+
+rsrx_codec_status_t rsrx_codec_read_rasta_sr_uint16(
+	const uint8_t * puBuffer,
+	uint16_t * pusValue);
+
+rsrx_codec_status_t rsrx_codec_write_rasta_sr_uint32(
+	uint32_t uValue,
+	uint8_t * puBuffer);
+
+rsrx_codec_status_t rsrx_codec_read_rasta_sr_uint32(
+	const uint8_t * puBuffer,
+	uint32_t * puValue);
 
 rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,

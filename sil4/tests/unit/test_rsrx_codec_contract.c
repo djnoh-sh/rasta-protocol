@@ -162,6 +162,7 @@ int main(void)
 	vAssertTrue(RSRX_RASTA_DISC_REASON_INCOMPATIBLEVERSION == 6U, "rasta disc incompatible version contract");
 	vAssertTrue(RSRX_RASTA_DISC_REASON_RETRFAILED == 7U, "rasta disc retransmission failed contract");
 	vAssertTrue(RSRX_RASTA_DISC_REASON_PROTOCOLERROR == 8U, "rasta disc protocol error contract");
+	vAssertTrue(D_RSRX_CODEC_RASTA_SR_BYTE_ORDER_BIG_ENDIAN == 1U, "rasta sr big-endian byte order contract");
 	vAssertTrue(xRastaSrEncodeRequest.usPacketLength == (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auPayload)), "rasta sr encode length contract");
 	vAssertTrue(xRastaSrEncodeRequest.usMessageType == 6240U, "rasta sr encode type contract");
 	vAssertTrue(xRastaSrEncodeRequest.uReceiverId == 0x11223344U, "rasta sr encode receiver contract");

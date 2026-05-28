@@ -78,19 +78,21 @@ The repo-source `rasta_conn_type` values are:
 
 The SIL4 implementation must either encode these exact numeric values in a RaSTA SR wire profile or provide an explicit conversion layer that proves equivalent wire behavior.
 
-## Endian Policy Gap
+## Byte-Order Policy
 
 The repo-source `shortToBytes` and `longToBytes` helpers currently serialize according to host endian. On little-endian hosts this produces little-endian wire bytes; on big-endian hosts it produces big-endian wire bytes.
 
-The SIL4 implementation should not inherit host-dependent wire encoding. Before implementation, `PDU-PARITY-001` must close one of the following decisions:
+The SIL4 implementation does not inherit host-dependent wire encoding. The selected SIL4 RaSTA SR profile uses fixed big-endian byte order for 16-bit and 32-bit SR header fields.
 
-| Decision | Effect |
+| Policy Item | Decision |
 | --- | --- |
-| Official spec requires a fixed byte order | Implement that fixed byte order and add cross-host invariant tests |
-| Customer deployment accepts repo-source host-dependent behavior | Document this as a compatibility mode and reject mixed-endian deployments |
-| Compatibility with existing deployed peers is required | Capture golden vectors from those peers and implement the observed byte order as an explicit profile |
+| Wire byte order | fixed big-endian |
+| Host-endian dependence | prohibited in the SIL4 SR profile |
+| Public contract | `D_RSRX_CODEC_RASTA_SR_BYTE_ORDER_BIG_ENDIAN` |
+| Helper coverage | `rsrx_codec_write_rasta_sr_uint16`, `rsrx_codec_read_rasta_sr_uint16`, `rsrx_codec_write_rasta_sr_uint32`, `rsrx_codec_read_rasta_sr_uint32` |
+| Verification | `TC-CODEC-040` |
 
-Until this decision is closed, the SR PDU profile can be specified structurally but not claimed wire-compatible.
+This closes the internal byte-order policy for future SR encode/decode implementation. It does not by itself prove interoperability with legacy peers that may depend on the repo-source host-endian behavior. If such compatibility is required, deployment-specific golden vectors must be captured and reviewed before enabling that compatibility path.
 
 ## Required SIL4 Delta
 
@@ -110,7 +112,7 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 1. `PDU-PARITY-001A`: Add RaSTA SR profile constants and reporting metadata without changing existing encode/decode behavior. Status: implemented by `D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR`, `D_RSRX_CODEC_RASTA_SR_HEADER_BYTES`, `D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES`, and `rsrx_codec_get_rasta_sr_wire_profile()`.
 2. `PDU-PARITY-001B`: Introduce explicit RaSTA SR encode/decode request/result structures containing length, type, IDs, sequence, confirmation, timestamps, payload, and checksum metadata. Status: implemented by `rsrx_rasta_sr_encode_request_t`, `rsrx_rasta_sr_decoded_packet_t`, and `TC-CODEC-038`.
 3. `PDU-PARITY-001C`: Add RaSTA numeric message-type and disconnect-reason mapping tests. Status: implemented by `rsrx_rasta_sr_message_type_t`, `rsrx_rasta_disconnect_reason_t`, mapping APIs, and `TC-CODEC-039`.
-4. `PDU-PARITY-001D`: Implement no-checksum SR PDU encode/decode once endian policy is closed.
+4. `PDU-PARITY-001D`: Implement no-checksum SR PDU encode/decode once endian policy is closed. Status: byte-order policy is closed as fixed big-endian by `TC-CODEC-040`; behavioral encode/decode remains open.
 5. `PDU-PARITY-001E`: Add selected SR checksum/hash profiles or startup rejection for unsupported configured profiles.
 6. `PDU-PARITY-001F`: Integrate timestamp and confirmed-timestamp validation into protocol context/session admission.
 

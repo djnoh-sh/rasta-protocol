@@ -518,6 +518,60 @@ rsrx_codec_status_t rsrx_codec_map_reason_to_rasta_disconnect_reason(
 	}
 }
 
+rsrx_codec_status_t rsrx_codec_write_rasta_sr_uint16(
+	uint16_t usValue,
+	uint8_t * puBuffer)
+{
+	if(puBuffer == (uint8_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vWriteUint16(puBuffer, usValue);
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_read_rasta_sr_uint16(
+	const uint8_t * puBuffer,
+	uint16_t * pusValue)
+{
+	if((puBuffer == (const uint8_t *)0) ||
+		(pusValue == (uint16_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*pusValue = usReadUint16(puBuffer);
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_write_rasta_sr_uint32(
+	uint32_t uValue,
+	uint8_t * puBuffer)
+{
+	if(puBuffer == (uint8_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vWriteUint32(puBuffer, uValue);
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_read_rasta_sr_uint32(
+	const uint8_t * puBuffer,
+	uint32_t * puValue)
+{
+	if((puBuffer == (const uint8_t *)0) ||
+		(puValue == (uint32_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*puValue = uReadUint32(puBuffer);
+	return RSRX_CODEC_STATUS_OK;
+}
+
 rsrx_codec_status_t rsrx_codec_calculate_crc32(
 	const uint8_t * puData,
 	size_t xDataLength,

@@ -351,6 +351,56 @@ static void vTestRastaDisconnectReasonMapping(void)
 		"null disconnect reason output reject");
 }
 
+static void vTestRastaSrByteOrderIsFixedBigEndian(void)
+{
+	uint8_t au16[2] = { 0U, 0U };
+	uint8_t au32[4] = { 0U, 0U, 0U, 0U };
+	uint16_t usDecoded16 = 0U;
+	uint32_t uDecoded32 = 0U;
+
+	vAssertTrue(D_RSRX_CODEC_RASTA_SR_BYTE_ORDER_BIG_ENDIAN == 1U, "rasta sr byte order constant");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(0x1830U, au16) == RSRX_CODEC_STATUS_OK,
+		"rasta sr write uint16");
+	vAssertTrue(au16[0] == 0x18U, "rasta sr uint16 high byte");
+	vAssertTrue(au16[1] == 0x30U, "rasta sr uint16 low byte");
+	vAssertTrue(
+		rsrx_codec_read_rasta_sr_uint16(au16, &usDecoded16) == RSRX_CODEC_STATUS_OK,
+		"rasta sr read uint16");
+	vAssertTrue(usDecoded16 == 0x1830U, "rasta sr uint16 round-trip");
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0x11223344U, au32) == RSRX_CODEC_STATUS_OK,
+		"rasta sr write uint32");
+	vAssertTrue(au32[0] == 0x11U, "rasta sr uint32 byte 0");
+	vAssertTrue(au32[1] == 0x22U, "rasta sr uint32 byte 1");
+	vAssertTrue(au32[2] == 0x33U, "rasta sr uint32 byte 2");
+	vAssertTrue(au32[3] == 0x44U, "rasta sr uint32 byte 3");
+	vAssertTrue(
+		rsrx_codec_read_rasta_sr_uint32(au32, &uDecoded32) == RSRX_CODEC_STATUS_OK,
+		"rasta sr read uint32");
+	vAssertTrue(uDecoded32 == 0x11223344U, "rasta sr uint32 round-trip");
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(0x0102U, (uint8_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr write uint16 null reject");
+	vAssertTrue(
+		rsrx_codec_read_rasta_sr_uint16((const uint8_t *)0, &usDecoded16) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr read uint16 null buffer reject");
+	vAssertTrue(
+		rsrx_codec_read_rasta_sr_uint16(au16, (uint16_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr read uint16 null output reject");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0x01020304U, (uint8_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr write uint32 null reject");
+	vAssertTrue(
+		rsrx_codec_read_rasta_sr_uint32((const uint8_t *)0, &uDecoded32) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr read uint32 null buffer reject");
+	vAssertTrue(
+		rsrx_codec_read_rasta_sr_uint32(au32, (uint32_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr read uint32 null output reject");
+}
+
 static void vTestCrc32InjectedCalculatorPortability(void)
 {
 	uint8_t auPayload[2] = { 0x5AU, 0xC3U };
@@ -1158,6 +1208,7 @@ int main(void)
 	vTestRastaSrWireProfileDocumentsParityTarget();
 	vTestRastaSrMessageTypeMapping();
 	vTestRastaDisconnectReasonMapping();
+	vTestRastaSrByteOrderIsFixedBigEndian();
 	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();
