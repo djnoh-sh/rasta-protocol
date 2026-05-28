@@ -113,6 +113,33 @@ static void vClearDecodedMessage(
 	}
 }
 
+static void vClearRastaSrDecodedPacket(
+	rsrx_rasta_sr_decoded_packet_t * pxPacket)
+{
+	size_t xIndex;
+
+	pxPacket->usPacketLength = 0U;
+	pxPacket->usMessageType = 0U;
+	pxPacket->uReceiverId = 0U;
+	pxPacket->uSenderId = 0U;
+	pxPacket->uSequenceNumber = 0U;
+	pxPacket->uConfirmedSequenceNumber = 0U;
+	pxPacket->uTimestamp = 0U;
+	pxPacket->uConfirmedTimestamp = 0U;
+	pxPacket->xPayloadLength = 0U;
+	pxPacket->xChecksumLength = 0U;
+	pxPacket->uChecksumPresent = 0U;
+
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_MAX_PAYLOAD_BYTES; ++xIndex)
+	{
+		pxPacket->auPayload[xIndex] = 0U;
+	}
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_RASTA_SR_MAX_CHECKSUM_BYTES; ++xIndex)
+	{
+		pxPacket->auChecksum[xIndex] = 0U;
+	}
+}
+
 static uint32_t uUpdateCrc32Byte(
 	uint32_t uCrc,
 	uint8_t ucData)
@@ -372,6 +399,157 @@ const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(
 	};
 
 	return &xCapabilities;
+}
+
+rsrx_codec_status_t rsrx_codec_encode_rasta_sr_no_checksum(
+	const rsrx_rasta_sr_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer)
+{
+	size_t xRequiredBytes;
+	size_t xIndex;
+	rsrx_message_type_t eMappedType;
+
+	if(pxBuffer == (rsrx_encode_buffer_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxBuffer->xEncodedLength = 0U;
+
+	if((pxRequest == (const rsrx_rasta_sr_encode_request_t *)0) ||
+		(pxBuffer->puBuffer == (uint8_t *)0) ||
+		((pxRequest->puPayload == (const uint8_t *)0) &&
+			(pxRequest->xPayloadLength > 0U)) ||
+		(pxRequest->puChecksum != (const uint8_t *)0) ||
+		(pxRequest->xChecksumLength != 0U))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_codec_map_rasta_sr_type_to_message_type(pxRequest->usMessageType, &eMappedType) !=
+		RSRX_CODEC_STATUS_OK)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+
+	if(pxRequest->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	xRequiredBytes = D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + pxRequest->xPayloadLength;
+	if((xRequiredBytes > (size_t)UINT16_MAX) ||
+		(pxRequest->usPacketLength != (uint16_t)xRequiredBytes))
+	{
+		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
+	}
+
+	if(pxBuffer->xBufferCapacity < xRequiredBytes)
+	{
+		return RSRX_CODEC_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	vWriteUint16(&pxBuffer->puBuffer[0], pxRequest->usPacketLength);
+	vWriteUint16(&pxBuffer->puBuffer[2], pxRequest->usMessageType);
+	vWriteUint32(&pxBuffer->puBuffer[4], pxRequest->uReceiverId);
+	vWriteUint32(&pxBuffer->puBuffer[8], pxRequest->uSenderId);
+	vWriteUint32(&pxBuffer->puBuffer[12], pxRequest->uSequenceNumber);
+	vWriteUint32(&pxBuffer->puBuffer[16], pxRequest->uConfirmedSequenceNumber);
+	vWriteUint32(&pxBuffer->puBuffer[20], pxRequest->uTimestamp);
+	vWriteUint32(&pxBuffer->puBuffer[24], pxRequest->uConfirmedTimestamp);
+
+	for(xIndex = 0U; xIndex < pxRequest->xPayloadLength; ++xIndex)
+	{
+		pxBuffer->puBuffer[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + xIndex] =
+			pxRequest->puPayload[xIndex];
+	}
+
+	pxBuffer->xEncodedLength = xRequiredBytes;
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_sr_decoded_packet_t * pxPacket)
+{
+	size_t xPayloadLength;
+	size_t xIndex;
+	uint16_t usPacketLength;
+	uint16_t usMessageType;
+	rsrx_message_type_t eMappedType;
+
+	if(pxPacket == (rsrx_rasta_sr_decoded_packet_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearRastaSrDecodedPacket(pxPacket);
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxFrame->xPayloadLength < D_RSRX_CODEC_RASTA_SR_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_SHORT_HEADER;
+	}
+	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
+	{
+		return RSRX_CODEC_STATUS_NON_FRAME_EVENT;
+	}
+	if(uTransportChannelIsSupported(pxFrame->eChannelId) == 0U)
+	{
+		return RSRX_CODEC_STATUS_INVALID_CHANNEL;
+	}
+
+	usPacketLength = usReadUint16(&pxFrame->puPayload[0]);
+	usMessageType = usReadUint16(&pxFrame->puPayload[2]);
+
+	if(rsrx_codec_map_rasta_sr_type_to_message_type(usMessageType, &eMappedType) !=
+		RSRX_CODEC_STATUS_OK)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+
+	if(usPacketLength < D_RSRX_CODEC_RASTA_SR_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
+	}
+	if(pxFrame->xPayloadLength > (size_t)usPacketLength)
+	{
+		return RSRX_CODEC_STATUS_TRAILING_BYTES;
+	}
+	if(pxFrame->xPayloadLength < (size_t)usPacketLength)
+	{
+		return RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD;
+	}
+
+	xPayloadLength = (size_t)usPacketLength - D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
+	if(xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	pxPacket->usPacketLength = usPacketLength;
+	pxPacket->usMessageType = usMessageType;
+	pxPacket->uReceiverId = uReadUint32(&pxFrame->puPayload[4]);
+	pxPacket->uSenderId = uReadUint32(&pxFrame->puPayload[8]);
+	pxPacket->uSequenceNumber = uReadUint32(&pxFrame->puPayload[12]);
+	pxPacket->uConfirmedSequenceNumber = uReadUint32(&pxFrame->puPayload[16]);
+	pxPacket->uTimestamp = uReadUint32(&pxFrame->puPayload[20]);
+	pxPacket->uConfirmedTimestamp = uReadUint32(&pxFrame->puPayload[24]);
+	pxPacket->xPayloadLength = xPayloadLength;
+
+	for(xIndex = 0U; xIndex < xPayloadLength; ++xIndex)
+	{
+		pxPacket->auPayload[xIndex] =
+			pxFrame->puPayload[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + xIndex];
+	}
+
+	return RSRX_CODEC_STATUS_OK;
 }
 
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(

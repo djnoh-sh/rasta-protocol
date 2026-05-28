@@ -201,6 +201,14 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_sr_wire_profile(void);
 
 const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void);
 
+rsrx_codec_status_t rsrx_codec_encode_rasta_sr_no_checksum(
+	const rsrx_rasta_sr_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer);
+
+rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_sr_decoded_packet_t * pxPacket);
+
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
 	rsrx_message_type_t eMessageType,
 	uint16_t * pusRastaType);

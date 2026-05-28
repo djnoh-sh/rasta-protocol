@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-26`
+- Last Updated: `2026-05-28`
 
 ## Purpose
 
@@ -100,10 +100,10 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 
 | Gap | Required Follow-up |
 | --- | --- |
-| No 28-byte SR header profile | Add `RSRX_CODEC_WIRE_PROFILE_RASTA_SR` metadata and tests |
-| No RaSTA numeric type values | Add mapping or explicit wire-type conversion |
-| No receiver/sender ID fields | Extend encode/decode contracts and authenticity checks |
-| No timestamp/confirmed timestamp fields | Extend protocol context validation and replay/window tests |
+| No 28-byte SR header profile | Implemented for no-checksum SR encode/decode; checksum-bearing profiles remain follow-up |
+| No RaSTA numeric type values | Implemented for supported current inbound/outbound SR message families |
+| No receiver/sender ID fields | Implemented in no-checksum SR encode/decode; authenticity/admission checks remain follow-up |
+| No timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields; replay/window validation remains follow-up |
 | CRC32 wrapper is not SR safety-code parity | Add RaSTA checksum/hash profiles or explicit unsupported-profile rejects |
 | Internal reason byte is not RaSTA DiscReq reason parity | Add disconnect reason mapping tests |
 
@@ -112,10 +112,10 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 1. `PDU-PARITY-001A`: Add RaSTA SR profile constants and reporting metadata without changing existing encode/decode behavior. Status: implemented by `D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR`, `D_RSRX_CODEC_RASTA_SR_HEADER_BYTES`, `D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES`, and `rsrx_codec_get_rasta_sr_wire_profile()`.
 2. `PDU-PARITY-001B`: Introduce explicit RaSTA SR encode/decode request/result structures containing length, type, IDs, sequence, confirmation, timestamps, payload, and checksum metadata. Status: implemented by `rsrx_rasta_sr_encode_request_t`, `rsrx_rasta_sr_decoded_packet_t`, and `TC-CODEC-038`.
 3. `PDU-PARITY-001C`: Add RaSTA numeric message-type and disconnect-reason mapping tests. Status: implemented by `rsrx_rasta_sr_message_type_t`, `rsrx_rasta_disconnect_reason_t`, mapping APIs, and `TC-CODEC-039`.
-4. `PDU-PARITY-001D`: Implement no-checksum SR PDU encode/decode once endian policy is closed. Status: byte-order policy is closed as fixed big-endian by `TC-CODEC-040`; behavioral encode/decode remains open.
+4. `PDU-PARITY-001D`: Implement no-checksum SR PDU encode/decode once endian policy is closed. Status: implemented by `rsrx_codec_encode_rasta_sr_no_checksum()`, `rsrx_codec_decode_rasta_sr_no_checksum()`, and `TC-CODEC-041`.
 5. `PDU-PARITY-001E`: Add selected SR checksum/hash profiles or startup rejection for unsupported configured profiles.
 6. `PDU-PARITY-001F`: Integrate timestamp and confirmed-timestamp validation into protocol context/session admission.
 
 ## Review Position
 
-This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. It does not change the current host verification baseline and does not claim checksum, timestamp, redundancy PDU, or MAC/security-extension completion.
+This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path is implemented. This does not claim checksum/hash, timestamp admission/window validation, redundancy PDU, or MAC/security-extension completion.

@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-21`
+- Last Updated: `2026-05-28`
 
 ## Scope
 
@@ -62,3 +62,4 @@
 | TC-CODEC-038 | FR-003, FR-004, SR-001 | RaSTA SR encode/decode structure contract 검증 | public header include 가능, SR packet field 값을 가진 encode request 및 decoded packet 인스턴스 준비 | contract test build/run에서 `rsrx_rasta_sr_encode_request_t`와 `rsrx_rasta_sr_decoded_packet_t` 필드 접근 | length, numeric type, receiver/sender ID, sequence/confirmed sequence, timestamp/confirmed timestamp, payload, checksum metadata 필드가 결정적으로 사용 가능 | RaSTA SR behavioral encode/decode 구현 전에 wire-layout parity에 필요한 public data contract를 고정한다 |
 | TC-CODEC-039 | FR-003, FR-004, SR-001 | RaSTA SR numeric type/disconnect reason mapping 검증 | public RaSTA SR numeric constants와 internal message/reason values 준비 | message-to-wire, wire-to-message, reason-to-disconnect-reason mapping API 호출 | supported mappings는 repo-source numeric values를 반환하고, unsupported/null-output paths는 typed status와 cleared output을 반환한다 | SR encode/decode 구현 전에 RaSTA numeric message type 및 DiscReq reason parity 경계를 코드와 테스트에서 고정한다 |
 | TC-CODEC-040 | FR-003, FR-004, SR-001 | RaSTA SR fixed byte-order contract 검증 | public RaSTA SR byte-order constant와 uint16/uint32 helper 준비 | write/read helper 호출 및 null-argument path 호출 | uint16/uint32 helper가 고정 big-endian byte order로 round-trip되고 null input은 `INVALID_ARGUMENT`를 반환한다 | SR behavioral encode/decode 구현 전에 host endian에 의존하지 않는 wire-order policy를 코드와 테스트에서 고정한다 |
+| TC-CODEC-041 | FR-003, FR-004, SR-001 | RaSTA SR no-checksum encode/decode 검증 | checksum length가 0인 SR encode request, transport frame, malformed frame variants 준비 | `rsrx_codec_encode_rasta_sr_no_checksum()` 및 `rsrx_codec_decode_rasta_sr_no_checksum()` 호출 | 28-byte SR header와 payload가 fixed big-endian으로 round-trip되고 small buffer, supplied checksum, unsupported type, length mismatch, short/trailing/truncated/non-frame/invalid-channel failures가 typed status와 cleared output을 반환한다 | checksum/hash profile을 아직 claim하지 않는 범위에서 SR PDU common-field behavioral encode/decode parity를 고정한다 |

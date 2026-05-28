@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-26`
+- Last Updated: `2026-05-28`
 
 ## Purpose
 
@@ -70,4 +70,4 @@ The roadmap should therefore distinguish:
 - `MAC/security extension`: optional/project-specific unless a controlled requirement says otherwise.
 - `AM263Px/SafeRTOS hardware acceleration`: target adapter/evidence backlog, not portable core logic.
 
-`PDU-PARITY-001A..001C` are now implemented as profile metadata, public SR packet data contracts, and numeric type/disconnect reason mappings. The SIL4 RaSTA SR byte-order policy is now fixed big-endian for portable host-independent encode/decode implementation. The remaining open work before behavioral SR encode/decode closeout is implementing and validating the no-checksum SR PDU encode/decode path, then adding checksum/hash and timestamp-window behavior.
+`PDU-PARITY-001A..001D` are now implemented as profile metadata, public SR packet data contracts, numeric type/disconnect reason mappings, fixed big-endian byte-order policy, and no-checksum SR common-header/payload encode/decode behavior. The remaining open parity work is checksum/hash profile handling, timestamp/window admission behavior, receiver/sender authenticity checks, and redundancy PDU parity if that wire mode is in scope.
