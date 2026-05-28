@@ -673,6 +673,55 @@ static void vTestRastaSrNoChecksumDecodeRejectsMalformedFrames(void)
 	vAssertRastaSrDecodedPacketCleared(&xPacket, "rasta sr no-checksum invalid channel clears packet");
 }
 
+static void vTestRastaSrChecksumProfileAdmissionPolicy(void)
+{
+	rsrx_rasta_sr_checksum_profile_t xProfile;
+
+	xProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE;
+	xProfile.xChecksumBytes = 0U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile(&xProfile) == RSRX_CODEC_STATUS_OK,
+		"rasta sr checksum none profile accepted");
+
+	xProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_MD4;
+	xProfile.xChecksumBytes = 8U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+		"rasta sr md4 checksum profile rejected");
+
+	xProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_BLAKE2B;
+	xProfile.xChecksumBytes = 16U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+		"rasta sr blake2b checksum profile rejected");
+
+	xProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4;
+	xProfile.xChecksumBytes = 8U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+		"rasta sr siphash checksum profile rejected");
+
+	xProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE;
+	xProfile.xChecksumBytes = 8U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile(&xProfile) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr none with checksum bytes invalid");
+
+	xProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_MD4;
+	xProfile.xChecksumBytes = 4U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile(&xProfile) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr invalid checksum length rejected");
+
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile((const rsrx_rasta_sr_checksum_profile_t *)0) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr null checksum profile rejected");
+}
+
 static void vTestCrc32InjectedCalculatorPortability(void)
 {
 	uint8_t auPayload[2] = { 0x5AU, 0xC3U };
@@ -1484,6 +1533,7 @@ int main(void)
 	vTestRastaSrNoChecksumEncodeDecodeRoundTrip();
 	vTestRastaSrNoChecksumEncodeRejectsInvalidInputs();
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
+	vTestRastaSrChecksumProfileAdmissionPolicy();
 	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();

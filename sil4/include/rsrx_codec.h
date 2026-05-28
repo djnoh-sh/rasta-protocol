@@ -39,7 +39,8 @@ typedef enum
 	RSRX_CODEC_STATUS_NON_FRAME_EVENT,
 	RSRX_CODEC_STATUS_INVALID_CHANNEL,
 	RSRX_CODEC_STATUS_TRAILING_BYTES,
-	RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD
+	RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD,
+	RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE
 } rsrx_codec_status_t;
 
 typedef enum
@@ -77,6 +78,20 @@ typedef enum
 	RSRX_RASTA_DISC_REASON_RETRFAILED = 7U,
 	RSRX_RASTA_DISC_REASON_PROTOCOLERROR = 8U
 } rsrx_rasta_disconnect_reason_t;
+
+typedef enum
+{
+	RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE = 0,
+	RSRX_RASTA_SR_CHECKSUM_ALGORITHM_MD4,
+	RSRX_RASTA_SR_CHECKSUM_ALGORITHM_BLAKE2B,
+	RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4
+} rsrx_rasta_sr_checksum_algorithm_t;
+
+typedef struct
+{
+	rsrx_rasta_sr_checksum_algorithm_t eAlgorithm;
+	size_t xChecksumBytes;
+} rsrx_rasta_sr_checksum_profile_t;
 
 typedef struct
 {
@@ -208,6 +223,9 @@ rsrx_codec_status_t rsrx_codec_encode_rasta_sr_no_checksum(
 rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
 	const rsrx_transport_frame_t * pxFrame,
 	rsrx_rasta_sr_decoded_packet_t * pxPacket);
+
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
+	const rsrx_rasta_sr_checksum_profile_t * pxProfile);
 
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
 	rsrx_message_type_t eMessageType,

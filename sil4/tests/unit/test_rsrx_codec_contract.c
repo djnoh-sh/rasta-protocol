@@ -34,6 +34,7 @@ int main(void)
 	uint8_t auBuffer[32] = { 0U };
 	uint32_t uExpectedEncodedLength;
 	volatile uint32_t uExpectedAbsent;
+	volatile size_t xExpectedNoChecksumBytes;
 	volatile size_t xExpectedCrcCalculatorTypeSize;
 	rsrx_crc32_calculate_fn pfExpectedCrc32Calculator;
 	rsrx_decode_frame_fn pfExpectedDecode;
@@ -44,6 +45,7 @@ int main(void)
 	rsrx_codec_wire_profile_t xWireProfile;
 	rsrx_rasta_sr_encode_request_t xRastaSrEncodeRequest;
 	rsrx_rasta_sr_decoded_packet_t xRastaSrDecodedPacket;
+	rsrx_rasta_sr_checksum_profile_t xRastaSrChecksumProfile;
 
 	xDecodedMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xDecodedMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -63,6 +65,7 @@ int main(void)
 	xEncodeBuffer.xBufferCapacity = sizeof(auBuffer);
 	uExpectedEncodedLength = 0U;
 	uExpectedAbsent = 0U;
+	xExpectedNoChecksumBytes = 0U;
 	xExpectedCrcCalculatorTypeSize = sizeof(pfExpectedCrc32Calculator);
 	xEncodeBuffer.xEncodedLength = uExpectedEncodedLength;
 
@@ -107,6 +110,8 @@ int main(void)
 	xRastaSrDecodedPacket.auPayload[0] = auPayload[0];
 	xRastaSrDecodedPacket.xChecksumLength = 0U;
 	xRastaSrDecodedPacket.uChecksumPresent = 0U;
+	xRastaSrChecksumProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE;
+	xRastaSrChecksumProfile.xChecksumBytes = xExpectedNoChecksumBytes;
 
 	vAssertTrue(xDecodedMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "decoded message type contract");
 	vAssertTrue(xDecodedMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "decoded message event contract");
@@ -187,6 +192,12 @@ int main(void)
 	vAssertTrue(xRastaSrDecodedPacket.auPayload[0] == auPayload[0], "rasta sr decoded payload storage contract");
 	vAssertTrue(xRastaSrDecodedPacket.xChecksumLength == 0U, "rasta sr decoded checksum length contract");
 	vAssertTrue(xRastaSrDecodedPacket.uChecksumPresent == uExpectedAbsent, "rasta sr decoded checksum present contract");
+	vAssertTrue(RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE == 0, "rasta sr checksum none contract");
+	vAssertTrue(RSRX_RASTA_SR_CHECKSUM_ALGORITHM_MD4 != RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum md4 contract");
+	vAssertTrue(RSRX_RASTA_SR_CHECKSUM_ALGORITHM_BLAKE2B != RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum blake2b contract");
+	vAssertTrue(RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4 != RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum siphash contract");
+	vAssertTrue(xRastaSrChecksumProfile.eAlgorithm == RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum algorithm field contract");
+	vAssertTrue(xRastaSrChecksumProfile.xChecksumBytes == xExpectedNoChecksumBytes, "rasta sr checksum bytes field contract");
 
 	(void)printf("rsrx_codec_contract_test: all tests passed\n");
 

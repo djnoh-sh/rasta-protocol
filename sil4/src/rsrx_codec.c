@@ -552,6 +552,39 @@ rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
 	return RSRX_CODEC_STATUS_OK;
 }
 
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
+	const rsrx_rasta_sr_checksum_profile_t * pxProfile)
+{
+	if(pxProfile == (const rsrx_rasta_sr_checksum_profile_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxProfile->eAlgorithm == RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE) &&
+		(pxProfile->xChecksumBytes == 0U))
+	{
+		return RSRX_CODEC_STATUS_OK;
+	}
+
+	if((pxProfile->xChecksumBytes != 8U) &&
+		(pxProfile->xChecksumBytes != 16U))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	switch(pxProfile->eAlgorithm)
+	{
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_MD4:
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_BLAKE2B:
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE:
+		default:
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+}
+
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
 	rsrx_message_type_t eMessageType,
 	uint16_t * pusRastaType)
