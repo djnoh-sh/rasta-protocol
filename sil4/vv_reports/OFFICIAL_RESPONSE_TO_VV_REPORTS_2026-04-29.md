@@ -305,3 +305,45 @@ The current roadmap interpretation remains:
 - `R-007`: accepted V&V follow-up closed, future maintenance only
 
 The project accepts the v1.5 reports as evidence that the earlier V&V observations have been normalized into the current baseline vocabulary.
+
+## Addendum: 2026-05-28 V&V v1.6 Follow-Up Review
+
+The V&V team updated all four phase reports with 2026-05-26 follow-up sections. The project reviewed those updates on 2026-05-28 without modifying the V&V report files themselves.
+
+### v1.6 Update Disposition
+
+| Topic | Report | V&V v1.6 Position | Official Project Disposition |
+| --- | --- | --- | --- |
+| Session reset report cleanup | Phase 1 | reset/init report clear and reset-after-restart robustness confirmed | Accepted. This aligns with `RV-391..RV-397` and remains closed under the current baseline. |
+| SafeRTOS task/ISR state synchronization | Phase 1 backlog | target-porting verification item | Accepted as target evidence planning under `R-008`, not a portable-core defect. |
+| CRC32 calculator injection seam | Phase 2 | hardware CRC adapter seam introduced and pointer guard preserved | Accepted. This aligns with `RV-383..RV-384` and the AM263Px hardware-acceleration adapter boundary. |
+| Protocol-context public API guards | Phase 2 | runtime API guard architecture strengthened | Accepted. This aligns with `RV-385` and `RV-390`. |
+| Target stack/linker-map evidence | Phase 2 backlog | target compiler/build evidence required | Accepted as remaining target evidence under `R-005` and `R-008`. |
+| Test coverage expansion | Phase 3 | new changes covered by unit/integration tests | Accepted with wording boundary: this means review-unit representative tests are present and green, not tool-measured 100% structural coverage. |
+| Hardware CRC equivalence test | Phase 3 backlog | target integration evidence required | Accepted as AM263Px/SafeRTOS target evidence under `R-008`. |
+| RaSTA SR PDU profile and mapping | Phase 4 | SR wire profile, numeric type mapping, and disconnect-reason mapping introduced | Accepted with boundary clarification: `PDU-PARITY-001A..001C` are in place, but behavioral SR frame encode/decode, byte-order closure, checksum/hash, timestamp window validation, and redundancy PDU/CRC parity remain open `R-006` work. |
+| Redundancy reliability improvements | Phase 4 | flap penalty saturation, reset audit preservation, and retransmission isolation improved | Accepted. Current active-standby redundancy remains representative-closeout, with future routing modes under `R-003`. |
+| MAC and timestamp validation | Phase 4 backlog | required future protocol-completeness verification | Accepted as current `R-006` residual. |
+
+### Official Interpretation of v1.6
+
+The v1.6 report updates are useful and mostly baseline-aligned. They should be read as follow-up confirmation of recently completed review units, with the following boundaries:
+
+1. Phase 1 reset/restart findings close robustness work already captured by `RV-391..RV-397`; they do not reopen the earlier handshake interpretation debate.
+2. Phase 2 hardware CRC wording confirms that the core exposes a dependency-injection seam; it does not mean an AM263Px hardware adapter or hardware/software equivalence artifact already exists.
+3. Phase 3 coverage wording is accepted as representative test coverage for completed review units. It must not be cited as measured 100% code, branch, MC/DC, or requirements coverage.
+4. Phase 4 SR PDU wording is accepted for profile metadata, packet structures, and numeric mapping. The phrase "6200U~6241U mapping" must be interpreted carefully: `RetrResp` and `RetrData` numeric constants are defined, but the current internal message family does not yet implement those behavioral paths and explicitly treats them as unsupported.
+5. Phase 4 correctly identifies that full SR encode/decode, byte-order policy, checksum/hash, MAC, timestamp window validation, and redundancy PDU/CRC parity remain certification-relevant `R-006` residuals.
+
+### Planning Impact
+
+No new portable-core defect is introduced by the v1.6 update.
+
+The accepted planning impact is:
+
+- `R-006`: continue RaSTA SR byte-order policy closure, behavioral SR encode/decode, checksum/hash, MAC, timestamp validation, and redundancy PDU/CRC parity.
+- `R-008`: retain SafeRTOS task/timer/ISR synchronization, hardware CRC adapter, hardware/software CRC equivalence, target stack/linker-map, timing, and integration-log evidence as target-porting work.
+- `R-003`: keep multi-path routing as future redundancy mode growth, not as a current active-standby baseline defect.
+- `R-005`: keep vendor and target-qualified evidence artifacts as external-evidence acquisition work.
+
+The official project position remains that the V&V reports are accepted as independent review input, while roadmap risk ownership and baseline wording remain controlled by `sil4/docs/roadmap_status.md` and the `RV-*` review records.

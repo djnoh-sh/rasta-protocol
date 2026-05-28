@@ -6,13 +6,13 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-26`
+- Last Updated: `2026-05-28`
 
 ## Summary
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 유지 중이며, residual은 구현 누락보다 next policy/security/evidence growth에 집중돼 있다.
-- 최근 업데이트: `PDU-PARITY-001C`로 RaSTA SR numeric message type/disconnect reason mapping과 `TC-CODEC-039`를 추가했다.
+- 최근 업데이트: V&V v1.6 follow-up을 검토하고 공식 답변서에 2026-05-28 addendum으로 반영했다.
 - 다음 주력 단계: `RaSTA SR byte-order policy closure`, `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS porting evidence planning`, `redundancy next policy growth`, `protocol sequencing next parity growth`, `transport supervisor runtime feedback growth`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
@@ -44,7 +44,7 @@
 | Codec / Security | In Progress | `TC-CODEC-001..039`, `TC-INT-206`, `TC-INT-208`, `RV-337`, `RV-354..RV-367`, `RV-369..RV-378`, `RV-382..RV-384`, `RV-390`, `INV-RASTA-001`, `PDU-PARITY-001A..001C`, `RV-399..RV-402` | RaSTA SR PDU encode/decode implementation, checksum/timestamp parity, redundancy CRC/PDU parity, optional MAC/security extension taxonomy, vendor security vectors |
 | Configuration Validation | Completed | `TC-CFG-003`, `TC-CFG-008..010` | deployment-specific policy additions |
 | Integration Verification | In Progress | `test_rsrx_session_supervisor_flow.c`, integration harness spec, `TC-INT-205..209` | target/longer-run integration expansion |
-| Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot, V&V v1.5 official response | actual vendor finding export and target-qualified stack/memory-map artifacts |
+| Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot, V&V v1.6 official response | actual vendor finding export and target-qualified stack/memory-map artifacts |
 | AM263Px / SafeRTOS Porting | Not Started | portable core/adapter boundary is ready; target-specific layer intentionally not implemented in core | SafeRTOS task/timer/queue/critical-section binding, TI driver transport adapter, optional hardware-backed CRC/crypto adapter, target stack/memory/timing evidence |
 
 ## Current Evidence Baseline
