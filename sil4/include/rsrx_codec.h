@@ -243,6 +243,11 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
 
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy,
+	rsrx_decoded_message_t * pxMessage);
+
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
 	rsrx_message_type_t eMessageType,
 	uint16_t * pusRastaType);

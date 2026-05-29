@@ -805,6 +805,93 @@ static void vTestRastaSrTimestampAdmissionPolicy(void)
 		"rasta sr timestamp null policy rejected");
 }
 
+static void vTestRastaSrTimestampAdmittedSessionHandoffMapping(void)
+{
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	rsrx_rasta_sr_timestamp_admission_policy_t xPolicy;
+	rsrx_decoded_message_t xMessage;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	xPacket.uSequenceNumber = 17U;
+	xPacket.uConfirmedSequenceNumber = 16U;
+	xPacket.uTimestamp = 1000U;
+	xPacket.uConfirmedTimestamp = 995U;
+	xPacket.xPayloadLength = 2U;
+	xPacket.auPayload[0] = 0xA1U;
+	xPacket.auPayload[1] = 0xB2U;
+	xPolicy.uCurrentTimestamp = 1000U;
+	xPolicy.uAcceptedPastWindow = 100U;
+	xPolicy.uAcceptedFutureWindow = 10U;
+	xPolicy.uLastAcceptedTimestamp = 900U;
+
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&xPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_OK,
+		"rasta sr timestamp admitted handoff mapping");
+	vAssertTrue(xMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "rasta sr handoff message type");
+	vAssertTrue(xMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "rasta sr handoff event");
+	vAssertTrue(xMessage.eReason == RSRX_REASON_DATA_ACCEPTED, "rasta sr handoff reason");
+	vAssertTrue(xMessage.uSequenceNumber == 17U, "rasta sr handoff sequence");
+	vAssertTrue(xMessage.uConfirmationNumber == 16U, "rasta sr handoff confirmation");
+	vAssertTrue(xMessage.xPayloadLength == 2U, "rasta sr handoff payload length");
+	vAssertTrue(xMessage.auPayload[0] == 0xA1U, "rasta sr handoff payload byte 0");
+	vAssertTrue(xMessage.auPayload[1] == 0xB2U, "rasta sr handoff payload byte 1");
+}
+
+static void vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping(void)
+{
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	rsrx_rasta_sr_timestamp_admission_policy_t xPolicy;
+	rsrx_decoded_message_t xMessage;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	xPacket.uTimestamp = 1200U;
+	xPacket.uConfirmedTimestamp = 1000U;
+	xPolicy.uCurrentTimestamp = 1000U;
+	xPolicy.uAcceptedPastWindow = 100U;
+	xPolicy.uAcceptedFutureWindow = 10U;
+	xPolicy.uLastAcceptedTimestamp = 900U;
+	vSeedDecodedMessage(&xMessage);
+
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&xPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+		"rasta sr handoff future timestamp rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff future timestamp clears message");
+
+	xPacket.uTimestamp = 1000U;
+	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&xPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE,
+		"rasta sr handoff unsupported type rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff unsupported type clears message");
+
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			(const rsrx_rasta_sr_decoded_packet_t *)0,
+			&xPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr handoff null packet rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff null packet clears message");
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&xPolicy,
+			(rsrx_decoded_message_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr handoff null message rejected");
+}
+
 static void vTestCrc32InjectedCalculatorPortability(void)
 {
 	uint8_t auPayload[2] = { 0x5AU, 0xC3U };
@@ -1618,6 +1705,8 @@ int main(void)
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
 	vTestRastaSrTimestampAdmissionPolicy();
+	vTestRastaSrTimestampAdmittedSessionHandoffMapping();
+	vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping();
 	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
 	vTestCrc32PrimitiveRejectsInvalidArguments();

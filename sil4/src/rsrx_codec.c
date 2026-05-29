@@ -52,6 +52,38 @@ static rsrx_event_t eMapMessageTypeToEvent(
 	}
 }
 
+static rsrx_reason_code_t eMapRastaSrMessageTypeToReason(
+	rsrx_message_type_t eMessageType)
+{
+	switch(eMessageType)
+	{
+		case RSRX_MESSAGE_TYPE_CONNECT_REQUEST:
+			return RSRX_REASON_INBOUND_CONNECT_ACCEPTED;
+
+		case RSRX_MESSAGE_TYPE_CONNECT_RESPONSE:
+			return RSRX_REASON_HANDSHAKE_COMPLETED;
+
+		case RSRX_MESSAGE_TYPE_HEARTBEAT:
+			return RSRX_REASON_HEARTBEAT_ACCEPTED;
+
+		case RSRX_MESSAGE_TYPE_DATA:
+			return RSRX_REASON_DATA_ACCEPTED;
+
+		case RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST:
+			return RSRX_REASON_SEQUENCE_GAP_DETECTED;
+
+		case RSRX_MESSAGE_TYPE_DISCONNECT:
+			return RSRX_REASON_DISCONNECT_REQUESTED;
+
+		case RSRX_MESSAGE_TYPE_DIAGNOSTIC:
+			return RSRX_REASON_PROTOCOL_ERROR_DETECTED;
+
+		case RSRX_MESSAGE_TYPE_INVALID:
+		default:
+			return RSRX_REASON_INVALID_MESSAGE_RECEIVED;
+	}
+}
+
 static void vWriteUint32(
 	uint8_t * puBuffer,
 	uint32_t uValue)
@@ -635,6 +667,62 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 	if(pxPacket->uConfirmedTimestamp > uFutureBoundary)
 	{
 		return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy,
+	rsrx_decoded_message_t * pxMessage)
+{
+	rsrx_codec_status_t eStatus;
+	rsrx_message_type_t eMessageType;
+	size_t xIndex;
+
+	if(pxMessage == (rsrx_decoded_message_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearDecodedMessage(pxMessage);
+
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_timestamp_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_validate_rasta_sr_timestamp_admission(pxPacket, pxPolicy);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	eStatus = rsrx_codec_map_rasta_sr_type_to_message_type(
+		pxPacket->usMessageType,
+		&eMessageType);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	if(pxPacket->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	pxMessage->eMessageType = eMessageType;
+	pxMessage->eSuggestedEvent = eMapMessageTypeToEvent(eMessageType);
+	pxMessage->eReason = eMapRastaSrMessageTypeToReason(eMessageType);
+	pxMessage->uSequenceNumber = pxPacket->uSequenceNumber;
+	pxMessage->uConfirmationNumber = pxPacket->uConfirmedSequenceNumber;
+	pxMessage->xPayloadLength = pxPacket->xPayloadLength;
+
+	for(xIndex = 0U; xIndex < pxPacket->xPayloadLength; ++xIndex)
+	{
+		pxMessage->auPayload[xIndex] = pxPacket->auPayload[xIndex];
 	}
 
 	return RSRX_CODEC_STATUS_OK;

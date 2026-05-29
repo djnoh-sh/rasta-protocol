@@ -48,6 +48,11 @@ int main(void)
 	rsrx_rasta_sr_decoded_packet_t xRastaSrDecodedPacket;
 	rsrx_rasta_sr_checksum_profile_t xRastaSrChecksumProfile;
 	rsrx_rasta_sr_timestamp_admission_policy_t xRastaSrTimestampPolicy;
+	volatile size_t xExpectedRastaSrHandoffPointerSize;
+	rsrx_codec_status_t (* volatile pfRastaSrHandoff)(
+		const rsrx_rasta_sr_decoded_packet_t *,
+		const rsrx_rasta_sr_timestamp_admission_policy_t *,
+		rsrx_decoded_message_t *);
 
 	xDecodedMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xDecodedMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -70,6 +75,7 @@ int main(void)
 	uExpectedLastAcceptedTimestamp = 900U;
 	xExpectedNoChecksumBytes = 0U;
 	xExpectedCrcCalculatorTypeSize = sizeof(pfExpectedCrc32Calculator);
+	xExpectedRastaSrHandoffPointerSize = sizeof(pfRastaSrHandoff);
 	xEncodeBuffer.xEncodedLength = uExpectedEncodedLength;
 
 	xCodecPort.pfEncode = (rsrx_encode_message_fn)0;
@@ -119,6 +125,10 @@ int main(void)
 	xRastaSrTimestampPolicy.uAcceptedPastWindow = 100U;
 	xRastaSrTimestampPolicy.uAcceptedFutureWindow = 10U;
 	xRastaSrTimestampPolicy.uLastAcceptedTimestamp = uExpectedLastAcceptedTimestamp;
+	pfRastaSrHandoff = (rsrx_codec_status_t (*)(
+		const rsrx_rasta_sr_decoded_packet_t *,
+		const rsrx_rasta_sr_timestamp_admission_policy_t *,
+		rsrx_decoded_message_t *))0;
 
 	vAssertTrue(xDecodedMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "decoded message type contract");
 	vAssertTrue(xDecodedMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "decoded message event contract");
@@ -209,6 +219,7 @@ int main(void)
 	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedPastWindow == 100U, "rasta sr timestamp past window field contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedFutureWindow == 10U, "rasta sr timestamp future window field contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uLastAcceptedTimestamp == uExpectedLastAcceptedTimestamp, "rasta sr timestamp last accepted field contract");
+	vAssertTrue(xExpectedRastaSrHandoffPointerSize == sizeof(pfRastaSrHandoff), "rasta sr timestamp handoff function pointer contract");
 
 	(void)printf("rsrx_codec_contract_test: all tests passed\n");
 
