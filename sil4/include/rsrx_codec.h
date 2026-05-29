@@ -44,7 +44,9 @@ typedef enum
 	RSRX_CODEC_STATUS_TIMESTAMP_ZERO,
 	RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
 	RSRX_CODEC_STATUS_TIMESTAMP_STALE,
-	RSRX_CODEC_STATUS_TIMESTAMP_REGRESSED
+	RSRX_CODEC_STATUS_TIMESTAMP_REGRESSED,
+	RSRX_CODEC_STATUS_RECEIVER_ID_MISMATCH,
+	RSRX_CODEC_STATUS_SENDER_ID_MISMATCH
 } rsrx_codec_status_t;
 
 typedef enum
@@ -104,6 +106,12 @@ typedef struct
 	uint32_t uAcceptedFutureWindow;
 	uint32_t uLastAcceptedTimestamp;
 } rsrx_rasta_sr_timestamp_admission_policy_t;
+
+typedef struct
+{
+	uint32_t uExpectedReceiverId;
+	uint32_t uExpectedSenderId;
+} rsrx_rasta_sr_identity_admission_policy_t;
 
 typedef struct
 {
@@ -243,9 +251,19 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
 
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_identity_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxPolicy);
+
 rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
 	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy,
+	rsrx_decoded_message_t * pxMessage);
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxTimestampPolicy,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxIdentityPolicy,
 	rsrx_decoded_message_t * pxMessage);
 
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(

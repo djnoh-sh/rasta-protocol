@@ -672,6 +672,35 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 	return RSRX_CODEC_STATUS_OK;
 }
 
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_identity_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxPolicy)
+{
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_identity_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxPolicy->uExpectedReceiverId == 0U) ||
+		(pxPolicy->uExpectedSenderId == 0U))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxPacket->uReceiverId != pxPolicy->uExpectedReceiverId)
+	{
+		return RSRX_CODEC_STATUS_RECEIVER_ID_MISMATCH;
+	}
+
+	if(pxPacket->uSenderId != pxPolicy->uExpectedSenderId)
+	{
+		return RSRX_CODEC_STATUS_SENDER_ID_MISMATCH;
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
 rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
 	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy,
@@ -726,6 +755,40 @@ rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_adm
 	}
 
 	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxTimestampPolicy,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxIdentityPolicy,
+	rsrx_decoded_message_t * pxMessage)
+{
+	rsrx_codec_status_t eStatus;
+
+	if(pxMessage == (rsrx_decoded_message_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearDecodedMessage(pxMessage);
+
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxTimestampPolicy == (const rsrx_rasta_sr_timestamp_admission_policy_t *)0) ||
+		(pxIdentityPolicy == (const rsrx_rasta_sr_identity_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_validate_rasta_sr_identity_admission(pxPacket, pxIdentityPolicy);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	return rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+		pxPacket,
+		pxTimestampPolicy,
+		pxMessage);
 }
 
 rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(

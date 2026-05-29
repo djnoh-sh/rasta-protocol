@@ -805,6 +805,61 @@ static void vTestRastaSrTimestampAdmissionPolicy(void)
 		"rasta sr timestamp null policy rejected");
 }
 
+static void vTestRastaSrIdentityAdmissionPolicy(void)
+{
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	rsrx_rasta_sr_identity_admission_policy_t xPolicy;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	xPacket.uReceiverId = 0x11223344U;
+	xPacket.uSenderId = 0x55667788U;
+	xPolicy.uExpectedReceiverId = 0x11223344U;
+	xPolicy.uExpectedSenderId = 0x55667788U;
+
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_identity_admission(&xPacket, &xPolicy) == RSRX_CODEC_STATUS_OK,
+		"rasta sr identity admission accepted");
+
+	xPacket.uReceiverId = 0x11223345U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_identity_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_RECEIVER_ID_MISMATCH,
+		"rasta sr receiver mismatch rejected");
+
+	xPacket.uReceiverId = 0x11223344U;
+	xPacket.uSenderId = 0x55667789U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_identity_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_SENDER_ID_MISMATCH,
+		"rasta sr sender mismatch rejected");
+
+	xPacket.uSenderId = 0x55667788U;
+	xPolicy.uExpectedReceiverId = 0U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_identity_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr zero expected receiver rejected");
+
+	xPolicy.uExpectedReceiverId = 0x11223344U;
+	xPolicy.uExpectedSenderId = 0U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_identity_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr zero expected sender rejected");
+
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_identity_admission(
+			(const rsrx_rasta_sr_decoded_packet_t *)0,
+			&xPolicy) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr identity null packet rejected");
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_identity_admission(
+			&xPacket,
+			(const rsrx_rasta_sr_identity_admission_policy_t *)0) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr identity null policy rejected");
+}
+
 static void vTestRastaSrTimestampAdmittedSessionHandoffMapping(void)
 {
 	rsrx_rasta_sr_decoded_packet_t xPacket;
@@ -839,6 +894,94 @@ static void vTestRastaSrTimestampAdmittedSessionHandoffMapping(void)
 	vAssertTrue(xMessage.xPayloadLength == 2U, "rasta sr handoff payload length");
 	vAssertTrue(xMessage.auPayload[0] == 0xA1U, "rasta sr handoff payload byte 0");
 	vAssertTrue(xMessage.auPayload[1] == 0xB2U, "rasta sr handoff payload byte 1");
+}
+
+static void vTestRastaSrIdentityAndTimestampAdmittedSessionHandoffMapping(void)
+{
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	rsrx_rasta_sr_timestamp_admission_policy_t xTimestampPolicy;
+	rsrx_rasta_sr_identity_admission_policy_t xIdentityPolicy;
+	rsrx_decoded_message_t xMessage;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	xPacket.uReceiverId = 0x11223344U;
+	xPacket.uSenderId = 0x55667788U;
+	xPacket.uSequenceNumber = 19U;
+	xPacket.uConfirmedSequenceNumber = 18U;
+	xPacket.uTimestamp = 1000U;
+	xPacket.uConfirmedTimestamp = 995U;
+	xPacket.xPayloadLength = 1U;
+	xPacket.auPayload[0] = 0xC3U;
+	xTimestampPolicy.uCurrentTimestamp = 1000U;
+	xTimestampPolicy.uAcceptedPastWindow = 100U;
+	xTimestampPolicy.uAcceptedFutureWindow = 10U;
+	xTimestampPolicy.uLastAcceptedTimestamp = 900U;
+	xIdentityPolicy.uExpectedReceiverId = 0x11223344U;
+	xIdentityPolicy.uExpectedSenderId = 0x55667788U;
+
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			&xIdentityPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_OK,
+		"rasta sr identity timestamp admitted handoff mapping");
+	vAssertTrue(xMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "rasta sr identity handoff message type");
+	vAssertTrue(xMessage.uSequenceNumber == 19U, "rasta sr identity handoff sequence");
+	vAssertTrue(xMessage.uConfirmationNumber == 18U, "rasta sr identity handoff confirmation");
+	vAssertTrue(xMessage.xPayloadLength == 1U, "rasta sr identity handoff payload length");
+	vAssertTrue(xMessage.auPayload[0] == 0xC3U, "rasta sr identity handoff payload byte");
+
+	xPacket.uReceiverId = 0x11223345U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			&xIdentityPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_RECEIVER_ID_MISMATCH,
+		"rasta sr identity handoff receiver mismatch rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff receiver mismatch clears message");
+
+	xPacket.uReceiverId = 0x11223344U;
+	xPacket.uSenderId = 0x55667789U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			&xIdentityPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_SENDER_ID_MISMATCH,
+		"rasta sr identity handoff sender mismatch rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff sender mismatch clears message");
+
+	xPacket.uSenderId = 0x55667788U;
+	xPacket.uTimestamp = 1200U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			&xIdentityPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+		"rasta sr identity handoff future timestamp rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff future timestamp clears message");
+
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			(const rsrx_rasta_sr_identity_admission_policy_t *)0,
+			&xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr identity handoff null identity policy rejected");
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			&xIdentityPolicy,
+			(rsrx_decoded_message_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr identity handoff null message rejected");
 }
 
 static void vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping(void)
@@ -1705,7 +1848,9 @@ int main(void)
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
 	vTestRastaSrTimestampAdmissionPolicy();
+	vTestRastaSrIdentityAdmissionPolicy();
 	vTestRastaSrTimestampAdmittedSessionHandoffMapping();
+	vTestRastaSrIdentityAndTimestampAdmittedSessionHandoffMapping();
 	vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping();
 	vTestCrc32InjectedCalculatorPortability();
 	vTestCrc32PrimitiveKnownVector();
