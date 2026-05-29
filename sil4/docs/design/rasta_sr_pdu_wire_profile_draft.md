@@ -102,7 +102,7 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 | --- | --- |
 | No 28-byte SR header profile | Implemented for no-checksum SR encode/decode; checksum-bearing profiles remain follow-up |
 | No RaSTA numeric type values | Implemented for supported current inbound/outbound SR message families |
-| No receiver/sender ID fields | Implemented in no-checksum SR encode/decode; authenticity/admission checks remain follow-up |
+| No receiver/sender ID fields | Implemented in no-checksum SR encode/decode, codec-level identity admission, and supervisor SR runtime identity policy wiring |
 | No timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields with codec-level admission boundary, timestamp-admitted handoff mapping, and explicit supervisor runtime SR selection |
 | CRC32 wrapper is not SR safety-code parity | Explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains follow-up if selected |
 | Internal reason byte is not RaSTA DiscReq reason parity | Add disconnect reason mapping tests |
@@ -118,4 +118,4 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 
 ## Review Position
 
-This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path, unsupported checksum-profile admission boundary, codec-level timestamp admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, and codec-level receiver/sender identity admission are implemented. This does not claim MD4/BLAKE2b/SipHash calculation, supervisor identity policy wiring, redundancy PDU, target timestamp-source binding, or MAC/security-extension completion.
+This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path, unsupported checksum-profile admission boundary, codec-level timestamp admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, codec-level receiver/sender identity admission, and supervisor identity policy wiring are implemented. This does not claim MD4/BLAKE2b/SipHash calculation, redundancy PDU, target timestamp-source binding, or MAC/security-extension completion.

@@ -798,6 +798,7 @@ static void vTestSupervisorRastaSrRuntimeTimestampAdmission(void)
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
 	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
 	rsrx_rasta_sr_timestamp_admission_policy_t xPolicy;
+	rsrx_rasta_sr_identity_admission_policy_t xIdentityPolicy;
 	rsrx_rasta_sr_encode_request_t xRequest;
 	rsrx_encode_buffer_t xBuffer;
 	rsrx_transport_frame_t xFrame;
@@ -830,6 +831,14 @@ static void vTestSupervisorRastaSrRuntimeTimestampAdmission(void)
 		rsrx_transport_supervisor_enable_rasta_sr_runtime(&xSupervisor, &xPolicy) ==
 			RSRX_SUPERVISOR_STATUS_OK,
 		"rasta sr runtime enable");
+
+	xIdentityPolicy.uExpectedReceiverId = 0x1000U;
+	xIdentityPolicy.uExpectedSenderId = 0x2000U;
+	vAssertTrue(
+		rsrx_transport_supervisor_enable_rasta_sr_identity_admission(
+			&xSupervisor,
+			&xIdentityPolicy) == RSRX_SUPERVISOR_STATUS_OK,
+		"rasta sr runtime identity enable");
 
 	xRequest.usPacketLength = (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auPayload));
 	xRequest.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
@@ -864,6 +873,9 @@ static void vTestSupervisorRastaSrRuntimeTimestampAdmission(void)
 	vAssertTrue(pxSupervisorReport->uRastaSrRuntimeEnabled == 1U, "rasta sr runtime telemetry enabled");
 	vAssertTrue(pxSupervisorReport->uRastaSrCurrentTimestamp == 1000U, "rasta sr runtime telemetry current timestamp");
 	vAssertTrue(pxSupervisorReport->uRastaSrLastAcceptedTimestamp == 1001U, "rasta sr runtime telemetry last accepted timestamp");
+	vAssertTrue(pxSupervisorReport->uRastaSrIdentityAdmissionEnabled == 1U, "rasta sr runtime identity telemetry enabled");
+	vAssertTrue(pxSupervisorReport->uRastaSrExpectedReceiverId == 0x1000U, "rasta sr runtime expected receiver telemetry");
+	vAssertTrue(pxSupervisorReport->uRastaSrExpectedSenderId == 0x2000U, "rasta sr runtime expected sender telemetry");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta sr runtime processed count");
 	vAssertTrue(xCallbacks.uApplicationCount == 1U, "rasta sr runtime application callback");
 
@@ -883,6 +895,21 @@ static void vTestSupervisorRastaSrRuntimeTimestampAdmission(void)
 	vAssertTrue(pxSupervisorReport->uRastaSrLastAcceptedTimestamp == 1001U, "rasta sr runtime rejected timestamp not accepted");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta sr runtime rejected frame not processed");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "rasta sr runtime rejected frame leaves state");
+
+	xRequest.uReceiverId = 0x1001U;
+	xRequest.uTimestamp = 1002U;
+	xBuffer.xEncodedLength = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK,
+		"rasta sr runtime encode receiver mismatch frame");
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	vAssertTrue(
+		rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) ==
+			RSRX_SUPERVISOR_STATUS_DECODE_FAILED,
+		"rasta sr runtime rejects receiver mismatch");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_RECEIVER_ID_MISMATCH, "rasta sr runtime receiver mismatch status");
+	vAssertTrue(pxSupervisorReport->uRastaSrLastAcceptedTimestamp == 1001U, "rasta sr runtime receiver mismatch not accepted");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta sr runtime receiver mismatch not processed");
 }
 
 static void vTestSupervisorSequenceGapDetection(void)

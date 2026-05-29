@@ -138,6 +138,9 @@ static void vResetSupervisorReport(
 	pxReport->uRastaSrRuntimeEnabled = 0U;
 	pxReport->uRastaSrCurrentTimestamp = 0U;
 	pxReport->uRastaSrLastAcceptedTimestamp = 0U;
+	pxReport->uRastaSrIdentityAdmissionEnabled = 0U;
+	pxReport->uRastaSrExpectedReceiverId = 0U;
+	pxReport->uRastaSrExpectedSenderId = 0U;
 }
 
 static void vRefreshRastaSrRuntimeTelemetry(
@@ -149,6 +152,12 @@ static void vRefreshRastaSrRuntimeTelemetry(
 		pxContext->xRastaSrTimestampPolicy.uCurrentTimestamp;
 	pxContext->xLastReport.uRastaSrLastAcceptedTimestamp =
 		pxContext->xRastaSrTimestampPolicy.uLastAcceptedTimestamp;
+	pxContext->xLastReport.uRastaSrIdentityAdmissionEnabled =
+		pxContext->uRastaSrIdentityAdmissionEnabled;
+	pxContext->xLastReport.uRastaSrExpectedReceiverId =
+		pxContext->xRastaSrIdentityPolicy.uExpectedReceiverId;
+	pxContext->xLastReport.uRastaSrExpectedSenderId =
+		pxContext->xRastaSrIdentityPolicy.uExpectedSenderId;
 }
 
 static uint32_t uRastaSrTimestampPolicyHasStableBounds(
@@ -169,6 +178,13 @@ static uint32_t uRastaSrTimestampPolicyHasStableBounds(
 	}
 
 	return 1U;
+}
+
+static uint32_t uRastaSrIdentityPolicyHasStableIds(
+	const rsrx_rasta_sr_identity_admission_policy_t * pxPolicy)
+{
+	return (uint32_t)((pxPolicy->uExpectedReceiverId != 0U) &&
+		(pxPolicy->uExpectedSenderId != 0U));
 }
 
 static rsrx_supervisor_decision_class_t eMapDecisionClass(
@@ -969,10 +985,21 @@ static rsrx_codec_status_t eDecodeInboundFrame(
 		return eStatus;
 	}
 
-	eStatus = rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
-		&xPacket,
-		&pxContext->xRastaSrTimestampPolicy,
-		pxMessage);
+	if(pxContext->uRastaSrIdentityAdmissionEnabled != 0U)
+	{
+		eStatus = rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&pxContext->xRastaSrTimestampPolicy,
+			&pxContext->xRastaSrIdentityPolicy,
+			pxMessage);
+	}
+	else
+	{
+		eStatus = rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&pxContext->xRastaSrTimestampPolicy,
+			pxMessage);
+	}
 	if(eStatus == RSRX_CODEC_STATUS_OK)
 	{
 		pxContext->xRastaSrTimestampPolicy.uLastAcceptedTimestamp =
@@ -1073,7 +1100,10 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_init(
 	pxContext->xRastaSrTimestampPolicy.uAcceptedPastWindow = 0U;
 	pxContext->xRastaSrTimestampPolicy.uAcceptedFutureWindow = 0U;
 	pxContext->xRastaSrTimestampPolicy.uLastAcceptedTimestamp = 0U;
+	pxContext->xRastaSrIdentityPolicy.uExpectedReceiverId = 0U;
+	pxContext->xRastaSrIdentityPolicy.uExpectedSenderId = 0U;
 	pxContext->uRastaSrRuntimeEnabled = 0U;
+	pxContext->uRastaSrIdentityAdmissionEnabled = 0U;
 	pxContext->uMaxConsecutiveSendFailures = D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET;
 	pxContext->uMaxConsecutiveReceiveErrors = D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET;
 	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
@@ -1103,6 +1133,26 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_runtime(
 
 	pxContext->xRastaSrTimestampPolicy = *pxPolicy;
 	pxContext->uRastaSrRuntimeEnabled = 1U;
+	vRefreshRastaSrRuntimeTelemetry(pxContext);
+
+	return RSRX_SUPERVISOR_STATUS_OK;
+}
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_identity_admission(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxPolicy)
+{
+	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_identity_admission_policy_t *)0) ||
+		(pxContext->uInitialized == 0U) ||
+		(pxContext->uRastaSrRuntimeEnabled == 0U) ||
+		(uRastaSrIdentityPolicyHasStableIds(pxPolicy) == 0U))
+	{
+		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->xRastaSrIdentityPolicy = *pxPolicy;
+	pxContext->uRastaSrIdentityAdmissionEnabled = 1U;
 	vRefreshRastaSrRuntimeTelemetry(pxContext);
 
 	return RSRX_SUPERVISOR_STATUS_OK;

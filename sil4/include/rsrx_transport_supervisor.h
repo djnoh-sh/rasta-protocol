@@ -215,6 +215,9 @@ typedef struct
 	uint32_t uRastaSrRuntimeEnabled;
 	uint32_t uRastaSrCurrentTimestamp;
 	uint32_t uRastaSrLastAcceptedTimestamp;
+	uint32_t uRastaSrIdentityAdmissionEnabled;
+	uint32_t uRastaSrExpectedReceiverId;
+	uint32_t uRastaSrExpectedSenderId;
 } rsrx_transport_supervisor_report_t;
 
 typedef struct
@@ -222,10 +225,12 @@ typedef struct
 	rsrx_session_t * pxSession;
 	rsrx_codec_port_t xCodec;
 	rsrx_rasta_sr_timestamp_admission_policy_t xRastaSrTimestampPolicy;
+	rsrx_rasta_sr_identity_admission_policy_t xRastaSrIdentityPolicy;
 	rsrx_transport_supervisor_report_t xLastReport;
 	uint32_t uMaxConsecutiveSendFailures;
 	uint32_t uMaxConsecutiveReceiveErrors;
 	uint32_t uRastaSrRuntimeEnabled;
+	uint32_t uRastaSrIdentityAdmissionEnabled;
 	uint32_t uNoOpAuditCountedInCurrentCall;
 	uint32_t uInitialized;
 } rsrx_transport_supervisor_context_t;
@@ -243,6 +248,10 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_runtime(
 	rsrx_transport_supervisor_context_t * pxContext,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_identity_admission(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxPolicy);
 
 rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	rsrx_transport_supervisor_context_t * pxContext,
