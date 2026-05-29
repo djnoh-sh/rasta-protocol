@@ -12,8 +12,8 @@
 
 - 현재 전체 진행률 추정: `93~95%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 유지 중이며, residual은 구현 누락보다 next policy/security/evidence growth에 집중돼 있다.
-- 최근 업데이트: `TC-CODEC-044`로 RaSTA SR timestamp-admitted handoff mapping을 추가해 SR decoded packet이 timestamp admission을 통과한 뒤에만 internal decoded message로 변환되도록 했다.
-- 다음 주력 단계: `RaSTA SR supervisor runtime wiring`, `receiver/sender authenticity checks`, `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS porting evidence planning`, `redundancy next policy growth`, `protocol sequencing next parity growth`
+- 최근 업데이트: `TC-SUP-075`로 transport supervisor에 RaSTA SR no-checksum decode + timestamp admission runtime selection path를 추가했다.
+- 다음 주력 단계: `receiver/sender authenticity checks`, `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS porting evidence planning`, `redundancy next policy growth`, `protocol sequencing next parity growth`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
 ## Overall Phase Status
@@ -32,16 +32,16 @@
 | --- | --- | --- | --- |
 | Rules and Governance | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` | 유지 관리 |
 | Requirements and HLD | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` | 인증/타깃 요구사항 정제 |
-| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-407` | 새 policy growth마다 review/spec linkage 유지 |
+| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-408` | 새 policy growth마다 review/spec linkage 유지 |
 | State Machine / Orchestrator | In Progress | `rsrx_state_machine.*`, `rsrx_orchestrator.*`, unit tests, reset baseline evidence `RV-393..RV-394` | future state/action 확장 시 assertion density 유지 |
 | Platform / Transport Abstraction | Completed | `rsrx_platform.h`, `rsrx_transport.h`, contract tests | 포팅 시 target adapter evidence |
 | Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..011`, `TC-API-014..018` | target runtime binding, selected codec policy 유지 |
 | Application Data Contract | Completed | application data LLD/spec, API/adapter tests | integration expansion only |
 | Protocol Context | In Progress | `TC-PC-004`, `TC-PC-019..028`, sequence/base/confirmation/API/recovery-cleanup/init-baseline guards | richer confirm/retransmission variants |
-| Transport Supervisor | In Progress | `TC-SUP-001..074`, runtime/channel/codec-status reports, public API guard evidence `RV-380`, init switch/runtime-loop baseline evidence `RV-388..RV-389` | richer runtime fault-ordering variants |
+| Transport Supervisor | In Progress | `TC-SUP-001..075`, runtime/channel/codec-status/SR-runtime reports, public API guard evidence `RV-380`, init switch/runtime-loop baseline evidence `RV-388..RV-389`, SR runtime wiring evidence `RV-408` | richer runtime fault-ordering variants |
 | Queue / Backpressure | In Progress | bounded `outstanding 1 + deferred 12`, queue/fairness/long-run matrices | future fairness/retry/runtime-feedback semantics |
 | Redundancy / Channel Manager | In Progress | holdoff `2..20`, flap-reset `2..19`, terminal outcome `3..19`, topology validation, unsupported `REDUNDANT` topology rejection, public API guard evidence `TC-CHM-059`/`RV-379`, flap-penalty saturation evidence `TC-CHM-060`/`RV-381`, reset audit preservation `TC-CHM-061`/`RV-387` | future redundancy mode and longer-run policy growth |
-| Codec / Security | In Progress | `TC-CODEC-001..044`, `TC-INT-206`, `TC-INT-208`, `RV-337`, `RV-354..RV-367`, `RV-369..RV-378`, `RV-382..RV-384`, `RV-390`, `INV-RASTA-001`, `PDU-PARITY-001A..001F`, `RV-399..RV-407` | RaSTA SR supervisor runtime wiring, receiver/sender authenticity checks, selected checksum algorithm implementation if required, redundancy CRC/PDU parity, optional MAC/security extension taxonomy, vendor security vectors |
+| Codec / Security | In Progress | `TC-CODEC-001..044`, `TC-SUP-075`, `TC-INT-206`, `TC-INT-208`, `RV-337`, `RV-354..RV-367`, `RV-369..RV-378`, `RV-382..RV-384`, `RV-390`, `INV-RASTA-001`, `PDU-PARITY-001A..001F`, `RV-399..RV-408` | receiver/sender authenticity checks, selected checksum algorithm implementation if required, redundancy CRC/PDU parity, optional MAC/security extension taxonomy, vendor security vectors |
 | Configuration Validation | Completed | `TC-CFG-003`, `TC-CFG-008..010` | deployment-specific policy additions |
 | Integration Verification | In Progress | `test_rsrx_session_supervisor_flow.c`, integration harness spec, `TC-INT-205..209` | target/longer-run integration expansion |
 | Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot, V&V v1.6 official response | actual vendor finding export and target-qualified stack/memory-map artifacts |
@@ -55,7 +55,7 @@
   - `cmake --build /tmp/sil4-build -j4`
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
-- Latest local verification was green after `RV-407`.
+- Latest local verification was green after `RV-408`.
 - External artifact references:
   - closed baseline fetch artifact: `sil4-ci-logs2/*`, source run `24661353609`, fetch run `24662424670`
   - remaining vendor evidence artifact: raw vendor export or secured attachment reference, `vendor_export_context.env`, vendor rule/file/location metadata, capture or workflow run page
@@ -71,7 +71,7 @@
 | R-003 Redundancy | Holdoff/flap/terminal parity, topology validation, unsupported `REDUNDANT` topology rejection, public API guard rejection, switch audit, reset audit preservation, penalty telemetry including saturation boundary, and stability wrappers are representative-closeout. | future redundancy mode growth and longer-run policy generalization | next redundancy policy |
 | R-004 Queue policy | Current `outstanding 1 + deferred 12` depth is closed across adapter, supervisor, integration, and API overflow paths. | future fairness, retry, runtime-feedback, or configured-capacity semantics | next queueing policy |
 | R-005 Evidence artifacts | Helper/tooling/runbooks, host stack/memory baseline, strict-warning policy, and baseline fetch artifact are prepared/closed as applicable. | first actual vendor finding export and target/vendor-qualified stack/memory-map evidence | vendor/target evidence execution |
-| R-006 Codec/security | Current codec skeleton, CRC32 optional path, typed status taxonomy, selected CRC integration, calculator injection seam, policy gates, encode/decode stale-output representative evidence, decode null-argument output clear, CRC32 truncated-output clear, CRC32 inner status preservation including transport metadata misuse, reserved-header tamper output clear, unsupported-message/reason output clear, trailing/truncated/oversized payload output clear, direct misuse event/channel output clear, `INV-RASTA-001` inventory, `PDU-PARITY-001` SR wire-profile draft, profile/packet/mapping contracts, fixed big-endian SR byte-order helpers, no-checksum SR common-header/payload encode/decode, checksum profile unsupported-rejection boundary, codec-level timestamp/window admission boundary, and timestamp-admitted handoff mapping are in place. | SR codec path supervisor runtime wiring, receiver/sender authenticity checks, selected checksum algorithm implementation only if required, RaSTA redundancy CRC/PDU parity, optional MAC/security extension definition, additional tamper taxonomy, vendor-oriented security negative vectors | wire SR codec path into supervisor/runtime selection |
+| R-006 Codec/security | Current codec skeleton, CRC32 optional path, typed status taxonomy, selected CRC integration, calculator injection seam, policy gates, encode/decode stale-output representative evidence, decode null-argument output clear, CRC32 truncated-output clear, CRC32 inner status preservation including transport metadata misuse, reserved-header tamper output clear, unsupported-message/reason output clear, trailing/truncated/oversized payload output clear, direct misuse event/channel output clear, `INV-RASTA-001` inventory, `PDU-PARITY-001` SR wire-profile draft, profile/packet/mapping contracts, fixed big-endian SR byte-order helpers, no-checksum SR common-header/payload encode/decode, checksum profile unsupported-rejection boundary, codec-level timestamp/window admission boundary, timestamp-admitted handoff mapping, and supervisor runtime SR selection are in place. | receiver/sender authenticity checks, selected checksum algorithm implementation only if required, RaSTA redundancy CRC/PDU parity, optional MAC/security extension definition, additional tamper taxonomy, vendor-oriented security negative vectors | add receiver/sender authenticity admission |
 | R-007 V&V accepted follow-up | Handshake action assertion density, `CONNECT_REQUEST` unsequenced baseline, and CMake warning-hardening follow-up are closed. | future maintenance only | keep assertion/warning discipline |
 | R-008 AM263Px/SafeRTOS porting | Core protocol remains portable C with platform/transport/codec adapter boundaries; no AM263Px or SafeRTOS dependency is allowed in the core implementation. Hardware-backed CRC/crypto acceleration may be used only behind target-specific codec/security adapters with portable software fallback retained. | target porting layer, SafeRTOS safety-manual compliance mapping, TI driver binding, optional hardware CRC/crypto adapter, software-vs-hardware equivalence evidence, HW self-test/timeout/diagnostic evidence, target stack/memory/timing evidence, target integration/fault-injection logs | define target porting plan and evidence checklist |
 
@@ -83,7 +83,7 @@
 | Target-qualified stack/memory-map evidence | Waiting | target-release build/toolchain and qualified analyzer output |
 | AM263Px/SafeRTOS porting layer | Not Started | target transport choice, SafeRTOS integration policy, TI SDK/driver binding plan, hardware CRC/crypto adapter selection |
 | AM263Px/SafeRTOS target evidence | Waiting | target hardware/build environment, SafeRTOS safety evidence, linker/stack/timing capture process, software-vs-hardware CRC equivalence and HW diagnostic capture process |
-| RaSTA PDU/checksum/timestamp parity | Started | exact official/customer RaSTA clause mapping, SR runtime wiring policy, selected checksum algorithm implementation only if required |
+| RaSTA PDU/checksum/timestamp parity | Started | exact official/customer RaSTA clause mapping, receiver/sender authenticity policy, selected checksum algorithm implementation only if required |
 | MAC/security extension | Not Started | controlled requirement needed; otherwise keep `uRequireMac` as explicit unsupported extension gate |
 | Future redundancy routing modes | Not Started | policy decision beyond current active-standby baseline |
 
@@ -102,7 +102,7 @@
 1. `Actual CI/Vendor Evidence Acquisition`
 2. `AM263Px/SafeRTOS Porting Evidence Planning`
 3. `Redundancy Next Policy Growth`
-4. `RaSTA SR Supervisor Runtime Wiring`
+4. `Receiver/Sender Authenticity Admission`
 5. `Protocol Sequencing Next Parity Growth`
 6. `Transport Supervisor Runtime Feedback Growth`
 

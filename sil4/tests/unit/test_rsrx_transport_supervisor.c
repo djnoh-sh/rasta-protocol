@@ -784,6 +784,107 @@ static void vTestSupervisorUnsupportedMessage(void)
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "unsupported message leaves session state");
 }
 
+static void vTestSupervisorRastaSrRuntimeTimestampAdmission(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_rasta_sr_timestamp_admission_policy_t xPolicy;
+	rsrx_rasta_sr_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES];
+	static const uint8_t auPayload[2] = { 0xA5U, 0x5AU };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "rasta sr runtime session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "rasta sr runtime session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "rasta sr runtime session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "rasta sr runtime establish");
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_DECODE_ERROR,
+		RSRX_MESSAGE_TYPE_INVALID,
+		RSRX_EVENT_INVALID,
+		RSRX_REASON_NONE,
+		0U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "rasta sr runtime supervisor init");
+
+	xPolicy.uCurrentTimestamp = 1000U;
+	xPolicy.uAcceptedPastWindow = 100U;
+	xPolicy.uAcceptedFutureWindow = 50U;
+	xPolicy.uLastAcceptedTimestamp = 0U;
+	vAssertTrue(
+		rsrx_transport_supervisor_enable_rasta_sr_runtime(&xSupervisor, &xPolicy) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"rasta sr runtime enable");
+
+	xRequest.usPacketLength = (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auPayload));
+	xRequest.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	xRequest.uReceiverId = 0x1000U;
+	xRequest.uSenderId = 0x2000U;
+	xRequest.uSequenceNumber = 1U;
+	xRequest.uConfirmedSequenceNumber = 0U;
+	xRequest.uTimestamp = 1001U;
+	xRequest.uConfirmedTimestamp = 1000U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+	xRequest.puChecksum = (const uint8_t *)0;
+	xRequest.xChecksumLength = 0U;
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK,
+		"rasta sr runtime encode accepted frame");
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(
+		rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"rasta sr runtime accepted frame");
+	vAssertTrue(g_xCodecContext.uCallCount == 0U, "rasta sr runtime bypasses legacy codec port");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "rasta sr runtime message type");
+	vAssertTrue(pxSupervisorReport->xLastMessage.xPayloadLength == sizeof(auPayload), "rasta sr runtime payload length");
+	vAssertTrue(pxSupervisorReport->uRastaSrRuntimeEnabled == 1U, "rasta sr runtime telemetry enabled");
+	vAssertTrue(pxSupervisorReport->uRastaSrCurrentTimestamp == 1000U, "rasta sr runtime telemetry current timestamp");
+	vAssertTrue(pxSupervisorReport->uRastaSrLastAcceptedTimestamp == 1001U, "rasta sr runtime telemetry last accepted timestamp");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta sr runtime processed count");
+	vAssertTrue(xCallbacks.uApplicationCount == 1U, "rasta sr runtime application callback");
+
+	xRequest.uSequenceNumber = 2U;
+	xRequest.uTimestamp = 1100U;
+	xRequest.uConfirmedTimestamp = 1000U;
+	xBuffer.xEncodedLength = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK,
+		"rasta sr runtime encode future frame");
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	vAssertTrue(
+		rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) ==
+			RSRX_SUPERVISOR_STATUS_DECODE_FAILED,
+		"rasta sr runtime rejects future timestamp");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE, "rasta sr runtime future status");
+	vAssertTrue(pxSupervisorReport->uRastaSrLastAcceptedTimestamp == 1001U, "rasta sr runtime rejected timestamp not accepted");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta sr runtime rejected frame not processed");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "rasta sr runtime rejected frame leaves state");
+}
+
 static void vTestSupervisorSequenceGapDetection(void)
 {
 	rsrx_session_t xSession;
@@ -5838,6 +5939,7 @@ int main(void)
 	vTestSupervisorInitClearsRuntimeLoopBaseline();
 	vTestSupervisorDecodeFailure();
 	vTestSupervisorUnsupportedMessage();
+	vTestSupervisorRastaSrRuntimeTimestampAdmission();
 	vTestSupervisorSequenceGapDetection();
 	vTestSupervisorStaleSequenceProtocolError();
 	vTestSupervisorPollReceiveHandshake();

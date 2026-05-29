@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-22`
+- Last Updated: `2026-05-29`
 
 ## Scope
 
@@ -28,6 +28,7 @@
 | TC-SUP-070 | SR-002 | supervisor init report baseline 검증 | non-zero report fields를 가진 supervisor context와 valid session/codec 준비 | `rsrx_transport_supervisor_init` 호출 | init이 stale report counters/decision/codec/outbound telemetry를 neutral baseline으로 clear한다 | decision/class, codec status, processed/decision counters, outbound queue/reset/reject telemetry가 zero/none baseline과 일치 |
 | TC-SUP-073 | FR-003, SR-002 | supervisor init switch-audit baseline 검증 | non-zero switch/holdoff audit fields를 가진 supervisor context와 valid session/codec 준비 | `rsrx_transport_supervisor_init` 호출 | init이 stale switch/holdoff counters, last switch taxonomy, trigger channels/events, terminal holdoff outcome을 neutral baseline으로 clear한다 | supervisor startup이 이전 runtime audit state를 새 session-supervisor baseline에 누출하지 않는다 |
 | TC-SUP-074 | FR-003, SR-002 | supervisor init runtime-loop baseline 검증 | non-zero receive/pump/budget/frame/message telemetry를 가진 supervisor context와 valid session/codec 준비 | `rsrx_transport_supervisor_init` 호출 | init이 stale runtime-loop counters, last frame/message metadata, receive-error stage/status, budget channel, last session report pointer를 neutral baseline으로 clear하고 available-channel telemetry는 current session config baseline으로 refresh한다 | supervisor startup이 이전 poll/pump/receive-fault runtime state를 새 baseline에 누출하지 않는다 |
+| TC-SUP-075 | FR-003, SR-002 | RaSTA SR runtime decode/admission wiring 검증 | `ESTABLISHED` 상태 session-supervisor, SR runtime timestamp policy, no-checksum RaSTA SR DATA frame 준비 | `rsrx_transport_supervisor_enable_rasta_sr_runtime` 후 `process_frame` 호출 | admitted SR frame은 legacy codec port를 우회해 session/application으로 전달되고 future timestamp frame은 `DECODE_FAILED`로 거부된다 | SR runtime telemetry, last accepted timestamp, codec status, processed count, session state, application callback count가 설계와 일치 |
 | TC-SUP-003 | SR-002 | decode failure 방어 검증 | `CONNECTING` 상태 session, codec이 `DECODE_ERROR` 반환하도록 준비 | `FRAME_RECEIVED` frame 처리 | `DECODE_FAILED` 반환, session 미호출, processed count 미증가 | session state가 유지되고 supervisor report가 failure decision과 codec status를 보존 |
 | TC-SUP-004 | FR-003, SR-002 | unsupported message 방어 검증 | `CONNECTING` 상태 session, codec이 `UNSUPPORTED_MESSAGE` 반환하도록 준비 | 지원하지 않는 message frame 처리 | `DECODE_FAILED` 반환, decoded type은 기록되지만 session 미호출 | unsupported message와 codec status가 보고서에 남고 상태 전이는 발생하지 않음 |
 | TC-SUP-005 | FR-004 | sequence gap 검증 | `ESTABLISHED` 상태 session, 먼저 in-order frame 기록 | sequence가 건너뛴 frame 처리 | `RETRANSMISSION_PENDING` 전이 | supervisor가 gap을 감지해 retransmission 경로를 연다 |
