@@ -136,7 +136,7 @@ rsrx_status_t rsrx_protocol_context_record_inbound_message(
 		return RSRX_STATUS_REJECTED;
 	}
 
-	if(pxMessage->uSequenceNumber <= pxContext->uLastRxSequenceNumber)
+	if(pxMessage->uSequenceNumber != (pxContext->uLastRxSequenceNumber + 1U))
 	{
 		return RSRX_STATUS_REJECTED;
 	}

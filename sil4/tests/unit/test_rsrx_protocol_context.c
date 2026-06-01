@@ -47,6 +47,31 @@ static void vAssertEncodeRequestCleared(
 	vAssertTrue(pxRequest->xPayloadLength == 0U, "encode request cleared payload length");
 }
 
+static void vSeedInboundBaseline(
+	rsrx_protocol_context_t * pxContext,
+	rsrx_message_type_t eMessageType,
+	rsrx_event_t eSuggestedEvent,
+	rsrx_reason_code_t eReason,
+	uint32_t uLastRxSequenceNumber)
+{
+	rsrx_decoded_message_t xMessage;
+	uint32_t uSequenceNumber;
+
+	xMessage.eMessageType = eMessageType;
+	xMessage.eSuggestedEvent = eSuggestedEvent;
+	xMessage.eReason = eReason;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+
+	for(uSequenceNumber = 1U; uSequenceNumber <= uLastRxSequenceNumber; ++uSequenceNumber)
+	{
+		xMessage.uSequenceNumber = uSequenceNumber;
+		vAssertTrue(
+			rsrx_protocol_context_record_inbound_message(pxContext, &xMessage) == RSRX_STATUS_OK,
+			"seed inbound baseline");
+	}
+}
+
 static void vTestOutboundSequenceProgression(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -104,18 +129,15 @@ static void vTestProtocolContextInitClearsBaseline(void)
 static void vTestInboundConfirmationTracking(void)
 {
 	rsrx_protocol_context_t xContext;
-	rsrx_decoded_message_t xMessage;
 	rsrx_encode_request_t xRequest;
 
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
-	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
-	xMessage.eSuggestedEvent = RSRX_EVENT_HANDSHAKE_SUCCESS;
-	xMessage.eReason = RSRX_REASON_HANDSHAKE_COMPLETED;
-	xMessage.uSequenceNumber = 9U;
-	xMessage.uConfirmationNumber = 0U;
-	xMessage.xPayloadLength = 0U;
-
-	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record inbound");
+	vSeedInboundBaseline(
+		&xContext,
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_EVENT_HANDSHAKE_SUCCESS,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		9U);
 	vAssertTrue(rsrx_protocol_context_build_encode_request(
 		&xContext,
 		RSRX_MESSAGE_TYPE_HEARTBEAT,
@@ -176,18 +198,15 @@ static void vTestInvalidOutboundMessageTypeRejected(void)
 static void vTestRetransmissionRequestPayload(void)
 {
 	rsrx_protocol_context_t xContext;
-	rsrx_decoded_message_t xMessage;
 	rsrx_encode_request_t xRequest;
 
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
-	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
-	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
-	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xMessage.uSequenceNumber = 12U;
-	xMessage.uConfirmationNumber = 0U;
-	xMessage.xPayloadLength = 0U;
-
-	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record inbound");
+	vSeedInboundBaseline(
+		&xContext,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		12U);
 	vAssertTrue(rsrx_protocol_context_build_encode_request(
 		&xContext,
 		RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
@@ -358,6 +377,17 @@ static void vTestInvalidSequenceRecordRejected(void)
 		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_REJECTED,
 		"sequence record guard zero rejected");
 	vAssertTrue(xContext.uLastRxSequenceNumber == 0U, "sequence record guard zero keeps last rx");
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "sequence record guard gap reset");
+	xMessage.uSequenceNumber = 1U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK,
+		"sequence record guard gap baseline");
+	xMessage.uSequenceNumber = 3U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_REJECTED,
+		"sequence record guard gap rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 1U, "sequence record guard gap keeps last rx");
 }
 
 static void vTestResolveFailureClearsEvent(void)
@@ -447,10 +477,13 @@ static void vTestRecoverySuccessResolution(void)
 	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xMessage.uSequenceNumber = 3U;
-	xMessage.uConfirmationNumber = 0U;
 	xMessage.xPayloadLength = 0U;
-	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+	vSeedInboundBaseline(
+		&xContext,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U);
 
 	vAssertTrue(rsrx_protocol_context_build_encode_request(
 		&xContext,
@@ -504,14 +537,12 @@ static void vTestRetransmissionOrderingMatrix(void)
 
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "protocol init");
 
-	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
-	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
-	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xMessage.uSequenceNumber = 3U;
-	xMessage.uConfirmationNumber = 0U;
-	xMessage.xPayloadLength = 0U;
-
-	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+	vSeedInboundBaseline(
+		&xContext,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U);
 	vAssertTrue(rsrx_protocol_context_build_encode_request(
 		&xContext,
 		RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
@@ -615,10 +646,13 @@ static void vTestPostRecoveryOrderingMatrix(void)
 		xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 		xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 		xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-		xMessage.uSequenceNumber = 3U;
-		xMessage.uConfirmationNumber = 0U;
 		xMessage.xPayloadLength = 0U;
-		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+		vSeedInboundBaseline(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			3U);
 
 		vAssertTrue(rsrx_protocol_context_build_encode_request(
 			&xContext,
@@ -671,10 +705,13 @@ static void vTestRepeatedGapRetransmissionProgression(void)
 	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xMessage.uSequenceNumber = 3U;
-	xMessage.uConfirmationNumber = 0U;
 	xMessage.xPayloadLength = 0U;
-	vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+	vSeedInboundBaseline(
+		&xContext,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U);
 
 	vAssertTrue(rsrx_protocol_context_build_encode_request(
 		&xContext,
@@ -737,10 +774,13 @@ static void vTestRepeatedGapRecoveryOrderingMatrix(void)
 		xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 		xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 		xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-		xMessage.uSequenceNumber = 3U;
-		xMessage.uConfirmationNumber = 0U;
 		xMessage.xPayloadLength = 0U;
-		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+		vSeedInboundBaseline(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			3U);
 
 		vAssertTrue(rsrx_protocol_context_build_encode_request(
 			&xContext,
@@ -802,10 +842,13 @@ static void vTestRepeatedGapPostRecoveryOrderingMatrix(void)
 		xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 		xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 		xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-		xMessage.uSequenceNumber = 3U;
-		xMessage.uConfirmationNumber = 0U;
 		xMessage.xPayloadLength = 0U;
-		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+		vSeedInboundBaseline(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			3U);
 
 		vAssertTrue(rsrx_protocol_context_build_encode_request(
 			&xContext,
@@ -1016,10 +1059,13 @@ static void vTestPostRecoveryMessageFamilyOrderingMatrix(void)
 		xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 		xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 		xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-		xMessage.uSequenceNumber = 3U;
-		xMessage.uConfirmationNumber = 0U;
 		xMessage.xPayloadLength = 0U;
-		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record baseline");
+		vSeedInboundBaseline(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_EVENT_VALID_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			3U);
 
 		vAssertTrue(rsrx_protocol_context_build_encode_request(
 			&xContext,

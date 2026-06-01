@@ -54,7 +54,7 @@
   - inbound message의 remote confirmation은 마지막으로 관측한 값보다 작아질 수 없다.
   - inbound confirmation은 로컬이 실제로 송신한 마지막 sequence보다 클 수 없다.
   - record 단계에서도 invalid confirmation을 `REJECTED`로 거부하고 sequence/confirmation tracking state를 변경하지 않는다.
-  - record 단계에서도 duplicate/lower stale sequence와 zero sequence 같은 invalid sequenced message를 `REJECTED`로 거부하고 tracking state를 변경하지 않는다.
+  - record 단계에서도 duplicate/lower stale sequence, gap sequence, zero sequence 같은 invalid sequenced message를 `REJECTED`로 거부하고 tracking state를 변경하지 않는다.
   - unsequenced inbound message는 sequence/confirmation tracking state를 갱신하지 않는다.
 - inbound sequence validation:
   - resolve 실패 경로는 caller에게 stale 정상 event를 남기지 않도록 유효한 output event를 `RSRX_EVENT_INVALID`로 clear한 뒤 오류를 반환한다.
