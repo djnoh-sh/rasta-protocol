@@ -35,7 +35,7 @@
 | `rsrx_protocol_context_t` | struct | outbound sequence, inbound sequence, remote confirmation, retransmission state 보유 | 동적 메모리 없음 |
 | `rsrx_protocol_context_init` | function | protocol context 초기화 | next tx sequence는 1에서 시작 |
 | `rsrx_protocol_context_record_inbound_message` | function | inbound decoded message에서 confirmation 기준 갱신 | 단조 증가 정책 |
-| `rsrx_protocol_context_resolve_inbound_event` | function | inbound sequence/confirmation/recovery 규칙 판정 | protocol error와 recovery success를 결정 |
+| `rsrx_protocol_context_resolve_inbound_event` | function | inbound sequence/confirmation/recovery 규칙 판정 | protocol error와 recovery success를 결정하며 실패 시 output event를 invalid baseline으로 정리 |
 | `rsrx_protocol_context_build_encode_request` | function | outbound message type과 reason을 encode request로 변환 | 결정적 sequence/confirmation 부여 |
 | `rsrx_protocol_context_clear_retransmission` | function | retransmission pending context 정리 | recovery success 시 호출 |
 
@@ -57,6 +57,7 @@
   - record 단계에서도 duplicate/lower stale sequence와 zero sequence 같은 invalid sequenced message를 `REJECTED`로 거부하고 tracking state를 변경하지 않는다.
   - unsequenced inbound message는 sequence/confirmation tracking state를 갱신하지 않는다.
 - inbound sequence validation:
+  - resolve 실패 경로는 caller에게 stale 정상 event를 남기지 않도록 유효한 output event를 `RSRX_EVENT_INVALID`로 clear한 뒤 오류를 반환한다.
   - sequenced message의 첫 inbound sequence는 `1`이어야 한다.
   - 일반 상태에서 `last_rx + 1`이면 정상 수용, 더 크면 gap, 더 작으면 protocol error다.
   - `last_rx`가 `UINT32_MAX`에 도달한 뒤에는 inbound sequence `0` wraparound를 정상 next sequence로 수용하지 않고 protocol error로 처리한다.
@@ -87,6 +88,7 @@
   - inbound confirmation validity 검증
   - invalid confirmation record side-effect 차단 검증
   - invalid inbound message type record reject 검증
+  - resolve failure stale-event clear 검증
   - retransmission pending에서 recovery success 판정 검증
   - unconfirmed recovery frame 거부 검증
   - unsequenced message pass-through와 record side-effect 차단 검증

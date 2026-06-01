@@ -157,9 +157,15 @@ rsrx_status_t rsrx_protocol_context_resolve_inbound_event(
 	const rsrx_decoded_message_t * pxMessage,
 	rsrx_event_t * peEvent)
 {
+	if(peEvent == (rsrx_event_t *)0)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	*peEvent = RSRX_EVENT_INVALID;
+
 	if((pxContext == (const rsrx_protocol_context_t *)0) ||
-		(pxMessage == (const rsrx_decoded_message_t *)0) ||
-		(peEvent == (rsrx_event_t *)0))
+		(pxMessage == (const rsrx_decoded_message_t *)0))
 	{
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}

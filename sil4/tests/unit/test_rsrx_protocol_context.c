@@ -360,6 +360,47 @@ static void vTestInvalidSequenceRecordRejected(void)
 	vAssertTrue(xContext.uLastRxSequenceNumber == 0U, "sequence record guard zero keeps last rx");
 }
 
+static void vTestResolveFailureClearsEvent(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eEvent;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "resolve clear init");
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+
+	eEvent = RSRX_EVENT_VALID_DATA;
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(
+			(const rsrx_protocol_context_t *)0,
+			&xMessage,
+			&eEvent) == RSRX_STATUS_INVALID_ARGUMENT,
+		"resolve clear null context");
+	vAssertTrue(eEvent == RSRX_EVENT_INVALID, "resolve clear null context event");
+
+	eEvent = RSRX_EVENT_VALID_HEARTBEAT;
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(
+			&xContext,
+			(const rsrx_decoded_message_t *)0,
+			&eEvent) == RSRX_STATUS_INVALID_ARGUMENT,
+		"resolve clear null message");
+	vAssertTrue(eEvent == RSRX_EVENT_INVALID, "resolve clear null message event");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	eEvent = RSRX_EVENT_INIT_FAILURE;
+	vAssertTrue(
+		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"resolve clear invalid message type");
+	vAssertTrue(eEvent == RSRX_EVENT_INVALID, "resolve clear invalid type event");
+}
+
 static void vTestInvalidInboundMessageTypeRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1339,10 +1380,14 @@ static void vTestInvalidArguments(void)
 			&xMessage,
 			&eEvent) == RSRX_STATUS_INVALID_ARGUMENT,
 		"null resolve context");
+	vAssertTrue(eEvent == RSRX_EVENT_INVALID, "null resolve context clears event");
+	eEvent = RSRX_EVENT_INIT_FAILURE;
 	vAssertTrue(
 		rsrx_protocol_context_resolve_inbound_event(&xContext, (const rsrx_decoded_message_t *)0, &eEvent) ==
 			RSRX_STATUS_INVALID_ARGUMENT,
 		"null resolve message");
+	vAssertTrue(eEvent == RSRX_EVENT_INVALID, "null resolve message clears event");
+	eEvent = RSRX_EVENT_INIT_FAILURE;
 	vAssertTrue(
 		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, (rsrx_event_t *)0) ==
 			RSRX_STATUS_INVALID_ARGUMENT,
@@ -1354,7 +1399,7 @@ static void vTestInvalidArguments(void)
 		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) ==
 			RSRX_STATUS_INVALID_ARGUMENT,
 		"invalid resolve message type");
-	vAssertTrue(eEvent == RSRX_EVENT_INIT_FAILURE, "invalid resolve type keeps event");
+	vAssertTrue(eEvent == RSRX_EVENT_INVALID, "invalid resolve type clears event");
 
 	vAssertTrue(
 		rsrx_protocol_context_build_encode_request(
@@ -1408,6 +1453,7 @@ int main(void)
 	vTestInboundConfirmationValidation();
 	vTestInvalidConfirmationRecordRejected();
 	vTestInvalidSequenceRecordRejected();
+	vTestResolveFailureClearsEvent();
 	vTestInvalidInboundMessageTypeRejected();
 	vTestRecoverySuccessResolution();
 	vTestProtocolOrderingCloseoutMatrix();
