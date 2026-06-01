@@ -267,6 +267,11 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
+	if((puPayload == (const uint8_t *)0) && (xPayloadLength > 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
 	if(pxContext->uNextTxSequenceNumber == UINT32_MAX)
 	{
 		return RSRX_STATUS_REJECTED;

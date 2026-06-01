@@ -1252,6 +1252,27 @@ static void vTestEncodeFailureClearsRequest(void)
 	vAssertEncodeRequestCleared(&xRequest, "wrap reject clears request");
 }
 
+static void vTestOutboundPayloadPointerGuard(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "payload guard protocol init");
+	vSeedEncodeRequest(&xRequest);
+
+	vAssertTrue(
+		rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			1U,
+			&xRequest) == RSRX_STATUS_INVALID_ARGUMENT,
+		"payload guard null payload rejected");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 1U, "payload guard keeps next tx");
+	vAssertEncodeRequestCleared(&xRequest, "payload guard clears request");
+}
+
 static void vTestInvalidArguments(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1363,6 +1384,7 @@ int main(void)
 	vTestInboundSequenceWrapRejected();
 	vTestRetransmissionBaseWrapRejected();
 	vTestEncodeFailureClearsRequest();
+	vTestOutboundPayloadPointerGuard();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_protocol_context_test: all tests passed\n");
