@@ -261,6 +261,65 @@ static void vEncodeFrameWithCrc32(
 	*pxEncodedLength = xBuffer.xEncodedLength;
 }
 
+static void vEncodeRastaRedundancySrFrame(
+	uint32_t uSrSequenceNumber,
+	uint32_t uSrConfirmedSequenceNumber,
+	uint32_t uTimestamp,
+	const uint8_t * puPayload,
+	size_t xPayloadLength,
+	uint8_t * puBuffer,
+	size_t xBufferCapacity,
+	size_t * pxEncodedLength,
+	uint8_t * puSrBuffer,
+	size_t xSrBufferCapacity,
+	size_t * pxSrEncodedLength)
+{
+	rsrx_rasta_sr_encode_request_t xSrRequest;
+	rsrx_rasta_redundancy_crc_profile_t xCrcProfile;
+	rsrx_rasta_redundancy_encode_request_t xRedundancyRequest;
+	rsrx_encode_buffer_t xSrBuffer;
+	rsrx_encode_buffer_t xRedundancyBuffer;
+
+	xSrRequest.usPacketLength = (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + xPayloadLength);
+	xSrRequest.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	xSrRequest.uReceiverId = 0x3000U;
+	xSrRequest.uSenderId = 0x4000U;
+	xSrRequest.uSequenceNumber = uSrSequenceNumber;
+	xSrRequest.uConfirmedSequenceNumber = uSrConfirmedSequenceNumber;
+	xSrRequest.uTimestamp = uTimestamp;
+	xSrRequest.uConfirmedTimestamp = uTimestamp - 1U;
+	xSrRequest.puPayload = puPayload;
+	xSrRequest.xPayloadLength = xPayloadLength;
+	xSrRequest.puChecksum = (const uint8_t *)0;
+	xSrRequest.xChecksumLength = 0U;
+	xSrBuffer.puBuffer = puSrBuffer;
+	xSrBuffer.xBufferCapacity = xSrBufferCapacity;
+	xSrBuffer.xEncodedLength = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xSrRequest, &xSrBuffer) == RSRX_CODEC_STATUS_OK,
+		"encode rasta sr frame");
+
+	xCrcProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_A;
+	xCrcProfile.xCrcBytes = 0U;
+	xRedundancyRequest.usPacketLength =
+		(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES + xSrBuffer.xEncodedLength);
+	xRedundancyRequest.usReserve = 0U;
+	xRedundancyRequest.uSequenceNumber = uSrSequenceNumber + 100U;
+	xRedundancyRequest.puCarriedPacket = puSrBuffer;
+	xRedundancyRequest.xCarriedPacketLength = xSrBuffer.xEncodedLength;
+	xRedundancyRequest.pxCrcProfile = &xCrcProfile;
+	xRedundancyBuffer.puBuffer = puBuffer;
+	xRedundancyBuffer.xBufferCapacity = xBufferCapacity;
+	xRedundancyBuffer.xEncodedLength = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_redundancy_no_crc(&xRedundancyRequest, &xRedundancyBuffer) ==
+			RSRX_CODEC_STATUS_OK,
+		"encode rasta redundancy sr frame");
+
+	*pxSrEncodedLength = xSrBuffer.xEncodedLength;
+	*pxEncodedLength = xRedundancyBuffer.xEncodedLength;
+}
+
 static void vFillConfig(
 	rsrx_session_config_t * pxConfig,
 	test_transport_context_t * pxTransport,
@@ -12102,6 +12161,133 @@ static void vTestIntegratedCrc32CodecStatusFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_CRC_MISMATCH, "crc32 codec status integration mismatch status");
 	vAssertTrue(xApplication.uCallCount == 0U, "crc32 codec status integration no application callback");
 	vAssertTrue(xLifecycleCounter.uCallCount == 0U, "crc32 codec status integration no lifecycle callback");
+}
+
+static void vTestIntegratedRastaRedundancySrRuntimeFlow(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	rsrx_codec_port_t xCodec = *rsrx_codec_get_default_port();
+	rsrx_rasta_sr_timestamp_admission_policy_t xTimestampPolicy;
+	rsrx_rasta_sr_identity_admission_policy_t xIdentityPolicy;
+	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auSrFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auRedundancyFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	static const uint8_t auFramePayload[8] = { 0U };
+	static const uint8_t auDataPayload[2] = { 0xE1U, 0xE2U };
+	size_t xHandshakeLength;
+	size_t xSrLength;
+	size_t xRedundancyLength;
+
+	xTransport.uPrimaryAvailable = 1U;
+	xTransport.uSecondaryAvailable = 0U;
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "rasta redundancy sr integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "rasta redundancy sr integration session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "rasta redundancy sr integration session connect");
+
+	vEncodeFrame(
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		1U,
+		1U,
+		(const uint8_t *)0,
+		0U,
+		auHandshakeFrame,
+		sizeof(auHandshakeFrame),
+		&xHandshakeLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auHandshakeFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xHandshakeLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptCount = 1U;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "rasta redundancy sr integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "rasta redundancy sr integration handshake pump");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "rasta redundancy sr integration established");
+
+	xTimestampPolicy.uCurrentTimestamp = 1000U;
+	xTimestampPolicy.uAcceptedPastWindow = 100U;
+	xTimestampPolicy.uAcceptedFutureWindow = 50U;
+	xTimestampPolicy.uLastAcceptedTimestamp = 0U;
+	vAssertTrue(
+		rsrx_transport_supervisor_enable_rasta_redundancy_sr_runtime(&xSupervisor, &xTimestampPolicy) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"rasta redundancy sr integration runtime enable");
+	xIdentityPolicy.uExpectedReceiverId = 0x3000U;
+	xIdentityPolicy.uExpectedSenderId = 0x4000U;
+	vAssertTrue(
+		rsrx_transport_supervisor_enable_rasta_sr_identity_admission(&xSupervisor, &xIdentityPolicy) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"rasta redundancy sr integration identity enable");
+
+	vEncodeRastaRedundancySrFrame(
+		2U,
+		1U,
+		1001U,
+		auDataPayload,
+		sizeof(auDataPayload),
+		auRedundancyFrame,
+		sizeof(auRedundancyFrame),
+		&xRedundancyLength,
+		auSrFrame,
+		sizeof(auSrFrame),
+		&xSrLength);
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auRedundancyFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xRedundancyLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "rasta redundancy sr integration poll");
+	vAssertTrue(pxSupervisorReport->uRastaSrRuntimeEnabled == 1U, "rasta redundancy sr integration sr runtime enabled");
+	vAssertTrue(pxSupervisorReport->uRastaRedundancySrRuntimeEnabled == 1U, "rasta redundancy sr integration redundancy runtime enabled");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "rasta redundancy sr integration data message");
+	vAssertTrue(pxSupervisorReport->xLastMessage.xPayloadLength == sizeof(auDataPayload), "rasta redundancy sr integration payload length");
+	vAssertTrue(pxSupervisorReport->uRastaSrLastAcceptedTimestamp == 1001U, "rasta redundancy sr integration accepted timestamp");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "rasta redundancy sr integration processed count");
+	vAssertTrue(xApplication.uCallCount == 1U, "rasta redundancy sr integration application callback");
+	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 2U, "rasta redundancy sr integration application sequence");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "rasta redundancy sr integration state retained");
+
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auSrFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xSrLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "rasta redundancy sr integration direct sr reject");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_DECODE_FAILED, "rasta redundancy sr integration direct sr decision");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO, "rasta redundancy sr integration direct sr status");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "rasta redundancy sr integration direct sr not processed");
+	vAssertTrue(xApplication.uCallCount == 1U, "rasta redundancy sr integration no extra callback");
 }
 
 static void vTestIntegratedInvalidChannelDecodeFailureFlow(void)
@@ -25723,6 +25909,7 @@ int main(void)
 	vTestIntegratedChannelUpHoldoffTransientSoakFlow();
 	vTestIntegratedDecodeFailureFlow();
 	vTestIntegratedCrc32CodecStatusFlow();
+	vTestIntegratedRastaRedundancySrRuntimeFlow();
 	vTestIntegratedInvalidChannelDecodeFailureFlow();
 	vTestIntegratedNonFrameReceiveNoFrameFlow();
 	vTestIntegratedSendFailureBudgetFlow();
