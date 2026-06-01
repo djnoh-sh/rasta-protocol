@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-29`
+- Last Updated: `2026-06-01`
 
 ## Scope
 
@@ -67,3 +67,4 @@
 | TC-CODEC-043 | FR-003, FR-004, SR-001 | RaSTA SR timestamp admission boundary 검증 | decoded SR packet, current timestamp, past/future window, last accepted timestamp 준비 | `rsrx_codec_validate_rasta_sr_timestamp_admission()` 호출 및 contract test build/run 수행 | 정상 timestamp는 `OK`, zero/current-zero, future, stale, regressed, confirmed-future, boundary overflow/underflow, null argument는 typed status를 반환한다 | SR timestamp/window policy를 session handoff에 통합하기 전에 deterministic admission boundary와 negative vectors를 고정한다 |
 | TC-CODEC-044 | FR-003, FR-004, SR-001 | RaSTA SR timestamp-admitted handoff mapping 검증 | decoded SR packet, timestamp admission policy, stale decoded-message output 준비 | `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission()` 호출 및 contract test build/run 수행 | timestamp-admitted SR packet은 internal decoded message/event/reason/sequence/confirmation/payload로 mapping되고, timestamp reject/unsupported type/null input은 typed status와 cleared decoded-message output을 반환한다 | SR packet을 protocol/session handoff message로 넘기기 전에 timestamp admission이 강제되는 bridge contract를 고정한다 |
 | TC-CODEC-045 | FR-003, FR-004, SR-001 | RaSTA SR receiver/sender identity admission 검증 | decoded SR packet, expected receiver/sender identity policy, stale decoded-message output 준비 | `rsrx_codec_validate_rasta_sr_identity_admission()` 및 identity+timestamp handoff mapping 호출 | expected receiver/sender ID가 일치하면 `OK`, receiver mismatch와 sender mismatch는 각각 typed status를 반환하고 handoff reject는 decoded-message output을 clear한다 | SR packet이 protocol/session handoff로 전달되기 전에 endpoint identity mismatch가 generic decode error가 아니라 deterministic authenticity admission failure로 차단된다 |
+| TC-CODEC-046 | FR-003, FR-004, SR-001 | RaSTA SR selected default checksum profile 검증 | `rsrx_codec_get_rasta_sr_default_checksum_profile()` 호출 | default checksum profile 조회 후 admission validator에 전달 | default profile은 non-null, `NONE / 0 bytes`, validator `OK`를 반환한다 | 현재 selected SR checksum profile을 no-checksum으로 명시하고 비-none MD4/BLAKE2b/SipHash 구현은 controlled requirement가 있을 때만 열리도록 경계를 고정한다 |

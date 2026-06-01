@@ -722,6 +722,22 @@ static void vTestRastaSrChecksumProfileAdmissionPolicy(void)
 		"rasta sr null checksum profile rejected");
 }
 
+static void vTestRastaSrDefaultChecksumProfileIsNoChecksum(void)
+{
+	const rsrx_rasta_sr_checksum_profile_t * pxProfile;
+
+	pxProfile = rsrx_codec_get_rasta_sr_default_checksum_profile();
+	vAssertTrue(pxProfile != (const rsrx_rasta_sr_checksum_profile_t *)0,
+		"rasta sr default checksum profile exists");
+	vAssertTrue(pxProfile->eAlgorithm == RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE,
+		"rasta sr default checksum profile algorithm none");
+	vAssertTrue(pxProfile->xChecksumBytes == 0U,
+		"rasta sr default checksum profile has no checksum bytes");
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_checksum_profile(pxProfile) == RSRX_CODEC_STATUS_OK,
+		"rasta sr default checksum profile validates");
+}
+
 static void vTestRastaSrTimestampAdmissionPolicy(void)
 {
 	rsrx_rasta_sr_decoded_packet_t xPacket;
@@ -1847,6 +1863,7 @@ int main(void)
 	vTestRastaSrNoChecksumEncodeRejectsInvalidInputs();
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
+	vTestRastaSrDefaultChecksumProfileIsNoChecksum();
 	vTestRastaSrTimestampAdmissionPolicy();
 	vTestRastaSrIdentityAdmissionPolicy();
 	vTestRastaSrTimestampAdmittedSessionHandoffMapping();

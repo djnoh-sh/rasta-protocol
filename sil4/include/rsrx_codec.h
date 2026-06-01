@@ -247,6 +247,8 @@ rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	const rsrx_rasta_sr_checksum_profile_t * pxProfile);
 
+const rsrx_rasta_sr_checksum_profile_t * rsrx_codec_get_rasta_sr_default_checksum_profile(void);
+
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);

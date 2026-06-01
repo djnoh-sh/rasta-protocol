@@ -584,6 +584,16 @@ rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
 	return RSRX_CODEC_STATUS_OK;
 }
 
+const rsrx_rasta_sr_checksum_profile_t * rsrx_codec_get_rasta_sr_default_checksum_profile(void)
+{
+	static const rsrx_rasta_sr_checksum_profile_t xDefaultProfile = {
+		RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE,
+		0U
+	};
+
+	return &xDefaultProfile;
+}
+
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	const rsrx_rasta_sr_checksum_profile_t * pxProfile)
 {
