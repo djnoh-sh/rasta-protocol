@@ -85,6 +85,7 @@
 - wire profile은 profile id/version과 CRC/MAC/timestamp field byte sizes를 함께 노출해 selected PDU boundary를 deployment/evidence layer가 추론 없이 확인할 수 있게 한다.
 - RaSTA SR profile은 28-byte SR header와 timestamp metadata를 노출하고, RaSTA redundancy profile은 8-byte redundancy header, carried SR packet capacity, max 4-byte CRC envelope를 metadata-only boundary로 노출한다.
 - RaSTA redundancy CRC option admission은 option A no-CRC만 현재 supported로 두고, option B/C/D/E는 controlled implementation 전까지 unsupported로 거부한다.
+- RaSTA redundancy option A path는 8-byte redundancy header와 carried SR packet을 encode/decode하며, CRC-bearing variants는 selected profile requirement 전까지 열지 않는다.
 
 ## Verification Notes
 

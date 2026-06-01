@@ -35,6 +35,7 @@ int main(void)
 	uint32_t uExpectedEncodedLength;
 	volatile uint32_t uExpectedAbsent;
 	volatile uint32_t uExpectedLastAcceptedTimestamp;
+	volatile uint32_t uExpectedNoRedundancyCrcPresent;
 	volatile size_t xExpectedNoChecksumBytes;
 	volatile size_t xExpectedNoRedundancyCrcBytes;
 	volatile size_t xExpectedCrcCalculatorTypeSize;
@@ -47,8 +48,11 @@ int main(void)
 	rsrx_codec_wire_profile_t xWireProfile;
 	rsrx_rasta_sr_encode_request_t xRastaSrEncodeRequest;
 	rsrx_rasta_sr_decoded_packet_t xRastaSrDecodedPacket;
+	rsrx_rasta_redundancy_encode_request_t xRastaRedundancyEncodeRequest;
+	rsrx_rasta_redundancy_decoded_packet_t xRastaRedundancyDecodedPacket;
 	rsrx_rasta_sr_checksum_profile_t xRastaSrChecksumProfile;
 	rsrx_rasta_redundancy_crc_profile_t xRastaRedundancyCrcProfile;
+	const rsrx_rasta_redundancy_crc_profile_t * volatile pxExpectedRedundancyCrcProfile;
 	rsrx_rasta_sr_timestamp_admission_policy_t xRastaSrTimestampPolicy;
 	rsrx_rasta_sr_identity_admission_policy_t xRastaSrIdentityPolicy;
 	volatile size_t xExpectedRastaSrHandoffPointerSize;
@@ -82,6 +86,7 @@ int main(void)
 	uExpectedEncodedLength = 0U;
 	uExpectedAbsent = 0U;
 	uExpectedLastAcceptedTimestamp = 900U;
+	uExpectedNoRedundancyCrcPresent = 0U;
 	xExpectedNoChecksumBytes = 0U;
 	xExpectedNoRedundancyCrcBytes = 0U;
 	xExpectedCrcCalculatorTypeSize = sizeof(pfExpectedCrc32Calculator);
@@ -134,6 +139,25 @@ int main(void)
 	xRastaSrChecksumProfile.xChecksumBytes = xExpectedNoChecksumBytes;
 	xRastaRedundancyCrcProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_A;
 	xRastaRedundancyCrcProfile.xCrcBytes = xExpectedNoRedundancyCrcBytes;
+	pxExpectedRedundancyCrcProfile = &xRastaRedundancyCrcProfile;
+	xRastaRedundancyEncodeRequest.usPacketLength =
+		(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+			D_RSRX_CODEC_RASTA_SR_HEADER_BYTES);
+	xRastaRedundancyEncodeRequest.usReserve = 0U;
+	xRastaRedundancyEncodeRequest.uSequenceNumber = 15U;
+	xRastaRedundancyEncodeRequest.puCarriedPacket = auPayload;
+	xRastaRedundancyEncodeRequest.xCarriedPacketLength = D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
+	xRastaRedundancyEncodeRequest.pxCrcProfile = pxExpectedRedundancyCrcProfile;
+	xRastaRedundancyDecodedPacket.usPacketLength =
+		xRastaRedundancyEncodeRequest.usPacketLength;
+	xRastaRedundancyDecodedPacket.usReserve = xRastaRedundancyEncodeRequest.usReserve;
+	xRastaRedundancyDecodedPacket.uSequenceNumber =
+		xRastaRedundancyEncodeRequest.uSequenceNumber;
+	xRastaRedundancyDecodedPacket.xCarriedPacketLength =
+		xRastaRedundancyEncodeRequest.xCarriedPacketLength;
+	xRastaRedundancyDecodedPacket.auCarriedPacket[0] = auPayload[0];
+	xRastaRedundancyDecodedPacket.xCrcLength = xExpectedNoRedundancyCrcBytes;
+	xRastaRedundancyDecodedPacket.uCrcPresent = uExpectedNoRedundancyCrcPresent;
 	xRastaSrTimestampPolicy.uCurrentTimestamp = 1000U;
 	xRastaSrTimestampPolicy.uAcceptedPastWindow = 100U;
 	xRastaSrTimestampPolicy.uAcceptedFutureWindow = 10U;
@@ -263,6 +287,38 @@ int main(void)
 		"rasta redundancy crc option field contract");
 	vAssertTrue(xRastaRedundancyCrcProfile.xCrcBytes == xExpectedNoRedundancyCrcBytes,
 		"rasta redundancy crc bytes field contract");
+	vAssertTrue(xRastaRedundancyEncodeRequest.usPacketLength ==
+			(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+				D_RSRX_CODEC_RASTA_SR_HEADER_BYTES),
+		"rasta redundancy encode length contract");
+	vAssertTrue(xRastaRedundancyEncodeRequest.usReserve == 0U,
+		"rasta redundancy encode reserve contract");
+	vAssertTrue(xRastaRedundancyEncodeRequest.uSequenceNumber == 15U,
+		"rasta redundancy encode sequence contract");
+	vAssertTrue(xRastaRedundancyEncodeRequest.puCarriedPacket == auPayload,
+		"rasta redundancy encode carried pointer contract");
+	vAssertTrue(xRastaRedundancyEncodeRequest.xCarriedPacketLength ==
+			D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+		"rasta redundancy encode carried length contract");
+	vAssertTrue(xRastaRedundancyEncodeRequest.pxCrcProfile == pxExpectedRedundancyCrcProfile,
+		"rasta redundancy encode crc profile contract");
+	vAssertTrue(xRastaRedundancyDecodedPacket.usPacketLength ==
+			xRastaRedundancyEncodeRequest.usPacketLength,
+		"rasta redundancy decoded length contract");
+	vAssertTrue(xRastaRedundancyDecodedPacket.usReserve == 0U,
+		"rasta redundancy decoded reserve contract");
+	vAssertTrue(xRastaRedundancyDecodedPacket.uSequenceNumber ==
+			xRastaRedundancyEncodeRequest.uSequenceNumber,
+		"rasta redundancy decoded sequence contract");
+	vAssertTrue(xRastaRedundancyDecodedPacket.xCarriedPacketLength ==
+			D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+		"rasta redundancy decoded carried length contract");
+	vAssertTrue(xRastaRedundancyDecodedPacket.auCarriedPacket[0] == auPayload[0],
+		"rasta redundancy decoded carried storage contract");
+	vAssertTrue(xRastaRedundancyDecodedPacket.xCrcLength == xExpectedNoRedundancyCrcBytes,
+		"rasta redundancy decoded crc length contract");
+	vAssertTrue(xRastaRedundancyDecodedPacket.uCrcPresent == uExpectedNoRedundancyCrcPresent,
+		"rasta redundancy decoded crc present contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uCurrentTimestamp == 1000U, "rasta sr timestamp current field contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedPastWindow == 100U, "rasta sr timestamp past window field contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedFutureWindow == 10U, "rasta sr timestamp future window field contract");

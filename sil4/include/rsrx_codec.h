@@ -191,6 +191,28 @@ typedef struct
 
 typedef struct
 {
+	uint16_t usPacketLength;
+	uint16_t usReserve;
+	uint32_t uSequenceNumber;
+	const uint8_t * puCarriedPacket;
+	size_t xCarriedPacketLength;
+	const rsrx_rasta_redundancy_crc_profile_t * pxCrcProfile;
+} rsrx_rasta_redundancy_encode_request_t;
+
+typedef struct
+{
+	uint16_t usPacketLength;
+	uint16_t usReserve;
+	uint32_t uSequenceNumber;
+	uint8_t auCarriedPacket[D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES];
+	size_t xCarriedPacketLength;
+	uint8_t auCrc[D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES];
+	size_t xCrcLength;
+	uint32_t uCrcPresent;
+} rsrx_rasta_redundancy_decoded_packet_t;
+
+typedef struct
+{
 	uint32_t uProfileId;
 	uint32_t uProfileVersion;
 	size_t xHeaderBytes;
@@ -267,6 +289,14 @@ rsrx_codec_status_t rsrx_codec_encode_rasta_sr_no_checksum(
 rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
 	const rsrx_transport_frame_t * pxFrame,
 	rsrx_rasta_sr_decoded_packet_t * pxPacket);
+
+rsrx_codec_status_t rsrx_codec_encode_rasta_redundancy_no_crc(
+	const rsrx_rasta_redundancy_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer);
+
+rsrx_codec_status_t rsrx_codec_decode_rasta_redundancy_no_crc(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_redundancy_decoded_packet_t * pxPacket);
 
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	const rsrx_rasta_sr_checksum_profile_t * pxProfile);
