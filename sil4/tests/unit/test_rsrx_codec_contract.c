@@ -179,10 +179,25 @@ int main(void)
 	vAssertTrue(xWireProfile.uTimestampPresent == uExpectedAbsent, "wire profile timestamp present contract");
 	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR != D_RSRX_CODEC_WIRE_PROFILE_DEFAULT, "rasta sr profile id differs from default");
 	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR != D_RSRX_CODEC_WIRE_PROFILE_CRC32, "rasta sr profile id differs from crc32");
+	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY != D_RSRX_CODEC_WIRE_PROFILE_DEFAULT,
+		"rasta redundancy profile id differs from default");
+	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY != D_RSRX_CODEC_WIRE_PROFILE_CRC32,
+		"rasta redundancy profile id differs from crc32");
+	vAssertTrue(D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY != D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR,
+		"rasta redundancy profile id differs from rasta sr");
 	vAssertTrue(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES == 28U, "rasta sr header bytes contract");
 	vAssertTrue(D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES == 8U, "rasta sr timestamp bytes contract");
 	vAssertTrue(D_RSRX_CODEC_RASTA_SR_MAX_CHECKSUM_BYTES == 16U, "rasta sr max checksum bytes contract");
 	vAssertTrue(D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES == (D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES), "rasta sr max frame contract");
+	vAssertTrue(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES == 8U,
+		"rasta redundancy header bytes contract");
+	vAssertTrue(D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES == 4U,
+		"rasta redundancy max crc bytes contract");
+	vAssertTrue(D_RSRX_CODEC_MAX_RASTA_REDUNDANCY_FRAME_BYTES ==
+			(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+				D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES +
+				D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES),
+		"rasta redundancy max frame contract");
 	vAssertTrue(RSRX_RASTA_SR_TYPE_CONNREQ == 6200U, "rasta sr connreq numeric contract");
 	vAssertTrue(RSRX_RASTA_SR_TYPE_CONNRESP == 6201U, "rasta sr connresp numeric contract");
 	vAssertTrue(RSRX_RASTA_SR_TYPE_RETRREQ == 6212U, "rasta sr retrreq numeric contract");

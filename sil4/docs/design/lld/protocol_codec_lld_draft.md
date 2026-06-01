@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-05-20`
+- Last Updated: `2026-06-01`
 
 ## Scope
 
@@ -83,6 +83,7 @@
 - default codec direct decode path는 current guard taxonomy에서 `DECODE_ERROR`로 collapse하지 않고 typed status를 반환한다.
 - `DECODE_ERROR`는 custom/alternate codec port가 더 세분화할 수 없는 decode failure를 supervisor에 보존하기 위한 compatibility status로 유지한다.
 - wire profile은 profile id/version과 CRC/MAC/timestamp field byte sizes를 함께 노출해 selected PDU boundary를 deployment/evidence layer가 추론 없이 확인할 수 있게 한다.
+- RaSTA SR profile은 28-byte SR header와 timestamp metadata를 노출하고, RaSTA redundancy profile은 8-byte redundancy header, carried SR packet capacity, max 4-byte CRC envelope를 metadata-only boundary로 노출한다.
 
 ## Verification Notes
 
@@ -109,7 +110,7 @@
   - oversized declared payload length reject 검증
   - max payload encode/decode boundary 검증
   - buffer too small 검증
-  - default/CRC32 wire profile id/version/security-field byte size 검증
+  - default/CRC32/RaSTA SR/RaSTA redundancy wire profile id/version/security-field byte size 검증
   - CRC32 decode null argument reject 검증
   - CRC32 wrapper가 valid checksum 이후 payload decode typed status를 보존하는지 검증
   - CRC32 calculator injection seam이 success/failure/null-calculator path에서 stale output을 남기지 않는지 검증

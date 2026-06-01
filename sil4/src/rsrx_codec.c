@@ -420,6 +420,26 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_sr_wire_profile(void)
 	return &xWireProfile;
 }
 
+const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_redundancy_wire_profile(void)
+{
+	static const rsrx_codec_wire_profile_t xWireProfile =
+	{
+		D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY,
+		D_RSRX_CODEC_WIRE_PROFILE_VERSION,
+		D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES,
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES,
+		D_RSRX_CODEC_MAX_RASTA_REDUNDANCY_FRAME_BYTES,
+		D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES,
+		0U,
+		0U,
+		1U,
+		0U,
+		0U
+	};
+
+	return &xWireProfile;
+}
+
 const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void)
 {
 	static const rsrx_codec_security_capabilities_t xCapabilities =

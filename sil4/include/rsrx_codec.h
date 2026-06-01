@@ -9,16 +9,23 @@
 
 #define D_RSRX_CODEC_HEADER_BYTES (16U)
 #define D_RSRX_CODEC_RASTA_SR_HEADER_BYTES (28U)
+#define D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES (8U)
 #define D_RSRX_CODEC_MAX_PAYLOAD_BYTES (512U)
 #define D_RSRX_CODEC_MAX_FRAME_BYTES (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 #define D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES (D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
 #define D_RSRX_CODEC_CRC_BYTES (4U)
+#define D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES (4U)
+#define D_RSRX_CODEC_MAX_RASTA_REDUNDANCY_FRAME_BYTES \
+	(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES + \
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + \
+		D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES)
 #define D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES (8U)
 #define D_RSRX_CODEC_RASTA_SR_MAX_CHECKSUM_BYTES (16U)
 #define D_RSRX_CODEC_MAX_CRC_FRAME_BYTES (D_RSRX_CODEC_MAX_FRAME_BYTES + D_RSRX_CODEC_CRC_BYTES)
 #define D_RSRX_CODEC_WIRE_PROFILE_DEFAULT (1U)
 #define D_RSRX_CODEC_WIRE_PROFILE_CRC32 (2U)
 #define D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR (3U)
+#define D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY (4U)
 #define D_RSRX_CODEC_WIRE_PROFILE_VERSION (1U)
 #define D_RSRX_CODEC_RASTA_SR_BYTE_ORDER_BIG_ENDIAN (1U)
 
@@ -233,6 +240,8 @@ const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void);
 const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void);
 
 const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_sr_wire_profile(void);
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_redundancy_wire_profile(void);
 
 const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void);
 

@@ -10,7 +10,7 @@
 
 ## Purpose
 
-This draft defines the first concrete wire-profile target for RaSTA SR PDU parity in the SIL4 reimplementation. It is intentionally limited to the SR packet layout and the staged implementation plan; checksum algorithms, timestamp admission policy, redundancy PDU CRC options, and target acceleration remain separate follow-up items.
+This draft defines the first concrete wire-profile target for RaSTA SR PDU parity in the SIL4 reimplementation. It is intentionally limited to the SR packet layout and the staged implementation plan; checksum algorithms, timestamp admission policy, redundancy PDU CRC behavior, and target acceleration remain separate follow-up items.
 
 This document is repo-source-derived. It uses the existing open-source implementation as the immediate baseline:
 
@@ -94,6 +94,20 @@ The SIL4 implementation does not inherit host-dependent wire encoding. The selec
 
 This closes the internal byte-order policy for future SR encode/decode implementation. It does not by itself prove interoperability with legacy peers that may depend on the repo-source host-endian behavior. If such compatibility is required, deployment-specific golden vectors must be captured and reviewed before enabling that compatibility path.
 
+## Repo-Source Redundancy PDU Metadata Boundary
+
+The existing RaSTA implementation wraps one SR packet in a redundancy-layer PDU with an 8-byte fixed header followed by the carried SR packet and an optional CRC.
+
+| Offset | Size | Repo-Source Field | Source |
+| --- | ---: | --- | --- |
+| 0 | 2 | redundancy packet length | `rastaRedundancyPacketToBytes`, `shortToBytes(packet.length)` |
+| 2 | 2 | reserve | `rastaRedundancyPacketToBytes`, `shortToBytes(packet.reserve)` |
+| 4 | 4 | PDU sequence number | `rastaRedundancyPacketToBytes`, `longToBytes(packet.sequence_number)` |
+| 8 | variable | carried SR packet | `rastaModuleToBytes(packet.data, ...)` |
+| 8 + SR length | 0, 2, or 4 | redundancy CRC | `packet.checksum_type.width / 8` |
+
+The SIL4 implementation now exposes this as a metadata-only profile, `D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY`, with an 8-byte header, max carried SR frame capacity, and a max 4-byte CRC envelope. This does not yet claim redundancy PDU encode/decode behavior or RaSTA CRC option parity.
+
 ## Required SIL4 Delta
 
 The current SIL4 codec lacks the following SR PDU parity fields or semantics:
@@ -105,6 +119,7 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 | No receiver/sender ID fields | Implemented in no-checksum SR encode/decode, codec-level identity admission, and supervisor SR runtime identity policy wiring |
 | No timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields with codec-level admission boundary, timestamp-admitted handoff mapping, and explicit supervisor runtime SR selection |
 | CRC32 wrapper is not SR safety-code parity | Selected default SR checksum profile is no-checksum; explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains follow-up only if a non-none profile is selected |
+| No redundancy PDU profile | Implemented as metadata-only profile by `rsrx_codec_get_rasta_redundancy_wire_profile()` and `TC-CODEC-047`; encode/decode behavior remains follow-up if redundancy wire mode is in scope |
 | Internal reason byte is not RaSTA DiscReq reason parity | Add disconnect reason mapping tests |
 
 ## Staged Implementation Plan
@@ -115,7 +130,8 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 4. `PDU-PARITY-001D`: Implement no-checksum SR PDU encode/decode once endian policy is closed. Status: implemented by `rsrx_codec_encode_rasta_sr_no_checksum()`, `rsrx_codec_decode_rasta_sr_no_checksum()`, and `TC-CODEC-041`.
 5. `PDU-PARITY-001E`: Add selected SR checksum/hash profiles or startup rejection for unsupported configured profiles. Status: selected no-checksum default profile is implemented by `rsrx_codec_get_rasta_sr_default_checksum_profile()` and `TC-CODEC-046`; unsupported-profile admission boundary is implemented by `rsrx_rasta_sr_checksum_profile_t`, `rsrx_codec_validate_rasta_sr_checksum_profile()`, and `TC-CODEC-042`; actual hash calculation remains open only if a non-none supported profile is selected.
 6. `PDU-PARITY-001F`: Integrate timestamp and confirmed-timestamp validation into protocol context/session admission. Status: codec-level admission boundary and timestamp-admitted handoff mapping are implemented by `rsrx_rasta_sr_timestamp_admission_policy_t`, `rsrx_codec_validate_rasta_sr_timestamp_admission()`, `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission()`, `TC-CODEC-043`, and `TC-CODEC-044`; supervisor runtime selection is implemented by `rsrx_transport_supervisor_enable_rasta_sr_runtime()` and `TC-SUP-075`.
+7. `RED-PDU-PARITY-001A`: Add redundancy PDU profile constants and reporting metadata without changing current channel-manager behavior. Status: implemented by `D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY`, `D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES`, `D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES`, `rsrx_codec_get_rasta_redundancy_wire_profile()`, and `TC-CODEC-047`.
 
 ## Review Position
 
-This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path, selected no-checksum default profile, unsupported checksum-profile admission boundary, codec-level timestamp admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, codec-level receiver/sender identity admission, and supervisor identity policy wiring are implemented. This does not claim MD4/BLAKE2b/SipHash calculation, redundancy PDU, target timestamp-source binding, or MAC/security-extension completion.
+This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path, selected no-checksum default profile, unsupported checksum-profile admission boundary, codec-level timestamp admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, codec-level receiver/sender identity admission, supervisor identity policy wiring, and redundancy PDU metadata boundary are implemented. This does not claim MD4/BLAKE2b/SipHash calculation, redundancy PDU encode/decode behavior, target timestamp-source binding, or MAC/security-extension completion.

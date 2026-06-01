@@ -283,6 +283,32 @@ static void vTestRastaSrWireProfileDocumentsParityTarget(void)
 	vAssertTrue(pxProfile->uTimestampPresent == 1U, "rasta sr profile timestamp present");
 }
 
+static void vTestRastaRedundancyWireProfileDocumentsParityTarget(void)
+{
+	const rsrx_codec_wire_profile_t * pxProfile;
+
+	pxProfile = rsrx_codec_get_rasta_redundancy_wire_profile();
+
+	vAssertTrue(pxProfile != (const rsrx_codec_wire_profile_t *)0, "rasta redundancy profile present");
+	vAssertTrue(pxProfile->uProfileId == D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY,
+		"rasta redundancy profile id");
+	vAssertTrue(pxProfile->uProfileVersion == D_RSRX_CODEC_WIRE_PROFILE_VERSION,
+		"rasta redundancy profile version");
+	vAssertTrue(pxProfile->xHeaderBytes == D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES,
+		"rasta redundancy profile header bytes");
+	vAssertTrue(pxProfile->xMaxPayloadBytes == D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES,
+		"rasta redundancy profile carried sr max bytes");
+	vAssertTrue(pxProfile->xMaxFrameBytes == D_RSRX_CODEC_MAX_RASTA_REDUNDANCY_FRAME_BYTES,
+		"rasta redundancy profile max frame bytes");
+	vAssertTrue(pxProfile->xCrcBytes == D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES,
+		"rasta redundancy profile max crc bytes");
+	vAssertTrue(pxProfile->xMacBytes == 0U, "rasta redundancy profile mac bytes absent");
+	vAssertTrue(pxProfile->xTimestampBytes == 0U, "rasta redundancy profile timestamp bytes absent");
+	vAssertTrue(pxProfile->uCrcPresent == 1U, "rasta redundancy profile crc present");
+	vAssertTrue(pxProfile->uMacPresent == 0U, "rasta redundancy profile mac absent");
+	vAssertTrue(pxProfile->uTimestampPresent == 0U, "rasta redundancy profile timestamp absent");
+}
+
 static void vAssertMessageToRastaTypeMapping(
 	rsrx_message_type_t eMessageType,
 	uint16_t usExpectedRastaType,
@@ -1856,6 +1882,7 @@ int main(void)
 	vTestSecurityCapabilitiesDocumentCurrentPolicy();
 	vTestCrc32PortAndProfile();
 	vTestRastaSrWireProfileDocumentsParityTarget();
+	vTestRastaRedundancyWireProfileDocumentsParityTarget();
 	vTestRastaSrMessageTypeMapping();
 	vTestRastaDisconnectReasonMapping();
 	vTestRastaSrByteOrderIsFixedBigEndian();
