@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `In Progress`
 - Owner: `Project Team`
-- Last Updated: `2026-05-06`
+- Last Updated: `2026-06-01`
 
 ## Purpose
 
@@ -32,6 +32,8 @@
   - `stack_memory_evidence_runbook.md`
 - host stack/memory evidence helper:
   - `../tools/run_stack_memory_evidence.sh`
+- AM263Px/SafeRTOS target evidence plan:
+  - `am263px_safertos_porting_evidence_plan.md`
 
 ## Current Execution Status
 
@@ -48,6 +50,7 @@
 | EVS-009 | `Host Baseline Available, Target/Vendor Open` | stack-bound analysis artifact | 2026-05-06 host stack-usage package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor stack analysis output remains open |
 | EVS-010 | `Host Baseline Available, Target/Vendor Open` | static memory map artifact | 2026-05-06 host linker-map package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor memory map remains open |
 | EVS-011 | `Closed` | `strict_warning_default_gate_policy_2026-05-06.md` | 2026-05-06: `Evidence-only` policy accepted by `RV-331`; refresh cadence defined |
+| EVS-012 | `Planned` | AM263Px/SafeRTOS target evidence package | 2026-06-01: target evidence plan added in `am263px_safertos_porting_evidence_plan.md`; actual target build/logs remain open |
 
 ## Execution Notes
 
@@ -95,12 +98,22 @@
   - `strict_warning_default_gate_policy_2026-05-06.md`
   - `../reviews/RV-331_strict_warning_default_gate_policy_review.md`
 
+### AM263Px/SafeRTOS Target Evidence Track
+
+- target evidence plan:
+  - `am263px_safertos_porting_evidence_plan.md`
+  - `../reviews/RV-415_am263px_safertos_porting_evidence_plan_review.md`
+- trigger to close:
+  - target build metadata, SafeRTOS task/timer/queue policy, TI driver transport binding, target linker map, target stack/timing evidence, target integration logs, and hardware CRC/crypto equivalence/diagnostic logs if acceleration is selected
+- current note:
+  - this is a planned target-evidence track; it does not close target readiness until actual artifacts are available
+
 ## Closeout Rule
 
 본 tracker에서 아래 상태가 되면 `R-005`를 operational maintenance 수준으로 축소할 수 있다.
 
 1. `EVS-001`, `EVS-002`가 `Closed`
-2. `EVS-003`~`EVS-011`이 `Closed`
+2. `EVS-003`~`EVS-012`이 `Closed`
 3. roadmap과 audit trail이 actual evidence link 기준으로 갱신됨
 
 ## Update Policy

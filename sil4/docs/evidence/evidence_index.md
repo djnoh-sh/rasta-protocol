@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-05-06`
+- Last Updated: `2026-06-01`
 
 ## Purpose
 
@@ -154,6 +154,8 @@
 | EVID-CI-117 | `../reviews/RV-330_stack_memory_host_baseline_review.md` | Complete | first host stack/memory evidence execution review |
 | EVID-CI-118 | `strict_warning_default_gate_policy_2026-05-06.md` | Complete | strict-warning default-gate policy decision |
 | EVID-CI-119 | `../reviews/RV-331_strict_warning_default_gate_policy_review.md` | Complete | strict-warning default-gate policy review |
+| EVID-TGT-001 | `am263px_safertos_porting_evidence_plan.md` | Draft | AM263Px/SafeRTOS target porting and evidence plan |
+| EVID-TGT-002 | `../reviews/RV-415_am263px_safertos_porting_evidence_plan_review.md` | Draft | AM263Px/SafeRTOS target evidence plan review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |
@@ -214,3 +216,5 @@
 49. strict-warning CI/release default-gate decision - complete via `strict_warning_default_gate_policy_2026-05-06.md`
 50. first stack/memory evidence runbook execution
 51. first host stack/memory evidence helper execution - complete via `reports/stack_memory_host_baseline_2026-05-06/summary.md`
+52. first AM263Px/SafeRTOS target porting evidence package
+53. first software-vs-hardware CRC/crypto equivalence vector package if target acceleration is selected
