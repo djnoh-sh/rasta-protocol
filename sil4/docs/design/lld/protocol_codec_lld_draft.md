@@ -84,6 +84,7 @@
 - `DECODE_ERROR`는 custom/alternate codec port가 더 세분화할 수 없는 decode failure를 supervisor에 보존하기 위한 compatibility status로 유지한다.
 - wire profile은 profile id/version과 CRC/MAC/timestamp field byte sizes를 함께 노출해 selected PDU boundary를 deployment/evidence layer가 추론 없이 확인할 수 있게 한다.
 - RaSTA SR profile은 28-byte SR header와 timestamp metadata를 노출하고, RaSTA redundancy profile은 8-byte redundancy header, carried SR packet capacity, max 4-byte CRC envelope를 metadata-only boundary로 노출한다.
+- RaSTA redundancy CRC option admission은 option A no-CRC만 현재 supported로 두고, option B/C/D/E는 controlled implementation 전까지 unsupported로 거부한다.
 
 ## Verification Notes
 

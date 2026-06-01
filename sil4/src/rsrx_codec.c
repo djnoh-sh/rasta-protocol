@@ -647,6 +647,44 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	}
 }
 
+rsrx_codec_status_t rsrx_codec_validate_rasta_redundancy_crc_profile(
+	const rsrx_rasta_redundancy_crc_profile_t * pxProfile)
+{
+	if(pxProfile == (const rsrx_rasta_redundancy_crc_profile_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxProfile->eOption == RSRX_RASTA_REDUNDANCY_CRC_OPTION_A) &&
+		(pxProfile->xCrcBytes == 0U))
+	{
+		return RSRX_CODEC_STATUS_OK;
+	}
+
+	switch(pxProfile->eOption)
+	{
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_B:
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_C:
+			if(pxProfile->xCrcBytes == 4U)
+			{
+				return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+			}
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_D:
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_E:
+			if(pxProfile->xCrcBytes == 2U)
+			{
+				return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+			}
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_A:
+		default:
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+}
+
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy)

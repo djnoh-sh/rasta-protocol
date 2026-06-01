@@ -100,11 +100,26 @@ typedef enum
 	RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4
 } rsrx_rasta_sr_checksum_algorithm_t;
 
+typedef enum
+{
+	RSRX_RASTA_REDUNDANCY_CRC_OPTION_A = 0,
+	RSRX_RASTA_REDUNDANCY_CRC_OPTION_B,
+	RSRX_RASTA_REDUNDANCY_CRC_OPTION_C,
+	RSRX_RASTA_REDUNDANCY_CRC_OPTION_D,
+	RSRX_RASTA_REDUNDANCY_CRC_OPTION_E
+} rsrx_rasta_redundancy_crc_option_t;
+
 typedef struct
 {
 	rsrx_rasta_sr_checksum_algorithm_t eAlgorithm;
 	size_t xChecksumBytes;
 } rsrx_rasta_sr_checksum_profile_t;
+
+typedef struct
+{
+	rsrx_rasta_redundancy_crc_option_t eOption;
+	size_t xCrcBytes;
+} rsrx_rasta_redundancy_crc_profile_t;
 
 typedef struct
 {
@@ -257,6 +272,9 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	const rsrx_rasta_sr_checksum_profile_t * pxProfile);
 
 const rsrx_rasta_sr_checksum_profile_t * rsrx_codec_get_rasta_sr_default_checksum_profile(void);
+
+rsrx_codec_status_t rsrx_codec_validate_rasta_redundancy_crc_profile(
+	const rsrx_rasta_redundancy_crc_profile_t * pxProfile);
 
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 	const rsrx_rasta_sr_decoded_packet_t * pxPacket,

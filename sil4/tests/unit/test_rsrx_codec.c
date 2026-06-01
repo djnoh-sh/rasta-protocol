@@ -764,6 +764,65 @@ static void vTestRastaSrDefaultChecksumProfileIsNoChecksum(void)
 		"rasta sr default checksum profile validates");
 }
 
+static void vTestRastaRedundancyCrcProfileAdmissionPolicy(void)
+{
+	rsrx_rasta_redundancy_crc_profile_t xProfile;
+
+	xProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_A;
+	xProfile.xCrcBytes = 0U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(&xProfile) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy crc option a accepted");
+
+	xProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_B;
+	xProfile.xCrcBytes = 4U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+		"rasta redundancy crc option b rejected");
+
+	xProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_C;
+	xProfile.xCrcBytes = 4U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+		"rasta redundancy crc option c rejected");
+
+	xProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_D;
+	xProfile.xCrcBytes = 2U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+		"rasta redundancy crc option d rejected");
+
+	xProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_E;
+	xProfile.xCrcBytes = 2U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE,
+		"rasta redundancy crc option e rejected");
+
+	xProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_A;
+	xProfile.xCrcBytes = 4U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta redundancy crc option a with crc bytes invalid");
+
+	xProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_B;
+	xProfile.xCrcBytes = 2U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(&xProfile) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta redundancy crc option b with wrong width invalid");
+
+	vAssertTrue(
+		rsrx_codec_validate_rasta_redundancy_crc_profile(
+			(const rsrx_rasta_redundancy_crc_profile_t *)0) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta redundancy crc null profile rejected");
+}
+
 static void vTestRastaSrTimestampAdmissionPolicy(void)
 {
 	rsrx_rasta_sr_decoded_packet_t xPacket;
@@ -1891,6 +1950,7 @@ int main(void)
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
 	vTestRastaSrDefaultChecksumProfileIsNoChecksum();
+	vTestRastaRedundancyCrcProfileAdmissionPolicy();
 	vTestRastaSrTimestampAdmissionPolicy();
 	vTestRastaSrIdentityAdmissionPolicy();
 	vTestRastaSrTimestampAdmittedSessionHandoffMapping();

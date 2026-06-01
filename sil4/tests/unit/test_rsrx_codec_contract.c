@@ -36,6 +36,7 @@ int main(void)
 	volatile uint32_t uExpectedAbsent;
 	volatile uint32_t uExpectedLastAcceptedTimestamp;
 	volatile size_t xExpectedNoChecksumBytes;
+	volatile size_t xExpectedNoRedundancyCrcBytes;
 	volatile size_t xExpectedCrcCalculatorTypeSize;
 	rsrx_crc32_calculate_fn pfExpectedCrc32Calculator;
 	rsrx_decode_frame_fn pfExpectedDecode;
@@ -47,6 +48,7 @@ int main(void)
 	rsrx_rasta_sr_encode_request_t xRastaSrEncodeRequest;
 	rsrx_rasta_sr_decoded_packet_t xRastaSrDecodedPacket;
 	rsrx_rasta_sr_checksum_profile_t xRastaSrChecksumProfile;
+	rsrx_rasta_redundancy_crc_profile_t xRastaRedundancyCrcProfile;
 	rsrx_rasta_sr_timestamp_admission_policy_t xRastaSrTimestampPolicy;
 	rsrx_rasta_sr_identity_admission_policy_t xRastaSrIdentityPolicy;
 	volatile size_t xExpectedRastaSrHandoffPointerSize;
@@ -81,6 +83,7 @@ int main(void)
 	uExpectedAbsent = 0U;
 	uExpectedLastAcceptedTimestamp = 900U;
 	xExpectedNoChecksumBytes = 0U;
+	xExpectedNoRedundancyCrcBytes = 0U;
 	xExpectedCrcCalculatorTypeSize = sizeof(pfExpectedCrc32Calculator);
 	xExpectedRastaSrHandoffPointerSize = sizeof(pfRastaSrHandoff);
 	xExpectedRastaSrIdentityHandoffPointerSize = sizeof(pfRastaSrIdentityHandoff);
@@ -129,6 +132,8 @@ int main(void)
 	xRastaSrDecodedPacket.uChecksumPresent = 0U;
 	xRastaSrChecksumProfile.eAlgorithm = RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE;
 	xRastaSrChecksumProfile.xChecksumBytes = xExpectedNoChecksumBytes;
+	xRastaRedundancyCrcProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_A;
+	xRastaRedundancyCrcProfile.xCrcBytes = xExpectedNoRedundancyCrcBytes;
 	xRastaSrTimestampPolicy.uCurrentTimestamp = 1000U;
 	xRastaSrTimestampPolicy.uAcceptedPastWindow = 100U;
 	xRastaSrTimestampPolicy.uAcceptedFutureWindow = 10U;
@@ -245,6 +250,19 @@ int main(void)
 	vAssertTrue(RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4 != RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum siphash contract");
 	vAssertTrue(xRastaSrChecksumProfile.eAlgorithm == RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE, "rasta sr checksum algorithm field contract");
 	vAssertTrue(xRastaSrChecksumProfile.xChecksumBytes == xExpectedNoChecksumBytes, "rasta sr checksum bytes field contract");
+	vAssertTrue(RSRX_RASTA_REDUNDANCY_CRC_OPTION_A == 0, "rasta redundancy crc option a contract");
+	vAssertTrue(RSRX_RASTA_REDUNDANCY_CRC_OPTION_B != RSRX_RASTA_REDUNDANCY_CRC_OPTION_A,
+		"rasta redundancy crc option b contract");
+	vAssertTrue(RSRX_RASTA_REDUNDANCY_CRC_OPTION_C != RSRX_RASTA_REDUNDANCY_CRC_OPTION_A,
+		"rasta redundancy crc option c contract");
+	vAssertTrue(RSRX_RASTA_REDUNDANCY_CRC_OPTION_D != RSRX_RASTA_REDUNDANCY_CRC_OPTION_A,
+		"rasta redundancy crc option d contract");
+	vAssertTrue(RSRX_RASTA_REDUNDANCY_CRC_OPTION_E != RSRX_RASTA_REDUNDANCY_CRC_OPTION_A,
+		"rasta redundancy crc option e contract");
+	vAssertTrue(xRastaRedundancyCrcProfile.eOption == RSRX_RASTA_REDUNDANCY_CRC_OPTION_A,
+		"rasta redundancy crc option field contract");
+	vAssertTrue(xRastaRedundancyCrcProfile.xCrcBytes == xExpectedNoRedundancyCrcBytes,
+		"rasta redundancy crc bytes field contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uCurrentTimestamp == 1000U, "rasta sr timestamp current field contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedPastWindow == 100U, "rasta sr timestamp past window field contract");
 	vAssertTrue(xRastaSrTimestampPolicy.uAcceptedFutureWindow == 10U, "rasta sr timestamp future window field contract");
