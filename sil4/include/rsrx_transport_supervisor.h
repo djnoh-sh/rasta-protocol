@@ -213,6 +213,7 @@ typedef struct
 	uint32_t uBusyRejectEscalationCount;
 	uint32_t uLastBusyRejectEscalated;
 	uint32_t uRastaSrRuntimeEnabled;
+	uint32_t uRastaRedundancySrRuntimeEnabled;
 	uint32_t uRastaSrCurrentTimestamp;
 	uint32_t uRastaSrLastAcceptedTimestamp;
 	uint32_t uRastaSrIdentityAdmissionEnabled;
@@ -230,6 +231,7 @@ typedef struct
 	uint32_t uMaxConsecutiveSendFailures;
 	uint32_t uMaxConsecutiveReceiveErrors;
 	uint32_t uRastaSrRuntimeEnabled;
+	uint32_t uRastaRedundancySrRuntimeEnabled;
 	uint32_t uRastaSrIdentityAdmissionEnabled;
 	uint32_t uNoOpAuditCountedInCurrentCall;
 	uint32_t uInitialized;
@@ -246,6 +248,10 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 	const rsrx_transport_supervisor_report_t ** ppxReport);
 
 rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_runtime(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_redundancy_sr_runtime(
 	rsrx_transport_supervisor_context_t * pxContext,
 	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
 

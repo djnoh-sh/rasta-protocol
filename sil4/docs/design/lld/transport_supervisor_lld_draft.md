@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-04-24`
+- Last Updated: `2026-06-01`
 
 ## Scope
 
@@ -37,6 +37,9 @@
 | `rsrx_transport_supervisor_context_t` | struct | session과 codec port 보유 | 동적 메모리 미사용 |
 | `rsrx_transport_supervisor_init` | function | supervisor 초기화 | session, codec decode callback 필수 |
 | `rsrx_transport_supervisor_process_frame` | function | frame decode 후 session event 전달 | inbound path 핵심 함수 |
+| `rsrx_transport_supervisor_enable_rasta_sr_runtime` | function | direct no-checksum RaSTA SR decode/admission path 선택 | stable timestamp policy 필요 |
+| `rsrx_transport_supervisor_enable_rasta_redundancy_sr_runtime` | function | option A redundancy-carried no-checksum RaSTA SR decode/admission path 선택 | stable timestamp policy 필요 |
+| `rsrx_transport_supervisor_enable_rasta_sr_identity_admission` | function | SR receiver/sender identity admission 활성화 | SR runtime 활성화 필요 |
 | `rsrx_transport_supervisor_poll_receive` | function | channel query 후 frame 수신 polling 수행 | runtime loop 진입점 |
 | `rsrx_transport_supervisor_pump_receive` | function | bounded polling loop를 supervisor 내부에서 수행 | integration-facing drain entry |
 | `rsrx_transport_supervisor_process_transport_event` | function | send/channel transport event 처리 | outbound/runtime feedback 경계 |
@@ -49,6 +52,10 @@
   - 마지막 report를 초기화한다.
 - `rsrx_transport_supervisor_process_frame`:
   - transport frame을 codec으로 decode한다.
+  - RaSTA SR runtime이 비활성화된 경우 configured codec port를 사용한다.
+  - direct RaSTA SR runtime이 활성화된 경우 `rsrx_codec_decode_rasta_sr_no_checksum`로 no-checksum SR packet을 decode한다.
+  - redundancy-carried RaSTA SR runtime이 활성화된 경우 `rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum`로 option A redundancy PDU 안의 no-checksum SR packet을 decode한다.
+  - SR runtime path는 timestamp admission을 적용하고, identity admission이 활성화된 경우 receiver/sender ID도 함께 검증한다.
   - decoded message를 protocol context 규칙으로 평가해 effective event를 결정한다.
   - sequence가 기대값보다 크면 `SEQUENCE_GAP_DETECTED`로 변환한다.
   - stale/duplicate sequence는 `PROTOCOL_ERROR`로 변환한다.

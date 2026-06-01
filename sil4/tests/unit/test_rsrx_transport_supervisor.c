@@ -912,6 +912,131 @@ static void vTestSupervisorRastaSrRuntimeTimestampAdmission(void)
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta sr runtime receiver mismatch not processed");
 }
 
+static void vTestSupervisorRastaRedundancySrRuntimeDecodeBridge(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_transport_supervisor_context_t xSupervisor;
+	rsrx_codec_port_t xCodec;
+	const rsrx_orchestrator_report_t * pxSessionReport;
+	const rsrx_transport_supervisor_report_t * pxSupervisorReport;
+	test_transport_context_t xTransport = { 0 };
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_callback_context_t xCallbacks = { 0U, 0U, 0U };
+	rsrx_rasta_sr_timestamp_admission_policy_t xPolicy;
+	rsrx_rasta_sr_identity_admission_policy_t xIdentityPolicy;
+	rsrx_rasta_sr_encode_request_t xSrRequest;
+	rsrx_rasta_redundancy_crc_profile_t xCrcProfile;
+	rsrx_rasta_redundancy_encode_request_t xRedundancyRequest;
+	rsrx_encode_buffer_t xSrBuffer;
+	rsrx_encode_buffer_t xRedundancyBuffer;
+	rsrx_transport_frame_t xFrame;
+	uint8_t auSrEncoded[D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES];
+	uint8_t auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 2U];
+	static const uint8_t auPayload[2] = { 0xC1U, 0xC2U };
+
+	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xCallbacks, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "rasta redundancy runtime session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "rasta redundancy runtime session start");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "rasta redundancy runtime session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxSessionReport) == RSRX_STATUS_OK, "rasta redundancy runtime establish");
+
+	xCodec.pfEncode = (rsrx_encode_message_fn)0;
+	xCodec.pfDecode = eDecodeFrame;
+	vSetCodecBehavior(
+		RSRX_CODEC_STATUS_DECODE_ERROR,
+		RSRX_MESSAGE_TYPE_INVALID,
+		RSRX_EVENT_INVALID,
+		RSRX_REASON_NONE,
+		0U,
+		0U);
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "rasta redundancy runtime supervisor init");
+
+	xPolicy.uCurrentTimestamp = 1000U;
+	xPolicy.uAcceptedPastWindow = 100U;
+	xPolicy.uAcceptedFutureWindow = 50U;
+	xPolicy.uLastAcceptedTimestamp = 0U;
+	vAssertTrue(
+		rsrx_transport_supervisor_enable_rasta_redundancy_sr_runtime(&xSupervisor, &xPolicy) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"rasta redundancy runtime enable");
+
+	xIdentityPolicy.uExpectedReceiverId = 0x3000U;
+	xIdentityPolicy.uExpectedSenderId = 0x4000U;
+	vAssertTrue(
+		rsrx_transport_supervisor_enable_rasta_sr_identity_admission(
+			&xSupervisor,
+			&xIdentityPolicy) == RSRX_SUPERVISOR_STATUS_OK,
+		"rasta redundancy runtime identity enable");
+
+	xSrRequest.usPacketLength = (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auPayload));
+	xSrRequest.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	xSrRequest.uReceiverId = 0x3000U;
+	xSrRequest.uSenderId = 0x4000U;
+	xSrRequest.uSequenceNumber = 1U;
+	xSrRequest.uConfirmedSequenceNumber = 0U;
+	xSrRequest.uTimestamp = 1001U;
+	xSrRequest.uConfirmedTimestamp = 1000U;
+	xSrRequest.puPayload = auPayload;
+	xSrRequest.xPayloadLength = sizeof(auPayload);
+	xSrRequest.puChecksum = (const uint8_t *)0;
+	xSrRequest.xChecksumLength = 0U;
+	xSrBuffer.puBuffer = auSrEncoded;
+	xSrBuffer.xBufferCapacity = sizeof(auSrEncoded);
+	xSrBuffer.xEncodedLength = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xSrRequest, &xSrBuffer) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy runtime sr encode");
+
+	xCrcProfile.eOption = RSRX_RASTA_REDUNDANCY_CRC_OPTION_A;
+	xCrcProfile.xCrcBytes = 0U;
+	xRedundancyRequest.usPacketLength =
+		(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES + xSrBuffer.xEncodedLength);
+	xRedundancyRequest.usReserve = 0U;
+	xRedundancyRequest.uSequenceNumber = 7U;
+	xRedundancyRequest.puCarriedPacket = auSrEncoded;
+	xRedundancyRequest.xCarriedPacketLength = xSrBuffer.xEncodedLength;
+	xRedundancyRequest.pxCrcProfile = &xCrcProfile;
+	xRedundancyBuffer.puBuffer = auRedundancyEncoded;
+	xRedundancyBuffer.xBufferCapacity = sizeof(auRedundancyEncoded);
+	xRedundancyBuffer.xEncodedLength = 0U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_redundancy_no_crc(&xRedundancyRequest, &xRedundancyBuffer) ==
+			RSRX_CODEC_STATUS_OK,
+		"rasta redundancy runtime wrap");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auRedundancyEncoded;
+	xFrame.xPayloadLength = xRedundancyBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) ==
+			RSRX_SUPERVISOR_STATUS_OK,
+		"rasta redundancy runtime accepted frame");
+	vAssertTrue(g_xCodecContext.uCallCount == 0U, "rasta redundancy runtime bypasses legacy codec port");
+	vAssertTrue(pxSupervisorReport->uRastaSrRuntimeEnabled == 1U, "rasta redundancy runtime sr enabled");
+	vAssertTrue(pxSupervisorReport->uRastaRedundancySrRuntimeEnabled == 1U, "rasta redundancy runtime telemetry enabled");
+	vAssertTrue(pxSupervisorReport->xLastMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "rasta redundancy runtime message type");
+	vAssertTrue(pxSupervisorReport->xLastMessage.xPayloadLength == sizeof(auPayload), "rasta redundancy runtime payload length");
+	vAssertTrue(pxSupervisorReport->uRastaSrLastAcceptedTimestamp == 1001U, "rasta redundancy runtime accepted timestamp");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta redundancy runtime processed count");
+	vAssertTrue(xCallbacks.uApplicationCount == 1U, "rasta redundancy runtime application callback");
+
+	xFrame.puPayload = auSrEncoded;
+	xFrame.xPayloadLength = xSrBuffer.xEncodedLength;
+	vAssertTrue(
+		rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) ==
+			RSRX_SUPERVISOR_STATUS_DECODE_FAILED,
+		"rasta redundancy runtime rejects direct sr frame");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO,
+		"rasta redundancy runtime direct sr status");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta redundancy runtime rejected direct frame not processed");
+}
+
 static void vTestSupervisorSequenceGapDetection(void)
 {
 	rsrx_session_t xSession;
@@ -5967,6 +6092,7 @@ int main(void)
 	vTestSupervisorDecodeFailure();
 	vTestSupervisorUnsupportedMessage();
 	vTestSupervisorRastaSrRuntimeTimestampAdmission();
+	vTestSupervisorRastaRedundancySrRuntimeDecodeBridge();
 	vTestSupervisorSequenceGapDetection();
 	vTestSupervisorStaleSequenceProtocolError();
 	vTestSupervisorPollReceiveHandshake();

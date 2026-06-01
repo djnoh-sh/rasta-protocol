@@ -136,6 +136,7 @@ static void vResetSupervisorReport(
 	pxReport->uBusyRejectEscalationCount = 0U;
 	pxReport->uLastBusyRejectEscalated = 0U;
 	pxReport->uRastaSrRuntimeEnabled = 0U;
+	pxReport->uRastaRedundancySrRuntimeEnabled = 0U;
 	pxReport->uRastaSrCurrentTimestamp = 0U;
 	pxReport->uRastaSrLastAcceptedTimestamp = 0U;
 	pxReport->uRastaSrIdentityAdmissionEnabled = 0U;
@@ -148,6 +149,8 @@ static void vRefreshRastaSrRuntimeTelemetry(
 {
 	pxContext->xLastReport.uRastaSrRuntimeEnabled =
 		pxContext->uRastaSrRuntimeEnabled;
+	pxContext->xLastReport.uRastaRedundancySrRuntimeEnabled =
+		pxContext->uRastaRedundancySrRuntimeEnabled;
 	pxContext->xLastReport.uRastaSrCurrentTimestamp =
 		pxContext->xRastaSrTimestampPolicy.uCurrentTimestamp;
 	pxContext->xLastReport.uRastaSrLastAcceptedTimestamp =
@@ -979,7 +982,14 @@ static rsrx_codec_status_t eDecodeInboundFrame(
 		return pxContext->xCodec.pfDecode(pxFrame, pxMessage);
 	}
 
-	eStatus = rsrx_codec_decode_rasta_sr_no_checksum(pxFrame, &xPacket);
+	if(pxContext->uRastaRedundancySrRuntimeEnabled != 0U)
+	{
+		eStatus = rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(pxFrame, &xPacket);
+	}
+	else
+	{
+		eStatus = rsrx_codec_decode_rasta_sr_no_checksum(pxFrame, &xPacket);
+	}
 	if(eStatus != RSRX_CODEC_STATUS_OK)
 	{
 		return eStatus;
@@ -1103,6 +1113,7 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_init(
 	pxContext->xRastaSrIdentityPolicy.uExpectedReceiverId = 0U;
 	pxContext->xRastaSrIdentityPolicy.uExpectedSenderId = 0U;
 	pxContext->uRastaSrRuntimeEnabled = 0U;
+	pxContext->uRastaRedundancySrRuntimeEnabled = 0U;
 	pxContext->uRastaSrIdentityAdmissionEnabled = 0U;
 	pxContext->uMaxConsecutiveSendFailures = D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET;
 	pxContext->uMaxConsecutiveReceiveErrors = D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET;
@@ -1133,6 +1144,27 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_runtime(
 
 	pxContext->xRastaSrTimestampPolicy = *pxPolicy;
 	pxContext->uRastaSrRuntimeEnabled = 1U;
+	pxContext->uRastaRedundancySrRuntimeEnabled = 0U;
+	vRefreshRastaSrRuntimeTelemetry(pxContext);
+
+	return RSRX_SUPERVISOR_STATUS_OK;
+}
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_redundancy_sr_runtime(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy)
+{
+	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_timestamp_admission_policy_t *)0) ||
+		(pxContext->uInitialized == 0U) ||
+		(uRastaSrTimestampPolicyHasStableBounds(pxPolicy) == 0U))
+	{
+		return RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->xRastaSrTimestampPolicy = *pxPolicy;
+	pxContext->uRastaSrRuntimeEnabled = 1U;
+	pxContext->uRastaRedundancySrRuntimeEnabled = 1U;
 	vRefreshRastaSrRuntimeTelemetry(pxContext);
 
 	return RSRX_SUPERVISOR_STATUS_OK;
