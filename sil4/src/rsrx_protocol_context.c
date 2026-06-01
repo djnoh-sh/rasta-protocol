@@ -131,11 +131,18 @@ rsrx_status_t rsrx_protocol_context_record_inbound_message(
 		return RSRX_STATUS_REJECTED;
 	}
 
-	if(pxMessage->uSequenceNumber > pxContext->uLastRxSequenceNumber)
+	if(pxContext->uLastRxSequenceNumber == UINT32_MAX)
 	{
-		pxContext->uLastRxSequenceNumber = pxMessage->uSequenceNumber;
-		pxContext->uLastTxConfirmationNumber = pxMessage->uSequenceNumber;
+		return RSRX_STATUS_REJECTED;
 	}
+
+	if(pxMessage->uSequenceNumber <= pxContext->uLastRxSequenceNumber)
+	{
+		return RSRX_STATUS_REJECTED;
+	}
+
+	pxContext->uLastRxSequenceNumber = pxMessage->uSequenceNumber;
+	pxContext->uLastTxConfirmationNumber = pxMessage->uSequenceNumber;
 
 	if(pxMessage->uConfirmationNumber > pxContext->uLastRemoteConfirmationNumber)
 	{

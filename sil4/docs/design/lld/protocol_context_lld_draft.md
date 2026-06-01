@@ -54,6 +54,7 @@
   - inbound message의 remote confirmation은 마지막으로 관측한 값보다 작아질 수 없다.
   - inbound confirmation은 로컬이 실제로 송신한 마지막 sequence보다 클 수 없다.
   - record 단계에서도 invalid confirmation을 `REJECTED`로 거부하고 sequence/confirmation tracking state를 변경하지 않는다.
+  - record 단계에서도 duplicate/lower stale sequence와 zero sequence 같은 invalid sequenced message를 `REJECTED`로 거부하고 tracking state를 변경하지 않는다.
   - unsequenced inbound message는 sequence/confirmation tracking state를 갱신하지 않는다.
 - inbound sequence validation:
   - sequenced message의 첫 inbound sequence는 `1`이어야 한다.

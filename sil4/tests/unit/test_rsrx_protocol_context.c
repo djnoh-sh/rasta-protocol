@@ -329,6 +329,37 @@ static void vTestInvalidConfirmationRecordRejected(void)
 	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 2U, "record guard regressing confirmation keeps remote confirmation");
 }
 
+static void vTestInvalidSequenceRecordRejected(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "sequence record guard init");
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK,
+		"sequence record guard baseline");
+
+	xMessage.uSequenceNumber = 1U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_REJECTED,
+		"sequence record guard duplicate rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 1U, "sequence record guard duplicate keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 1U, "sequence record guard duplicate keeps tx confirmation");
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "sequence record guard reset");
+	xMessage.uSequenceNumber = 0U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_REJECTED,
+		"sequence record guard zero rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 0U, "sequence record guard zero keeps last rx");
+}
+
 static void vTestInvalidInboundMessageTypeRejected(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1376,6 +1407,7 @@ int main(void)
 	vTestClearRetransmissionPreservesSequenceState();
 	vTestInboundConfirmationValidation();
 	vTestInvalidConfirmationRecordRejected();
+	vTestInvalidSequenceRecordRejected();
 	vTestInvalidInboundMessageTypeRejected();
 	vTestRecoverySuccessResolution();
 	vTestProtocolOrderingCloseoutMatrix();
