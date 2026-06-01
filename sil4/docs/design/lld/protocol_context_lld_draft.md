@@ -46,6 +46,7 @@
   - 최초 값은 `1`이다.
   - outbound message를 생성할 때마다 증가한다.
   - 다음 outbound sequence가 `UINT32_MAX`에 도달한 상태에서는 wraparound를 만들지 않고 encode request 생성을 `REJECTED`로 거부한다.
+  - encode request 실패 경로는 caller에게 stale message, payload, sequence를 남기지 않도록 output request를 `INVALID/NONE/0/null/0` baseline으로 clear한다.
 - confirmation number:
   - 마지막으로 기록된 inbound sequence number를 사용한다.
   - record 단계는 protocol context inbound contract 바깥의 `INVALID` message type을 `INVALID_ARGUMENT`로 거부하고 tracking state를 변경하지 않는다.

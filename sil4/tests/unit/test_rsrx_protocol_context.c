@@ -21,6 +21,32 @@ static uint32_t uReadUint32BigEndian(
 		(uint32_t)puBuffer[3];
 }
 
+static void vSeedEncodeRequest(
+	rsrx_encode_request_t * pxRequest)
+{
+	static const uint8_t auStalePayload[1] = { 0xA5U };
+
+	pxRequest->eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	pxRequest->eReason = RSRX_REASON_DATA_ACCEPTED;
+	pxRequest->uSequenceNumber = 99U;
+	pxRequest->uConfirmationNumber = 88U;
+	pxRequest->puPayload = auStalePayload;
+	pxRequest->xPayloadLength = sizeof(auStalePayload);
+}
+
+static void vAssertEncodeRequestCleared(
+	const rsrx_encode_request_t * pxRequest,
+	const char * pcLabel)
+{
+	(void)pcLabel;
+	vAssertTrue(pxRequest->eMessageType == RSRX_MESSAGE_TYPE_INVALID, "encode request cleared message type");
+	vAssertTrue(pxRequest->eReason == RSRX_REASON_NONE, "encode request cleared reason");
+	vAssertTrue(pxRequest->uSequenceNumber == 0U, "encode request cleared sequence");
+	vAssertTrue(pxRequest->uConfirmationNumber == 0U, "encode request cleared confirmation");
+	vAssertTrue(pxRequest->puPayload == (const uint8_t *)0, "encode request cleared payload");
+	vAssertTrue(pxRequest->xPayloadLength == 0U, "encode request cleared payload length");
+}
+
 static void vTestOutboundSequenceProgression(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -126,6 +152,7 @@ static void vTestOutboundSequenceWrapRejected(void)
 		0U,
 		&xRequest) == RSRX_STATUS_REJECTED, "wrap guard rejects overflow boundary");
 	vAssertTrue(xContext.uNextTxSequenceNumber == UINT32_MAX, "wrap guard sequence retained on reject");
+	vAssertEncodeRequestCleared(&xRequest, "wrap guard reject clears request");
 }
 
 static void vTestInvalidOutboundMessageTypeRejected(void)
@@ -134,6 +161,7 @@ static void vTestInvalidOutboundMessageTypeRejected(void)
 	rsrx_encode_request_t xRequest;
 
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "invalid outbound type init");
+	vSeedEncodeRequest(&xRequest);
 	vAssertTrue(rsrx_protocol_context_build_encode_request(
 		&xContext,
 		RSRX_MESSAGE_TYPE_INVALID,
@@ -142,6 +170,7 @@ static void vTestInvalidOutboundMessageTypeRejected(void)
 		0U,
 		&xRequest) == RSRX_STATUS_INVALID_ARGUMENT, "invalid outbound type rejected");
 	vAssertTrue(xContext.uNextTxSequenceNumber == 1U, "invalid outbound type keeps next tx sequence");
+	vAssertEncodeRequestCleared(&xRequest, "invalid outbound type clears request");
 }
 
 static void vTestRetransmissionRequestPayload(void)
@@ -1173,6 +1202,7 @@ static void vTestRetransmissionBaseWrapRejected(void)
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "retransmission base wrap protocol init");
 	xContext.uLastRxSequenceNumber = UINT32_MAX;
 	xContext.uLastTxConfirmationNumber = UINT32_MAX;
+	vSeedEncodeRequest(&xRequest);
 
 	vAssertTrue(rsrx_protocol_context_build_encode_request(
 		&xContext,
@@ -1185,6 +1215,41 @@ static void vTestRetransmissionBaseWrapRejected(void)
 	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 0U, "retransmission base wrap keeps base clear");
 	vAssertTrue(xContext.uLastRetransmissionRequestTxSequenceNumber == 0U, "retransmission base wrap keeps request tx clear");
 	vAssertTrue(xContext.uNextTxSequenceNumber == 1U, "retransmission base wrap keeps next tx sequence");
+	vAssertEncodeRequestCleared(&xRequest, "retransmission base wrap clears request");
+}
+
+static void vTestEncodeFailureClearsRequest(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "encode clear protocol init");
+
+	vSeedEncodeRequest(&xRequest);
+	vAssertTrue(
+		rsrx_protocol_context_build_encode_request(
+			(rsrx_protocol_context_t *)0,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_INVALID_ARGUMENT,
+		"encode clear null context rejected");
+	vAssertEncodeRequestCleared(&xRequest, "null context clears request");
+
+	vSeedEncodeRequest(&xRequest);
+	xContext.uNextTxSequenceNumber = UINT32_MAX;
+	vAssertTrue(
+		rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_DATA,
+			RSRX_REASON_DATA_ACCEPTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_REJECTED,
+		"encode clear wrap rejected");
+	vAssertTrue(xContext.uNextTxSequenceNumber == UINT32_MAX, "encode clear wrap keeps next tx");
+	vAssertEncodeRequestCleared(&xRequest, "wrap reject clears request");
 }
 
 static void vTestInvalidArguments(void)
@@ -1297,6 +1362,7 @@ int main(void)
 	vTestInitialZeroSequenceRejected();
 	vTestInboundSequenceWrapRejected();
 	vTestRetransmissionBaseWrapRejected();
+	vTestEncodeFailureClearsRequest();
 	vTestInvalidArguments();
 
 	(void)printf("rsrx_protocol_context_test: all tests passed\n");

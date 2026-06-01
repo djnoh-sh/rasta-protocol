@@ -71,6 +71,22 @@ static uint32_t uMessageTypeIsSupportedInbound(
 		(eMessageType == RSRX_MESSAGE_TYPE_DIAGNOSTIC));
 }
 
+static void vClearEncodeRequest(
+	rsrx_encode_request_t * pxRequest)
+{
+	if(pxRequest == (rsrx_encode_request_t *)0)
+	{
+		return;
+	}
+
+	pxRequest->eMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	pxRequest->eReason = RSRX_REASON_NONE;
+	pxRequest->uSequenceNumber = 0U;
+	pxRequest->uConfirmationNumber = 0U;
+	pxRequest->puPayload = (const uint8_t *)0;
+	pxRequest->xPayloadLength = 0U;
+}
+
 rsrx_status_t rsrx_protocol_context_init(
 	rsrx_protocol_context_t * pxContext)
 {
@@ -238,6 +254,8 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 {
 	static uint8_t auRetransmissionPayload[4];
 
+	vClearEncodeRequest(pxRequest);
+
 	if((pxContext == (rsrx_protocol_context_t *)0) ||
 		(pxRequest == (rsrx_encode_request_t *)0))
 	{
@@ -253,13 +271,6 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 	{
 		return RSRX_STATUS_REJECTED;
 	}
-
-	pxRequest->eMessageType = eMessageType;
-	pxRequest->eReason = eReason;
-	pxRequest->uSequenceNumber = pxContext->uNextTxSequenceNumber;
-	pxRequest->uConfirmationNumber = pxContext->uLastTxConfirmationNumber;
-	pxRequest->puPayload = puPayload;
-	pxRequest->xPayloadLength = xPayloadLength;
 
 	if(eMessageType == RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST)
 	{
@@ -280,9 +291,16 @@ rsrx_status_t rsrx_protocol_context_build_encode_request(
 		vWriteUint32BigEndian(
 			auRetransmissionPayload,
 			pxContext->uRetransmissionBaseSequenceNumber);
-		pxRequest->puPayload = auRetransmissionPayload;
-		pxRequest->xPayloadLength = sizeof(auRetransmissionPayload);
+		puPayload = auRetransmissionPayload;
+		xPayloadLength = sizeof(auRetransmissionPayload);
 	}
+
+	pxRequest->eMessageType = eMessageType;
+	pxRequest->eReason = eReason;
+	pxRequest->uSequenceNumber = pxContext->uNextTxSequenceNumber;
+	pxRequest->uConfirmationNumber = pxContext->uLastTxConfirmationNumber;
+	pxRequest->puPayload = puPayload;
+	pxRequest->xPayloadLength = xPayloadLength;
 
 	pxContext->uNextTxSequenceNumber++;
 
