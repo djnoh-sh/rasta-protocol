@@ -66,6 +66,10 @@ int main(void)
 		const rsrx_rasta_sr_timestamp_admission_policy_t *,
 		const rsrx_rasta_sr_identity_admission_policy_t *,
 		rsrx_decoded_message_t *);
+	volatile size_t xExpectedRastaRedundancyCarriedSrDecodePointerSize;
+	rsrx_codec_status_t (* volatile pfRastaRedundancyCarriedSrDecode)(
+		const rsrx_transport_frame_t *,
+		rsrx_rasta_sr_decoded_packet_t *);
 
 	xDecodedMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xDecodedMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
@@ -92,6 +96,8 @@ int main(void)
 	xExpectedCrcCalculatorTypeSize = sizeof(pfExpectedCrc32Calculator);
 	xExpectedRastaSrHandoffPointerSize = sizeof(pfRastaSrHandoff);
 	xExpectedRastaSrIdentityHandoffPointerSize = sizeof(pfRastaSrIdentityHandoff);
+	xExpectedRastaRedundancyCarriedSrDecodePointerSize =
+		sizeof(&rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum);
 	xEncodeBuffer.xEncodedLength = uExpectedEncodedLength;
 
 	xCodecPort.pfEncode = (rsrx_encode_message_fn)0;
@@ -173,6 +179,9 @@ int main(void)
 		const rsrx_rasta_sr_timestamp_admission_policy_t *,
 		const rsrx_rasta_sr_identity_admission_policy_t *,
 		rsrx_decoded_message_t *))0;
+	pfRastaRedundancyCarriedSrDecode = (rsrx_codec_status_t (*)(
+		const rsrx_transport_frame_t *,
+		rsrx_rasta_sr_decoded_packet_t *))0;
 
 	vAssertTrue(xDecodedMessage.eMessageType == RSRX_MESSAGE_TYPE_DATA, "decoded message type contract");
 	vAssertTrue(xDecodedMessage.eSuggestedEvent == RSRX_EVENT_VALID_DATA, "decoded message event contract");
@@ -328,6 +337,9 @@ int main(void)
 	vAssertTrue(xRastaSrIdentityPolicy.uExpectedSenderId == xRastaSrEncodeRequest.uSenderId, "rasta sr identity sender field contract");
 	vAssertTrue(xExpectedRastaSrHandoffPointerSize == sizeof(pfRastaSrHandoff), "rasta sr timestamp handoff function pointer contract");
 	vAssertTrue(xExpectedRastaSrIdentityHandoffPointerSize == sizeof(pfRastaSrIdentityHandoff), "rasta sr identity handoff function pointer contract");
+	vAssertTrue(xExpectedRastaRedundancyCarriedSrDecodePointerSize ==
+			sizeof(pfRastaRedundancyCarriedSrDecode),
+		"rasta redundancy carried sr decode function pointer contract");
 
 	(void)printf("rsrx_codec_contract_test: all tests passed\n");
 

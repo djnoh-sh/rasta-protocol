@@ -298,6 +298,10 @@ rsrx_codec_status_t rsrx_codec_decode_rasta_redundancy_no_crc(
 	const rsrx_transport_frame_t * pxFrame,
 	rsrx_rasta_redundancy_decoded_packet_t * pxPacket);
 
+rsrx_codec_status_t rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_sr_decoded_packet_t * pxPacket);
+
 rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
 	const rsrx_rasta_sr_checksum_profile_t * pxProfile);
 

@@ -779,6 +779,40 @@ rsrx_codec_status_t rsrx_codec_decode_rasta_redundancy_no_crc(
 	return RSRX_CODEC_STATUS_OK;
 }
 
+rsrx_codec_status_t rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_sr_decoded_packet_t * pxPacket)
+{
+	rsrx_codec_status_t eStatus;
+	rsrx_rasta_redundancy_decoded_packet_t xRedundancyPacket;
+	rsrx_transport_frame_t xCarriedFrame;
+
+	if(pxPacket == (rsrx_rasta_sr_decoded_packet_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearRastaSrDecodedPacket(pxPacket);
+
+	if(pxFrame == (const rsrx_transport_frame_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_decode_rasta_redundancy_no_crc(pxFrame, &xRedundancyPacket);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	xCarriedFrame.eChannelId = pxFrame->eChannelId;
+	xCarriedFrame.puPayload = xRedundancyPacket.auCarriedPacket;
+	xCarriedFrame.xPayloadLength = xRedundancyPacket.xCarriedPacketLength;
+	xCarriedFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	return rsrx_codec_decode_rasta_sr_no_checksum(&xCarriedFrame, pxPacket);
+}
+
 const rsrx_rasta_sr_checksum_profile_t * rsrx_codec_get_rasta_sr_default_checksum_profile(void)
 {
 	static const rsrx_rasta_sr_checksum_profile_t xDefaultProfile = {
