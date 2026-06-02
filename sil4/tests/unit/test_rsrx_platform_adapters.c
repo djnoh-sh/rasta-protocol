@@ -253,6 +253,93 @@ static void vTestPlatformExecutorTableBuild(void)
 	vAssertTrue(xExecutors.xDiagnosticsExecutor.pfDispatch == rsrx_platform_diagnostics_executor_dispatch, "diagnostics executor binding");
 }
 
+static void vTestPlatformExecutorTableClearsInvalidOutput(void)
+{
+	rsrx_platform_adapter_context_t xPlatformContext;
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_clock_context_t xClockContext = { 100U, 0U };
+	test_timer_context_t xTimerContext = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnosticsContext = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 0U };
+	test_action_context_t xApplicationContext = { RSRX_ACTION_NONE, 0U };
+	test_action_context_t xApiContext = { RSRX_ACTION_NONE, 0U };
+	test_action_context_t xLifecycleContext = { RSRX_ACTION_NONE, 0U };
+	rsrx_platform_port_table_t xPorts;
+	rsrx_transport_port_t xTransportPort;
+	rsrx_action_executor_t xApplicationExecutor;
+	rsrx_action_executor_t xApiExecutor;
+	rsrx_action_executor_t xLifecycleExecutor;
+	rsrx_action_executor_table_t xExecutors;
+	static const uint8_t auPayload[4] = { 0x10U, 0x20U, 0x30U, 0x40U };
+
+	xPorts.xClock.pvContext = &xClockContext;
+	xPorts.xClock.pfNow = eClockNow;
+	xPorts.xTimer.pvContext = &xTimerContext;
+	xPorts.xTimer.pfCommand = eTimerCommand;
+	xPorts.xDiagnostics.pvContext = &xDiagnosticsContext;
+	xPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+
+	vAssertTrue(rsrx_platform_adapter_init(&xPlatformContext, &xPorts, 50U, 75U, 125U) == RSRX_PLATFORM_STATUS_OK, "clear invalid platform adapter init");
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auPayload,
+			sizeof(auPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"clear invalid transport adapter init");
+
+	xApplicationExecutor.pvContext = &xApplicationContext;
+	xApplicationExecutor.pfDispatch = (rsrx_action_dispatch_fn)0;
+	xApiExecutor.pvContext = &xApiContext;
+	xApiExecutor.pfDispatch = vCaptureAction;
+	xLifecycleExecutor.pvContext = &xLifecycleContext;
+	xLifecycleExecutor.pfDispatch = vCaptureAction;
+
+	xExecutors.xTransportExecutor.pvContext = &xTransportAdapterContext;
+	xExecutors.xTransportExecutor.pfDispatch = vCaptureAction;
+	xExecutors.xTimerExecutor.pvContext = &xPlatformContext;
+	xExecutors.xTimerExecutor.pfDispatch = vCaptureAction;
+	xExecutors.xApplicationExecutor.pvContext = &xApplicationContext;
+	xExecutors.xApplicationExecutor.pfDispatch = vCaptureAction;
+	xExecutors.xApiExecutor.pvContext = &xApiContext;
+	xExecutors.xApiExecutor.pfDispatch = vCaptureAction;
+	xExecutors.xDiagnosticsExecutor.pvContext = &xDiagnosticsContext;
+	xExecutors.xDiagnosticsExecutor.pfDispatch = vCaptureAction;
+	xExecutors.xLifecycleExecutor.pvContext = &xLifecycleContext;
+	xExecutors.xLifecycleExecutor.pfDispatch = vCaptureAction;
+
+	vAssertTrue(
+		rsrx_platform_adapter_build_executor_table(
+			&xExecutors,
+			&xTransportAdapterContext,
+			&xPlatformContext,
+			&xApplicationExecutor,
+			&xApiExecutor,
+			&xLifecycleExecutor) == RSRX_STATUS_INVALID_ARGUMENT,
+		"invalid executor table build rejected");
+	vAssertTrue(xExecutors.xTransportExecutor.pvContext == (void *)0, "invalid build clears transport context");
+	vAssertTrue(xExecutors.xTransportExecutor.pfDispatch == (rsrx_action_dispatch_fn)0, "invalid build clears transport dispatch");
+	vAssertTrue(xExecutors.xTimerExecutor.pvContext == (void *)0, "invalid build clears timer context");
+	vAssertTrue(xExecutors.xTimerExecutor.pfDispatch == (rsrx_action_dispatch_fn)0, "invalid build clears timer dispatch");
+	vAssertTrue(xExecutors.xApplicationExecutor.pvContext == (void *)0, "invalid build clears application context");
+	vAssertTrue(xExecutors.xApplicationExecutor.pfDispatch == (rsrx_action_dispatch_fn)0, "invalid build clears application dispatch");
+	vAssertTrue(xExecutors.xApiExecutor.pvContext == (void *)0, "invalid build clears api context");
+	vAssertTrue(xExecutors.xApiExecutor.pfDispatch == (rsrx_action_dispatch_fn)0, "invalid build clears api dispatch");
+	vAssertTrue(xExecutors.xDiagnosticsExecutor.pvContext == (void *)0, "invalid build clears diagnostics context");
+	vAssertTrue(xExecutors.xDiagnosticsExecutor.pfDispatch == (rsrx_action_dispatch_fn)0, "invalid build clears diagnostics dispatch");
+	vAssertTrue(xExecutors.xLifecycleExecutor.pvContext == (void *)0, "invalid build clears lifecycle context");
+	vAssertTrue(xExecutors.xLifecycleExecutor.pfDispatch == (rsrx_action_dispatch_fn)0, "invalid build clears lifecycle dispatch");
+}
+
 static void vTestTransportAdapterRejectsIncompleteCodecPort(void)
 {
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
@@ -1568,6 +1655,7 @@ static void vTestOutboundQueueBackpressureCloseoutMatrix(void)
 int main(void)
 {
 	vTestPlatformExecutorTableBuild();
+	vTestPlatformExecutorTableClearsInvalidOutput();
 	vTestTransportAdapterRejectsIncompleteCodecPort();
 	vTestTransportTimerAndDiagnosticsDispatch();
 	vTestTransportAdapterRejectedInboundRecordHasNoSideEffect();

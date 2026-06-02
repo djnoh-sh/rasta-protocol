@@ -33,6 +33,34 @@ static uint32_t uExecutorIsValid(
 		(pxExecutor->pfDispatch != (rsrx_action_dispatch_fn)0));
 }
 
+static void vClearActionExecutor(
+	rsrx_action_executor_t * pxExecutor)
+{
+	if(pxExecutor == (rsrx_action_executor_t *)0)
+	{
+		return;
+	}
+
+	pxExecutor->pvContext = (void *)0;
+	pxExecutor->pfDispatch = (rsrx_action_dispatch_fn)0;
+}
+
+static void vClearActionExecutorTable(
+	rsrx_action_executor_table_t * pxExecutors)
+{
+	if(pxExecutors == (rsrx_action_executor_table_t *)0)
+	{
+		return;
+	}
+
+	vClearActionExecutor(&pxExecutors->xTransportExecutor);
+	vClearActionExecutor(&pxExecutors->xTimerExecutor);
+	vClearActionExecutor(&pxExecutors->xApplicationExecutor);
+	vClearActionExecutor(&pxExecutors->xApiExecutor);
+	vClearActionExecutor(&pxExecutors->xDiagnosticsExecutor);
+	vClearActionExecutor(&pxExecutors->xLifecycleExecutor);
+}
+
 static uint32_t uActionUsesTransport(
 	rsrx_action_t eAction)
 {
@@ -868,6 +896,8 @@ rsrx_status_t rsrx_platform_adapter_build_executor_table(
 	const rsrx_action_executor_t * pxApiExecutor,
 	const rsrx_action_executor_t * pxLifecycleExecutor)
 {
+	vClearActionExecutorTable(pxExecutors);
+
 	if((pxExecutors == (rsrx_action_executor_table_t *)0) ||
 		(pxTransportContext == (rsrx_transport_adapter_context_t *)0) ||
 		(uTransportPortIsValid(&pxTransportContext->xTransportPort) == 0U) ||

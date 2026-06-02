@@ -71,6 +71,8 @@
   - severity는 `diagnostic code`에서 결정한다.
   - event counter는 adapter context 내부에서 증가시킨다.
 - executor table builder:
+  - 유효한 output executor table pointer는 진입 시 모든 executor slot을 null baseline으로 clear한다.
+  - invalid argument로 table build가 실패하면 이전 dispatch/context binding을 남기지 않는다.
   - transport executor는 transport adapter dispatch 함수로 설정한다.
   - timer/diagnostics executor는 platform adapter dispatch 함수로 설정한다.
   - application/api/lifecycle executor는 외부 제공 executor를 사용한다.
