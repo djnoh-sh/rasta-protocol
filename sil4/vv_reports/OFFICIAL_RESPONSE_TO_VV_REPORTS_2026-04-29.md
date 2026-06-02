@@ -347,3 +347,39 @@ The accepted planning impact is:
 - `R-005`: keep vendor and target-qualified evidence artifacts as external-evidence acquisition work.
 
 The official project position remains that the V&V reports are accepted as independent review input, while roadmap risk ownership and baseline wording remain controlled by `sil4/docs/roadmap_status.md` and the `RV-*` review records.
+
+## Addendum: 2026-06-02 Comprehensive V&V Audit Review
+
+The V&V team added `comprehensive_vv_audit_report_2026-06-02.md`. The project reviewed the report on 2026-06-02 without modifying the V&V report file itself.
+
+### 2026-06-02 Finding Disposition
+
+| Finding | V&V Topic | Official Project Disposition | Planning Impact |
+| --- | --- | --- | --- |
+| Finding E | Public API critical-section protection for asynchronous SafeRTOS-style execution | Accepted as implementation backlog. The current portable baseline is not to be described as concurrency-safe for multi-task/ISR use until a critical-section or locking policy is implemented and verified. | Added as `R-009`; promoted to the top recommended implementation priority. |
+| Finding F | `rsrx_session_reset` timer stop/quiescence behavior | Accepted as implementation backlog. Reset robustness is incomplete for running platform timers until explicit stop/cancel/quiescence behavior is defined and tested. | Added as `R-009`; promoted to the second recommended implementation priority. |
+| Finding A | Duplicate `TC-SM-012` in TS-002 | Accepted as a document defect. The `SHUTDOWN` input-ignore row was renamed to `TC-SM-019`, and traceability was updated accordingly. | Closed by document update; no code verification rerun required. |
+| Finding B | Channel manager holdoff saturation | Accepted as compliant baseline confirmation. | No new action. |
+| Finding C | Codec null-argument output clear policy | Accepted as compliant baseline confirmation. | No new action. |
+| Finding D | unsigned constant suffix audit | Accepted as compliant baseline confirmation. | No new action. |
+
+### Official Interpretation
+
+The comprehensive audit is accepted as a higher-priority safety review input than the earlier parity-growth-only residuals. In particular:
+
+1. `Finding E` is not treated as merely target evidence. A portable-core policy decision is required because public API calls and background/event processing share session state.
+2. `Finding F` is not treated as merely documentation. Reset must either stop/cancel active timers or provide an equivalent quiescence contract that prevents stale timer expiry from re-entering the reset session.
+3. The current host verification baseline remains valid for single-threaded host tests, but it must not be cited as proof of SafeRTOS multi-task/ISR concurrency safety.
+4. `Finding A` is closed as a documentation and traceability correction by changing the duplicate `TC-SM-012` shutdown row to `TC-SM-019`.
+
+### Accepted Items Reflected Into Planning
+
+The following items from the 2026-06-02 comprehensive V&V audit have been reflected into `sil4/docs/roadmap_status.md`:
+
+1. New risk `R-009 API concurrency and reset quiescence`.
+2. New waiting/backlog entries for `Public API critical-section policy` and `Session reset timer quiescence`.
+3. Updated recommended next order placing public API critical-section policy and reset timer quiescence before vendor/target evidence acquisition.
+4. Updated readiness wording to reflect that API concurrency/reset quiescence evidence is now required for closeout.
+5. Updated gate criteria so `G-P3-P4-Closeout` requires `R-009` closeout or an explicit target-porting boundary decision.
+
+No source code was changed as part of this response update. Therefore no build, unit/integration test, or cppcheck rerun was required for this document-only step.

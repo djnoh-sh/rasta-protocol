@@ -10,10 +10,10 @@
 
 ## Summary
 
-- 현재 전체 진행률 추정: `93~95%`
-- 현재 상태: `P3/P4 representative closeout` 기준선은 유지 중이며, residual은 구현 누락보다 next policy/security/evidence growth에 집중돼 있다.
-- 최근 업데이트: `TC-PA-015`/`RV-431`로 executor table build 실패 경로가 stale dispatch/context binding을 caller에게 남기지 않도록 output clear guard를 추가했다.
-- 다음 주력 단계: `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS target artifact acquisition`, `redundancy next policy growth`, `protocol sequencing next parity growth`, `non-none checksum algorithm implementation if selected`
+- 현재 전체 진행률 추정: `92~94%`
+- 현재 상태: `P3/P4 representative closeout` 기준선은 대체로 유지 중이나, 2026-06-02 comprehensive V&V audit에서 public API 비동기 임계영역과 reset-time timer quiescence가 신규 safety-critical implementation backlog로 식별됐다.
+- 최근 업데이트: 2026-06-02 comprehensive V&V audit를 검토해 `Finding E/F`를 구현 우선순위 backlog로 수용하고, `Finding A`의 TS-002 `TC-SM-012` 중복 ID를 `TC-SM-019`로 정정했다.
+- 다음 주력 단계: `public API critical-section policy`, `session reset timer stop/quiescence policy`, `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS target artifact acquisition`, `redundancy next policy growth`, `protocol sequencing next parity growth`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
 ## Overall Phase Status
@@ -35,7 +35,7 @@
 | Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-431` | 새 policy/evidence growth마다 review/spec linkage 유지 |
 | State Machine / Orchestrator | In Progress | `rsrx_state_machine.*`, `rsrx_orchestrator.*`, unit tests, reset baseline evidence `RV-393..RV-394` | future state/action 확장 시 assertion density 유지 |
 | Platform / Transport Abstraction | Completed | `rsrx_platform.h`, `rsrx_transport.h`, contract tests | 포팅 시 target adapter evidence |
-| Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..015`, `TC-API-003`, `TC-API-014..018`, public API report-output guard evidence `RV-427`, adapter query/receive/executor output guard evidence `RV-429..RV-431` | target runtime binding, selected codec policy 유지 |
+| Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..015`, `TC-API-003`, `TC-API-014..018`, public API report-output guard evidence `RV-427`, adapter query/receive/executor output guard evidence `RV-429..RV-431`, comprehensive V&V Finding E/F accepted backlog | public API critical-section policy, reset timer quiescence, target runtime binding, selected codec policy 유지 |
 | Application Data Contract | Completed | application data LLD/spec, API/adapter tests | integration expansion only |
 | Protocol Context | In Progress | `TC-PC-004`, `TC-PC-019..032`, sequence/base/confirmation/API/recovery-cleanup/init-baseline/stale-output/payload-pointer/record-order/gap-record/resolve-failure-output guards | richer confirm/retransmission variants |
 | Transport Supervisor | In Progress | `TC-SUP-001..077`, `TC-INT-210`, runtime/channel/codec-status/SR-runtime/identity/redundancy-SR reports, public API guard evidence `RV-380`/`RV-425`, init switch/runtime-loop baseline evidence `RV-388..RV-389`, SR runtime wiring evidence `RV-408`, SR identity wiring evidence `RV-410`, redundancy-carried SR runtime wiring/integration evidence `RV-417..RV-418` | richer runtime fault-ordering variants |
@@ -44,7 +44,7 @@
 | Codec / Security | In Progress | `TC-CODEC-001..050`, `TC-SUP-075..077`, `TC-INT-206`, `TC-INT-208`, `TC-INT-210`, `RV-337`, `RV-354..RV-367`, `RV-369..RV-378`, `RV-382..RV-384`, `RV-390`, `INV-RASTA-001`, `PDU-PARITY-001A..001F`, `RED-PDU-PARITY-001A`, `RV-399..RV-418` | non-none checksum algorithm implementation if selected, CRC-bearing redundancy PDU behavior if selected, optional MAC/security extension taxonomy, vendor security vectors |
 | Configuration Validation | Completed | `TC-CFG-003`, `TC-CFG-006`, `TC-CFG-008..010`, report/null-output guard evidence `RV-428` | deployment-specific policy additions |
 | Integration Verification | In Progress | `test_rsrx_session_supervisor_flow.c`, integration harness spec, `TC-INT-205..210` | target/longer-run integration expansion |
-| Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot, V&V v1.6 official response, `EVID-TGT-001` | actual vendor finding export and target-qualified stack/memory-map artifacts |
+| Safety Evidence | In Progress | cppcheck reports, stack/memory runbook/helper, strict-warning policy, operational evidence snapshot, V&V v1.6 official response, comprehensive V&V 2026-06-02 response, `EVID-TGT-001` | actual vendor finding export, target-qualified stack/memory-map artifacts, API concurrency/timer-quiescence closeout evidence |
 | AM263Px / SafeRTOS Porting | Planned | `EVID-TGT-001`, `RV-415`; portable core/adapter boundary is ready; target-specific layer intentionally not implemented in core | SafeRTOS task/timer/queue/critical-section binding, TI driver transport adapter, optional hardware-backed CRC/crypto adapter, target stack/memory/timing evidence |
 
 ## Current Evidence Baseline
@@ -56,7 +56,7 @@
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
 - Latest local verification was green after `RV-431`.
-- Latest document-only planning update was `RV-415`; no host verification rerun was required for that document-only step.
+- Latest document-only planning update accepted comprehensive V&V 2026-06-02 Finding E/F as implementation backlog and corrected TS-002 duplicate `TC-SM-012`; no host verification rerun was required for that document-only step.
 - External artifact references:
   - closed baseline fetch artifact: `sil4-ci-logs2/*`, source run `24661353609`, fetch run `24662424670`
   - remaining vendor evidence artifact: raw vendor export or secured attachment reference, `vendor_export_context.env`, vendor rule/file/location metadata, capture or workflow run page
@@ -75,6 +75,7 @@
 | R-006 Codec/security | Current codec skeleton, CRC32 optional path, typed status taxonomy, selected CRC integration, calculator injection seam, policy gates, encode/decode stale-output representative evidence, decode null-argument output clear, CRC32 truncated-output clear, CRC32 inner status preservation including transport metadata misuse, reserved-header tamper output clear, unsupported-message/reason output clear, trailing/truncated/oversized payload output clear, direct misuse event/channel output clear, `INV-RASTA-001` inventory, `PDU-PARITY-001` SR wire-profile draft, profile/packet/mapping contracts, fixed big-endian SR byte-order helpers, no-checksum SR common-header/payload encode/decode, selected no-checksum default profile, checksum profile unsupported-rejection boundary, codec-level timestamp/window admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, receiver/sender identity admission boundary, supervisor identity policy wiring, redundancy PDU metadata profile, redundancy CRC option admission boundary, option A no-CRC redundancy PDU encode/decode behavior, carried no-checksum SR decode bridge, supervisor redundancy-carried SR runtime selection, and redundancy-carried SR integration handoff are in place. | non-none selected checksum algorithm implementation only if controlled requirement selects it, CRC-bearing redundancy PDU behavior if selected, optional MAC/security extension definition, additional tamper taxonomy, vendor-oriented security negative vectors | keep selected no-checksum/CRC-option-A baselines; implement CRC-bearing behavior only if selected |
 | R-007 V&V accepted follow-up | Handshake action assertion density, `CONNECT_REQUEST` unsequenced baseline, and CMake warning-hardening follow-up are closed. | future maintenance only | keep assertion/warning discipline |
 | R-008 AM263Px/SafeRTOS porting | Core protocol remains portable C with platform/transport/codec adapter boundaries; no AM263Px or SafeRTOS dependency is allowed in the core implementation. `EVID-TGT-001` defines the SafeRTOS task/timer/queue, TI driver transport, hardware CRC/crypto adapter, and target evidence checklist. Hardware-backed CRC/crypto acceleration may be used only behind target-specific codec/security adapters with portable software fallback retained. | actual target porting layer, SafeRTOS safety-manual compliance mapping, TI driver binding, optional hardware CRC/crypto adapter, software-vs-hardware equivalence evidence, HW self-test/timeout/diagnostic evidence, target stack/memory/timing evidence, target integration/fault-injection logs | acquire first target artifact package |
+| R-009 API concurrency and reset quiescence | 2026-06-02 comprehensive V&V audit `Finding E/F` is accepted as implementation backlog. Current portable core does not yet expose or enforce a public API critical-section policy, and `rsrx_session_reset` does not yet explicitly stop/quiesce supervision/retransmission timers. | define platform locking/critical-section contract, protect shared session state/public API/event paths, add reset timer stop/cancel behavior, verify host stubs and SafeRTOS target binding | next implementation priority before broader policy growth |
 
 ## Waiting / Backlog Items
 
@@ -84,6 +85,8 @@
 | Target-qualified stack/memory-map evidence | Waiting | target-release build/toolchain and qualified analyzer output |
 | AM263Px/SafeRTOS porting layer | Planned | target artifact execution pending; planning artifact is `EVID-TGT-001` |
 | AM263Px/SafeRTOS target evidence | Waiting | target hardware/build environment, SafeRTOS safety evidence, linker/stack/timing capture process, software-vs-hardware CRC equivalence and HW diagnostic capture process |
+| Public API critical-section policy | Started | comprehensive V&V 2026-06-02 `Finding E`; needs portable adapter contract and SafeRTOS binding evidence |
+| Session reset timer quiescence | Started | comprehensive V&V 2026-06-02 `Finding F`; needs timer stop/cancel API behavior and reset-path tests |
 | RaSTA PDU/checksum/timestamp parity | Started | exact official/customer RaSTA clause mapping, non-none checksum algorithm implementation only if selected |
 | MAC/security extension | Not Started | controlled requirement needed; otherwise keep `uRequireMac` as explicit unsupported extension gate |
 | Future redundancy routing modes | Not Started | policy decision beyond current active-standby baseline |
@@ -96,16 +99,17 @@
 | 단위 테스트 기반 | Medium-High | 핵심 protocol/supervisor/codec 규칙은 representative matrix 수준 |
 | 프로토콜 완성도 | Medium-High | 잔여는 broad incompleteness가 아니라 next policy variants |
 | 통합 가능성 | Medium-High | 주요 fault-integration family는 연결됨 |
-| 인증 증빙 준비 | High | helper/tooling은 준비됐고 실제 vendor/target artifact가 남음 |
+| 인증 증빙 준비 | Medium-High | helper/tooling은 준비됐으나 V&V 2026-06-02에서 API concurrency/reset quiescence closeout evidence가 추가됨 |
 
 ## Recommended Next Order
 
-1. `Actual CI/Vendor Evidence Acquisition`
-2. `AM263Px/SafeRTOS Target Artifact Acquisition`
-3. `Redundancy Next Policy Growth`
-4. `Protocol Sequencing Next Parity Growth`
-5. `Non-None Checksum Algorithm Implementation If Selected`
-6. `Transport Supervisor Runtime Feedback Growth`
+1. `Public API Critical-Section Policy`
+2. `Session Reset Timer Stop/Quiescence Policy`
+3. `Actual CI/Vendor Evidence Acquisition`
+4. `AM263Px/SafeRTOS Target Artifact Acquisition`
+5. `Redundancy Next Policy Growth`
+6. `Protocol Sequencing Next Parity Growth`
+7. `Non-None Checksum Algorithm Implementation If Selected`
 
 ## Next Gate Definition
 
@@ -113,6 +117,7 @@
 - Gate intent: current representative closeout state를 유지하고, residual을 실제 next policy/security/evidence growth로만 관리한다.
 - 통과 조건:
   - `R-001..R-008`이 current closeout state와 실제 residual만 가리킬 것
+  - `R-009` API concurrency/reset quiescence가 구현/검증 또는 명확한 target-porting boundary로 closeout될 것
   - accepted V&V follow-up이 baseline defect wording이 아니라 explicit backlog/evidence item으로 유지될 것
   - AM263Px/SafeRTOS work가 core implementation dependency가 아니라 target porting/evidence workstream으로 유지되고, hardware acceleration은 target adapter 뒤에만 위치할 것
   - numeric parity growth는 current target range에서 closeout으로 유지하고, 새 policy/failure-mode가 있을 때만 확장할 것
