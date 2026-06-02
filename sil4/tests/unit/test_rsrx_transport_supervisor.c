@@ -438,20 +438,42 @@ static void vTestSupervisorInvalidArguments(void)
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, (const rsrx_transport_frame_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame invalid args");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "process frame invalid clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame null report");
 	vAssertTrue(rsrx_transport_supervisor_process_frame(&xUninitialized, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "process frame uninitialized context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "process frame uninitialized clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_poll_receive((rsrx_transport_supervisor_context_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "poll receive null context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "poll receive null context clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "poll receive null report");
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xUninitialized, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "poll receive uninitialized context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "poll receive uninitialized clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event((rsrx_transport_supervisor_context_t *)0, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event null context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "transport event null context clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, (const rsrx_transport_frame_t *)0, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event null frame");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "transport event null frame clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xSupervisor, &xFrame, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event null report");
 	vAssertTrue(rsrx_transport_supervisor_process_transport_event(&xUninitialized, &xFrame, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "transport event uninitialized context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "transport event uninitialized clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_process_timer_expiry((rsrx_transport_supervisor_context_t *)0, RSRX_TIMER_EXPIRY_SUPERVISION, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "timer expiry null context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "timer expiry null context clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_process_timer_expiry(&xSupervisor, RSRX_TIMER_EXPIRY_SUPERVISION, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "timer expiry null report");
 	vAssertTrue(rsrx_transport_supervisor_process_timer_expiry(&xUninitialized, RSRX_TIMER_EXPIRY_SUPERVISION, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "timer expiry uninitialized context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "timer expiry uninitialized clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, (const rsrx_transport_supervisor_report_t **)0) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump null report");
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xUninitialized, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump uninitialized context");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "pump uninitialized clears report");
+	pxSupervisorReport = &xSupervisor.xLastReport;
+	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 0U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT, "pump zero max polls clears report");
+	vAssertTrue(pxSupervisorReport == (const rsrx_transport_supervisor_report_t *)0, "pump zero max polls report cleared");
 }
 
 static void vTestSupervisorInitClearsReportBaseline(void)

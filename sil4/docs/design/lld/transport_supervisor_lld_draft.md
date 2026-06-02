@@ -47,6 +47,10 @@
 
 ## Functional Behavior
 
+- common public API guard behavior:
+  - report output pointer를 받는 public API는 유효한 output pointer를 진입 시 null로 clear한다.
+  - invalid argument 또는 uninitialized context guard가 동작하면 caller가 이전 report를 새 결과로 오인하지 않도록 stale report pointer를 남기지 않는다.
+  - 정상 처리 경로와 handled runtime 결과에서만 현재 supervisor report pointer를 output에 설정한다.
 - `rsrx_transport_supervisor_init`:
   - session 포인터와 codec decode port 유효성을 검증한다.
   - 마지막 report를 초기화한다.
@@ -113,6 +117,7 @@
 - 필요한 테스트:
   - inbound handshake frame -> session established 경로 검증
   - invalid argument 방어 검증
+  - invalid public API report pointer clear 검증
   - decode 실패 시 오류 반환 검증
   - sequence gap -> retransmission pending 검증
   - stale sequence -> protocol error fail-safe 검증

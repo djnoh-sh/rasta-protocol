@@ -1195,6 +1195,11 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
 	const rsrx_transport_frame_t * pxFrame,
 	const rsrx_transport_supervisor_report_t ** ppxReport)
 {
+	if(ppxReport != (const rsrx_transport_supervisor_report_t **)0)
+	{
+		*ppxReport = (const rsrx_transport_supervisor_report_t *)0;
+	}
+
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(pxFrame == (const rsrx_transport_frame_t *)0) ||
 		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
@@ -1213,6 +1218,11 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 {
 	rsrx_transport_status_t eTransportStatus;
 	rsrx_transport_frame_t xFrame;
+
+	if(ppxReport != (const rsrx_transport_supervisor_report_t **)0)
+	{
+		*ppxReport = (const rsrx_transport_supervisor_report_t *)0;
+	}
 
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
@@ -1342,6 +1352,11 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_pump_receive(
 	uint32_t uInitialProcessedCount;
 	uint32_t uIteration;
 
+	if(ppxReport != (const rsrx_transport_supervisor_report_t **)0)
+	{
+		*ppxReport = (const rsrx_transport_supervisor_report_t *)0;
+	}
+
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
 		(pxContext->uInitialized == 0U) ||
@@ -1393,6 +1408,11 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 	const rsrx_transport_supervisor_report_t ** ppxReport)
 {
 	rsrx_transport_channel_id_t ePreviousActiveChannelId;
+
+	if(ppxReport != (const rsrx_transport_supervisor_report_t **)0)
+	{
+		*ppxReport = (const rsrx_transport_supervisor_report_t *)0;
+	}
 
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(pxFrame == (const rsrx_transport_frame_t *)0) ||
@@ -1547,6 +1567,11 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_timer_expiry(
 	const rsrx_transport_supervisor_report_t ** ppxReport)
 {
 	rsrx_status_t eSessionStatus;
+
+	if(ppxReport != (const rsrx_transport_supervisor_report_t **)0)
+	{
+		*ppxReport = (const rsrx_transport_supervisor_report_t *)0;
+	}
 
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(ppxReport == (const rsrx_transport_supervisor_report_t **)0) ||
