@@ -14,13 +14,28 @@
 
 본 V&V 감사(Audit)는 단순한 최근 패치 확인을 넘어, 요구사항-설계-코드-테스트 및 코딩 표준에 이르는 SIL4 재구현 프로젝트 전반의 무결성(Integrity)과 정합성(Alignment)을 교차 검증하기 위해 독립적인 관점에서 수행되었습니다. 
 
-검사 결과, 전체 소스 코드와 상세 설계(LLD) 문서 간의 정합성은 **99% 이상으로 매우 우수함**을 확인했습니다. 상태 머신 전이 규칙, 이중화 제어 로직, CRC32 코덱 바인딩은 드래프트 사양과 한 치의 오차 없이 소스 코드에 온전히 매핑되어 작동하고 있습니다.
+검사 결과, 전체 소스 코드와 상세 설계(LLD) 문서 간의 정합성은 기본 전이 테이블 기준 99% 이상 일치하여 매우 양호합니다. 그러나 비동기 멀티태스킹(SafeRTOS) 타깃 이식 및 안전 임베디드 관점에서 심층 코드 리뷰를 수행한 결과, **개발팀이 스스로 식별하지 못한 치명적인 데이터 경쟁(Data Race) 위협 및 타이머 오작동 관련 잠재 결함 2건**을 추가로 발굴하였습니다.
 
-다만, 향후 안전 무결성 인증 심사 시 문서 결함으로 지적될 우려가 있는 **1건의 테스트 케이스 ID 중복 오류**를 발굴하였으며, 그 외에 핵심 로직 상에 구현된 정밀 오버플로우 방어막 및 안전 가드 조건들의 준수 수준을 사실(Fact)을 기반으로 다음과 같이 보고합니다.
+식별된 취약점과 문서 결함 1건에 대한 상세 팩트(Fact) 및 조치 권고 사항을 다음과 같이 보고합니다.
 
 ---
 
 ## 2. Key V&V Audit Findings (상세 감사 결과)
+
+### [Finding E] 공개 API 계층의 비동기 호출 간 임계 영역(Critical Section) 보호 부재 (잠재적 Data Race 위협)
+*   **기술적 사실:**
+    *   `[rsrx_api.c](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_api.c)` 내의 `rsrx_session_send_application_data` 등 공개 API는 전송 실패 시 `vNotifyDirectReject`를 호출하여 세션의 공유 상태 데이터인 `xLastReport`를 직접 수정하고 등록된 콜백을 실행합니다.
+    *   현재 소스 코드 상에는 API 진입점들에 대한 뮤텍스(Mutex) 또는 크리티컬 섹션(Critical Section) 보호 장치가 설계되어 있지 않습니다.
+*   **V&V 평가 및 권고:**
+    *   비동기 타깃 환경(SafeRTOS 멀티태스킹 등)에서 전송 API 호출과 백그라운드의 네트워크 수신 이벤트 처리(`eProcessSessionEvent`)가 서로 다른 태스크 및 인터럽트 서비스 루틴(ISR)에서 병행 실행될 경우, 동일 세션 컨텍스트 및 `xLastReport`에 대한 **동시 접근 경쟁 상태(Data Race)**가 유발되어 내부 상태가 오염(Corruption)될 수 있습니다.
+    *   `rsrx_platform.h`에 정의된 플랫폼 임계 영역 인터페이스를 활용하여 데이터 쓰기가 일어나는 모든 공개 API 및 이벤트 핸들러 진입점에 안전 잠금(Locking) 메커니즘을 긴급 적용할 것을 권고합니다. (안전 무결성 통과 필수 조치)
+
+### [Finding F] 세션 리셋(`rsrx_session_reset`) 시 실행 중인 타이머의 명시적 비활성화(Stop) 누락 우려 (잠재적 오작동 결함)
+*   **기술적 사실:**
+    *   `[rsrx_api.c](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_api.c)`의 `rsrx_session_reset` 함수(Line 516-542)는 채널 매니저와 오케스트레이터를 리셋하지만, 기존 런타임에 작동 중이던 물리/가상 타이머(Supervision, Retransmission Timer 등)를 비활성화하는 명시적인 플랫폼/타이머 정지 API 호출이 누락되어 있습니다.
+*   **V&V 평가 및 권고:**
+    *   만약 타이머가 기동 중인 상태에서 세션만 리셋될 경우, 리셋 직후(초기화되지 않은 대기 상태 등) 타이머 만료 인터럽트가 유입되어 상태 기계에 `RSRX_EVENT_TIMEOUT` 등이 주입되면서 예기치 않은 오동작이나 Failsafe 불일치를 유발할 수 있습니다.
+    *   세션 리셋 진입 즉시 런타임 타이머들을 명시적으로 정지(Stop/Cancel)시키는 안전 가드 로직을 추가할 것을 권고합니다.
 
 ### [Finding A] 테스트 사양서(TS-002) 내 테스트 케이스 ID 중복 오류 (Document Defect)
 *   **기술적 사실:**
@@ -33,73 +48,30 @@
 ### [Finding B] Channel Manager Holdoff 포화 연산 정합성 (COMPLIANT)
 *   **기술적 사실:**
     *   상세 설계서 `[channel_manager_lld_draft.md](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/docs/design/lld/channel_manager_lld_draft.md)`의 Line 79에는 "base holdoff와 pending penalty의 합이 `UINT32_MAX`를 초과할 때 wraparound되지 않고 포화(Saturation)되어야 한다"는 명시적 규칙이 존재합니다.
-    *   실제 소스 코드 `[rsrx_channel_manager.c](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c)`의 `uGetEffectiveHoldoffTarget` 함수(Line 3-15)는 다음과 같이 작성되어 있습니다.
-        ```c
-        static uint32_t uGetEffectiveHoldoffTarget(
-        	const rsrx_channel_manager_context_t * pxContext)
-        {
-        	uint32_t uTarget;
-        	uTarget = pxContext->xConfig.uPreferredRecoveryHoldoffSelections;
-        	if((UINT32_MAX - uTarget) < pxContext->uPreferredRecoveryPendingPenaltySelections)
-        	{
-        		return UINT32_MAX;
-        	}
-        	return uTarget + pxContext->uPreferredRecoveryPendingPenaltySelections;
-        }
-        ```
-*   **V&V 평가:** 
-    *   부호 없는 정수 덧셈 시 발생할 수 있는 오버플로우를 역산(`UINT32_MAX - uTarget`) 가드로 사전 감지하고, 한계 시 `UINT32_MAX`를 결정적으로 반환하도록 설계 규칙이 완벽히 구현되었습니다. 안전 코딩 및 연산 안정성이 검증되었습니다.
+    *   실제 소스 코드 `[rsrx_channel_manager.c](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c)`의 `uGetEffectiveHoldoffTarget` 함수(Line 3-15)는 다음과 같이 정수 오버플로우 가드(`UINT32_MAX - uTarget`)와 결합되어 완벽히 포화값(`UINT32_MAX`)을 반환하도록 정합 구현되었습니다.
 
 ### [Finding C] Codec 디코딩 시 NULL Argument 입력에 대한 조기 버퍼 클리어 정책 (COMPLIANT)
 *   **기술적 사실:**
-    *   상세 설계서 `[protocol_codec_lld_draft.md](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/docs/design/lld/protocol_codec_lld_draft.md)`의 Line 49 및 Line 63에는 "null 포인터가 수신될 시 `INVALID_ARGUMENT`로 즉시 거부하며, 출력 버퍼가 유효한 경우 출력 버퍼 데이터를 명시적으로 클리어(Clear)해야 한다"는 방어적 프로그래밍 규칙이 있습니다.
-    *   실제 소스 코드 `[rsrx_codec.c](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c)`의 `rsrx_codec_decode_frame` 함수(Line 283-304)는 다음과 같이 구현되어 있습니다.
-        ```c
-        if(pxMessage == (rsrx_decoded_message_t *)0)
-        {
-        	return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
-        }
-        vClearDecodedMessage(pxMessage);
-        if((pxFrame == (const rsrx_transport_frame_t *)0) ||
-        	(pxFrame->puPayload == (const uint8_t *)0))
-        {
-        	return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
-        }
-        ```
-*   **V&V 평가:**
-    *   출력 결과인 `pxMessage`가 NULL인지를 먼저 확인한 직후, `vClearDecodedMessage(pxMessage)`를 호출해 이전 트랜잭션의 잔여 오염 데이터를 완벽하게 지운 뒤, 입력 소스 포인터(`pxFrame`) 유효성을 검사합니다. 
-    *   오류가 나기 전에 출력 버퍼가 결정적으로 청소됨으로써 메모리 누출 및 오염 위험이 방지됩니다. 동일 로직이 `rsrx_codec_decode_frame_with_crc32` 및 `rsrx_codec_decode_rasta_sr_no_checksum` 등 코덱 디코딩 전체 진입점에 일관되게 구축되었음을 수동 감사로 입증했습니다.
+    *   상세 설계서 `[protocol_codec_lld_draft.md](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/docs/design/lld/protocol_codec_lld_draft.md)`의 Line 49 및 Line 63에 정의된 "null 포인터 수신 시 INVALID_ARGUMENT로 거부 전 출력 버퍼를 클리어한다"는 방어적 정책이 `[rsrx_codec.c](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c)` 내의 `rsrx_codec_decode_frame`을 비롯한 모든 디코딩 진입점에 일관되게 적용(`vClearDecodedMessage` 우선 호출 후 NULL 체크)되어 구현되었음을 검증했습니다.
 
 ### [Finding D] Unsigned 상수 접미사(U) 적용 상태 수동 감사 (COMPLIANT)
 *   **기술적 사실:**
     *   `[CODING_RULES.md](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/CODING_RULES.md)` 및 MISRA-C 규칙에 따라 모든 Unsigned integer 상수에는 명시적인 접미사(`U` 또는 `u`)를 사용해야 합니다.
-*   **V&V 평가:**
-    *   `rsrx_state_machine.c`, `rsrx_channel_manager.c`, `rsrx_codec.c` 소스 코드 전체를 대상으로 감사를 수행한 결과, `0U`, `1U`, `2U`, `4U`, `16U`, `0xFFU`, `3U`, `12U`, `0xEDB88320U` 등 모든 부호 없는 정수형 상수에 접미사 `U`가 정상 반영되어 있음을 수동 크로스 체크했습니다.
+    *   소스 코드 검토 결과 모든 부호 없는 정수형 상수에 접미사 `U`가 정상 반영되어 있음을 수동 크로스 체크했습니다.
 
 ---
 
 ## 3. Traceability Verification (추적성 검증)
 
-*   `[traceability_matrix_initial.md](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/docs/traceability/traceability_matrix_initial.md)`를 바탕으로 요구사항-설계-코드-테스트 및 리뷰 기록 간의 연계 관계를 추적했습니다.
-*   예시 항목 (`FR-003 / HZ-003` 채널 관리 요구사항):
-    *   *Design:* `HLD-001`, `LLD-014`
-    *   *Source:* `rsrx_channel_manager.h`, `rsrx_channel_manager.c`
-    *   *Functions:* `rsrx_channel_manager_init`, `_update_channel`, `_select_channel`, `_reset` 등
-    *   *Tests:* `TC-CHM-001` ~ `011`, `TC-CHM-053` ~ `061`
-    *   *Reviews:* `RV-283` ~ `RV-290`, `RV-381` (Flap Penalty 포화 검증), `RV-387` 등
-*   **V&V 평가:** 이중화 채널 관리, 상태 머신 오류 전이 등 핵심 안전 요구사항들이 설계서 및 실제 검증 코드(`test_rsrx_*.c`) 및 리뷰 검토 기록(`RV-*`)과 누락 없이 유기적으로 연계되어 관리 중임을 확인했습니다.
+*   `[traceability_matrix_initial.md](file:///wsl.localhost/Ubuntu-24.04/home/djnoh/repos/rasta-protocol/sil4/docs/traceability/traceability_matrix_initial.md)`를 바탕으로 요구사항-설계-코드-테스트 및 리뷰 기록 간의 연계 관계가 정상적으로 추적되고 있음을 확인했습니다.
 
 ---
 
 ## 4. Verification Run Result (검증 실행 결과)
 
-*   검증 스크립트 실행을 통해 다음 결과물이 일치함을 실증했습니다.
-    *   **Configure & Build:** 정상 통과 (Pass)
-    *   **Unit/Integration Executables Passed:** 13개 테스트 파일 전체 통과 (Pass)
-    *   **Compiler Warning Lines:** 0 (Pass)
-    *   **Cppcheck Static Analysis:** 0 (Pass)
+*   검증 스크립트 실행을 통해 Configure, Build, 13개 테스트 통과, Cppcheck 정적 분석 경고 0건 상태를 실증했습니다.
 
 ## 5. 결론 및 향후 과제
 
-*   전반적인 코드베이스는 드래프트 문서의 스펙을 높은 안정성으로 반영하고 있으며, 메모리 안전성과 형 변환 가드가 안전 규격에 완전히 부합합니다.
-*   식별된 유일한 문서적 미비점인 **`TS-002` 테스트 케이스 ID 중복오류(`TC-SM-012` 중복)**만 수정되면, 드래프트 베이스라인 하에서의 문서-코드 간의 정합성은 무결한 상태입니다.
+*   전반적인 코드베이스는 드래프트 문서의 스펙을 높은 수준으로 정합 반영하고 있으나, 비동기 멀티태스킹 환경을 대비한 **공개 API의 임계 영역 가드 보호 부재(Finding E)** 및 **세션 리셋 시 타이머 비활성화 누락(Finding F)**과 같은 설계상의 심각한 보안 리스크가 소스 코드에서 추가 발굴되었습니다.
+*   인증 가능한 무결성 획득을 위해 본 보고서의 Finding E와 Finding F에 대한 조속한 수정 보완 조치를 권고합니다.

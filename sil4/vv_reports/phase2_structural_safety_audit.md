@@ -82,6 +82,9 @@
 ### Unsigned 상수 접미사(U) 적용 상태 수동 검산
 *   **기술적 사실 및 근거:** `CODING_RULES.md`의 "Unsigned 정수 상수에 `U` 접미사 필수 사용" 규정에 따라, `rsrx_state_machine.c`, `rsrx_channel_manager.c`, `rsrx_codec.c` 내부의 모든 Unsigned integer 상수 선언부(`0U`, `1U`, `2U`, `4U`, `16U`, `0xFFU` 등)에 `U` 접미사가 누락 없이 정상 적용되어, 데이터 형 불일치로 인한 오작동 리스크를 차단함을 확인했습니다.
 
+### [V&V Finding E] 공개 API 계층의 비동기 호출 간 임계 영역(Critical Section) 보호 부재
+*   **기술적 사실 및 근거:** `rsrx_api.c` 내부의 `rsrx_session_send_application_data` 등 공개 API는 전송 실패 등의 상황 시 `vNotifyDirectReject`를 호출해 세션 데이터 `xLastReport`를 직접 갱신합니다. 만약 SafeRTOS 멀티태스킹 환경에서 전송 API 호출과 백그라운드 수신 이벤트 처리가 서로 다른 태스크에서 비동기로 병행될 경우, 동일 세션 및 리포트 데이터에 대한 **Data Race(데이터 경쟁)** 상태가 유발되어 상태가 오염될 잠재적 위험이 있습니다. `rsrx_platform.h`에 명시된 임계 영역 가드를 모든 공개 API 및 핸들러 진입점에 보호막으로 추가 적용할 것을 강력 권고합니다.
+
 ---
 
 ## 7. [V&V Backlog] 차기 마일스톤 진입 시 검증 필수 요구사항
