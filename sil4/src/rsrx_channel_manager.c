@@ -178,6 +178,34 @@ static void vPopulateHoldoffTelemetry(
 		(uPreferredIndex != pxContext->uActiveChannelIndex));
 }
 
+static void vClearSelectionResult(
+	rsrx_channel_selection_result_t * pxResult)
+{
+	if(pxResult == (rsrx_channel_selection_result_t *)0)
+	{
+		return;
+	}
+
+	pxResult->eSelectedChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxResult->uActiveChannelIndex = 0U;
+	pxResult->uAvailableChannelCount = 0U;
+	pxResult->uFailoverOccurred = 0U;
+	pxResult->uTotalSwitchCount = 0U;
+	pxResult->uUnavailableSelectionCount = 0U;
+	pxResult->uPreferredRecoveryHoldoffActive = 0U;
+	pxResult->uPreferredRecoveryHoldoffProgressCount = 0U;
+	pxResult->uPreferredRecoveryPendingPenaltyCount = 0U;
+	pxResult->uPreferredRecoveryPenaltyArmCount = 0U;
+	pxResult->uPreferredRecoveryPenaltyRearmCount = 0U;
+	pxResult->uPreferredRecoveryPenaltyAppliedCycleCount = 0U;
+	pxResult->uPreferredRecoveryPenaltyAbortCount = 0U;
+	pxResult->uPreferredRecoveryPenaltyClearCount = 0U;
+	pxResult->uPreferredRecoveryPenaltyBypassClearCount = 0U;
+	pxResult->uPreferredRecoveryPenaltyResetClearCount = 0U;
+	pxResult->uPreferredRecoveryHoldoffTargetCount = 0U;
+	pxResult->uPreferredRecoveryHoldoffRemainingCount = 0U;
+}
+
 rsrx_channel_manager_status_t rsrx_channel_manager_init(
 	rsrx_channel_manager_context_t * pxContext,
 	const rsrx_channel_manager_config_t * pxConfig)
@@ -237,6 +265,8 @@ rsrx_channel_manager_status_t rsrx_channel_manager_select_channel(
 	uint32_t uPreferredIsAvailable;
 	uint32_t uEffectiveHoldoffTarget;
 	uint32_t uHadHoldoffProgress;
+
+	vClearSelectionResult(pxResult);
 
 	if((pxContext == (rsrx_channel_manager_context_t *)0) ||
 		(pxResult == (rsrx_channel_selection_result_t *)0) ||

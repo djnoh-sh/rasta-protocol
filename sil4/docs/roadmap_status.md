@@ -12,7 +12,7 @@
 
 - 현재 전체 진행률 추정: `93~95%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 유지 중이며, residual은 구현 누락보다 next policy/security/evidence growth에 집중돼 있다.
-- 최근 업데이트: `TC-SUP-072`/`RV-425`로 transport supervisor public API invalid-argument 경로가 stale report pointer를 caller에게 남기지 않도록 output clear guard를 추가했다.
+- 최근 업데이트: `TC-CHM-059`/`RV-426`로 channel-manager invalid `select_channel` 경로가 stale selection result telemetry를 caller에게 남기지 않도록 output clear guard를 추가했다.
 - 다음 주력 단계: `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS target artifact acquisition`, `redundancy next policy growth`, `protocol sequencing next parity growth`, `non-none checksum algorithm implementation if selected`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
@@ -32,7 +32,7 @@
 | --- | --- | --- | --- |
 | Rules and Governance | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` | 유지 관리 |
 | Requirements and HLD | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` | 인증/타깃 요구사항 정제 |
-| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-425` | 새 policy/evidence growth마다 review/spec linkage 유지 |
+| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-426` | 새 policy/evidence growth마다 review/spec linkage 유지 |
 | State Machine / Orchestrator | In Progress | `rsrx_state_machine.*`, `rsrx_orchestrator.*`, unit tests, reset baseline evidence `RV-393..RV-394` | future state/action 확장 시 assertion density 유지 |
 | Platform / Transport Abstraction | Completed | `rsrx_platform.h`, `rsrx_transport.h`, contract tests | 포팅 시 target adapter evidence |
 | Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..012`, `TC-API-014..018` | target runtime binding, selected codec policy 유지 |
@@ -40,7 +40,7 @@
 | Protocol Context | In Progress | `TC-PC-004`, `TC-PC-019..032`, sequence/base/confirmation/API/recovery-cleanup/init-baseline/stale-output/payload-pointer/record-order/gap-record/resolve-failure-output guards | richer confirm/retransmission variants |
 | Transport Supervisor | In Progress | `TC-SUP-001..077`, `TC-INT-210`, runtime/channel/codec-status/SR-runtime/identity/redundancy-SR reports, public API guard evidence `RV-380`/`RV-425`, init switch/runtime-loop baseline evidence `RV-388..RV-389`, SR runtime wiring evidence `RV-408`, SR identity wiring evidence `RV-410`, redundancy-carried SR runtime wiring/integration evidence `RV-417..RV-418` | richer runtime fault-ordering variants |
 | Queue / Backpressure | In Progress | bounded `outstanding 1 + deferred 12`, queue/fairness/long-run matrices | future fairness/retry/runtime-feedback semantics |
-| Redundancy / Channel Manager | In Progress | holdoff `2..20`, flap-reset `2..19`, terminal outcome `3..19`, topology validation, unsupported `REDUNDANT` topology rejection, public API guard evidence `TC-CHM-059`/`RV-379`, flap-penalty saturation evidence `TC-CHM-060`/`RV-381`, reset audit preservation `TC-CHM-061`/`RV-387` | future redundancy mode and longer-run policy growth |
+| Redundancy / Channel Manager | In Progress | holdoff `2..20`, flap-reset `2..19`, terminal outcome `3..19`, topology validation, unsupported `REDUNDANT` topology rejection, public API guard evidence `TC-CHM-059`/`RV-379`/`RV-426`, flap-penalty saturation evidence `TC-CHM-060`/`RV-381`, reset audit preservation `TC-CHM-061`/`RV-387` | future redundancy mode and longer-run policy growth |
 | Codec / Security | In Progress | `TC-CODEC-001..050`, `TC-SUP-075..077`, `TC-INT-206`, `TC-INT-208`, `TC-INT-210`, `RV-337`, `RV-354..RV-367`, `RV-369..RV-378`, `RV-382..RV-384`, `RV-390`, `INV-RASTA-001`, `PDU-PARITY-001A..001F`, `RED-PDU-PARITY-001A`, `RV-399..RV-418` | non-none checksum algorithm implementation if selected, CRC-bearing redundancy PDU behavior if selected, optional MAC/security extension taxonomy, vendor security vectors |
 | Configuration Validation | Completed | `TC-CFG-003`, `TC-CFG-008..010` | deployment-specific policy additions |
 | Integration Verification | In Progress | `test_rsrx_session_supervisor_flow.c`, integration harness spec, `TC-INT-205..210` | target/longer-run integration expansion |
@@ -55,7 +55,7 @@
   - `cmake --build /tmp/sil4-build -j4`
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
-- Latest local verification was green after `RV-425`.
+- Latest local verification was green after `RV-426`.
 - Latest document-only planning update was `RV-415`; no host verification rerun was required for that document-only step.
 - External artifact references:
   - closed baseline fetch artifact: `sil4-ci-logs2/*`, source run `24661353609`, fetch run `24662424670`
@@ -69,7 +69,7 @@
 | --- | --- | --- | --- |
 | R-001 Protocol sequencing | Current inbound family, ordering representatives, init baseline, wrap guards, invalid type/confirmation/API guards, encode failure stale-output clear, resolve failure stale-event clear, outbound payload pointer guard, inbound stale/gap/zero record guard, adapter rejected-record side-effect guard, recovery cleanup state isolation, and unsequenced isolation are representative-closeout. | richer confirm/retransmission ordering variants, broader future message families, additional session-supervisor parity | next protocol family parity |
 | R-002 Runtime feedback | Runtime ordering, init report/runtime-loop baseline, public API guard rejection with stale report clear, budget scope, receive-error stage/status, topology-mismatch budget integration, and escalation telemetry are representative-closeout. | richer runtime-fault variants and queue-growth semantics | next runtime feedback policy |
-| R-003 Redundancy | Holdoff/flap/terminal parity, topology validation, unsupported `REDUNDANT` topology rejection, public API guard rejection, switch audit, reset audit preservation, penalty telemetry including saturation boundary, and stability wrappers are representative-closeout. | future redundancy mode growth and longer-run policy generalization | next redundancy policy |
+| R-003 Redundancy | Holdoff/flap/terminal parity, topology validation, unsupported `REDUNDANT` topology rejection, public API guard rejection with stale selection result clear, switch audit, reset audit preservation, penalty telemetry including saturation boundary, and stability wrappers are representative-closeout. | future redundancy mode growth and longer-run policy generalization | next redundancy policy |
 | R-004 Queue policy | Current `outstanding 1 + deferred 12` depth is closed across adapter, supervisor, integration, and API overflow paths. | future fairness, retry, runtime-feedback, or configured-capacity semantics | next queueing policy |
 | R-005 Evidence artifacts | Helper/tooling/runbooks, host stack/memory baseline, strict-warning policy, and baseline fetch artifact are prepared/closed as applicable. | first actual vendor finding export and target/vendor-qualified stack/memory-map evidence | vendor/target evidence execution |
 | R-006 Codec/security | Current codec skeleton, CRC32 optional path, typed status taxonomy, selected CRC integration, calculator injection seam, policy gates, encode/decode stale-output representative evidence, decode null-argument output clear, CRC32 truncated-output clear, CRC32 inner status preservation including transport metadata misuse, reserved-header tamper output clear, unsupported-message/reason output clear, trailing/truncated/oversized payload output clear, direct misuse event/channel output clear, `INV-RASTA-001` inventory, `PDU-PARITY-001` SR wire-profile draft, profile/packet/mapping contracts, fixed big-endian SR byte-order helpers, no-checksum SR common-header/payload encode/decode, selected no-checksum default profile, checksum profile unsupported-rejection boundary, codec-level timestamp/window admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, receiver/sender identity admission boundary, supervisor identity policy wiring, redundancy PDU metadata profile, redundancy CRC option admission boundary, option A no-CRC redundancy PDU encode/decode behavior, carried no-checksum SR decode bridge, supervisor redundancy-carried SR runtime selection, and redundancy-carried SR integration handoff are in place. | non-none selected checksum algorithm implementation only if controlled requirement selects it, CRC-bearing redundancy PDU behavior if selected, optional MAC/security extension definition, additional tamper taxonomy, vendor-oriented security negative vectors | keep selected no-checksum/CRC-option-A baselines; implement CRC-bearing behavior only if selected |

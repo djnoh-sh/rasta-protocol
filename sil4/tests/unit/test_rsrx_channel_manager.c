@@ -31,6 +31,58 @@ static rsrx_channel_manager_config_t xBuildConfig(void)
 	return xConfig;
 }
 
+static void vSeedSelectionResult(
+	rsrx_channel_selection_result_t * pxResult)
+{
+	pxResult->eSelectedChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	pxResult->uActiveChannelIndex = 7U;
+	pxResult->uAvailableChannelCount = 8U;
+	pxResult->uFailoverOccurred = 1U;
+	pxResult->uTotalSwitchCount = 9U;
+	pxResult->uUnavailableSelectionCount = 10U;
+	pxResult->uPreferredRecoveryHoldoffActive = 1U;
+	pxResult->uPreferredRecoveryHoldoffProgressCount = 11U;
+	pxResult->uPreferredRecoveryPendingPenaltyCount = 12U;
+	pxResult->uPreferredRecoveryPenaltyArmCount = 13U;
+	pxResult->uPreferredRecoveryPenaltyRearmCount = 14U;
+	pxResult->uPreferredRecoveryPenaltyAppliedCycleCount = 15U;
+	pxResult->uPreferredRecoveryPenaltyAbortCount = 16U;
+	pxResult->uPreferredRecoveryPenaltyClearCount = 17U;
+	pxResult->uPreferredRecoveryPenaltyBypassClearCount = 18U;
+	pxResult->uPreferredRecoveryPenaltyResetClearCount = 19U;
+	pxResult->uPreferredRecoveryHoldoffTargetCount = 20U;
+	pxResult->uPreferredRecoveryHoldoffRemainingCount = 21U;
+}
+
+static void vAssertSelectionResultCleared(
+	const rsrx_channel_selection_result_t * pxResult)
+{
+	vAssertTrue(pxResult->eSelectedChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "selection clear channel");
+	vAssertTrue(pxResult->uActiveChannelIndex == 0U, "selection clear active index");
+	vAssertTrue(pxResult->uAvailableChannelCount == 0U, "selection clear available count");
+	vAssertTrue(pxResult->uFailoverOccurred == 0U, "selection clear failover");
+	vAssertTrue(pxResult->uTotalSwitchCount == 0U, "selection clear switch count");
+	vAssertTrue(pxResult->uUnavailableSelectionCount == 0U, "selection clear unavailable count");
+	vAssertTrue(pxResult->uPreferredRecoveryHoldoffActive == 0U, "selection clear holdoff active");
+	vAssertTrue(pxResult->uPreferredRecoveryHoldoffProgressCount == 0U, "selection clear holdoff progress");
+	vAssertTrue(pxResult->uPreferredRecoveryPendingPenaltyCount == 0U, "selection clear pending penalty");
+	vAssertTrue(pxResult->uPreferredRecoveryPenaltyArmCount == 0U, "selection clear penalty arm");
+	vAssertTrue(pxResult->uPreferredRecoveryPenaltyRearmCount == 0U, "selection clear penalty rearm");
+	vAssertTrue(
+		pxResult->uPreferredRecoveryPenaltyAppliedCycleCount == 0U,
+		"selection clear penalty applied");
+	vAssertTrue(pxResult->uPreferredRecoveryPenaltyAbortCount == 0U, "selection clear penalty abort");
+	vAssertTrue(pxResult->uPreferredRecoveryPenaltyClearCount == 0U, "selection clear penalty clear");
+	vAssertTrue(
+		pxResult->uPreferredRecoveryPenaltyBypassClearCount == 0U,
+		"selection clear penalty bypass");
+	vAssertTrue(
+		pxResult->uPreferredRecoveryPenaltyResetClearCount == 0U,
+		"selection clear penalty reset");
+	vAssertTrue(pxResult->uPreferredRecoveryHoldoffTargetCount == 0U, "selection clear target");
+	vAssertTrue(pxResult->uPreferredRecoveryHoldoffRemainingCount == 0U, "selection clear remaining");
+}
+
 static void vTestChannelManagerRejectsInvalidTopologyConfig(void)
 {
 	rsrx_channel_manager_context_t xContext;
@@ -157,18 +209,22 @@ static void vTestChannelManagerRejectsInvalidApiArguments(void)
 			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
 		"out-of-range update index rejected");
 
+	vSeedSelectionResult(&xResult);
 	vAssertTrue(
 		rsrx_channel_manager_select_channel((rsrx_channel_manager_context_t *)0, &xResult) ==
 			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
 		"null select context rejected");
+	vAssertSelectionResultCleared(&xResult);
 	vAssertTrue(
 		rsrx_channel_manager_select_channel(&xContext, (rsrx_channel_selection_result_t *)0) ==
 			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
 		"null select result rejected");
+	vSeedSelectionResult(&xResult);
 	vAssertTrue(
 		rsrx_channel_manager_select_channel(&xUninitialized, &xResult) ==
 			RSRX_CHANNEL_MANAGER_STATUS_INVALID_ARGUMENT,
 		"uninitialized select rejected");
+	vAssertSelectionResultCleared(&xResult);
 
 	vAssertTrue(
 		rsrx_channel_manager_get_active_channel((const rsrx_channel_manager_context_t *)0) ==

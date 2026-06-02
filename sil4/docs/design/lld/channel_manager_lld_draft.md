@@ -48,6 +48,8 @@
   - update 대상 index의 configured channel id와 transport-reported channel id가 다르면 update를 거부한다.
   - runtime update는 channel availability만 변경하고 configured topology identity를 변경하지 않는다.
 - 선택 정책:
+  - `rsrx_channel_manager_select_channel`은 유효한 selection result pointer를 진입 시 neutral baseline으로 clear한다.
+  - invalid argument 또는 uninitialized context guard가 동작하면 caller가 이전 selection result를 새 결과로 오인하지 않도록 stale result telemetry를 남기지 않는다.
   - `ACTIVE_STANDBY`에서는 active channel이 down이면 available한 preferred channel 또는 best available channel로 즉시 전환한다.
   - active channel이 살아 있는 상태에서 preferred channel이 복구되면 `uPreferredRecoveryHoldoffSelections`만큼 연속 관측된 뒤에만 preferred channel로 복귀한다.
   - `uPreferredRecoveryHoldoffSelections == 0`이면 preferred recovery는 즉시 수행된다.
@@ -75,6 +77,7 @@
 - holdoff progress telemetry는 channel manager selection result에서 직접 제공되며, supervisor audit telemetry와 cross-check 가능해야 한다.
 - flap penalty가 configured된 경우 selection result의 pending penalty/penalty arm/rearm/applied/abort/ordinary-clear/bypass-clear/reset-clear count/holdoff target/remaining telemetry는 다음 preferred recovery cycle의 강화된 holdoff target과 cumulative arm/rearm/applied/abort/clear history를 caller에 직접 노출해야 한다.
 - effective holdoff target 계산은 base holdoff와 pending penalty의 합이 `UINT32_MAX`를 넘을 때 wraparound하지 않고 `UINT32_MAX`로 포화되어야 한다.
+- invalid `select_channel` 호출은 stale selection result를 남기지 않고 neutral result baseline을 제공해야 한다.
 
 ## Planned Verification
 
