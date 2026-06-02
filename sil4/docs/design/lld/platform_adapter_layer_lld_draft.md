@@ -56,6 +56,7 @@
   - explicit outbound application send는 `rsrx_transport_adapter_send_application_data`가 담당한다.
   - direct-send helper는 `DATA` frame과 `APPLICATION_DATA_REQUESTED` reason을 사용한다.
   - direct-send helper는 마지막 outbound reject 원인을 telemetry에 기록하고, accepted/queued application submit에서 원인을 clear한다.
+  - `rsrx_transport_adapter_receive_frame`은 유효한 output frame pointer를 진입 시 `INVALID/null/0/NONE` baseline으로 clear하여 invalid argument와 receive failure가 stale frame payload/event를 남기지 않도록 한다.
   - `rsrx_transport_adapter_query_channel`은 channel manager가 구성된 경우 모든 configured channel의 runtime state를 조회해 manager context에 반영한 뒤 active channel을 선택한다.
   - `rsrx_transport_adapter_query_channel`은 유효한 output channel state pointer를 진입 시 `INVALID/0` baseline으로 clear하여 invalid argument와 topology-refresh failure가 stale availability를 남기지 않도록 한다.
   - runtime state refresh 중 transport-reported channel id가 configured channel id와 맞지 않아 channel manager update가 거부되면 adapter query는 `RX_ERROR`로 실패를 전파한다.

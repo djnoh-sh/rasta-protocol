@@ -721,6 +721,27 @@ static void vTestTransportAdapterQueryChannelClearsInvalidOutput(void)
 	vAssertTrue(xChannelState.uIsAvailable == 0U, "query null context clears availability");
 }
 
+static void vTestTransportAdapterReceiveFrameClearsInvalidOutput(void)
+{
+	static const uint8_t auPayload[2] = { 0x12U, 0x34U };
+	rsrx_transport_frame_t xFrame;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vAssertTrue(
+		rsrx_transport_adapter_receive_frame(
+			(const rsrx_transport_adapter_context_t *)0,
+			&xFrame) == RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"receive null context rejected");
+	vAssertTrue(xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "receive null context clears channel id");
+	vAssertTrue(xFrame.puPayload == (const uint8_t *)0, "receive null context clears payload pointer");
+	vAssertTrue(xFrame.xPayloadLength == 0U, "receive null context clears payload length");
+	vAssertTrue(xFrame.eEventType == RSRX_TRANSPORT_EVENT_NONE, "receive null context clears event type");
+}
+
 static void vTestTransportAdapterRuntimeReset(void)
 {
 	rsrx_transport_adapter_context_t xTransportAdapterContext;
@@ -1560,6 +1581,7 @@ int main(void)
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestChannelManagerQueryRejectsTopologyMutation();
 	vTestTransportAdapterQueryChannelClearsInvalidOutput();
+	vTestTransportAdapterReceiveFrameClearsInvalidOutput();
 	vTestTransportAdapterRuntimeReset();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();

@@ -557,6 +557,14 @@ rsrx_transport_status_t rsrx_transport_adapter_receive_frame(
 	const rsrx_transport_adapter_context_t * pxContext,
 	rsrx_transport_frame_t * pxFrame)
 {
+	if(pxFrame != (rsrx_transport_frame_t *)0)
+	{
+		pxFrame->eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+		pxFrame->puPayload = (const uint8_t *)0;
+		pxFrame->xPayloadLength = 0U;
+		pxFrame->eEventType = RSRX_TRANSPORT_EVENT_NONE;
+	}
+
 	if((pxContext == (const rsrx_transport_adapter_context_t *)0) ||
 		(pxFrame == (rsrx_transport_frame_t *)0))
 	{
