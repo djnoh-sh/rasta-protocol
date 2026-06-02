@@ -698,10 +698,27 @@ static void vTestChannelManagerQueryRejectsTopologyMutation(void)
 			&xTransportAdapterContext,
 			&xChannelState) == RSRX_TRANSPORT_STATUS_RX_ERROR,
 		"query mutation rejected as rx error");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "query mutation clears channel id");
+	vAssertTrue(xChannelState.uIsAvailable == 0U, "query mutation clears availability");
 	vAssertTrue(
 		rsrx_channel_manager_get_active_channel(&xChannelManagerContext) == RSRX_TRANSPORT_CHANNEL_PRIMARY,
 		"query mutation active channel retained");
 	vAssertTrue(xTransportContext.uCallCount == 0U, "query mutation no send");
+}
+
+static void vTestTransportAdapterQueryChannelClearsInvalidOutput(void)
+{
+	rsrx_transport_channel_state_t xChannelState;
+
+	xChannelState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xChannelState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_transport_adapter_query_channel(
+			(const rsrx_transport_adapter_context_t *)0,
+			&xChannelState) == RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"query null context rejected");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "query null context clears channel id");
+	vAssertTrue(xChannelState.uIsAvailable == 0U, "query null context clears availability");
 }
 
 static void vTestTransportAdapterRuntimeReset(void)
@@ -1542,6 +1559,7 @@ int main(void)
 	vTestOutboundQueueBackpressureCloseoutMatrix();
 	vTestChannelManagerDrivenFailoverSelection();
 	vTestChannelManagerQueryRejectsTopologyMutation();
+	vTestTransportAdapterQueryChannelClearsInvalidOutput();
 	vTestTransportAdapterRuntimeReset();
 	vTestPreferredRecoveryHoldoffSelection();
 	vTestBusyRejectEscalationTelemetry();

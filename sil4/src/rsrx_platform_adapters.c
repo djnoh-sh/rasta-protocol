@@ -511,6 +511,12 @@ rsrx_transport_status_t rsrx_transport_adapter_query_channel(
 {
 	rsrx_channel_selection_result_t xSelection;
 
+	if(pxState != (rsrx_transport_channel_state_t *)0)
+	{
+		pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+		pxState->uIsAvailable = 0U;
+	}
+
 	if((pxContext == (const rsrx_transport_adapter_context_t *)0) ||
 		(pxState == (rsrx_transport_channel_state_t *)0))
 	{
