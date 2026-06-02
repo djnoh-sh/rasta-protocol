@@ -12,7 +12,7 @@
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 대체로 유지 중이나, 2026-06-02 comprehensive V&V audit에서 public API 비동기 임계영역과 reset-time timer quiescence가 신규 safety-critical implementation backlog로 식별됐다.
-- 최근 업데이트: 2026-06-02 comprehensive V&V audit를 검토해 `Finding E/F`를 구현 우선순위 backlog로 수용하고, `Finding A`의 TS-002 `TC-SM-012` 중복 ID를 `TC-SM-019`로 정정했다.
+- 최근 업데이트: 2026-06-02 comprehensive V&V audit를 검토해 `Finding E/F`를 구현 우선순위 backlog로 수용하고, `Finding A`의 TS-002 test ID를 `TC-SM-001..019` 연속/고유 번호로 정리했다.
 - 다음 주력 단계: `public API critical-section policy`, `session reset timer stop/quiescence policy`, `actual CI/vendor evidence execution`, `AM263Px/SafeRTOS target artifact acquisition`, `redundancy next policy growth`, `protocol sequencing next parity growth`
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
@@ -56,7 +56,7 @@
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
 - Latest local verification was green after `RV-431`.
-- Latest document-only planning update accepted comprehensive V&V 2026-06-02 Finding E/F as implementation backlog and corrected TS-002 duplicate `TC-SM-012`; no host verification rerun was required for that document-only step.
+- Latest document-only planning update accepted comprehensive V&V 2026-06-02 Finding E/F as implementation backlog and normalized TS-002 `TC-SM-001..019` IDs; no host verification rerun was required for that document-only step.
 - External artifact references:
   - closed baseline fetch artifact: `sil4-ci-logs2/*`, source run `24661353609`, fetch run `24662424670`
   - remaining vendor evidence artifact: raw vendor export or secured attachment reference, `vendor_export_context.env`, vendor rule/file/location metadata, capture or workflow run page
