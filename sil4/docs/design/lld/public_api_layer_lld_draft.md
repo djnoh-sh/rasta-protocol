@@ -52,6 +52,10 @@
 
 ## Functional Behavior
 
+- 공통 report output guard:
+  - report output pointer를 받는 public API 경로는 유효한 output pointer를 진입 시 null로 clear한다.
+  - invalid argument, uninitialized session, unsupported timer source guard가 동작하면 caller가 이전 report를 새 결과로 오인하지 않도록 stale report pointer를 남기지 않는다.
+  - 정상 처리 경로와 handled rejected transition 경로에서만 현재 session report pointer를 output에 설정한다.
 - `rsrx_session_init`:
   - `rsrx_validate_session_config`를 먼저 호출해 startup gate를 통과한 설정만 허용한다.
   - transport adapter, platform adapter, executor table, orchestrator를 순서대로 초기화한다.
@@ -89,6 +93,7 @@
   - application data callback 호출 검증
   - lifecycle callback 호출 검증
   - invalid argument 방어 검증
+  - invalid public API report pointer clear 검증
   - session reset이 channel-manager pending penalty를 함께 clear하는지 검증
   - session reset이 transport-adapter outstanding/deferred runtime state를 함께 clear하는지 검증
 - 분석 포인트:

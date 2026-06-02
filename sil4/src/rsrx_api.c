@@ -243,6 +243,11 @@ static rsrx_status_t eProcessSessionEvent(
 {
 	rsrx_status_t eStatus;
 
+	if(ppxReport != (const rsrx_orchestrator_report_t **)0)
+	{
+		*ppxReport = (const rsrx_orchestrator_report_t *)0;
+	}
+
 	if((pxSession == (rsrx_session_t *)0) ||
 		(ppxReport == (const rsrx_orchestrator_report_t **)0) ||
 		(pxSession->uInitialized == 0U))
@@ -434,6 +439,11 @@ rsrx_status_t rsrx_session_process_timer_expiry(
 	const rsrx_orchestrator_report_t ** ppxReport)
 {
 	rsrx_event_t eEvent;
+
+	if(ppxReport != (const rsrx_orchestrator_report_t **)0)
+	{
+		*ppxReport = (const rsrx_orchestrator_report_t *)0;
+	}
 
 	if(eMapTimerSourceToEvent(eTimerSource, &eEvent) != RSRX_STATUS_OK)
 	{

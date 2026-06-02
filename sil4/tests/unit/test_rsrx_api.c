@@ -757,11 +757,35 @@ static void vTestInvalidArguments(void)
 
 	vAssertTrue(rsrx_session_init((rsrx_session_t *)0, (const rsrx_session_config_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null session init");
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "invalid config rejected");
+	pxReport = &xSession.xLastReport;
 	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "start before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "start before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "connect before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "connect before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(rsrx_session_disconnect(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "disconnect before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "disconnect before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(
+		rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_HEARTBEAT, &pxReport) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"process event before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "process event before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(
+		rsrx_session_process_event((rsrx_session_t *)0, RSRX_EVENT_VALID_HEARTBEAT, &pxReport) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"process event null session");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "process event null session clears report");
 	vAssertTrue(rsrx_session_send_application_data((rsrx_session_t *)0, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "null session send");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "send before init");
+	pxReport = &xSession.xLastReport;
 	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_INVALID, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "invalid timer source");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "invalid timer source clears report");
+	pxReport = &xSession.xLastReport;
 	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_DIAGNOSTIC_FLUSH, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "unsupported timer source");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "unsupported timer source clears report");
 	vAssertTrue(rsrx_session_get_state((const rsrx_session_t *)0) == RSRX_STATE_INVALID, "get state null");
 	vAssertTrue(rsrx_session_reset((rsrx_session_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "reset null");
 }
