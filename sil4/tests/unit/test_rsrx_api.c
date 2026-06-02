@@ -400,8 +400,8 @@ static void vTestSessionInboundDataPath(void)
 			RSRX_MESSAGE_TYPE_DATA,
 			RSRX_EVENT_VALID_DATA,
 			RSRX_REASON_DATA_ACCEPTED,
-			5U,
-			4U,
+			1U,
+			1U,
 			{ 0x21U, 0x22U, 0x23U },
 			3U });
 
@@ -415,8 +415,8 @@ static void vTestSessionInboundDataPath(void)
 	vAssertTrue(xApplication.xLastIndication.puPayload != (const uint8_t *)0, "application data payload pointer");
 	vAssertTrue(xApplication.xLastIndication.puPayload[0] == 0x21U, "application data payload byte 0");
 	vAssertTrue(xApplication.xLastIndication.eReason == RSRX_REASON_DATA_ACCEPTED, "application data reason");
-	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 5U, "application data sequence");
-	vAssertTrue(xApplication.xLastIndication.uConfirmationNumber == 4U, "application data confirmation");
+	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 1U, "application data sequence");
+	vAssertTrue(xApplication.xLastIndication.uConfirmationNumber == 1U, "application data confirmation");
 	vAssertTrue(xTimer.uCallCount == 3U, "data timer restart");
 	vAssertTrue(xDiagnostics.uCallCount == 3U, "data diagnostic count");
 	vAssertTrue(xApiCounter.uCallCount == 3U, "data no api notify");

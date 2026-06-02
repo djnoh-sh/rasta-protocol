@@ -481,9 +481,13 @@ void rsrx_transport_adapter_record_inbound_message(
 		return;
 	}
 
-	(void)rsrx_protocol_context_record_inbound_message(
+	if(rsrx_protocol_context_record_inbound_message(
 		&pxContext->xProtocolContext,
-		pxMessage);
+		pxMessage) != RSRX_STATUS_OK)
+	{
+		return;
+	}
+
 	vClearOutstandingSend(pxContext, 0U, 1U);
 	pxContext->xLastInboundMessage = *pxMessage;
 	pxContext->uHasLastInboundMessage = 1U;

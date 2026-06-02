@@ -340,8 +340,8 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 			RSRX_MESSAGE_TYPE_DATA,
 			RSRX_EVENT_VALID_DATA,
 			RSRX_REASON_DATA_ACCEPTED,
-			7U,
-			2U,
+			1U,
+			1U,
 			{ 0xABU, 0xCDU },
 			2U });
 	{
@@ -350,8 +350,8 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 		vAssertTrue(pxLastMessage != (const rsrx_decoded_message_t *)0, "last inbound message available");
 		vAssertTrue(pxLastMessage->eMessageType == RSRX_MESSAGE_TYPE_DATA, "last inbound type");
 		vAssertTrue(pxLastMessage->eReason == RSRX_REASON_DATA_ACCEPTED, "last inbound reason");
-		vAssertTrue(pxLastMessage->uSequenceNumber == 7U, "last inbound sequence");
-		vAssertTrue(pxLastMessage->uConfirmationNumber == 2U, "last inbound confirmation");
+		vAssertTrue(pxLastMessage->uSequenceNumber == 1U, "last inbound sequence");
+		vAssertTrue(pxLastMessage->uConfirmationNumber == 1U, "last inbound confirmation");
 		vAssertTrue(pxLastMessage->xPayloadLength == 2U, "last inbound payload length");
 		vAssertTrue(pxLastMessage->auPayload[0] == 0xABU, "last inbound payload copied");
 	}
@@ -368,6 +368,63 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	vAssertTrue(xDiagnosticsContext.xLastRecord.eReason == RSRX_REASON_DATA_ACCEPTED, "diagnostic reason propagated");
 	vAssertTrue(xDiagnosticsContext.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_INFO, "diagnostic severity mapped");
 	vAssertTrue(xDiagnosticsContext.xLastRecord.uEventCounter == 1U, "diagnostic event counter incremented");
+}
+
+static void vTestTransportAdapterRejectedInboundRecordHasNoSideEffect(void)
+{
+	rsrx_transport_adapter_context_t xTransportAdapterContext;
+	rsrx_channel_manager_context_t xChannelManagerContext;
+	test_transport_context_t xTransportContext = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U, 1U, 1U, 0U };
+	rsrx_transport_port_t xTransportPort;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	static const uint8_t auPayload[2] = { 0x10U, 0x20U };
+	static uint8_t auFrameBuffer[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	const rsrx_decoded_message_t xGapMessage = {
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		2U,
+		1U,
+		{ 0x33U },
+		1U
+	};
+
+	xTransportPort.pvContext = &xTransportContext;
+	xTransportPort.pfSend = eTransportSend;
+	xTransportPort.pfReceive = eTransportReceive;
+	xTransportPort.pfQueryChannel = eTransportQuery;
+	vInitSingleChannelManager(&xChannelManagerContext, RSRX_TRANSPORT_CHANNEL_PRIMARY);
+	vAssertTrue(
+		rsrx_transport_adapter_init(
+			&xTransportAdapterContext,
+			&xTransportPort,
+			rsrx_codec_get_default_port(),
+			&xChannelManagerContext,
+			RSRX_TRANSPORT_CHANNEL_PRIMARY,
+			auFrameBuffer,
+			sizeof(auFrameBuffer)) == RSRX_TRANSPORT_STATUS_OK,
+		"rejected inbound side-effect adapter init");
+	vAssertTrue(
+		rsrx_transport_adapter_send_application_data(
+			&xTransportAdapterContext,
+			auPayload,
+			sizeof(auPayload)) == RSRX_TRANSPORT_STATUS_OK,
+		"rejected inbound side-effect outstanding send");
+	vAssertTrue(
+		rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U,
+		"rejected inbound side-effect outstanding present");
+
+	rsrx_transport_adapter_record_inbound_message(&xTransportAdapterContext, &xGapMessage);
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(&xTransportAdapterContext);
+	vAssertTrue(
+		rsrx_transport_adapter_has_outstanding_send(&xTransportAdapterContext) == 1U,
+		"rejected inbound side-effect outstanding retained");
+	vAssertTrue(
+		rsrx_transport_adapter_get_last_inbound_message(&xTransportAdapterContext) ==
+			(const rsrx_decoded_message_t *)0,
+		"rejected inbound side-effect cache absent");
+	vAssertTrue(pxTelemetry->uClearOnInboundCount == 0U, "rejected inbound side-effect no clear telemetry");
+	vAssertTrue(pxTelemetry->uDeferredDispatchCount == 0U, "rejected inbound side-effect no dispatch telemetry");
 }
 
 static void vTestApplicationDataSend(void)
@@ -519,7 +576,7 @@ static void vTestApplicationDataSend(void)
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.xPayloadLength = sizeof(auDataPayload);
 	rsrx_transport_adapter_record_inbound_message(
@@ -868,7 +925,7 @@ static void vTestApplicationDataDeferredQueueFifoDispatch(void)
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.xPayloadLength = sizeof(auFramePayload);
 	rsrx_transport_adapter_record_inbound_message(
@@ -963,7 +1020,7 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.xPayloadLength = sizeof(auFramePayload);
 	rsrx_transport_adapter_record_inbound_message(
@@ -999,7 +1056,7 @@ static void vTestApplicationDataDeferredQueueMixedClearLongRun(void)
 			sizeof(auSeventhPayload)) == RSRX_TRANSPORT_STATUS_OK,
 		"application data mixed clear long run seventh queued");
 
-	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 3U;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
 	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
 	rsrx_transport_adapter_record_inbound_message(
 		&xTransportAdapterContext,
@@ -1185,7 +1242,7 @@ static void vTestBusyRejectThresholdManualInboundResetSources(void)
 	xTransportAdapterContext.xLastInboundMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
 	xTransportAdapterContext.xLastInboundMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
-	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 2U;
+	xTransportAdapterContext.xLastInboundMessage.uSequenceNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.uConfirmationNumber = 1U;
 	xTransportAdapterContext.xLastInboundMessage.xPayloadLength = sizeof(auFramePayload);
 	rsrx_transport_adapter_record_inbound_message(
@@ -1475,6 +1532,7 @@ int main(void)
 	vTestPlatformExecutorTableBuild();
 	vTestTransportAdapterRejectsIncompleteCodecPort();
 	vTestTransportTimerAndDiagnosticsDispatch();
+	vTestTransportAdapterRejectedInboundRecordHasNoSideEffect();
 	vTestApplicationDataSend();
 	vTestApplicationDataDeferredQueueFifoDispatch();
 	vTestApplicationDataDeferredQueueMixedClearLongRun();

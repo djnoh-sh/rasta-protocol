@@ -51,7 +51,8 @@
   - mapped action은 `protocol context`를 통해 sequence/confirmation이 채워진 `codec encode request`로 변환된다.
   - channel manager가 구성된 경우 send 직전 active channel을 선택하고, 미구성 시에는 `eDefaultChannelId`를 사용한다.
   - encode 성공 시 encoded wire buffer를 `rsrx_transport_send_request_t`의 payload로 전달한다.
-  - inbound decoded message는 protocol context의 confirmation 기준을 갱신하고 마지막 inbound message cache를 보존한다.
+  - inbound decoded message는 protocol context의 confirmation 기준 갱신이 성공한 경우에만 outstanding send clear와 마지막 inbound message cache 보존을 수행한다.
+  - protocol context가 duplicate/lower/gap/zero sequence나 invalid confirmation으로 record를 거부하면 adapter layer는 inbound cache, outstanding send, deferred dispatch telemetry를 변경하지 않는다.
   - explicit outbound application send는 `rsrx_transport_adapter_send_application_data`가 담당한다.
   - direct-send helper는 `DATA` frame과 `APPLICATION_DATA_REQUESTED` reason을 사용한다.
   - direct-send helper는 마지막 outbound reject 원인을 telemetry에 기록하고, accepted/queued application submit에서 원인을 clear한다.
@@ -82,6 +83,7 @@
   - direct outbound application send 검증
   - outbound reject reason telemetry 검증
   - inbound message cache 조회 검증
+  - rejected inbound record side-effect 차단 검증
   - timer action -> timer command 변환 검증
   - diagnostics action -> diagnostic record 변환 검증
 - 분석 포인트:
