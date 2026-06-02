@@ -69,8 +69,21 @@
 
 ---
 
-## 5. [V&V Backlog] 차기 마일스톤 진입 시 검증 필수 요구사항
+## 5. 2026-06-02 상태 추적 및 업데이트 (V&V Follow-Up Audit - v1.7)
+
+상태 머신 상세 설계(LLD-002)와 소스코드 간의 정합성 대조를 종합 검토한 결과는 다음과 같습니다.
+
+### 설계 문서와 소스코드의 전이 규칙 100% 정합성 검증
+*   **기술적 사실 및 근거:** 상세 설계서 `connection_state_machine_lld_draft.md`에 기술된 28가지 명시적 전이 규칙(Explicit Transition Table)이 `rsrx_state_machine.c`의 `xTransitionRules[]` 정적 규칙 배열 내에 자료형(enum), 이벤트 매핑, 호출 액션 순서 및 개수까지 단 한 건의 오차도 없이 완전히 동일하게 매핑 및 일치 구현되어 있음을 확인했습니다.
+
+### 비허용 전이 가설의 보수적 Failsafe 전이 검증
+*   **기술적 사실 및 근거:** 설계상 `CONNECTING`, `ESTABLISHED`, `RETRANSMISSION_PENDING` 상태 중 정의되지 않은(비허용) 이벤트가 수신되었을 때 `vBuildSafeDisconnectResult`를 통해 보수적인 Failsafe 전이(`SAFE_DISCONNECT`)를 결정적으로 유발시키는 구조가 구현에 정상 투영되어 작동 중임을 대조 검증했습니다.
+
+---
+
+## 6. [V&V Backlog] 차기 마일스톤 진입 시 검증 필수 요구사항
 
 *   **SafeRTOS 이식성 검증 단계:** SafeRTOS 환경 이식 시 태스크 컨텍스트 내에서의 세션 상태 머신 Failsafe 전이 거동 및 인터럽트 서비스 루틴(ISR)과의 상태 동기화 설계 명세 확인.
+
 
 

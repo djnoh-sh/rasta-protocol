@@ -72,8 +72,21 @@
 
 ---
 
-## 6. [V&V Backlog] 차기 마일스톤 진입 시 검증 필수 요구사항
+## 6. 2026-06-02 상태 추적 및 업데이트 (V&V Follow-Up Audit - v1.7)
+
+상세 설계와 구현부 간의 메모리 한계성 및 오버플로우 방어 조건에 대한 검토 결과는 다음과 같습니다.
+
+### Channel Manager의 preferred recovery 수치 한계 포화 연산(Saturation) 검증
+*   **기술적 사실 및 근거:** `channel_manager_lld_draft.md`에 기술된 "holdoff target 계산 시 `UINT32_MAX` 오버플로우 포화 처리" 규칙이 `rsrx_channel_manager.c`의 `uGetEffectiveHoldoffTarget` 함수 내에 정수 오버플로우 방어벽(`(UINT32_MAX - uTarget) < pending_penalty`)과 결합되어 완벽하게 포화값(`UINT32_MAX`)을 결정적으로 반환하도록 설계-구현 정합성이 지켜지고 있음을 검증했습니다.
+
+### Unsigned 상수 접미사(U) 적용 상태 수동 검산
+*   **기술적 사실 및 근거:** `CODING_RULES.md`의 "Unsigned 정수 상수에 `U` 접미사 필수 사용" 규정에 따라, `rsrx_state_machine.c`, `rsrx_channel_manager.c`, `rsrx_codec.c` 내부의 모든 Unsigned integer 상수 선언부(`0U`, `1U`, `2U`, `4U`, `16U`, `0xFFU` 등)에 `U` 접미사가 누락 없이 정상 적용되어, 데이터 형 불일치로 인한 오작동 리스크를 차단함을 확인했습니다.
+
+---
+
+## 7. [V&V Backlog] 차기 마일스톤 진입 시 검증 필수 요구사항
 
 *   **타깃 이식성 검증 단계:** 외부에 주입될 하드웨어 CRC32 연산 어댑터와 portable C 코덱 간의 인터페이스 안전성(포인터 가드) 재검증 및 타깃 컴파일 빌드 기준의 최종 스택 바운드/링커 맵 메모리 분석 증빙 확보.
+
 
 
