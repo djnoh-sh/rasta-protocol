@@ -39,6 +39,8 @@
 ## Functional Behavior
 
 - `rsrx_validate_session_config`:
+  - 유효한 validation report pointer가 제공되면 진입 시 `OK/NONE` baseline으로 clear한다.
+  - report pointer가 null이어도 validation status는 직접 반환하며, helper 실패 경로에서 report를 역참조하지 않는다.
   - null config를 즉시 거부한다.
   - transport `send/receive/query` 포트가 모두 정의됐는지 확인한다.
   - codec `encode` 포트가 정의됐는지 확인한다.
@@ -62,6 +64,8 @@
   - 기본 channel / channel manager topology 일관성 검증
   - duplicate channel priority topology 거부 검증
   - invalid argument 검증
+  - validation report baseline clear 및 null-report 실패 경로 검증
 - 분석 포인트:
   - 검증 함수는 side effect가 없어야 한다.
   - 오류 분류와 오류 필드는 첫 실패 지점에서 결정적으로 고정되어야 한다.
+  - optional report pointer가 없어도 status 반환은 동일하게 deterministic해야 한다.

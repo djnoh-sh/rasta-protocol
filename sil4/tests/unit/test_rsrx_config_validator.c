@@ -280,10 +280,37 @@ static void vTestUnavailableSecurityPoliciesAreRejected(void)
 
 static void vTestInvalidArguments(void)
 {
+	rsrx_session_config_t xConfig;
 	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
 
+	xReport.eStatus = RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD;
+	xReport.eField = RSRX_CONFIG_FIELD_TRANSPORT_PORT;
 	vAssertTrue(rsrx_validate_session_config((const rsrx_session_config_t *)0, &xReport) == RSRX_CONFIG_STATUS_INVALID_ARGUMENT, "null config");
+	vAssertTrue(xReport.eStatus == RSRX_CONFIG_STATUS_INVALID_ARGUMENT, "null config status clears stale report");
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "null config field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xReport.eStatus = RSRX_CONFIG_STATUS_INVALID_RANGE;
+	xReport.eField = RSRX_CONFIG_FIELD_SUPERVISION_INTERVAL;
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_OK, "valid config clears stale report status");
+	vAssertTrue(xReport.eStatus == RSRX_CONFIG_STATUS_OK, "valid config report status clear");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "valid config report field clear");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.puFramePayload = (const uint8_t *)0;
+	xConfig.xFramePayloadLength = 4U;
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, (rsrx_config_validation_report_t *)0) ==
+			RSRX_CONFIG_STATUS_INCONSISTENT_VALUE,
+		"null report inconsistent payload safe");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uSupervisionIntervalNs = 0U;
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, (rsrx_config_validation_report_t *)0) ==
+			RSRX_CONFIG_STATUS_INVALID_RANGE,
+		"null report invalid interval safe");
 }
 
 int main(void)

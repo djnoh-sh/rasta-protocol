@@ -148,6 +148,11 @@ rsrx_config_status_t rsrx_validate_session_config(
 	const rsrx_session_config_t * pxConfig,
 	rsrx_config_validation_report_t * pxReport)
 {
+	vSetReport(
+		pxReport,
+		RSRX_CONFIG_STATUS_OK,
+		RSRX_CONFIG_FIELD_NONE);
+
 	if(pxConfig == (const rsrx_session_config_t *)0)
 	{
 		vSetReport(
@@ -259,27 +264,27 @@ rsrx_config_status_t rsrx_validate_session_config(
 
 	if(uPayloadIsConsistent(pxConfig, pxReport) == 0U)
 	{
-		return pxReport->eStatus;
+		return RSRX_CONFIG_STATUS_INCONSISTENT_VALUE;
 	}
 
 	if(uChannelManagerConfigIsValid(pxConfig, pxReport) == 0U)
 	{
-		return pxReport->eStatus;
+		return RSRX_CONFIG_STATUS_INVALID_RANGE;
 	}
 
 	if(uDefaultChannelBelongsToConfiguredTopology(pxConfig, pxReport) == 0U)
 	{
-		return pxReport->eStatus;
+		return RSRX_CONFIG_STATUS_INCONSISTENT_VALUE;
 	}
 
 	if(uCodecPortSatisfiesSecurityPolicy(pxConfig, pxReport) == 0U)
 	{
-		return pxReport->eStatus;
+		return RSRX_CONFIG_STATUS_INCONSISTENT_VALUE;
 	}
 
 	if(uIntervalsAreValid(pxConfig, pxReport) == 0U)
 	{
-		return pxReport->eStatus;
+		return RSRX_CONFIG_STATUS_INVALID_RANGE;
 	}
 
 	vSetReport(
