@@ -27,6 +27,27 @@ typedef struct
 	rsrx_outbound_send_telemetry_t xTelemetry;
 } rsrx_outbound_queue_snapshot_t;
 
+typedef struct
+{
+	rsrx_transport_channel_id_t eActiveChannelId;
+	rsrx_transport_channel_id_t ePreferredChannelId;
+	uint32_t uAvailableChannelCount;
+	uint32_t uLastSelectionWasFailover;
+	uint32_t uPreferredRecoveryStableSelectionCount;
+	uint32_t uPreferredRecoveryPendingPenaltySelections;
+	uint32_t uPreferredRecoveryPenaltyArmCount;
+	uint32_t uPreferredRecoveryPenaltyRearmCount;
+	uint32_t uPreferredRecoveryPenaltyAppliedCycleCount;
+	uint32_t uPreferredRecoveryPenaltyAbortCount;
+	uint32_t uPreferredRecoveryPenaltyClearCount;
+	uint32_t uPreferredRecoveryPenaltyBypassClearCount;
+	uint32_t uPreferredRecoveryPenaltyResetClearCount;
+	uint32_t uPreferredRecoveryHoldoffTargetCount;
+	uint32_t uPreferredRecoveryHoldoffRemainingCount;
+	uint32_t uTotalSwitchCount;
+	uint32_t uUnavailableSelectionCount;
+} rsrx_channel_manager_snapshot_t;
+
 typedef void (*rsrx_api_notification_fn)(
 	void * pvContext,
 	const rsrx_orchestrator_report_t * pxReport);
@@ -133,6 +154,10 @@ rsrx_status_t rsrx_session_copy_outbound_telemetry(
 rsrx_status_t rsrx_session_copy_outbound_queue_snapshot(
 	const rsrx_session_t * pxSession,
 	rsrx_outbound_queue_snapshot_t * pxSnapshot);
+
+rsrx_status_t rsrx_session_copy_channel_manager_snapshot(
+	const rsrx_session_t * pxSession,
+	rsrx_channel_manager_snapshot_t * pxSnapshot);
 
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession);

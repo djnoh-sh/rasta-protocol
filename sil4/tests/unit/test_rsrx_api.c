@@ -687,6 +687,65 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 	vAssertTrue(xQueueSnapshot.xTelemetry.uQueuedSendCount == 0U, "queue snapshot fail clears telemetry");
 }
 
+static void vTestSessionChannelManagerSnapshot(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_channel_manager_snapshot_t xSnapshot;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 856U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[2] = { 0x31U, 0x32U };
+
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	xConfig.xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.xChannelManagerConfig.uChannelCount = 2U;
+	xConfig.xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	xConfig.xChannelManagerConfig.axChannels[1].eChannelId =
+		RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xConfig.xChannelManagerConfig.axChannels[1].uIsAvailable = 1U;
+	xConfig.xChannelManagerConfig.axChannels[1].uPriority = 1U;
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "channel snapshot init");
+	vAssertTrue(
+		rsrx_session_copy_channel_manager_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"channel snapshot copy");
+	vAssertTrue(xSnapshot.eActiveChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel snapshot active");
+	vAssertTrue(xSnapshot.ePreferredChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel snapshot preferred");
+	vAssertTrue(xSnapshot.uAvailableChannelCount == 2U, "channel snapshot available count");
+	vAssertTrue(xSnapshot.uPreferredRecoveryHoldoffTargetCount == 2U, "channel snapshot holdoff target");
+	vAssertTrue(xSnapshot.uPreferredRecoveryHoldoffRemainingCount == 2U, "channel snapshot holdoff remaining");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "channel snapshot balanced");
+
+	xSnapshot.eActiveChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xSnapshot.ePreferredChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xSnapshot.uAvailableChannelCount = 77U;
+	xSnapshot.uTotalSwitchCount = 66U;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_copy_channel_manager_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"channel snapshot enter fail");
+	vAssertTrue(xSnapshot.eActiveChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel snapshot fail clears active");
+	vAssertTrue(xSnapshot.ePreferredChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel snapshot fail clears preferred");
+	vAssertTrue(xSnapshot.uAvailableChannelCount == 0U, "channel snapshot fail clears available");
+	vAssertTrue(xSnapshot.uTotalSwitchCount == 0U, "channel snapshot fail clears switch count");
+}
+
 static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 {
 	rsrx_session_t xSession;
@@ -1346,6 +1405,7 @@ int main(void)
 	vTestSessionInboundDataPath();
 	vTestSessionOutboundApplicationDataPath();
 	vTestSessionOutboundTelemetrySnapshot();
+	vTestSessionChannelManagerSnapshot();
 	vTestSessionOutboundApplicationBusyRejectThreshold();
 	vTestSessionRetransmissionPath();
 	vTestSessionSupervisionTimerExpiry();

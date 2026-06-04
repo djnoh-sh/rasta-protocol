@@ -49,6 +49,7 @@
 | `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
 | `rsrx_session_copy_outbound_telemetry` | function | outbound telemetry를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
 | `rsrx_session_copy_outbound_queue_snapshot` | function | outstanding/deferred state와 outbound telemetry를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
+| `rsrx_session_copy_channel_manager_snapshot` | function | channel-manager active/preferred channel 및 switch/holdoff audit state를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
 | `rsrx_session_get_state` | function | session 상태 조회 | 읽기 전용 |
 | `rsrx_session_reset` | function | session/orchestrator, transport-adapter runtime, channel-manager runtime 상태 초기화 | bounded 동작 |
 
@@ -92,6 +93,10 @@
   - critical-section 내부에서 outstanding send presence, deferred send presence/count, outbound telemetry를 한 번에 복사한다.
   - transport supervisor report refresh는 이 snapshot API를 사용해 session adapter internals 직접 읽기를 줄인다.
   - 실패 시 caller-owned snapshot 전체를 neutral baseline으로 clear한다.
+- `rsrx_session_copy_channel_manager_snapshot`:
+  - critical-section 내부에서 active/preferred channel, available-channel count, switch counters, unavailable-selection count, holdoff/penalty telemetry를 한 번에 복사한다.
+  - transport supervisor switch/holdoff report refresh는 이 snapshot API를 사용해 channel-manager internals 직접 읽기를 줄인다.
+  - 실패 시 caller-owned snapshot 전체를 neutral baseline으로 clear한다.
 - `rsrx_session_reset`:
   - reset 진입 직후 supervision 및 retransmission runtime timer에 `CANCEL` command를 발행한다.
   - timer cancel command는 `uDeadlineNs = 0`과 `RSRX_REASON_NONE`를 사용한다.
@@ -119,6 +124,7 @@
   - critical-section enter 실패 시 상태 변경 없는 deterministic reject 검증
   - outbound telemetry snapshot 성공 및 enter-failure output clear 검증
   - outbound queue snapshot 성공 및 enter-failure output clear 검증
+  - channel-manager snapshot 성공 및 enter-failure output clear 검증
 - 분석 포인트:
   - config validation 실패 시 partially initialized state가 남지 않는지 검토
   - session 초기화 순서와 partially initialized state 방지

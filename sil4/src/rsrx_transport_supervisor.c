@@ -3,23 +3,6 @@
 #define D_RSRX_SUPERVISOR_DEFAULT_SEND_FAILURE_BUDGET (2U)
 #define D_RSRX_SUPERVISOR_DEFAULT_RECEIVE_ERROR_BUDGET (2U)
 
-static uint32_t uCountAvailableChannels(
-	const rsrx_transport_supervisor_context_t * pxContext);
-
-static uint32_t uGetEffectiveHoldoffTarget(
-	const rsrx_channel_manager_context_t * pxChannelManager)
-{
-	uint32_t uTarget;
-
-	uTarget = pxChannelManager->xConfig.uPreferredRecoveryHoldoffSelections;
-	if((UINT32_MAX - uTarget) < pxChannelManager->uPreferredRecoveryPendingPenaltySelections)
-	{
-		return UINT32_MAX;
-	}
-
-	return uTarget + pxChannelManager->uPreferredRecoveryPendingPenaltySelections;
-}
-
 static void vResetSupervisorReport(
 	rsrx_transport_supervisor_report_t * pxReport)
 {
@@ -280,6 +263,7 @@ static void vRefreshChannelSwitchTelemetry(
 {
 	rsrx_transport_channel_id_t eCurrentActiveChannelId;
 	rsrx_transport_channel_id_t ePreferredChannelId;
+	rsrx_channel_manager_snapshot_t xSnapshot;
 	uint32_t uPreviousHoldoffProgressCount;
 
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
@@ -288,40 +272,40 @@ static void vRefreshChannelSwitchTelemetry(
 		return;
 	}
 
-	eCurrentActiveChannelId = rsrx_channel_manager_get_active_channel(
-		&pxContext->pxSession->xChannelManager);
+	if(rsrx_session_copy_channel_manager_snapshot(
+		pxContext->pxSession,
+		&xSnapshot) != RSRX_STATUS_OK)
+	{
+		return;
+	}
+
+	eCurrentActiveChannelId = xSnapshot.eActiveChannelId;
 	uPreviousHoldoffProgressCount =
 		pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount;
-	ePreferredChannelId =
-		pxContext->pxSession->xChannelManager.xConfig.axChannels[
-			pxContext->pxSession->xChannelManager.xConfig.uPreferredChannelIndex].eChannelId;
+	ePreferredChannelId = xSnapshot.ePreferredChannelId;
 	pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryStableSelectionCount;
+		xSnapshot.uPreferredRecoveryStableSelectionCount;
 	pxContext->xLastReport.uPreferredRecoveryPendingPenaltyCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPendingPenaltySelections;
+		xSnapshot.uPreferredRecoveryPendingPenaltySelections;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyArmCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyArmCount;
+		xSnapshot.uPreferredRecoveryPenaltyArmCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyRearmCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyRearmCount;
+		xSnapshot.uPreferredRecoveryPenaltyRearmCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyAppliedCycleCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyAppliedCycleCount;
+		xSnapshot.uPreferredRecoveryPenaltyAppliedCycleCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyAbortCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyAbortCount;
+		xSnapshot.uPreferredRecoveryPenaltyAbortCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyClearCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyClearCount;
+		xSnapshot.uPreferredRecoveryPenaltyClearCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyBypassClearCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyBypassClearCount;
+		xSnapshot.uPreferredRecoveryPenaltyBypassClearCount;
 	pxContext->xLastReport.uPreferredRecoveryPenaltyResetClearCount =
-		pxContext->pxSession->xChannelManager.uPreferredRecoveryPenaltyResetClearCount;
+		xSnapshot.uPreferredRecoveryPenaltyResetClearCount;
 	pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount =
-		uGetEffectiveHoldoffTarget(&pxContext->pxSession->xChannelManager);
+		xSnapshot.uPreferredRecoveryHoldoffTargetCount;
 	pxContext->xLastReport.uPreferredRecoveryHoldoffRemainingCount =
-		(pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount >
-			pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount) ?
-			(pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount -
-				pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount) :
-			0U;
-	pxContext->xLastReport.uAvailableChannelCount = uCountAvailableChannels(pxContext);
+		xSnapshot.uPreferredRecoveryHoldoffRemainingCount;
+	pxContext->xLastReport.uAvailableChannelCount = xSnapshot.uAvailableChannelCount;
 	pxContext->xLastReport.uPreferredRecoveryHoldoffActive = (uint32_t)(
 		(pxContext->xLastReport.uPreferredRecoveryHoldoffTargetCount > 0U) &&
 		(pxContext->xLastReport.uPreferredRecoveryHoldoffProgressCount <
@@ -331,11 +315,11 @@ static void vRefreshChannelSwitchTelemetry(
 		(eCurrentActiveChannelId != ePreferredChannelId) &&
 		(pxContext->xLastReport.uAvailableChannelCount > 1U));
 	pxContext->xLastReport.uChannelSwitchCount =
-		pxContext->pxSession->xChannelManager.uTotalSwitchCount;
+		xSnapshot.uTotalSwitchCount;
 	pxContext->xLastReport.uLastChannelSwitchOccurred =
-		pxContext->pxSession->xChannelManager.uLastSelectionWasFailover;
+		xSnapshot.uLastSelectionWasFailover;
 	pxContext->xLastReport.uChannelUnavailableSelectionCount =
-		pxContext->pxSession->xChannelManager.uUnavailableSelectionCount;
+		xSnapshot.uUnavailableSelectionCount;
 	pxContext->xLastReport.eLastSwitchTriggerEventType = eTriggerEventType;
 	pxContext->xLastReport.eLastSwitchTriggerChannelId = eTriggerChannelId;
 	if(eTriggerEventType == RSRX_TRANSPORT_EVENT_CHANNEL_UP)
@@ -627,37 +611,6 @@ static void vRefreshChannelSwitchTelemetry(
 		pxContext->xLastReport.eLastSwitchFromChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 		pxContext->xLastReport.eLastSwitchToChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	}
-}
-
-static uint32_t uCountAvailableChannels(
-	const rsrx_transport_supervisor_context_t * pxContext)
-{
-	const rsrx_channel_manager_context_t * pxChannelManager;
-	uint32_t uIndex;
-	uint32_t uCount;
-
-	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
-		(pxContext->pxSession == (const rsrx_session_t *)0))
-	{
-		return 0U;
-	}
-
-	pxChannelManager = &pxContext->pxSession->xChannelManager;
-	if(pxChannelManager->uInitialized == 0U)
-	{
-		return pxContext->xLastReport.xLastChannelState.uIsAvailable;
-	}
-
-	uCount = 0U;
-	for(uIndex = 0U; uIndex < pxChannelManager->xConfig.uChannelCount; ++uIndex)
-	{
-		if(pxChannelManager->xConfig.axChannels[uIndex].uIsAvailable != 0U)
-		{
-			uCount++;
-		}
-	}
-
-	return uCount;
 }
 
 static void vRefreshOutboundQueueTelemetry(

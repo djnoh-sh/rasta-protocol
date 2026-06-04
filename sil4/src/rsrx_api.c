@@ -92,6 +92,67 @@ static void vClearOutboundQueueSnapshot(
 	vClearOutboundTelemetry(&pxSnapshot->xTelemetry);
 }
 
+static void vClearChannelManagerSnapshot(
+	rsrx_channel_manager_snapshot_t * pxSnapshot)
+{
+	if(pxSnapshot == (rsrx_channel_manager_snapshot_t *)0)
+	{
+		return;
+	}
+
+	pxSnapshot->eActiveChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxSnapshot->ePreferredChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxSnapshot->uAvailableChannelCount = 0U;
+	pxSnapshot->uLastSelectionWasFailover = 0U;
+	pxSnapshot->uPreferredRecoveryStableSelectionCount = 0U;
+	pxSnapshot->uPreferredRecoveryPendingPenaltySelections = 0U;
+	pxSnapshot->uPreferredRecoveryPenaltyArmCount = 0U;
+	pxSnapshot->uPreferredRecoveryPenaltyRearmCount = 0U;
+	pxSnapshot->uPreferredRecoveryPenaltyAppliedCycleCount = 0U;
+	pxSnapshot->uPreferredRecoveryPenaltyAbortCount = 0U;
+	pxSnapshot->uPreferredRecoveryPenaltyClearCount = 0U;
+	pxSnapshot->uPreferredRecoveryPenaltyBypassClearCount = 0U;
+	pxSnapshot->uPreferredRecoveryPenaltyResetClearCount = 0U;
+	pxSnapshot->uPreferredRecoveryHoldoffTargetCount = 0U;
+	pxSnapshot->uPreferredRecoveryHoldoffRemainingCount = 0U;
+	pxSnapshot->uTotalSwitchCount = 0U;
+	pxSnapshot->uUnavailableSelectionCount = 0U;
+}
+
+static uint32_t uGetChannelManagerEffectiveHoldoffTarget(
+	const rsrx_channel_manager_context_t * pxChannelManager)
+{
+	uint32_t uTarget;
+
+	uTarget = pxChannelManager->xConfig.uPreferredRecoveryHoldoffSelections;
+	if((UINT32_MAX - uTarget) <
+		pxChannelManager->uPreferredRecoveryPendingPenaltySelections)
+	{
+		return UINT32_MAX;
+	}
+
+	return uTarget +
+		pxChannelManager->uPreferredRecoveryPendingPenaltySelections;
+}
+
+static uint32_t uCountChannelManagerAvailableChannels(
+	const rsrx_channel_manager_context_t * pxChannelManager)
+{
+	uint32_t uIndex;
+	uint32_t uCount;
+
+	uCount = 0U;
+	for(uIndex = 0U; uIndex < pxChannelManager->xConfig.uChannelCount; ++uIndex)
+	{
+		if(pxChannelManager->xConfig.axChannels[uIndex].uIsAvailable != 0U)
+		{
+			uCount++;
+		}
+	}
+
+	return uCount;
+}
+
 static rsrx_diagnostic_code_t eResolveBusyRejectDiagnostic(
 	const rsrx_session_t * pxSession)
 {
@@ -762,6 +823,90 @@ rsrx_status_t rsrx_session_copy_outbound_queue_snapshot(
 	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
 	{
 		vClearOutboundQueueSnapshot(pxSnapshot);
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
+rsrx_status_t rsrx_session_copy_channel_manager_snapshot(
+	const rsrx_session_t * pxSession,
+	rsrx_channel_manager_snapshot_t * pxSnapshot)
+{
+	const rsrx_channel_manager_context_t * pxChannelManager;
+
+	vClearChannelManagerSnapshot(pxSnapshot);
+
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U) ||
+		(pxSnapshot == (rsrx_channel_manager_snapshot_t *)0))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxChannelManager = &pxSession->xChannelManager;
+	if(pxChannelManager->uInitialized == 0U)
+	{
+		(void)eExitSessionCriticalSection(pxSession);
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxChannelManager->uActiveChannelIndex < pxChannelManager->xConfig.uChannelCount)
+	{
+		pxSnapshot->eActiveChannelId =
+			pxChannelManager->xConfig.axChannels[
+				pxChannelManager->uActiveChannelIndex].eChannelId;
+	}
+	if(pxChannelManager->xConfig.uPreferredChannelIndex <
+		pxChannelManager->xConfig.uChannelCount)
+	{
+		pxSnapshot->ePreferredChannelId =
+			pxChannelManager->xConfig.axChannels[
+				pxChannelManager->xConfig.uPreferredChannelIndex].eChannelId;
+	}
+	pxSnapshot->uAvailableChannelCount =
+		uCountChannelManagerAvailableChannels(pxChannelManager);
+	pxSnapshot->uLastSelectionWasFailover =
+		pxChannelManager->uLastSelectionWasFailover;
+	pxSnapshot->uPreferredRecoveryStableSelectionCount =
+		pxChannelManager->uPreferredRecoveryStableSelectionCount;
+	pxSnapshot->uPreferredRecoveryPendingPenaltySelections =
+		pxChannelManager->uPreferredRecoveryPendingPenaltySelections;
+	pxSnapshot->uPreferredRecoveryPenaltyArmCount =
+		pxChannelManager->uPreferredRecoveryPenaltyArmCount;
+	pxSnapshot->uPreferredRecoveryPenaltyRearmCount =
+		pxChannelManager->uPreferredRecoveryPenaltyRearmCount;
+	pxSnapshot->uPreferredRecoveryPenaltyAppliedCycleCount =
+		pxChannelManager->uPreferredRecoveryPenaltyAppliedCycleCount;
+	pxSnapshot->uPreferredRecoveryPenaltyAbortCount =
+		pxChannelManager->uPreferredRecoveryPenaltyAbortCount;
+	pxSnapshot->uPreferredRecoveryPenaltyClearCount =
+		pxChannelManager->uPreferredRecoveryPenaltyClearCount;
+	pxSnapshot->uPreferredRecoveryPenaltyBypassClearCount =
+		pxChannelManager->uPreferredRecoveryPenaltyBypassClearCount;
+	pxSnapshot->uPreferredRecoveryPenaltyResetClearCount =
+		pxChannelManager->uPreferredRecoveryPenaltyResetClearCount;
+	pxSnapshot->uPreferredRecoveryHoldoffTargetCount =
+		uGetChannelManagerEffectiveHoldoffTarget(pxChannelManager);
+	pxSnapshot->uPreferredRecoveryHoldoffRemainingCount =
+		(pxSnapshot->uPreferredRecoveryHoldoffTargetCount >
+			pxSnapshot->uPreferredRecoveryStableSelectionCount) ?
+			(pxSnapshot->uPreferredRecoveryHoldoffTargetCount -
+				pxSnapshot->uPreferredRecoveryStableSelectionCount) :
+			0U;
+	pxSnapshot->uTotalSwitchCount =
+		pxChannelManager->uTotalSwitchCount;
+	pxSnapshot->uUnavailableSelectionCount =
+		pxChannelManager->uUnavailableSelectionCount;
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		vClearChannelManagerSnapshot(pxSnapshot);
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
