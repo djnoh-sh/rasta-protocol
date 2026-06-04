@@ -41,6 +41,16 @@ typedef struct
 	uint32_t uCallCount;
 } test_diagnostics_context_t;
 
+typedef struct
+{
+	uint32_t uEnterCount;
+	uint32_t uExitCount;
+	uint32_t uActiveDepth;
+	uint32_t uMaxDepth;
+	uint32_t uFailEnter;
+	uint32_t uFailExit;
+} test_critical_section_context_t;
+
 static void vAssertTrue(int iCondition, const char * pcMessage)
 {
 	if(iCondition == 0)
@@ -52,6 +62,17 @@ static void vAssertTrue(int iCondition, const char * pcMessage)
 
 static rsrx_timer_command_t axTimerCommandHistory[64];
 static uint32_t uTimerCommandHistoryCount;
+static test_critical_section_context_t xCriticalSectionContext;
+
+static void vResetCriticalSectionContext(void)
+{
+	xCriticalSectionContext.uEnterCount = 0U;
+	xCriticalSectionContext.uExitCount = 0U;
+	xCriticalSectionContext.uActiveDepth = 0U;
+	xCriticalSectionContext.uMaxDepth = 0U;
+	xCriticalSectionContext.uFailEnter = 0U;
+	xCriticalSectionContext.uFailExit = 0U;
+}
 
 /* cppcheck-suppress constParameterCallback */
 static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
@@ -84,13 +105,48 @@ static rsrx_platform_status_t eDiagnosticWrite(void * pvContext, const rsrx_diag
 
 static rsrx_platform_status_t eCriticalSectionEnter(void * pvContext)
 {
-	(void)pvContext;
+	test_critical_section_context_t * pxContext =
+		(test_critical_section_context_t *)pvContext;
+	if(pxContext == (test_critical_section_context_t *)0)
+	{
+		return RSRX_PLATFORM_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->uEnterCount++;
+	if(pxContext->uFailEnter != 0U)
+	{
+		return RSRX_PLATFORM_STATUS_UNAVAILABLE;
+	}
+
+	pxContext->uActiveDepth++;
+	if(pxContext->uActiveDepth > pxContext->uMaxDepth)
+	{
+		pxContext->uMaxDepth = pxContext->uActiveDepth;
+	}
+
 	return RSRX_PLATFORM_STATUS_OK;
 }
 
 static rsrx_platform_status_t eCriticalSectionExit(void * pvContext)
 {
-	(void)pvContext;
+	test_critical_section_context_t * pxContext =
+		(test_critical_section_context_t *)pvContext;
+	if(pxContext == (test_critical_section_context_t *)0)
+	{
+		return RSRX_PLATFORM_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->uExitCount++;
+	if(pxContext->uFailExit != 0U)
+	{
+		return RSRX_PLATFORM_STATUS_UNAVAILABLE;
+	}
+
+	if(pxContext->uActiveDepth > 0U)
+	{
+		pxContext->uActiveDepth--;
+	}
+
 	return RSRX_PLATFORM_STATUS_OK;
 }
 
@@ -176,7 +232,8 @@ static void vFillConfig(
 	pxConfig->xPlatformPorts.xTimer.pfCommand = eTimerCommand;
 	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pxDiagnostics;
 	pxConfig->xPlatformPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
-	pxConfig->xPlatformPorts.xCriticalSection.pvContext = (void *)0;
+	vResetCriticalSectionContext();
+	pxConfig->xPlatformPorts.xCriticalSection.pvContext = &xCriticalSectionContext;
 	pxConfig->xPlatformPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
 	pxConfig->xPlatformPorts.xCriticalSection.pfExit = eCriticalSectionExit;
 	pxConfig->eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
@@ -1138,6 +1195,69 @@ static void vTestSessionOutboundApplicationDataStateGuards(void)
 	vAssertTrue(rsrx_session_send_application_data(&xSession, (const uint8_t *)0, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "send guard null payload");
 }
 
+static void vTestSessionCriticalSectionBalancedPublicApi(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1300U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x81U, 0x82U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "critical section init");
+
+	vResetCriticalSectionContext();
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK, "critical section start");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "critical section start enter");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 1U, "critical section start exit");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "critical section start balanced");
+	vAssertTrue(xCriticalSectionContext.uMaxDepth == 1U, "critical section start non-nested");
+
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "critical section connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport) == RSRX_STATUS_OK, "critical section handshake");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "critical section get state");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "critical section send");
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "critical section reset");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "critical section balanced total");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "critical section final depth");
+	vAssertTrue(xCriticalSectionContext.uMaxDepth == 1U, "critical section public api non-nested");
+}
+
+static void vTestSessionCriticalSectionEnterFailureBlocksEvent(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1400U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x91U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "critical section fail init");
+
+	pxReport = &xSession.xLastReport;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "critical section enter fail start");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "critical section enter fail clears report");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "critical section enter fail counted");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 0U, "critical section enter fail no exit");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "critical section enter fail no depth");
+	vAssertTrue(xApiCounter.uCallCount == 0U, "critical section enter fail no api callback");
+	vAssertTrue(xDiagnostics.uCallCount == 0U, "critical section enter fail no diagnostic");
+	vAssertTrue(rsrx_orchestrator_get_state(&xSession.xOrchestrator) == RSRX_STATE_UNINITIALIZED, "critical section enter fail state unchanged");
+}
+
 int main(void)
 {
 	vTestSessionStartupAndConnect();
@@ -1159,6 +1279,8 @@ int main(void)
 	vTestSessionResetCancelsRuntimeTimers();
 	vTestSessionRestartAfterReset();
 	vTestSessionOutboundApplicationDataStateGuards();
+	vTestSessionCriticalSectionBalancedPublicApi();
+	vTestSessionCriticalSectionEnterFailureBlocksEvent();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
 

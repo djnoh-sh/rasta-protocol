@@ -56,6 +56,11 @@
   - report output pointer를 받는 public API 경로는 유효한 output pointer를 진입 시 null로 clear한다.
   - invalid argument, uninitialized session, unsupported timer source guard가 동작하면 caller가 이전 report를 새 결과로 오인하지 않도록 stale report pointer를 남기지 않는다.
   - 정상 처리 경로와 handled rejected transition 경로에서만 현재 session report pointer를 output에 설정한다.
+- 공통 critical-section guard:
+  - initialized session의 shared runtime state를 읽거나 변경하는 public API 경로는 `rsrx_critical_section_port_t`의 `pfEnter`/`pfExit`를 사용한다.
+  - enter 실패 시 상태 변경, callback, diagnostic side effect 없이 `INVALID_ARGUMENT` 또는 invalid read baseline으로 거부한다.
+  - 정상/거부 처리 후 exit 실패가 감지되면 caller-facing report output은 stale pointer로 남기지 않는다.
+  - 현재 portable host baseline은 balanced entry/exit를 검증하지만, callback 재진입 정책과 SafeRTOS target binding evidence는 target/concurrency closeout residual로 유지한다.
 - `rsrx_session_init`:
   - `rsrx_validate_session_config`를 먼저 호출해 startup gate를 통과한 설정만 허용한다.
   - transport adapter, platform adapter, executor table, orchestrator를 순서대로 초기화한다.
@@ -100,6 +105,8 @@
   - session reset이 channel-manager pending penalty를 함께 clear하는지 검증
   - session reset이 transport-adapter outstanding/deferred runtime state를 함께 clear하는지 검증
   - session reset이 supervision/retransmission runtime timer를 cancel하는지 검증
+  - public API critical-section enter/exit 균형 검증
+  - critical-section enter 실패 시 상태 변경 없는 deterministic reject 검증
 - 분석 포인트:
   - config validation 실패 시 partially initialized state가 남지 않는지 검토
   - session 초기화 순서와 partially initialized state 방지

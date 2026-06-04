@@ -171,6 +171,56 @@ static rsrx_status_t eCancelSessionRuntimeTimers(
 	return RSRX_STATUS_OK;
 }
 
+static rsrx_status_t eEnterSessionCriticalSection(
+	const rsrx_session_t * pxSession)
+{
+	const rsrx_critical_section_port_t * pxCriticalSection;
+
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxCriticalSection = &pxSession->xPlatformAdapter.xPlatformPorts.xCriticalSection;
+	if(pxCriticalSection->pfEnter == (rsrx_critical_section_enter_fn)0)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxCriticalSection->pfEnter(pxCriticalSection->pvContext) != RSRX_PLATFORM_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
+static rsrx_status_t eExitSessionCriticalSection(
+	const rsrx_session_t * pxSession)
+{
+	const rsrx_critical_section_port_t * pxCriticalSection;
+
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxCriticalSection = &pxSession->xPlatformAdapter.xPlatformPorts.xCriticalSection;
+	if(pxCriticalSection->pfExit == (rsrx_critical_section_exit_fn)0)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxCriticalSection->pfExit(pxCriticalSection->pvContext) != RSRX_PLATFORM_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
 static void vNotifyDirectReject(
 	rsrx_session_t * pxSession,
 	rsrx_reason_code_t eReason,
@@ -300,6 +350,11 @@ static rsrx_status_t eProcessSessionEvent(
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
 	eStatus = rsrx_orchestrator_process_event(
 		&pxSession->xOrchestrator,
 		eEvent,
@@ -338,6 +393,12 @@ static rsrx_status_t eProcessSessionEvent(
 	}
 
 	*ppxReport = &pxSession->xLastReport;
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		*ppxReport = (const rsrx_orchestrator_report_t *)0;
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
 
 	return eStatus;
 }
@@ -504,6 +565,7 @@ rsrx_status_t rsrx_session_send_application_data(
 	size_t xPayloadLength)
 {
 	rsrx_transport_status_t eSendStatus;
+	rsrx_status_t eStatus;
 
 	if((pxSession == (rsrx_session_t *)0) ||
 		(pxSession->uInitialized == 0U) ||
@@ -512,8 +574,17 @@ rsrx_status_t rsrx_session_send_application_data(
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
-	if(rsrx_session_get_state(pxSession) != RSRX_STATE_ESTABLISHED)
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
 	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_orchestrator_get_state(&pxSession->xOrchestrator) != RSRX_STATE_ESTABLISHED)
+	{
+		if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+		{
+			return RSRX_STATUS_INVALID_ARGUMENT;
+		}
 		return RSRX_STATUS_INVALID_STATE;
 	}
 
@@ -527,35 +598,72 @@ rsrx_status_t rsrx_session_send_application_data(
 			pxSession,
 			RSRX_REASON_APPLICATION_DATA_REQUESTED,
 			eResolveBusyRejectDiagnostic(pxSession));
-		return RSRX_STATUS_REJECTED;
+		eStatus = RSRX_STATUS_REJECTED;
+	}
+	else
+	{
+		eStatus = RSRX_STATUS_OK;
 	}
 
-	return RSRX_STATUS_OK;
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return eStatus;
 }
 
 const rsrx_outbound_send_telemetry_t * rsrx_session_get_outbound_telemetry(
 	const rsrx_session_t * pxSession)
 {
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+
 	if((pxSession == (const rsrx_session_t *)0) ||
 		(pxSession->uInitialized == 0U))
 	{
 		return (const rsrx_outbound_send_telemetry_t *)0;
 	}
 
-	return rsrx_transport_adapter_get_outbound_telemetry(
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return (const rsrx_outbound_send_telemetry_t *)0;
+	}
+
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(
 		&pxSession->xTransportAdapter);
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return (const rsrx_outbound_send_telemetry_t *)0;
+	}
+
+	return pxTelemetry;
 }
 
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession)
 {
+	rsrx_state_t eState;
+
 	if((pxSession == (const rsrx_session_t *)0) ||
 		(pxSession->uInitialized == 0U))
 	{
 		return RSRX_STATE_INVALID;
 	}
 
-	return rsrx_orchestrator_get_state(&pxSession->xOrchestrator);
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATE_INVALID;
+	}
+
+	eState = rsrx_orchestrator_get_state(&pxSession->xOrchestrator);
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATE_INVALID;
+	}
+
+	return eState;
 }
 
 rsrx_status_t rsrx_session_reset(
@@ -570,8 +678,14 @@ rsrx_status_t rsrx_session_reset(
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
 	if(eCancelSessionRuntimeTimers(pxSession) != RSRX_STATUS_OK)
 	{
+		(void)eExitSessionCriticalSection(pxSession);
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
@@ -579,6 +693,7 @@ rsrx_status_t rsrx_session_reset(
 	eChannelStatus = rsrx_channel_manager_reset(&pxSession->xChannelManager);
 	if(eChannelStatus != RSRX_CHANNEL_MANAGER_STATUS_OK)
 	{
+		(void)eExitSessionCriticalSection(pxSession);
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
@@ -586,6 +701,11 @@ rsrx_status_t rsrx_session_reset(
 	if(eResetStatus == RSRX_STATUS_OK)
 	{
 		vResetLastReport(pxSession);
+	}
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 
 	return eResetStatus;
