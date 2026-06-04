@@ -126,6 +126,51 @@ static void vWriteDirectDiagnostic(
 		&xRecord);
 }
 
+static rsrx_status_t eCancelSessionTimer(
+	rsrx_session_t * pxSession,
+	rsrx_timer_id_t eTimerId)
+{
+	rsrx_timer_command_t xCommand;
+
+	if((pxSession == (rsrx_session_t *)0) ||
+		(pxSession->xPlatformAdapter.xPlatformPorts.xTimer.pfCommand ==
+			(rsrx_timer_command_fn)0) ||
+		(eTimerId == RSRX_TIMER_ID_INVALID))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	xCommand.eTimerId = eTimerId;
+	xCommand.eCommandType = RSRX_TIMER_COMMAND_CANCEL;
+	xCommand.uDeadlineNs = 0U;
+	xCommand.eReason = RSRX_REASON_NONE;
+
+	if(pxSession->xPlatformAdapter.xPlatformPorts.xTimer.pfCommand(
+		pxSession->xPlatformAdapter.xPlatformPorts.xTimer.pvContext,
+		&xCommand) != RSRX_PLATFORM_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
+static rsrx_status_t eCancelSessionRuntimeTimers(
+	rsrx_session_t * pxSession)
+{
+	if(eCancelSessionTimer(pxSession, RSRX_TIMER_ID_SUPERVISION) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eCancelSessionTimer(pxSession, RSRX_TIMER_ID_RETRANSMISSION) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
 static void vNotifyDirectReject(
 	rsrx_session_t * pxSession,
 	rsrx_reason_code_t eReason,
@@ -521,6 +566,11 @@ rsrx_status_t rsrx_session_reset(
 
 	if((pxSession == (rsrx_session_t *)0) ||
 		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eCancelSessionRuntimeTimers(pxSession) != RSRX_STATUS_OK)
 	{
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}

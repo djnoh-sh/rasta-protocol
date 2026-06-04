@@ -78,6 +78,9 @@
   - `ESTABLISHED` 상태만 허용한다.
   - transport adapter를 통해 `DATA` frame encode/send를 수행한다.
 - `rsrx_session_reset`:
+  - reset 진입 직후 supervision 및 retransmission runtime timer에 `CANCEL` command를 발행한다.
+  - timer cancel command는 `uDeadlineNs = 0`과 `RSRX_REASON_NONE`를 사용한다.
+  - runtime timer cancel이 실패하면 session runtime state를 변경하지 않고 reset을 `INVALID_ARGUMENT`로 거부한다.
   - orchestrator state, transport-adapter runtime state, channel-manager runtime selection state를 함께 reset한다.
   - outstanding/deferred outbound send와 protocol-context runtime tracking은 reset 이후 stale state로 남지 않아야 하며, outbound runtime reset count로 reset-origin을 관찰할 수 있어야 한다.
   - armed pending flap penalty가 있으면 channel-manager reset-clear telemetry를 통해 reset-origin clear가 관찰 가능해야 한다.
@@ -96,6 +99,7 @@
   - invalid public API report pointer clear 검증
   - session reset이 channel-manager pending penalty를 함께 clear하는지 검증
   - session reset이 transport-adapter outstanding/deferred runtime state를 함께 clear하는지 검증
+  - session reset이 supervision/retransmission runtime timer를 cancel하는지 검증
 - 분석 포인트:
   - config validation 실패 시 partially initialized state가 남지 않는지 검토
   - session 초기화 순서와 partially initialized state 방지

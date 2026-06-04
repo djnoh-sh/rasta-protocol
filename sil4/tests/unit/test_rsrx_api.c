@@ -50,6 +50,9 @@ static void vAssertTrue(int iCondition, const char * pcMessage)
 	}
 }
 
+static rsrx_timer_command_t axTimerCommandHistory[64];
+static uint32_t uTimerCommandHistoryCount;
+
 /* cppcheck-suppress constParameterCallback */
 static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
 {
@@ -62,6 +65,11 @@ static rsrx_platform_status_t eTimerCommand(void * pvContext, const rsrx_timer_c
 {
 	test_timer_context_t * pxContext = (test_timer_context_t *)pvContext;
 	pxContext->xLastCommand = *pxCommand;
+	if(uTimerCommandHistoryCount < 64U)
+	{
+		axTimerCommandHistory[uTimerCommandHistoryCount] = *pxCommand;
+	}
+	uTimerCommandHistoryCount++;
 	pxContext->uCallCount++;
 	return RSRX_PLATFORM_STATUS_OK;
 }
@@ -977,6 +985,68 @@ static void vTestSessionResetClearsReportBaseline(void)
 	vAssertTrue(xSession.xLastReport.xTransition.xActions.eActions[0] == RSRX_ACTION_NONE, "reset report baseline action slot");
 }
 
+static void vTestSessionResetCancelsRuntimeTimers(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1225U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x87U };
+	uint32_t uTimerCommandCountBeforeReset;
+	uint32_t uTimerHistoryCountBeforeReset;
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	uTimerCommandCountBeforeReset = xTimer.uCallCount;
+	uTimerHistoryCountBeforeReset = uTimerCommandHistoryCount;
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "reset cancels runtime timers");
+	vAssertTrue(
+		xTimer.uCallCount == (uTimerCommandCountBeforeReset + 2U),
+		"reset cancel timer command count");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].eTimerId == RSRX_TIMER_ID_SUPERVISION,
+		"reset cancels supervision timer");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].eCommandType == RSRX_TIMER_COMMAND_CANCEL,
+		"reset supervision cancel command");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].uDeadlineNs == 0U,
+		"reset supervision cancel deadline");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].eReason == RSRX_REASON_NONE,
+		"reset supervision cancel reason");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].eTimerId == RSRX_TIMER_ID_RETRANSMISSION,
+		"reset cancels retransmission timer");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].eCommandType == RSRX_TIMER_COMMAND_CANCEL,
+		"reset retransmission cancel command");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].uDeadlineNs == 0U,
+		"reset retransmission cancel deadline");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].eReason == RSRX_REASON_NONE,
+		"reset retransmission cancel reason");
+}
+
 static void vTestSessionRestartAfterReset(void)
 {
 	rsrx_session_t xSession;
@@ -1071,6 +1141,7 @@ int main(void)
 	vTestSessionResetClearsChannelManagerPenalty();
 	vTestSessionResetClearsTransportAdapterRuntime();
 	vTestSessionResetClearsReportBaseline();
+	vTestSessionResetCancelsRuntimeTimers();
 	vTestSessionRestartAfterReset();
 	vTestSessionOutboundApplicationDataStateGuards();
 
