@@ -663,7 +663,7 @@ static uint32_t uCountAvailableChannels(
 static void vRefreshOutboundQueueTelemetry(
 	rsrx_transport_supervisor_context_t * pxContext)
 {
-	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	rsrx_outbound_queue_snapshot_t xSnapshot;
 
 	if((pxContext == (rsrx_transport_supervisor_context_t *)0) ||
 		(pxContext->pxSession == (rsrx_session_t *)0))
@@ -671,17 +671,12 @@ static void vRefreshOutboundQueueTelemetry(
 		return;
 	}
 
-	pxContext->xLastReport.uOutstandingSendPresent =
-		rsrx_transport_adapter_has_outstanding_send(
-			&pxContext->pxSession->xTransportAdapter);
-	pxContext->xLastReport.uDeferredSendPresent =
-		pxContext->pxSession->xTransportAdapter.uHasDeferredSend;
-	pxContext->xLastReport.uDeferredSendCount =
-		pxContext->pxSession->xTransportAdapter.uDeferredSendCount;
-
-	pxTelemetry = rsrx_session_get_outbound_telemetry(pxContext->pxSession);
-	if(pxTelemetry == (const rsrx_outbound_send_telemetry_t *)0)
+	if(rsrx_session_copy_outbound_queue_snapshot(
+		pxContext->pxSession,
+		&xSnapshot) != RSRX_STATUS_OK)
 	{
+		pxContext->xLastReport.uOutstandingSendPresent = 0U;
+		pxContext->xLastReport.uDeferredSendPresent = 0U;
 		pxContext->xLastReport.uDeferredSendCount = 0U;
 		pxContext->xLastReport.uQueuedSendCount = 0U;
 		pxContext->xLastReport.uMaxDeferredSendCount = 0U;
@@ -697,26 +692,34 @@ static void vRefreshOutboundQueueTelemetry(
 		return;
 	}
 
-	pxContext->xLastReport.uQueuedSendCount = pxTelemetry->uQueuedSendCount;
+	pxContext->xLastReport.uOutstandingSendPresent =
+		xSnapshot.uOutstandingSendPresent;
+	pxContext->xLastReport.uDeferredSendPresent =
+		xSnapshot.uDeferredSendPresent;
+	pxContext->xLastReport.uDeferredSendCount =
+		xSnapshot.uDeferredSendCount;
+	pxContext->xLastReport.uQueuedSendCount =
+		xSnapshot.xTelemetry.uQueuedSendCount;
 	pxContext->xLastReport.uMaxDeferredSendCount =
-		pxTelemetry->uMaxDeferredSendCount;
-	pxContext->xLastReport.uDeferredDispatchCount = pxTelemetry->uDeferredDispatchCount;
+		xSnapshot.xTelemetry.uMaxDeferredSendCount;
+	pxContext->xLastReport.uDeferredDispatchCount =
+		xSnapshot.xTelemetry.uDeferredDispatchCount;
 	pxContext->xLastReport.uQueueOverflowRejectCount =
-		pxTelemetry->uQueueOverflowRejectCount;
+		xSnapshot.xTelemetry.uQueueOverflowRejectCount;
 	pxContext->xLastReport.uOutboundRuntimeResetCount =
-		pxTelemetry->uRuntimeResetCount;
+		xSnapshot.xTelemetry.uRuntimeResetCount;
 	pxContext->xLastReport.eLastOutboundRejectReason =
-		pxTelemetry->eLastRejectReason;
+		xSnapshot.xTelemetry.eLastRejectReason;
 	pxContext->xLastReport.uBusyRejectedSendCount =
-		pxTelemetry->uBusyRejectedSendCount;
+		xSnapshot.xTelemetry.uBusyRejectedSendCount;
 	pxContext->xLastReport.uConsecutiveBusyRejectedSendCount =
-		pxTelemetry->uConsecutiveBusyRejectedSendCount;
+		xSnapshot.xTelemetry.uConsecutiveBusyRejectedSendCount;
 	pxContext->xLastReport.uMaxConsecutiveBusyRejectedSendCount =
-		pxTelemetry->uMaxConsecutiveBusyRejectedSendCount;
+		xSnapshot.xTelemetry.uMaxConsecutiveBusyRejectedSendCount;
 	pxContext->xLastReport.uBusyRejectEscalationCount =
-		pxTelemetry->uBusyRejectEscalationCount;
+		xSnapshot.xTelemetry.uBusyRejectEscalationCount;
 	pxContext->xLastReport.uLastBusyRejectEscalated =
-		pxTelemetry->uLastBusyRejectEscalated;
+		xSnapshot.xTelemetry.uLastBusyRejectEscalated;
 }
 
 static rsrx_transport_channel_id_t eGetActiveChannelId(

@@ -614,6 +614,7 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
 	rsrx_outbound_send_telemetry_t xTelemetry;
+	rsrx_outbound_queue_snapshot_t xQueueSnapshot;
 	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
 	test_clock_context_t xClock = { 855U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
@@ -649,9 +650,25 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 	vAssertTrue(xTelemetry.uQueuedSendCount == 0U, "telemetry snapshot queued");
 	vAssertTrue(xTelemetry.eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "telemetry snapshot status");
 	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "telemetry snapshot balanced");
+	vAssertTrue(
+		rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) ==
+			RSRX_STATUS_OK,
+		"queue snapshot deferred send");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xQueueSnapshot) ==
+			RSRX_STATUS_OK,
+		"queue snapshot copy");
+	vAssertTrue(xQueueSnapshot.uOutstandingSendPresent == 1U, "queue snapshot outstanding");
+	vAssertTrue(xQueueSnapshot.uDeferredSendPresent == 1U, "queue snapshot deferred present");
+	vAssertTrue(xQueueSnapshot.uDeferredSendCount == 1U, "queue snapshot deferred count");
+	vAssertTrue(xQueueSnapshot.xTelemetry.uQueuedSendCount == 1U, "queue snapshot queued telemetry");
 
 	xTelemetry.uAcceptedSendCount = 77U;
 	xTelemetry.uQueuedSendCount = 66U;
+	xQueueSnapshot.uOutstandingSendPresent = 55U;
+	xQueueSnapshot.uDeferredSendPresent = 45U;
+	xQueueSnapshot.uDeferredSendCount = 44U;
+	xQueueSnapshot.xTelemetry.uQueuedSendCount = 33U;
 	xCriticalSectionContext.uFailEnter = 1U;
 	vAssertTrue(
 		rsrx_session_copy_outbound_telemetry(&xSession, &xTelemetry) ==
@@ -660,6 +677,14 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 	vAssertTrue(xTelemetry.uAcceptedSendCount == 0U, "telemetry snapshot fail clears accepted");
 	vAssertTrue(xTelemetry.uQueuedSendCount == 0U, "telemetry snapshot fail clears queued");
 	vAssertTrue(xTelemetry.eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "telemetry snapshot fail clears status");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xQueueSnapshot) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"queue snapshot enter fail");
+	vAssertTrue(xQueueSnapshot.uOutstandingSendPresent == 0U, "queue snapshot fail clears outstanding");
+	vAssertTrue(xQueueSnapshot.uDeferredSendPresent == 0U, "queue snapshot fail clears deferred present");
+	vAssertTrue(xQueueSnapshot.uDeferredSendCount == 0U, "queue snapshot fail clears deferred count");
+	vAssertTrue(xQueueSnapshot.xTelemetry.uQueuedSendCount == 0U, "queue snapshot fail clears telemetry");
 }
 
 static void vTestSessionOutboundApplicationBusyRejectThreshold(void)

@@ -78,6 +78,20 @@ static void vClearOutboundTelemetry(
 	pxTelemetry->uRuntimeResetCount = 0U;
 }
 
+static void vClearOutboundQueueSnapshot(
+	rsrx_outbound_queue_snapshot_t * pxSnapshot)
+{
+	if(pxSnapshot == (rsrx_outbound_queue_snapshot_t *)0)
+	{
+		return;
+	}
+
+	pxSnapshot->uOutstandingSendPresent = 0U;
+	pxSnapshot->uDeferredSendPresent = 0U;
+	pxSnapshot->uDeferredSendCount = 0U;
+	vClearOutboundTelemetry(&pxSnapshot->xTelemetry);
+}
+
 static rsrx_diagnostic_code_t eResolveBusyRejectDiagnostic(
 	const rsrx_session_t * pxSession)
 {
@@ -702,6 +716,52 @@ rsrx_status_t rsrx_session_copy_outbound_telemetry(
 	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
 	{
 		vClearOutboundTelemetry(pxTelemetry);
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
+rsrx_status_t rsrx_session_copy_outbound_queue_snapshot(
+	const rsrx_session_t * pxSession,
+	rsrx_outbound_queue_snapshot_t * pxSnapshot)
+{
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+
+	vClearOutboundQueueSnapshot(pxSnapshot);
+
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U) ||
+		(pxSnapshot == (rsrx_outbound_queue_snapshot_t *)0))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxTelemetry = rsrx_transport_adapter_get_outbound_telemetry(
+		&pxSession->xTransportAdapter);
+	if(pxTelemetry == (const rsrx_outbound_send_telemetry_t *)0)
+	{
+		(void)eExitSessionCriticalSection(pxSession);
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxSnapshot->uOutstandingSendPresent =
+		rsrx_transport_adapter_has_outstanding_send(
+			&pxSession->xTransportAdapter);
+	pxSnapshot->uDeferredSendPresent =
+		pxSession->xTransportAdapter.uHasDeferredSend;
+	pxSnapshot->uDeferredSendCount =
+		pxSession->xTransportAdapter.uDeferredSendCount;
+	pxSnapshot->xTelemetry = *pxTelemetry;
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		vClearOutboundQueueSnapshot(pxSnapshot);
 		return RSRX_STATUS_INVALID_ARGUMENT;
 	}
 

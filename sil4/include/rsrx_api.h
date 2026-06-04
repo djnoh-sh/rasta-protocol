@@ -19,6 +19,14 @@ typedef struct
 	uint32_t uConfirmationNumber;
 } rsrx_application_data_indication_t;
 
+typedef struct
+{
+	uint32_t uOutstandingSendPresent;
+	uint32_t uDeferredSendPresent;
+	uint32_t uDeferredSendCount;
+	rsrx_outbound_send_telemetry_t xTelemetry;
+} rsrx_outbound_queue_snapshot_t;
+
 typedef void (*rsrx_api_notification_fn)(
 	void * pvContext,
 	const rsrx_orchestrator_report_t * pxReport);
@@ -121,6 +129,10 @@ const rsrx_outbound_send_telemetry_t * rsrx_session_get_outbound_telemetry(
 rsrx_status_t rsrx_session_copy_outbound_telemetry(
 	const rsrx_session_t * pxSession,
 	rsrx_outbound_send_telemetry_t * pxTelemetry);
+
+rsrx_status_t rsrx_session_copy_outbound_queue_snapshot(
+	const rsrx_session_t * pxSession,
+	rsrx_outbound_queue_snapshot_t * pxSnapshot);
 
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession);
