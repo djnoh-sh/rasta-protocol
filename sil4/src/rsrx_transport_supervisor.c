@@ -678,14 +678,22 @@ static void vRefreshOutboundQueueTelemetry(
 static rsrx_transport_channel_id_t eGetActiveChannelId(
 	const rsrx_transport_supervisor_context_t * pxContext)
 {
+	rsrx_channel_manager_snapshot_t xSnapshot;
+
 	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
 		(pxContext->pxSession == (const rsrx_session_t *)0))
 	{
 		return RSRX_TRANSPORT_CHANNEL_INVALID;
 	}
 
-	return rsrx_channel_manager_get_active_channel(
-		&pxContext->pxSession->xChannelManager);
+	if(rsrx_session_copy_channel_manager_snapshot(
+		pxContext->pxSession,
+		&xSnapshot) != RSRX_STATUS_OK)
+	{
+		return RSRX_TRANSPORT_CHANNEL_INVALID;
+	}
+
+	return xSnapshot.eActiveChannelId;
 }
 
 static rsrx_event_t eResolveInboundEvent(
