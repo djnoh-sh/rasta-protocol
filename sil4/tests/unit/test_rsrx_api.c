@@ -608,6 +608,60 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	vAssertTrue(xDiagnostics.uCallCount == 4U, "outbound application diagnostic count after second reject");
 }
 
+static void vTestSessionOutboundTelemetrySnapshot(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_outbound_send_telemetry_t xTelemetry;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 855U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auDataPayload[2] = { 0x65U, 0x66U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vAssertTrue(
+		rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) ==
+			RSRX_STATUS_OK,
+		"telemetry snapshot send");
+
+	vAssertTrue(
+		rsrx_session_copy_outbound_telemetry(&xSession, &xTelemetry) == RSRX_STATUS_OK,
+		"telemetry snapshot copy");
+	vAssertTrue(xTelemetry.uAcceptedSendCount == 2U, "telemetry snapshot accepted");
+	vAssertTrue(xTelemetry.uQueuedSendCount == 0U, "telemetry snapshot queued");
+	vAssertTrue(xTelemetry.eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "telemetry snapshot status");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "telemetry snapshot balanced");
+
+	xTelemetry.uAcceptedSendCount = 77U;
+	xTelemetry.uQueuedSendCount = 66U;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_copy_outbound_telemetry(&xSession, &xTelemetry) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"telemetry snapshot enter fail");
+	vAssertTrue(xTelemetry.uAcceptedSendCount == 0U, "telemetry snapshot fail clears accepted");
+	vAssertTrue(xTelemetry.uQueuedSendCount == 0U, "telemetry snapshot fail clears queued");
+	vAssertTrue(xTelemetry.eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "telemetry snapshot fail clears status");
+}
+
 static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 {
 	rsrx_session_t xSession;
@@ -1266,6 +1320,7 @@ int main(void)
 	vTestSessionInboundHeartbeatPath();
 	vTestSessionInboundDataPath();
 	vTestSessionOutboundApplicationDataPath();
+	vTestSessionOutboundTelemetrySnapshot();
 	vTestSessionOutboundApplicationBusyRejectThreshold();
 	vTestSessionRetransmissionPath();
 	vTestSessionSupervisionTimerExpiry();

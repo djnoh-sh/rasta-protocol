@@ -47,6 +47,7 @@
 | `rsrx_session_process_event` | function | 일반 event 전달 | orchestrator wrapper |
 | `rsrx_session_process_timer_expiry` | function | timer expiry source를 protocol event로 변환 후 전달 | 지원 범위 밖 timer source는 거부 |
 | `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
+| `rsrx_session_copy_outbound_telemetry` | function | outbound telemetry를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
 | `rsrx_session_get_state` | function | session 상태 조회 | 읽기 전용 |
 | `rsrx_session_reset` | function | session/orchestrator, transport-adapter runtime, channel-manager runtime 상태 초기화 | bounded 동작 |
 
@@ -82,6 +83,10 @@
   - 현재 단계에서 synchronous direct-send 경로를 제공한다.
   - `ESTABLISHED` 상태만 허용한다.
   - transport adapter를 통해 `DATA` frame encode/send를 수행한다.
+- `rsrx_session_copy_outbound_telemetry`:
+  - critical-section 내부에서 outbound telemetry를 caller-owned buffer로 복사한다.
+  - 진입 시 output buffer를 neutral baseline으로 clear해 실패 시 stale telemetry가 남지 않게 한다.
+  - 기존 pointer-return API는 backward-compatible diagnostic view로 유지하지만, multi-task target policy에는 snapshot API 사용을 우선한다.
 - `rsrx_session_reset`:
   - reset 진입 직후 supervision 및 retransmission runtime timer에 `CANCEL` command를 발행한다.
   - timer cancel command는 `uDeadlineNs = 0`과 `RSRX_REASON_NONE`를 사용한다.
@@ -107,6 +112,7 @@
   - session reset이 supervision/retransmission runtime timer를 cancel하는지 검증
   - public API critical-section enter/exit 균형 검증
   - critical-section enter 실패 시 상태 변경 없는 deterministic reject 검증
+  - outbound telemetry snapshot 성공 및 enter-failure output clear 검증
 - 분석 포인트:
   - config validation 실패 시 partially initialized state가 남지 않는지 검토
   - session 초기화 순서와 partially initialized state 방지

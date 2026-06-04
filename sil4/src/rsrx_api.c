@@ -52,6 +52,32 @@ static void vResetLastReport(
 	}
 }
 
+static void vClearOutboundTelemetry(
+	rsrx_outbound_send_telemetry_t * pxTelemetry)
+{
+	if(pxTelemetry == (rsrx_outbound_send_telemetry_t *)0)
+	{
+		return;
+	}
+
+	pxTelemetry->eLastSendStatus = RSRX_TRANSPORT_STATUS_OK;
+	pxTelemetry->eLastRejectReason = RSRX_OUTBOUND_REJECT_REASON_NONE;
+	pxTelemetry->uAcceptedSendCount = 0U;
+	pxTelemetry->uQueuedSendCount = 0U;
+	pxTelemetry->uMaxDeferredSendCount = 0U;
+	pxTelemetry->uDeferredDispatchCount = 0U;
+	pxTelemetry->uQueueOverflowRejectCount = 0U;
+	pxTelemetry->uBusyRejectedSendCount = 0U;
+	pxTelemetry->uConsecutiveBusyRejectedSendCount = 0U;
+	pxTelemetry->uMaxConsecutiveBusyRejectedSendCount = 0U;
+	pxTelemetry->uBusyRejectEscalationCount = 0U;
+	pxTelemetry->uLastBusyRejectEscalated = 0U;
+	pxTelemetry->uClearOnInboundCount = 0U;
+	pxTelemetry->uClearOnFeedbackCount = 0U;
+	pxTelemetry->uClearManualCount = 0U;
+	pxTelemetry->uRuntimeResetCount = 0U;
+}
+
 static rsrx_diagnostic_code_t eResolveBusyRejectDiagnostic(
 	const rsrx_session_t * pxSession)
 {
@@ -638,6 +664,48 @@ const rsrx_outbound_send_telemetry_t * rsrx_session_get_outbound_telemetry(
 	}
 
 	return pxTelemetry;
+}
+
+rsrx_status_t rsrx_session_copy_outbound_telemetry(
+	const rsrx_session_t * pxSession,
+	rsrx_outbound_send_telemetry_t * pxTelemetry)
+{
+	const rsrx_outbound_send_telemetry_t * pxSource;
+
+	if(pxTelemetry != (rsrx_outbound_send_telemetry_t *)0)
+	{
+		vClearOutboundTelemetry(pxTelemetry);
+	}
+
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U) ||
+		(pxTelemetry == (rsrx_outbound_send_telemetry_t *)0))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxSource = rsrx_transport_adapter_get_outbound_telemetry(
+		&pxSession->xTransportAdapter);
+	if(pxSource == (const rsrx_outbound_send_telemetry_t *)0)
+	{
+		(void)eExitSessionCriticalSection(pxSession);
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	*pxTelemetry = *pxSource;
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		vClearOutboundTelemetry(pxTelemetry);
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
 }
 
 rsrx_state_t rsrx_session_get_state(

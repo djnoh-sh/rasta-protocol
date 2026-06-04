@@ -27,4 +27,4 @@ Pass for portable host guard scope. `Finding E` is materially reduced because pu
 
 - Target SafeRTOS binding evidence must prove the port maps to the selected task/ISR-safe primitive.
 - Callback reentrancy policy remains explicit residual: current portable baseline verifies balanced guard calls, but target integration must document whether callbacks are non-reentrant, deferred outside the critical section, or protected by a qualified recursive/priority-aware policy.
-- `rsrx_session_get_outbound_telemetry` still returns an internal telemetry pointer; target concurrency closeout must define caller lifetime/ownership constraints or add a snapshot-style API before using it as multi-task-safe evidence.
+- `rsrx_session_get_outbound_telemetry` still returns an internal telemetry pointer for backward compatibility; `RV-435` adds a snapshot-style API, and target concurrency closeout should use that path unless caller lifetime/ownership constraints are explicitly justified.

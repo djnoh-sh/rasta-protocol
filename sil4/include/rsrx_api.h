@@ -118,6 +118,10 @@ rsrx_status_t rsrx_session_send_application_data(
 const rsrx_outbound_send_telemetry_t * rsrx_session_get_outbound_telemetry(
 	const rsrx_session_t * pxSession);
 
+rsrx_status_t rsrx_session_copy_outbound_telemetry(
+	const rsrx_session_t * pxSession,
+	rsrx_outbound_send_telemetry_t * pxTelemetry);
+
 rsrx_state_t rsrx_session_get_state(
 	const rsrx_session_t * pxSession);
 
