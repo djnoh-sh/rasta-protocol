@@ -356,7 +356,7 @@ The V&V team added `comprehensive_vv_audit_report_2026-06-02.md`. The project re
 
 | Finding | V&V Topic | Official Project Disposition | Planning Impact |
 | --- | --- | --- | --- |
-| Finding E | Public API critical-section protection for asynchronous SafeRTOS-style execution | Accepted as implementation backlog. The current portable baseline is not to be described as concurrency-safe for multi-task/ISR use until a critical-section or locking policy is implemented and verified. | Added as `R-009`; promoted to the top recommended implementation priority. |
+| Finding E | Public API critical-section protection for asynchronous SafeRTOS-style execution | Accepted and started. `TC-PLAT-004`/`TC-CFG-011`/`RV-433` add the portable critical-section port contract and startup gate; the current portable baseline is still not to be described as concurrency-safe for multi-task/ISR use until public API/event paths are actually guarded and verified. | `R-009` remains the top implementation priority; next step is API guard application and balanced enter/exit evidence. |
 | Finding F | `rsrx_session_reset` timer stop/quiescence behavior | Accepted and closed for the portable host baseline by `TC-API-019`/`RV-432`. Reset now emits supervision/retransmission timer `CANCEL` commands before mutating runtime state. | Retained under `R-009` as closed reset-quiescence evidence; SafeRTOS target binding evidence remains target work. |
 | Finding A | Duplicate `TC-SM-012` in TS-002 | Accepted as a document defect. The TS-002 table was reordered into a continuous `TC-SM-001..019` sequence, with the `SHUTDOWN` input-ignore row assigned `TC-SM-013`; traceability was updated accordingly. | Closed by document update; no code verification rerun required. |
 | Finding B | Channel manager holdoff saturation | Accepted as compliant baseline confirmation. | No new action. |
@@ -367,7 +367,7 @@ The V&V team added `comprehensive_vv_audit_report_2026-06-02.md`. The project re
 
 The comprehensive audit is accepted as a higher-priority safety review input than the earlier parity-growth-only residuals. In particular:
 
-1. `Finding E` is not treated as merely target evidence. A portable-core policy decision is required because public API calls and background/event processing share session state.
+1. `Finding E` is not treated as merely target evidence. `RV-433` establishes the portable locking seam, and public API calls/background event processing still require guarded shared-state evidence before concurrency safety can be claimed.
 2. `Finding F` is not treated as merely documentation. It is closed in the portable baseline by explicit timer cancel behavior in `rsrx_session_reset`; target SafeRTOS timer binding evidence remains separate.
 3. The current host verification baseline remains valid for single-threaded host tests, but it must not be cited as proof of SafeRTOS multi-task/ISR concurrency safety.
 4. `Finding A` is closed as a documentation and traceability correction by making the TS-002 state-machine test IDs continuous and unique from `TC-SM-001` through `TC-SM-019`.
@@ -381,5 +381,6 @@ The following items from the 2026-06-02 comprehensive V&V audit have been reflec
 3. Updated recommended next order placing public API critical-section policy and reset timer quiescence before vendor/target evidence acquisition.
 4. Updated readiness wording to reflect that API concurrency/reset quiescence evidence is now required for closeout.
 5. Updated gate criteria so `G-P3-P4-Closeout` requires `R-009` closeout or an explicit target-porting boundary decision.
+6. Added `RV-433` foundation evidence for the portable critical-section port and startup gate.
 
-No source code was changed as part of this response update. Therefore no build, unit/integration test, or cppcheck rerun was required for this document-only step.
+`RV-433` includes source and test changes; therefore the standard build, unit/integration test, and cppcheck sequence is required for closeout.

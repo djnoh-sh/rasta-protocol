@@ -226,6 +226,18 @@ rsrx_config_status_t rsrx_validate_session_config(
 		return RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD;
 	}
 
+	if((pxConfig->xPlatformPorts.xCriticalSection.pfEnter ==
+			(rsrx_critical_section_enter_fn)0) ||
+		(pxConfig->xPlatformPorts.xCriticalSection.pfExit ==
+			(rsrx_critical_section_exit_fn)0))
+	{
+		vSetReport(
+			pxReport,
+			RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD,
+			RSRX_CONFIG_FIELD_PLATFORM_CRITICAL_SECTION);
+		return RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD;
+	}
+
 	if(pxConfig->pfApplicationData == (rsrx_application_data_fn)0)
 	{
 		vSetReport(

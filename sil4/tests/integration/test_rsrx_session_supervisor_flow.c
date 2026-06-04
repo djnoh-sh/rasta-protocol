@@ -155,6 +155,18 @@ static rsrx_platform_status_t eDiagnosticWrite(void * pvContext, const rsrx_diag
 	return RSRX_PLATFORM_STATUS_OK;
 }
 
+static rsrx_platform_status_t eCriticalSectionEnter(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eCriticalSectionExit(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
 static void vApplicationDataNotify(
 	void * pvContext,
 	const rsrx_orchestrator_report_t * pxReport,
@@ -343,6 +355,9 @@ static void vFillConfig(
 	pxConfig->xPlatformPorts.xTimer.pfCommand = eTimerCommand;
 	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pxDiagnostics;
 	pxConfig->xPlatformPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+	pxConfig->xPlatformPorts.xCriticalSection.pvContext = (void *)0;
+	pxConfig->xPlatformPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
+	pxConfig->xPlatformPorts.xCriticalSection.pfExit = eCriticalSectionExit;
 	pxConfig->eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
 	pxConfig->xChannelManagerConfig.uChannelCount = 1U;

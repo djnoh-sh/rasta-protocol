@@ -23,7 +23,9 @@ static uint32_t uPortTableIsValid(
 	return (uint32_t)((pxPorts != (const rsrx_platform_port_table_t *)0) &&
 		(pxPorts->xClock.pfNow != (rsrx_clock_now_fn)0) &&
 		(pxPorts->xTimer.pfCommand != (rsrx_timer_command_fn)0) &&
-		(pxPorts->xDiagnostics.pfWrite != (rsrx_diagnostic_write_fn)0));
+		(pxPorts->xDiagnostics.pfWrite != (rsrx_diagnostic_write_fn)0) &&
+		(pxPorts->xCriticalSection.pfEnter != (rsrx_critical_section_enter_fn)0) &&
+		(pxPorts->xCriticalSection.pfExit != (rsrx_critical_section_exit_fn)0));
 }
 
 static uint32_t uExecutorIsValid(

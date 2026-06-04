@@ -56,6 +56,18 @@ static rsrx_platform_status_t eDiagnosticWrite(void * pvContext, const rsrx_diag
 	return RSRX_PLATFORM_STATUS_OK;
 }
 
+static rsrx_platform_status_t eCriticalSectionEnter(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eCriticalSectionExit(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
 static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport)
 {
 	(void)pvContext;
@@ -95,6 +107,9 @@ static void vFillValidConfig(rsrx_session_config_t * pxConfig, void * pvContext)
 	pxConfig->xPlatformPorts.xTimer.pfCommand = eTimerCommand;
 	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pvContext;
 	pxConfig->xPlatformPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+	pxConfig->xPlatformPorts.xCriticalSection.pvContext = pvContext;
+	pxConfig->xPlatformPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
+	pxConfig->xPlatformPorts.xCriticalSection.pfExit = eCriticalSectionExit;
 	pxConfig->eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	pxConfig->xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
 	pxConfig->xChannelManagerConfig.uChannelCount = 1U;
@@ -192,6 +207,35 @@ static void vTestMissingApplicationCallback(void)
 
 	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing application callback status");
 	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_APPLICATION_DATA_CALLBACK, "missing application callback field");
+}
+
+static void vTestMissingCriticalSectionPort(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xPlatformPorts.xCriticalSection.pfEnter = (rsrx_critical_section_enter_fn)0;
+
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, &xReport) ==
+			RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD,
+		"missing critical section enter status");
+	vAssertTrue(
+		xReport.eField == RSRX_CONFIG_FIELD_PLATFORM_CRITICAL_SECTION,
+		"missing critical section enter field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xPlatformPorts.xCriticalSection.pfExit = (rsrx_critical_section_exit_fn)0;
+
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, &xReport) ==
+			RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD,
+		"missing critical section exit status");
+	vAssertTrue(
+		xReport.eField == RSRX_CONFIG_FIELD_PLATFORM_CRITICAL_SECTION,
+		"missing critical section exit field");
 }
 
 static void vTestInconsistentPayload(void)
@@ -320,6 +364,7 @@ int main(void)
 	vTestMissingCodecPort();
 	vTestInvalidIntervals();
 	vTestMissingApplicationCallback();
+	vTestMissingCriticalSectionPort();
 	vTestInconsistentPayload();
 	vTestDefaultChannelMustBelongToTopology();
 	vTestDuplicateChannelPriorityRejected();

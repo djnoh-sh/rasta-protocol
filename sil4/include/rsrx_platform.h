@@ -71,6 +71,12 @@ typedef rsrx_platform_status_t (*rsrx_diagnostic_write_fn)(
 	void * pvContext,
 	const rsrx_diagnostic_record_t * pxRecord);
 
+typedef rsrx_platform_status_t (*rsrx_critical_section_enter_fn)(
+	void * pvContext);
+
+typedef rsrx_platform_status_t (*rsrx_critical_section_exit_fn)(
+	void * pvContext);
+
 typedef struct
 {
 	void * pvContext;
@@ -91,9 +97,17 @@ typedef struct
 
 typedef struct
 {
+	void * pvContext;
+	rsrx_critical_section_enter_fn pfEnter;
+	rsrx_critical_section_exit_fn pfExit;
+} rsrx_critical_section_port_t;
+
+typedef struct
+{
 	rsrx_clock_port_t xClock;
 	rsrx_timer_port_t xTimer;
 	rsrx_diagnostics_port_t xDiagnostics;
+	rsrx_critical_section_port_t xCriticalSection;
 } rsrx_platform_port_table_t;
 
 #endif

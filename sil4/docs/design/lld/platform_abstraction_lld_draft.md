@@ -24,7 +24,7 @@
 
 | File | Purpose | Public/Internal | Notes |
 | --- | --- | --- | --- |
-| `include/rsrx_platform.h` | platform abstraction public contract | Public | clock, timer, diagnostics port 정의 |
+| `include/rsrx_platform.h` | platform abstraction public contract | Public | clock, timer, diagnostics, critical-section port 정의 |
 | `tests/unit/test_rsrx_platform_contract.c` | header contract smoke test | Internal | 타입 및 인터페이스 계약 확인 |
 
 ## Types and Interfaces
@@ -41,6 +41,7 @@
 | `rsrx_clock_port_t` | struct | monotonic clock 포트 | `pfNow` 필수 |
 | `rsrx_timer_port_t` | struct | timer command 포트 | `pfCommand` 필수 |
 | `rsrx_diagnostics_port_t` | struct | diagnostics sink 포트 | `pfWrite` 필수 |
+| `rsrx_critical_section_port_t` | struct | shared session-state 보호를 위한 critical-section 포트 | `pfEnter`, `pfExit` 필수 |
 | `rsrx_platform_port_table_t` | struct | platform service 집합 | 모든 포트는 초기화 시 명시적으로 채움 |
 
 ## Functional Behavior
@@ -54,11 +55,15 @@
 - diagnostics 포트:
   - 상태 전이 결과를 구조화된 record로 기록한다.
   - free-form 문자열 포맷팅은 platform layer 바깥의 책임이 아니다.
+- critical-section 포트:
+  - public API와 background/event path가 공유하는 session state 보호를 위한 enter/exit seam을 제공한다.
+  - portable core는 OS API를 직접 호출하지 않으며, SafeRTOS binding은 target adapter에서 제공한다.
 
 ## Design Rules
 
 - 상위 모듈은 직접 OS API를 호출하지 않는다.
 - timer와 diagnostics executor는 `rsrx_platform.h` 타입만 사용한다.
+- public API locking policy는 `rsrx_critical_section_port_t`를 통해서만 platform synchronization primitive에 접근한다.
 - platform port table은 초기화 시점에만 설정하고, 런타임 중 교체하지 않는다.
 - 모든 platform callback은 bounded 시간 내 복귀해야 한다.
 
@@ -68,6 +73,7 @@
   - platform header compile contract 검증
   - timer command 구조체 필드 계약 검증
   - diagnostic record 구조체 필드 계약 검증
+  - critical-section port 구조체 필드 계약 검증
 - 분석 포인트:
   - wall-clock 타입 혼입 금지
   - unsigned overflow 위험 검토

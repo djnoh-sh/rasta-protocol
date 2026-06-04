@@ -39,6 +39,9 @@ int main(void)
 	xPorts.xTimer.pfCommand = (rsrx_timer_command_fn)0;
 	xPorts.xDiagnostics.pvContext = (void *)0;
 	xPorts.xDiagnostics.pfWrite = (rsrx_diagnostic_write_fn)0;
+	xPorts.xCriticalSection.pvContext = (void *)0;
+	xPorts.xCriticalSection.pfEnter = (rsrx_critical_section_enter_fn)0;
+	xPorts.xCriticalSection.pfExit = (rsrx_critical_section_exit_fn)0;
 
 	vAssertTrue(xTimerCommand.eTimerId == RSRX_TIMER_ID_SUPERVISION, "timer id contract");
 	vAssertTrue(xTimerCommand.eCommandType == RSRX_TIMER_COMMAND_START, "timer command contract");
@@ -53,6 +56,9 @@ int main(void)
 	/* cppcheck-suppress knownConditionTrueFalse */
 	vAssertTrue(xDiagnosticRecord.uEventCounter == uExpectedEventCounter, "diagnostic event counter contract");
 	vAssertTrue(xPorts.xTimer.pfCommand == (rsrx_timer_command_fn)0, "platform table layout");
+	vAssertTrue(
+		xPorts.xCriticalSection.pfEnter == (rsrx_critical_section_enter_fn)0,
+		"critical section enter layout");
 
 	(void)printf("rsrx_platform_contract_test: all tests passed\n");
 

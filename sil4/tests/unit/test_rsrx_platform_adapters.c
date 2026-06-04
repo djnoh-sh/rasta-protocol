@@ -71,6 +71,18 @@ static rsrx_platform_status_t eDiagnosticWrite(void * pvContext, const rsrx_diag
 	return RSRX_PLATFORM_STATUS_OK;
 }
 
+static rsrx_platform_status_t eCriticalSectionEnter(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eCriticalSectionExit(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
 static rsrx_transport_status_t eTransportSend(void * pvContext, const rsrx_transport_send_request_t * pxRequest)
 {
 	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
@@ -214,6 +226,9 @@ static void vTestPlatformExecutorTableBuild(void)
 	xPorts.xTimer.pfCommand = eTimerCommand;
 	xPorts.xDiagnostics.pvContext = &xDiagnosticsContext;
 	xPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+	xPorts.xCriticalSection.pvContext = (void *)0;
+	xPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
+	xPorts.xCriticalSection.pfExit = eCriticalSectionExit;
 
 	vAssertTrue(rsrx_platform_adapter_init(&xPlatformContext, &xPorts, 50U, 75U, 125U) == RSRX_PLATFORM_STATUS_OK, "platform adapter init");
 	xTransportPort.pvContext = &xTransportContext;
@@ -279,6 +294,9 @@ static void vTestPlatformExecutorTableClearsInvalidOutput(void)
 	xPorts.xTimer.pfCommand = eTimerCommand;
 	xPorts.xDiagnostics.pvContext = &xDiagnosticsContext;
 	xPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+	xPorts.xCriticalSection.pvContext = (void *)0;
+	xPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
+	xPorts.xCriticalSection.pfExit = eCriticalSectionExit;
 
 	vAssertTrue(rsrx_platform_adapter_init(&xPlatformContext, &xPorts, 50U, 75U, 125U) == RSRX_PLATFORM_STATUS_OK, "clear invalid platform adapter init");
 	xTransportPort.pvContext = &xTransportContext;
@@ -389,6 +407,9 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	xPorts.xTimer.pfCommand = eTimerCommand;
 	xPorts.xDiagnostics.pvContext = &xDiagnosticsContext;
 	xPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+	xPorts.xCriticalSection.pvContext = (void *)0;
+	xPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
+	xPorts.xCriticalSection.pfExit = eCriticalSectionExit;
 
 	(void)rsrx_platform_adapter_init(&xPlatformContext, &xPorts, 200U, 300U, 400U);
 	xTransportPort.pvContext = &xTransportContext;
