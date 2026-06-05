@@ -87,6 +87,7 @@ static void vClearOutboundQueueSnapshot(
 	}
 
 	pxSnapshot->uOutstandingSendPresent = 0U;
+	pxSnapshot->eOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
 	pxSnapshot->uDeferredSendPresent = 0U;
 	pxSnapshot->uDeferredSendCount = 0U;
 	vClearOutboundTelemetry(&pxSnapshot->xTelemetry);
@@ -814,6 +815,12 @@ rsrx_status_t rsrx_session_copy_outbound_queue_snapshot(
 	pxSnapshot->uOutstandingSendPresent =
 		rsrx_transport_adapter_has_outstanding_send(
 			&pxSession->xTransportAdapter);
+	if(pxSnapshot->uOutstandingSendPresent != 0U)
+	{
+		pxSnapshot->eOutstandingSendChannelId =
+			rsrx_transport_adapter_get_outstanding_send_channel(
+				&pxSession->xTransportAdapter);
+	}
 	pxSnapshot->uDeferredSendPresent =
 		pxSession->xTransportAdapter.uHasDeferredSend;
 	pxSnapshot->uDeferredSendCount =

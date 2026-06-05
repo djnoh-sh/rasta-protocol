@@ -22,6 +22,7 @@ typedef struct
 typedef struct
 {
 	uint32_t uOutstandingSendPresent;
+	rsrx_transport_channel_id_t eOutstandingSendChannelId;
 	uint32_t uDeferredSendPresent;
 	uint32_t uDeferredSendCount;
 	rsrx_outbound_send_telemetry_t xTelemetry;

@@ -90,7 +90,7 @@
   - 진입 시 output buffer를 neutral baseline으로 clear해 실패 시 stale telemetry가 남지 않게 한다.
   - 기존 pointer-return API는 backward-compatible diagnostic view로 유지하지만, multi-task target policy에는 snapshot API 사용을 우선한다.
 - `rsrx_session_copy_outbound_queue_snapshot`:
-  - critical-section 내부에서 outstanding send presence, deferred send presence/count, outbound telemetry를 한 번에 복사한다.
+  - critical-section 내부에서 outstanding send presence/channel, deferred send presence/count, outbound telemetry를 한 번에 복사한다.
   - transport supervisor report refresh는 이 snapshot API를 사용해 session adapter internals 직접 읽기를 줄인다.
   - 실패 시 caller-owned snapshot 전체를 neutral baseline으로 clear한다.
 - `rsrx_session_copy_channel_manager_snapshot`:

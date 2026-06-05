@@ -881,7 +881,7 @@ static uint32_t uFrameMatchesOutstandingSend(
 	const rsrx_transport_supervisor_context_t * pxContext,
 	rsrx_transport_channel_id_t eChannelId)
 {
-	rsrx_transport_channel_id_t eOutstandingChannelId;
+	rsrx_outbound_queue_snapshot_t xSnapshot;
 
 	if((pxContext == (const rsrx_transport_supervisor_context_t *)0) ||
 		(pxContext->pxSession == (const rsrx_session_t *)0))
@@ -889,16 +889,19 @@ static uint32_t uFrameMatchesOutstandingSend(
 		return 0U;
 	}
 
-	if(rsrx_transport_adapter_has_outstanding_send(
-		&pxContext->pxSession->xTransportAdapter) == 0U)
+	if(rsrx_session_copy_outbound_queue_snapshot(
+		pxContext->pxSession,
+		&xSnapshot) != RSRX_STATUS_OK)
 	{
 		return 0U;
 	}
 
-	eOutstandingChannelId = rsrx_transport_adapter_get_outstanding_send_channel(
-		&pxContext->pxSession->xTransportAdapter);
+	if(xSnapshot.uOutstandingSendPresent == 0U)
+	{
+		return 0U;
+	}
 
-	return (uint32_t)(eOutstandingChannelId == eChannelId);
+	return (uint32_t)(xSnapshot.eOutstandingSendChannelId == eChannelId);
 }
 
 static uint32_t uSendFailureBudgetExceeded(

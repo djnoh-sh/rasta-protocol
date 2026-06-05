@@ -659,6 +659,9 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 			RSRX_STATUS_OK,
 		"queue snapshot copy");
 	vAssertTrue(xQueueSnapshot.uOutstandingSendPresent == 1U, "queue snapshot outstanding");
+	vAssertTrue(
+		xQueueSnapshot.eOutstandingSendChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY,
+		"queue snapshot outstanding channel");
 	vAssertTrue(xQueueSnapshot.uDeferredSendPresent == 1U, "queue snapshot deferred present");
 	vAssertTrue(xQueueSnapshot.uDeferredSendCount == 1U, "queue snapshot deferred count");
 	vAssertTrue(xQueueSnapshot.xTelemetry.uQueuedSendCount == 1U, "queue snapshot queued telemetry");
@@ -666,6 +669,7 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 	xTelemetry.uAcceptedSendCount = 77U;
 	xTelemetry.uQueuedSendCount = 66U;
 	xQueueSnapshot.uOutstandingSendPresent = 55U;
+	xQueueSnapshot.eOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
 	xQueueSnapshot.uDeferredSendPresent = 45U;
 	xQueueSnapshot.uDeferredSendCount = 44U;
 	xQueueSnapshot.xTelemetry.uQueuedSendCount = 33U;
@@ -682,6 +686,9 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 			RSRX_STATUS_INVALID_ARGUMENT,
 		"queue snapshot enter fail");
 	vAssertTrue(xQueueSnapshot.uOutstandingSendPresent == 0U, "queue snapshot fail clears outstanding");
+	vAssertTrue(
+		xQueueSnapshot.eOutstandingSendChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"queue snapshot fail clears outstanding channel");
 	vAssertTrue(xQueueSnapshot.uDeferredSendPresent == 0U, "queue snapshot fail clears deferred present");
 	vAssertTrue(xQueueSnapshot.uDeferredSendCount == 0U, "queue snapshot fail clears deferred count");
 	vAssertTrue(xQueueSnapshot.xTelemetry.uQueuedSendCount == 0U, "queue snapshot fail clears telemetry");
