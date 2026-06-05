@@ -46,6 +46,7 @@
 | `rsrx_session_disconnect` | function | 연결 종료 요청 | `DISCONNECT_REQUEST` 전달 |
 | `rsrx_session_process_event` | function | 일반 event 전달 | orchestrator wrapper |
 | `rsrx_session_process_timer_expiry` | function | timer expiry source를 protocol event로 변환 후 전달 | 지원 범위 밖 timer source는 거부 |
+| `rsrx_session_resolve_inbound_event` | function | decoded message를 protocol-context 기준 session event로 해석 | initialized session과 유효 output buffer 필요 |
 | `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
 | `rsrx_session_copy_outbound_telemetry` | function | outbound telemetry를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
 | `rsrx_session_copy_outbound_queue_snapshot` | function | outstanding/deferred state와 outbound telemetry를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
@@ -81,6 +82,10 @@
   - `SUPERVISION`은 `TIMEOUT`으로 변환한다.
   - `RETRANSMISSION`은 `RETRANSMISSION_FAILURE`로 변환한다.
   - 현재 단계에서 `DIAGNOSTIC_FLUSH`는 상태 머신 이벤트로 연결하지 않고 거부한다.
+- `rsrx_session_resolve_inbound_event`:
+  - critical-section 내부에서 protocol context의 inbound sequencing/confirmation policy를 적용해 decoded message를 effective event로 해석한다.
+  - 실패 시 output event를 `RSRX_EVENT_INVALID`로 clear해 stale event reuse를 방지한다.
+  - transport supervisor inbound event resolution은 이 API를 사용해 session transport-adapter internals 직접 읽기를 줄인다.
 - `rsrx_session_send_application_data`:
   - 현재 단계에서 synchronous direct-send 경로를 제공한다.
   - `ESTABLISHED` 상태만 허용한다.

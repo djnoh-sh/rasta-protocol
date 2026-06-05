@@ -1353,6 +1353,8 @@ static void vTestSessionCriticalSectionBalancedPublicApi(void)
 	test_counter_t xApiCounter = { 0U };
 	test_counter_t xLifecycleCounter = { 0U };
 	static const uint8_t auPayload[2] = { 0x81U, 0x82U };
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eResolvedEvent;
 
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "critical section init");
@@ -1367,6 +1369,18 @@ static void vTestSessionCriticalSectionBalancedPublicApi(void)
 	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "critical section connect");
 	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport) == RSRX_STATUS_OK, "critical section handshake");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "critical section get state");
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_HEARTBEAT;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_HEARTBEAT;
+	xMessage.eReason = RSRX_REASON_NONE;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+	eResolvedEvent = RSRX_EVENT_INVALID;
+	vAssertTrue(
+		rsrx_session_resolve_inbound_event(&xSession, &xMessage, &eResolvedEvent) ==
+			RSRX_STATUS_OK,
+		"critical section resolve inbound");
+	vAssertTrue(eResolvedEvent == RSRX_EVENT_VALID_HEARTBEAT, "critical section resolved event");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "critical section send");
 	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "critical section reset");
 	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "critical section balanced total");
@@ -1403,6 +1417,50 @@ static void vTestSessionCriticalSectionEnterFailureBlocksEvent(void)
 	vAssertTrue(rsrx_orchestrator_get_state(&xSession.xOrchestrator) == RSRX_STATE_UNINITIALIZED, "critical section enter fail state unchanged");
 }
 
+static void vTestSessionResolveInboundEventGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eResolvedEvent;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1450U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x92U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "resolve guard init");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_REQUEST;
+	xMessage.eSuggestedEvent = RSRX_EVENT_CONNECT_REQUEST;
+	xMessage.eReason = RSRX_REASON_NONE;
+	xMessage.uSequenceNumber = 0U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+
+	eResolvedEvent = RSRX_EVENT_VALID_DATA;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_resolve_inbound_event(&xSession, &xMessage, &eResolvedEvent) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"resolve guard enter fail");
+	vAssertTrue(eResolvedEvent == RSRX_EVENT_INVALID, "resolve guard enter fail clears event");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "resolve guard enter counted");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 0U, "resolve guard no exit");
+
+	xCriticalSectionContext.uFailEnter = 0U;
+	eResolvedEvent = RSRX_EVENT_VALID_DATA;
+	vAssertTrue(
+		rsrx_session_resolve_inbound_event(&xSession, (const rsrx_decoded_message_t *)0, &eResolvedEvent) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"resolve guard null message");
+	vAssertTrue(eResolvedEvent == RSRX_EVENT_INVALID, "resolve guard null clears event");
+}
+
 int main(void)
 {
 	vTestSessionStartupAndConnect();
@@ -1428,6 +1486,7 @@ int main(void)
 	vTestSessionOutboundApplicationDataStateGuards();
 	vTestSessionCriticalSectionBalancedPublicApi();
 	vTestSessionCriticalSectionEnterFailureBlocksEvent();
+	vTestSessionResolveInboundEventGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
 

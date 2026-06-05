@@ -702,8 +702,8 @@ static rsrx_event_t eResolveInboundEvent(
 {
 	rsrx_event_t eResolvedEvent;
 
-	if(rsrx_protocol_context_resolve_inbound_event(
-		&pxContext->pxSession->xTransportAdapter.xProtocolContext,
+	if(rsrx_session_resolve_inbound_event(
+		pxContext->pxSession,
 		pxMessage,
 		&eResolvedEvent) != RSRX_STATUS_OK)
 	{

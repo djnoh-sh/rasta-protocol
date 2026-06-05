@@ -661,6 +661,45 @@ rsrx_status_t rsrx_session_process_timer_expiry(
 	return eProcessSessionEvent(pxSession, eEvent, ppxReport);
 }
 
+rsrx_status_t rsrx_session_resolve_inbound_event(
+	const rsrx_session_t * pxSession,
+	const rsrx_decoded_message_t * pxMessage,
+	rsrx_event_t * peEvent)
+{
+	rsrx_status_t eStatus;
+
+	if(peEvent != (rsrx_event_t *)0)
+	{
+		*peEvent = RSRX_EVENT_INVALID;
+	}
+
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U) ||
+		(pxMessage == (const rsrx_decoded_message_t *)0) ||
+		(peEvent == (rsrx_event_t *)0))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_protocol_context_resolve_inbound_event(
+		&pxSession->xTransportAdapter.xProtocolContext,
+		pxMessage,
+		peEvent);
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		*peEvent = RSRX_EVENT_INVALID;
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return eStatus;
+}
+
 rsrx_status_t rsrx_session_send_application_data(
 	rsrx_session_t * pxSession,
 	const uint8_t * puPayload,
