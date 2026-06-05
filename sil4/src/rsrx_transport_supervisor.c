@@ -835,8 +835,8 @@ static uint32_t uAlternativeChannelIsAvailable(
 	rsrx_transport_status_t eTransportStatus;
 	rsrx_transport_channel_state_t xChannelState;
 
-	eTransportStatus = rsrx_transport_adapter_query_channel(
-		&pxContext->pxSession->xTransportAdapter,
+	eTransportStatus = rsrx_session_query_channel_state(
+		pxContext->pxSession,
 		&xChannelState);
 	if((eTransportStatus != RSRX_TRANSPORT_STATUS_OK) ||
 		(xChannelState.uIsAvailable == 0U))
@@ -854,8 +854,8 @@ static uint32_t uRefreshAvailableChannelState(
 	rsrx_transport_status_t eTransportStatus;
 	rsrx_transport_channel_state_t xChannelState;
 
-	eTransportStatus = rsrx_transport_adapter_query_channel(
-		&pxContext->pxSession->xTransportAdapter,
+	eTransportStatus = rsrx_session_query_channel_state(
+		pxContext->pxSession,
 		&xChannelState);
 	if((eTransportStatus != RSRX_TRANSPORT_STATUS_OK) ||
 		(xChannelState.uIsAvailable == 0U))
@@ -1207,8 +1207,8 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	}
 
 	pxContext->uNoOpAuditCountedInCurrentCall = 0U;
-	eTransportStatus = rsrx_transport_adapter_query_channel(
-		&pxContext->pxSession->xTransportAdapter,
+	eTransportStatus = rsrx_session_query_channel_state(
+		pxContext->pxSession,
 		&pxContext->xLastReport.xLastChannelState);
 	pxContext->xLastReport.eLastReceiveTransportStatus = eTransportStatus;
 	vRefreshChannelSwitchTelemetry(

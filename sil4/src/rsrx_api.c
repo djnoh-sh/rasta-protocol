@@ -120,6 +120,18 @@ static void vClearChannelManagerSnapshot(
 	pxSnapshot->uUnavailableSelectionCount = 0U;
 }
 
+static void vClearTransportChannelState(
+	rsrx_transport_channel_state_t * pxState)
+{
+	if(pxState == (rsrx_transport_channel_state_t *)0)
+	{
+		return;
+	}
+
+	pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxState->uIsAvailable = 0U;
+}
+
 static uint32_t uGetChannelManagerEffectiveHoldoffTarget(
 	const rsrx_channel_manager_context_t * pxChannelManager)
 {
@@ -751,6 +763,39 @@ rsrx_status_t rsrx_session_clear_outstanding_send_on_feedback(
 	}
 
 	return RSRX_STATUS_OK;
+}
+
+rsrx_transport_status_t rsrx_session_query_channel_state(
+	const rsrx_session_t * pxSession,
+	rsrx_transport_channel_state_t * pxState)
+{
+	rsrx_transport_status_t eStatus;
+
+	vClearTransportChannelState(pxState);
+
+	if((pxSession == (const rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U) ||
+		(pxState == (rsrx_transport_channel_state_t *)0))
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_transport_adapter_query_channel(
+		&pxSession->xTransportAdapter,
+		pxState);
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		vClearTransportChannelState(pxState);
+		return RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT;
+	}
+
+	return eStatus;
 }
 
 rsrx_status_t rsrx_session_send_application_data(

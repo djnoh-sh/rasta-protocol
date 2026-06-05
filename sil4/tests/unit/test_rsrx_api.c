@@ -27,7 +27,19 @@ typedef struct
 {
 	rsrx_transport_send_request_t xLastRequest;
 	uint32_t uSendCount;
+	rsrx_transport_channel_state_t xQueryState;
+	rsrx_transport_status_t eQueryStatus;
+	uint32_t uQueryCount;
 } test_transport_context_t;
+
+#define TEST_TRANSPORT_CONTEXT_INIT \
+	{ \
+		{ RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, \
+		0U, \
+		{ RSRX_TRANSPORT_CHANNEL_INVALID, 0U }, \
+		RSRX_TRANSPORT_STATUS_OK, \
+		0U \
+	}
 
 typedef struct
 {
@@ -167,13 +179,30 @@ static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transpor
 
 static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
 {
-	(void)pvContext;
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+	rsrx_transport_status_t eStatus = RSRX_TRANSPORT_STATUS_OK;
+
+	if(pxContext != (test_transport_context_t *)0)
+	{
+		pxContext->uQueryCount++;
+		eStatus = pxContext->eQueryStatus;
+	}
+
 	if(pxState != (rsrx_transport_channel_state_t *)0)
 	{
-		pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
-		pxState->uIsAvailable = 1U;
+		if((pxContext != (test_transport_context_t *)0) &&
+			((pxContext->xQueryState.eChannelId != RSRX_TRANSPORT_CHANNEL_INVALID) ||
+				(pxContext->xQueryState.uIsAvailable != 0U)))
+		{
+			*pxState = pxContext->xQueryState;
+		}
+		else
+		{
+			pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+			pxState->uIsAvailable = 1U;
+		}
 	}
-	return RSRX_TRANSPORT_STATUS_OK;
+	return eStatus;
 }
 
 static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport)
@@ -302,7 +331,7 @@ static void vTestSessionStartupAndConnect(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -334,7 +363,7 @@ static void vTestSessionInitClearsReportBaseline(void)
 {
 	rsrx_session_t xSession = { 0 };
 	rsrx_session_config_t xConfig;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -379,7 +408,7 @@ static void vTestSessionDisconnectPath(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 500U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -413,7 +442,7 @@ static void vTestSessionInboundHeartbeatPath(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 700U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -452,7 +481,7 @@ static void vTestSessionInboundDataPath(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 800U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -510,7 +539,7 @@ static void vTestSessionOutboundApplicationDataPath(void)
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 850U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -617,7 +646,7 @@ static void vTestSessionOutboundTelemetrySnapshot(void)
 	const rsrx_orchestrator_report_t * pxReport;
 	rsrx_outbound_send_telemetry_t xTelemetry;
 	rsrx_outbound_queue_snapshot_t xQueueSnapshot;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 855U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -701,7 +730,7 @@ static void vTestSessionChannelManagerSnapshot(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	rsrx_channel_manager_snapshot_t xSnapshot;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 856U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -761,7 +790,7 @@ static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 860U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -843,7 +872,7 @@ static void vTestSessionRetransmissionPath(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 900U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -891,7 +920,7 @@ static void vTestSessionSupervisionTimerExpiry(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1000U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -929,7 +958,7 @@ static void vTestSessionRetransmissionTimerExpiry(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1100U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -970,7 +999,7 @@ static void vTestInvalidArguments(void)
 	rsrx_session_t xSession = { 0 };
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 100U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1021,7 +1050,7 @@ static void vTestSessionInitRejectsCrcRequiredDefaultCodec(void)
 {
 	rsrx_session_t xSession = { 0 };
 	rsrx_session_config_t xConfig;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 100U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1046,7 +1075,7 @@ static void vTestSessionInitRejectsUnavailableSecurityPolicies(void)
 {
 	rsrx_session_t xSession = { 0 };
 	rsrx_session_config_t xConfig;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 100U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1072,7 +1101,7 @@ static void vTestSessionResetClearsChannelManagerPenalty(void)
 	rsrx_session_config_t xConfig;
 	rsrx_channel_selection_result_t xResult;
 	rsrx_transport_channel_state_t xState;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1200U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1116,7 +1145,7 @@ static void vTestSessionResetClearsTransportAdapterRuntime(void)
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
 	const rsrx_outbound_send_telemetry_t * pxTelemetry;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1210U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1164,7 +1193,7 @@ static void vTestSessionResetClearsReportBaseline(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1220U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1209,7 +1238,7 @@ static void vTestSessionResetCancelsRuntimeTimers(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1225U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1271,7 +1300,7 @@ static void vTestSessionRestartAfterReset(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1230U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1324,7 +1353,7 @@ static void vTestSessionOutboundApplicationDataStateGuards(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1200U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1347,7 +1376,7 @@ static void vTestSessionCriticalSectionBalancedPublicApi(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1300U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1395,7 +1424,7 @@ static void vTestSessionCriticalSectionEnterFailureBlocksEvent(void)
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1400U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1425,7 +1454,7 @@ static void vTestSessionResolveInboundEventGuards(void)
 	rsrx_session_config_t xConfig;
 	rsrx_decoded_message_t xMessage;
 	rsrx_event_t eResolvedEvent;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1450U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1469,7 +1498,7 @@ static void vTestSessionRecordInboundMessageGuards(void)
 	rsrx_session_config_t xConfig;
 	rsrx_decoded_message_t xMessage;
 	const rsrx_orchestrator_report_t * pxReport;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1460U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1529,7 +1558,7 @@ static void vTestSessionClearOutstandingFeedbackGuards(void)
 	rsrx_session_config_t xConfig;
 	const rsrx_orchestrator_report_t * pxReport;
 	rsrx_outbound_queue_snapshot_t xSnapshot;
-	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
 	test_clock_context_t xClock = { 1470U };
 	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
 	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
@@ -1592,6 +1621,77 @@ static void vTestSessionClearOutstandingFeedbackGuards(void)
 		"clear feedback telemetry");
 }
 
+static void vTestSessionQueryChannelStateGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_transport_channel_state_t xState;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1480U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x95U };
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(
+			(const rsrx_session_t *)0,
+			&xState) == RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"query channel null session");
+	vAssertTrue(
+		xState.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"query channel null clears channel");
+	vAssertTrue(xState.uIsAvailable == 0U, "query channel null clears availability");
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	xTransport.xQueryState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xQueryState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(&xSession, &xState) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"query channel success");
+	vAssertTrue(
+		xState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY,
+		"query channel state");
+	vAssertTrue(xState.uIsAvailable == 1U, "query channel availability");
+	vAssertTrue(xTransport.uQueryCount == 1U, "query channel delegated");
+	vAssertTrue(
+		xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount,
+		"query channel balanced");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "query channel depth");
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(&xSession, &xState) ==
+			RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"query channel enter fail");
+	vAssertTrue(
+		xState.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"query channel enter fail clears channel");
+	vAssertTrue(xState.uIsAvailable == 0U, "query channel enter fail clears availability");
+	vAssertTrue(xTransport.uQueryCount == 1U, "query channel enter fail blocks delegate");
+	xCriticalSectionContext.uFailEnter = 0U;
+}
+
 int main(void)
 {
 	vTestSessionStartupAndConnect();
@@ -1620,6 +1720,7 @@ int main(void)
 	vTestSessionResolveInboundEventGuards();
 	vTestSessionRecordInboundMessageGuards();
 	vTestSessionClearOutstandingFeedbackGuards();
+	vTestSessionQueryChannelStateGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
 

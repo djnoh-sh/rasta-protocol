@@ -152,6 +152,10 @@ rsrx_status_t rsrx_session_record_inbound_message(
 rsrx_status_t rsrx_session_clear_outstanding_send_on_feedback(
 	rsrx_session_t * pxSession);
 
+rsrx_transport_status_t rsrx_session_query_channel_state(
+	const rsrx_session_t * pxSession,
+	rsrx_transport_channel_state_t * pxState);
+
 rsrx_status_t rsrx_session_send_application_data(
 	rsrx_session_t * pxSession,
 	const uint8_t * puPayload,

@@ -69,7 +69,7 @@
   - 마지막 decoded message, effective event, session status, supervisor decision, decision class, session report를 저장한다.
   - accepted/rejected/ignored/error decision counter를 runtime 동안 누적한다.
 - `rsrx_transport_supervisor_poll_receive`:
-  - transport adapter를 통해 active channel 상태를 조회한다.
+  - session public API boundary를 통해 active channel 상태를 조회한다.
   - channel이 unavailable이면 `CHANNEL_DOWN`을 반환하고 receive는 수행하지 않는다.
   - channel이 available이면 frame 수신을 시도한다.
   - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
