@@ -202,6 +202,7 @@ static rsrx_supervisor_decision_class_t eMapDecisionClass(
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED:
 		case RSRX_SUPERVISOR_DECISION_INBOUND_RECORD_FAILED:
+		case RSRX_SUPERVISOR_DECISION_OUTBOUND_CLEAR_FAILED:
 			return RSRX_SUPERVISOR_DECISION_CLASS_ERROR;
 
 		case RSRX_SUPERVISOR_DECISION_NONE:
@@ -1415,8 +1416,14 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 				return RSRX_SUPERVISOR_STATUS_IGNORED_EVENT;
 			}
 
-			rsrx_transport_adapter_clear_outstanding_send_on_feedback(
-				&pxContext->pxSession->xTransportAdapter);
+			if(rsrx_session_clear_outstanding_send_on_feedback(
+				pxContext->pxSession) != RSRX_STATUS_OK)
+			{
+				return eEscalateToProtocolError(
+					pxContext,
+					RSRX_SUPERVISOR_DECISION_OUTBOUND_CLEAR_FAILED,
+					ppxReport);
+			}
 			vResetSendFailureBudget(
 				pxContext,
 				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_SEND_COMPLETED);
@@ -1463,8 +1470,14 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
 			vResetSendFailureBudget(
 				pxContext,
 				RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION);
-			rsrx_transport_adapter_clear_outstanding_send_on_feedback(
-				&pxContext->pxSession->xTransportAdapter);
+			if(rsrx_session_clear_outstanding_send_on_feedback(
+				pxContext->pxSession) != RSRX_STATUS_OK)
+			{
+				return eEscalateToProtocolError(
+					pxContext,
+					RSRX_SUPERVISOR_DECISION_OUTBOUND_CLEAR_FAILED,
+					ppxReport);
+			}
 			return eProcessSessionEventWithDecisionInternal(
 				pxContext,
 				RSRX_EVENT_PROTOCOL_ERROR,

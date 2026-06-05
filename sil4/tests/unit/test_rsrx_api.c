@@ -1523,6 +1523,75 @@ static void vTestSessionRecordInboundMessageGuards(void)
 	vAssertTrue(xApplication.xLastIndication.puPayload[0] == 0x93U, "record guard payload copied");
 }
 
+static void vTestSessionClearOutstandingFeedbackGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_outbound_queue_snapshot_t xSnapshot;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1470U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x94U };
+
+	vAssertTrue(
+		rsrx_session_clear_outstanding_send_on_feedback((rsrx_session_t *)0) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"clear feedback null session");
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(
+		rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) ==
+			RSRX_STATUS_OK,
+		"clear feedback outstanding send");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"clear feedback snapshot before");
+	vAssertTrue(xSnapshot.uOutstandingSendPresent == 1U, "clear feedback outstanding before");
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_clear_outstanding_send_on_feedback(&xSession) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"clear feedback enter fail");
+	xCriticalSectionContext.uFailEnter = 0U;
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"clear feedback snapshot after fail");
+	vAssertTrue(xSnapshot.uOutstandingSendPresent == 1U, "clear feedback outstanding retained after fail");
+
+	vAssertTrue(
+		rsrx_session_clear_outstanding_send_on_feedback(&xSession) == RSRX_STATUS_OK,
+		"clear feedback success");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"clear feedback snapshot after success");
+	vAssertTrue(xSnapshot.uOutstandingSendPresent == 0U, "clear feedback outstanding cleared");
+	vAssertTrue(
+		xSnapshot.xTelemetry.uClearOnFeedbackCount == 1U,
+		"clear feedback telemetry");
+}
+
 int main(void)
 {
 	vTestSessionStartupAndConnect();
@@ -1550,6 +1619,7 @@ int main(void)
 	vTestSessionCriticalSectionEnterFailureBlocksEvent();
 	vTestSessionResolveInboundEventGuards();
 	vTestSessionRecordInboundMessageGuards();
+	vTestSessionClearOutstandingFeedbackGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
 

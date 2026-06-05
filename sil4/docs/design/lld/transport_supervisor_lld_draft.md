@@ -65,6 +65,7 @@
   - stale/duplicate sequence는 `PROTOCOL_ERROR`로 변환한다.
   - in-order frame만 session public API boundary를 통해 protocol context에 기록한다.
   - accepted inbound message record API가 실패하면 stale inbound cache를 사용하지 않고 `INBOUND_RECORD_FAILED` error decision으로 protocol error escalation을 수행한다.
+  - correlated send feedback clear API가 실패하면 stale outstanding-send state를 사용하지 않고 `OUTBOUND_CLEAR_FAILED` error decision으로 protocol error escalation을 수행한다.
   - 마지막 decoded message, effective event, session status, supervisor decision, decision class, session report를 저장한다.
   - accepted/rejected/ignored/error decision counter를 runtime 동안 누적한다.
 - `rsrx_transport_supervisor_poll_receive`:

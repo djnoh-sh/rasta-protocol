@@ -728,6 +728,31 @@ rsrx_status_t rsrx_session_record_inbound_message(
 	return RSRX_STATUS_OK;
 }
 
+rsrx_status_t rsrx_session_clear_outstanding_send_on_feedback(
+	rsrx_session_t * pxSession)
+{
+	if((pxSession == (rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	rsrx_transport_adapter_clear_outstanding_send_on_feedback(
+		&pxSession->xTransportAdapter);
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
 rsrx_status_t rsrx_session_send_application_data(
 	rsrx_session_t * pxSession,
 	const uint8_t * puPayload,
