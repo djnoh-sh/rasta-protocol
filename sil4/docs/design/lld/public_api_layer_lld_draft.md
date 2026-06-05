@@ -50,6 +50,7 @@
 | `rsrx_session_record_inbound_message` | function | decoded inbound message를 session transport runtime에 기록 | initialized session과 유효 decoded message 필요 |
 | `rsrx_session_clear_outstanding_send_on_feedback` | function | transport feedback에 따른 outstanding send state를 clear | initialized session 필요 |
 | `rsrx_session_query_channel_state` | function | transport channel state를 caller-owned output으로 조회 | initialized session과 유효 output buffer 필요 |
+| `rsrx_session_receive_transport_frame` | function | transport frame을 caller-owned output으로 수신 | initialized session과 유효 output buffer 필요 |
 | `rsrx_session_send_application_data` | function | application payload를 outbound data frame으로 제출 | `ESTABLISHED` 상태만 허용 |
 | `rsrx_session_copy_outbound_telemetry` | function | outbound telemetry를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
 | `rsrx_session_copy_outbound_queue_snapshot` | function | outstanding/deferred state와 outbound telemetry를 caller-owned snapshot으로 복사 | initialized session과 유효 output buffer 필요 |
@@ -101,6 +102,10 @@
   - critical-section 내부에서 transport adapter channel query를 수행하고 caller-owned output으로 channel state를 반환한다.
   - transport supervisor channel-query path는 이 API를 사용해 session transport-adapter internals 직접 읽기를 줄인다.
   - invalid session/output 또는 critical-section enter/exit 실패 시 output state를 invalid/unavailable baseline으로 clear하고 `INVALID_ARGUMENT`로 거부한다.
+- `rsrx_session_receive_transport_frame`:
+  - critical-section 내부에서 transport adapter receive를 수행하고 caller-owned output으로 frame을 반환한다.
+  - transport supervisor poll receive path는 이 API를 사용해 session transport-adapter internals 직접 호출을 줄인다.
+  - invalid session/output 또는 critical-section enter/exit 실패 시 output frame을 invalid/null/0/none baseline으로 clear하고 `INVALID_ARGUMENT`로 거부한다.
 - `rsrx_session_send_application_data`:
   - 현재 단계에서 synchronous direct-send 경로를 제공한다.
   - `ESTABLISHED` 상태만 허용한다.

@@ -30,6 +30,9 @@ typedef struct
 	rsrx_transport_channel_state_t xQueryState;
 	rsrx_transport_status_t eQueryStatus;
 	uint32_t uQueryCount;
+	rsrx_transport_frame_t xReceiveFrame;
+	rsrx_transport_status_t eReceiveStatus;
+	uint32_t uReceiveCount;
 } test_transport_context_t;
 
 #define TEST_TRANSPORT_CONTEXT_INIT \
@@ -37,6 +40,9 @@ typedef struct
 		{ RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, \
 		0U, \
 		{ RSRX_TRANSPORT_CHANNEL_INVALID, 0U }, \
+		RSRX_TRANSPORT_STATUS_OK, \
+		0U, \
+		{ RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_TRANSPORT_EVENT_NONE }, \
 		RSRX_TRANSPORT_STATUS_OK, \
 		0U \
 	}
@@ -172,9 +178,22 @@ static rsrx_transport_status_t eTransportSend(void * pvContext, const rsrx_trans
 
 static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transport_frame_t * pxFrame)
 {
-	(void)pvContext;
-	(void)pxFrame;
-	return RSRX_TRANSPORT_STATUS_OK;
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+	rsrx_transport_status_t eStatus = RSRX_TRANSPORT_STATUS_OK;
+
+	if(pxContext != (test_transport_context_t *)0)
+	{
+		pxContext->uReceiveCount++;
+		eStatus = pxContext->eReceiveStatus;
+	}
+
+	if((pxContext != (test_transport_context_t *)0) &&
+		(pxFrame != (rsrx_transport_frame_t *)0))
+	{
+		*pxFrame = pxContext->xReceiveFrame;
+	}
+
+	return eStatus;
 }
 
 static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
@@ -1692,6 +1711,97 @@ static void vTestSessionQueryChannelStateGuards(void)
 	xCriticalSectionContext.uFailEnter = 0U;
 }
 
+static void vTestSessionReceiveTransportFrameGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_transport_frame_t xFrame;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1490U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x96U, 0x97U };
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(
+			(const rsrx_session_t *)0,
+			&xFrame) == RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"receive frame null session");
+	vAssertTrue(
+		xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"receive frame null clears channel");
+	vAssertTrue(
+		xFrame.puPayload == (const uint8_t *)0,
+		"receive frame null clears payload");
+	vAssertTrue(xFrame.xPayloadLength == 0U, "receive frame null clears length");
+	vAssertTrue(
+		xFrame.eEventType == RSRX_TRANSPORT_EVENT_NONE,
+		"receive frame null clears event");
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	xTransport.xReceiveFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xReceiveFrame.puPayload = auPayload;
+	xTransport.xReceiveFrame.xPayloadLength = sizeof(auPayload);
+	xTransport.xReceiveFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(&xSession, &xFrame) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"receive frame success");
+	vAssertTrue(xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "receive frame channel");
+	vAssertTrue(xFrame.puPayload == auPayload, "receive frame payload");
+	vAssertTrue(xFrame.xPayloadLength == sizeof(auPayload), "receive frame length");
+	vAssertTrue(
+		xFrame.eEventType == RSRX_TRANSPORT_EVENT_FRAME_RECEIVED,
+		"receive frame event");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "receive frame delegated");
+	vAssertTrue(
+		xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount,
+		"receive frame balanced");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "receive frame depth");
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(&xSession, &xFrame) ==
+			RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"receive frame enter fail");
+	vAssertTrue(
+		xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"receive frame enter fail clears channel");
+	vAssertTrue(
+		xFrame.puPayload == (const uint8_t *)0,
+		"receive frame enter fail clears payload");
+	vAssertTrue(xFrame.xPayloadLength == 0U, "receive frame enter fail clears length");
+	vAssertTrue(
+		xFrame.eEventType == RSRX_TRANSPORT_EVENT_NONE,
+		"receive frame enter fail clears event");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "receive frame enter fail blocks delegate");
+	xCriticalSectionContext.uFailEnter = 0U;
+}
+
 int main(void)
 {
 	vTestSessionStartupAndConnect();
@@ -1721,6 +1831,7 @@ int main(void)
 	vTestSessionRecordInboundMessageGuards();
 	vTestSessionClearOutstandingFeedbackGuards();
 	vTestSessionQueryChannelStateGuards();
+	vTestSessionReceiveTransportFrameGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
 

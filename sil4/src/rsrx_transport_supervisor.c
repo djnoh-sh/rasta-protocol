@@ -1262,8 +1262,8 @@ rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
 	xFrame.xPayloadLength = 0U;
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_NONE;
 
-	eTransportStatus = rsrx_transport_adapter_receive_frame(
-		&pxContext->pxSession->xTransportAdapter,
+	eTransportStatus = rsrx_session_receive_transport_frame(
+		pxContext->pxSession,
 		&xFrame);
 	pxContext->xLastReport.eLastReceiveTransportStatus = eTransportStatus;
 	if(eTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE)

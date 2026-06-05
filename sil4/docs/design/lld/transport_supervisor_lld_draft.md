@@ -71,7 +71,7 @@
 - `rsrx_transport_supervisor_poll_receive`:
   - session public API boundary를 통해 active channel 상태를 조회한다.
   - channel이 unavailable이면 `CHANNEL_DOWN`을 반환하고 receive는 수행하지 않는다.
-  - channel이 available이면 frame 수신을 시도한다.
+  - channel이 available이면 session public API boundary를 통해 frame 수신을 시도한다.
   - 수신 결과가 `UNAVAILABLE`이면 `NO_FRAME`을 반환한다.
   - query 또는 receive의 generic error는 내부 receive error budget으로 관리한다.
   - adapter가 channel topology mismatch를 `RX_ERROR`로 전파한 경우도 query-stage receive error budget path로 처리하고 receive는 수행하지 않는다.
