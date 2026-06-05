@@ -145,6 +145,10 @@ rsrx_status_t rsrx_session_resolve_inbound_event(
 	const rsrx_decoded_message_t * pxMessage,
 	rsrx_event_t * peEvent);
 
+rsrx_status_t rsrx_session_record_inbound_message(
+	rsrx_session_t * pxSession,
+	const rsrx_decoded_message_t * pxMessage);
+
 rsrx_status_t rsrx_session_send_application_data(
 	rsrx_session_t * pxSession,
 	const uint8_t * puPayload,

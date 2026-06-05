@@ -201,6 +201,7 @@ static rsrx_supervisor_decision_class_t eMapDecisionClass(
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN:
 		case RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED:
 		case RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED:
+		case RSRX_SUPERVISOR_DECISION_INBOUND_RECORD_FAILED:
 			return RSRX_SUPERVISOR_DECISION_CLASS_ERROR;
 
 		case RSRX_SUPERVISOR_DECISION_NONE:
@@ -1016,9 +1017,15 @@ static rsrx_supervisor_status_t eProcessFrameInternal(
 	if((eInboundEvent == pxContext->xLastReport.xLastMessage.eSuggestedEvent) ||
 		(eInboundEvent == RSRX_EVENT_RECOVERY_SUCCESS))
 	{
-		rsrx_transport_adapter_record_inbound_message(
-			&pxContext->pxSession->xTransportAdapter,
-			&pxContext->xLastReport.xLastMessage);
+		if(rsrx_session_record_inbound_message(
+			pxContext->pxSession,
+			&pxContext->xLastReport.xLastMessage) != RSRX_STATUS_OK)
+		{
+			return eEscalateToProtocolError(
+				pxContext,
+				RSRX_SUPERVISOR_DECISION_INBOUND_RECORD_FAILED,
+				ppxReport);
+		}
 	}
 
 	vResetSendFailureBudget(

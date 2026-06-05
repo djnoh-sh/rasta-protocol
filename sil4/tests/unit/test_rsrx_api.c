@@ -474,16 +474,18 @@ static void vTestSessionInboundDataPath(void)
 		&xLifecycleCounter,
 		auPayload,
 		sizeof(auPayload));
-	rsrx_transport_adapter_record_inbound_message(
-		&xSession.xTransportAdapter,
-		&(const rsrx_decoded_message_t){
-			RSRX_MESSAGE_TYPE_DATA,
-			RSRX_EVENT_VALID_DATA,
-			RSRX_REASON_DATA_ACCEPTED,
-			1U,
-			1U,
-			{ 0x21U, 0x22U, 0x23U },
-			3U });
+	vAssertTrue(
+		rsrx_session_record_inbound_message(
+			&xSession,
+			&(const rsrx_decoded_message_t){
+				RSRX_MESSAGE_TYPE_DATA,
+				RSRX_EVENT_VALID_DATA,
+				RSRX_REASON_DATA_ACCEPTED,
+				1U,
+				1U,
+				{ 0x21U, 0x22U, 0x23U },
+				3U }) == RSRX_STATUS_OK,
+		"data record inbound message");
 
 	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_DATA, &pxReport) == RSRX_STATUS_OK, "data event");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "data keeps established");
@@ -1461,6 +1463,66 @@ static void vTestSessionResolveInboundEventGuards(void)
 	vAssertTrue(eResolvedEvent == RSRX_EVENT_INVALID, "resolve guard null clears event");
 }
 
+static void vTestSessionRecordInboundMessageGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_decoded_message_t xMessage;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = { { RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, 0U };
+	test_clock_context_t xClock = { 1460U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x93U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "record guard init");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.auPayload[0] = 0x93U;
+	xMessage.xPayloadLength = 1U;
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_record_inbound_message(&xSession, &xMessage) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"record guard enter fail");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "record guard enter counted");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 0U, "record guard no exit");
+
+	xCriticalSectionContext.uFailEnter = 0U;
+	vAssertTrue(
+		rsrx_session_record_inbound_message(&xSession, (const rsrx_decoded_message_t *)0) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"record guard null message");
+	vAssertTrue(
+		rsrx_session_record_inbound_message(&xSession, &xMessage) == RSRX_STATUS_OK,
+		"record guard success");
+	vAssertTrue(
+		rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK,
+		"record guard start");
+	vAssertTrue(
+		rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK,
+		"record guard connect");
+	vAssertTrue(
+		rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport) ==
+			RSRX_STATUS_OK,
+		"record guard establish");
+	vAssertTrue(
+		rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_DATA, &pxReport) ==
+			RSRX_STATUS_OK,
+		"record guard process data");
+	vAssertTrue(xApplication.uCallCount == 1U, "record guard application callback");
+	vAssertTrue(xApplication.xLastIndication.puPayload[0] == 0x93U, "record guard payload copied");
+}
+
 int main(void)
 {
 	vTestSessionStartupAndConnect();
@@ -1487,6 +1549,7 @@ int main(void)
 	vTestSessionCriticalSectionBalancedPublicApi();
 	vTestSessionCriticalSectionEnterFailureBlocksEvent();
 	vTestSessionResolveInboundEventGuards();
+	vTestSessionRecordInboundMessageGuards();
 
 	(void)printf("rsrx_api_test: all tests passed\n");
 

@@ -700,6 +700,34 @@ rsrx_status_t rsrx_session_resolve_inbound_event(
 	return eStatus;
 }
 
+rsrx_status_t rsrx_session_record_inbound_message(
+	rsrx_session_t * pxSession,
+	const rsrx_decoded_message_t * pxMessage)
+{
+	if((pxSession == (rsrx_session_t *)0) ||
+		(pxSession->uInitialized == 0U) ||
+		(pxMessage == (const rsrx_decoded_message_t *)0))
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(eEnterSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	rsrx_transport_adapter_record_inbound_message(
+		&pxSession->xTransportAdapter,
+		pxMessage);
+
+	if(eExitSessionCriticalSection(pxSession) != RSRX_STATUS_OK)
+	{
+		return RSRX_STATUS_INVALID_ARGUMENT;
+	}
+
+	return RSRX_STATUS_OK;
+}
+
 rsrx_status_t rsrx_session_send_application_data(
 	rsrx_session_t * pxSession,
 	const uint8_t * puPayload,
