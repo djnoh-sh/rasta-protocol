@@ -1405,6 +1405,8 @@ static void vTestSessionCriticalSectionBalancedPublicApi(void)
 	static const uint8_t auPayload[2] = { 0x81U, 0x82U };
 	rsrx_decoded_message_t xMessage;
 	rsrx_event_t eResolvedEvent;
+	rsrx_transport_channel_state_t xChannelState;
+	rsrx_transport_frame_t xFrame;
 
 	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
 	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "critical section init");
@@ -1432,6 +1434,24 @@ static void vTestSessionCriticalSectionBalancedPublicApi(void)
 		"critical section resolve inbound");
 	vAssertTrue(eResolvedEvent == RSRX_EVENT_VALID_HEARTBEAT, "critical section resolved event");
 	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "critical section send");
+	xTransport.xQueryState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xQueryState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(&xSession, &xChannelState) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"critical section query channel");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "critical section queried channel");
+	vAssertTrue(xTransport.uQueryCount == 1U, "critical section query delegated");
+	xTransport.xReceiveFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xReceiveFrame.puPayload = auPayload;
+	xTransport.xReceiveFrame.xPayloadLength = sizeof(auPayload);
+	xTransport.xReceiveFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(&xSession, &xFrame) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"critical section receive frame");
+	vAssertTrue(xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "critical section received channel");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "critical section receive delegated");
 	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "critical section reset");
 	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "critical section balanced total");
 	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "critical section final depth");
