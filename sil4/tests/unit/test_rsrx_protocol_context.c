@@ -563,6 +563,17 @@ static void vTestRetransmissionRecordGuard(void)
 	vAssertTrue(xContext.uLastRxSequenceNumber == 3U, "gap record keeps last rx");
 	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 0U, "gap record keeps remote confirmation");
 
+	xMessage.uSequenceNumber = 2U;
+	xMessage.uConfirmationNumber = 1U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) ==
+			RSRX_STATUS_REJECTED,
+		"retransmission record guard stale rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 3U, "stale record keeps last rx");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 0U, "stale record keeps remote confirmation");
+	vAssertTrue(xContext.uRetransmissionPending == 1U, "stale record keeps pending");
+	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 4U, "stale record keeps base");
+
 	xMessage.uSequenceNumber = 4U;
 	vAssertTrue(
 		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) ==
