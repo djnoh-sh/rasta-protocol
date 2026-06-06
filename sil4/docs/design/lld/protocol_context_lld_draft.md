@@ -7,7 +7,7 @@
 - Status: `Draft`
 - Owner: `Project Team`
 - Reviewers: `TBD`
-- Last Updated: `2026-04-24`
+- Last Updated: `2026-06-06`
 
 ## Scope
 
@@ -55,6 +55,7 @@
   - inbound confirmation은 로컬이 실제로 송신한 마지막 sequence보다 클 수 없다.
   - record 단계에서도 invalid confirmation을 `REJECTED`로 거부하고 sequence/confirmation tracking state를 변경하지 않는다.
   - record 단계에서도 duplicate/lower stale sequence, gap sequence, zero sequence 같은 invalid sequenced message를 `REJECTED`로 거부하고 tracking state를 변경하지 않는다.
+  - retransmission pending 중 record 단계는 `retransmission_base`와 같은 sequence이고 마지막 retransmission request tx sequence 이상을 confirm한 frame만 기록한다.
   - unsequenced inbound message는 sequence/confirmation tracking state를 갱신하지 않는다.
 - inbound sequence validation:
   - resolve 실패 경로는 caller에게 stale 정상 event를 남기지 않도록 유효한 output event를 `RSRX_EVENT_INVALID`로 clear한 뒤 오류를 반환한다.
@@ -87,6 +88,7 @@
   - retransmission request payload/base sequence 검증
   - inbound confirmation validity 검증
   - invalid confirmation record side-effect 차단 검증
+  - retransmission pending record guard 검증
   - invalid inbound message type record reject 검증
   - resolve failure stale-event clear 검증
   - retransmission pending에서 recovery success 판정 검증

@@ -136,6 +136,19 @@ rsrx_status_t rsrx_protocol_context_record_inbound_message(
 		return RSRX_STATUS_REJECTED;
 	}
 
+	if(pxContext->uRetransmissionPending != 0U)
+	{
+		if(pxMessage->uSequenceNumber != pxContext->uRetransmissionBaseSequenceNumber)
+		{
+			return RSRX_STATUS_REJECTED;
+		}
+
+		if(uRetransmissionRequestIsConfirmed(pxContext, pxMessage) == 0U)
+		{
+			return RSRX_STATUS_REJECTED;
+		}
+	}
+
 	if(pxMessage->uSequenceNumber != (pxContext->uLastRxSequenceNumber + 1U))
 	{
 		return RSRX_STATUS_REJECTED;

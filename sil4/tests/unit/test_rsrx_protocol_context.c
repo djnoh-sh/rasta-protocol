@@ -512,6 +512,68 @@ static void vTestRecoverySuccessResolution(void)
 	vAssertTrue(eEvent == RSRX_EVENT_PROTOCOL_ERROR, "lower sequence during retransmission is protocol error");
 }
 
+static void vTestRetransmissionRecordGuard(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_decoded_message_t xMessage;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "retransmission record guard init");
+	vSeedInboundBaseline(
+		&xContext,
+		RSRX_MESSAGE_TYPE_DATA,
+		RSRX_EVENT_VALID_DATA,
+		RSRX_REASON_DATA_ACCEPTED,
+		3U);
+	vAssertTrue(
+		rsrx_protocol_context_build_encode_request(
+			&xContext,
+			RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST,
+			RSRX_REASON_SEQUENCE_GAP_DETECTED,
+			(const uint8_t *)0,
+			0U,
+			&xRequest) == RSRX_STATUS_OK,
+		"retransmission record guard request");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 4U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) ==
+			RSRX_STATUS_REJECTED,
+		"retransmission record guard unconfirmed rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 3U, "unconfirmed record keeps last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 3U, "unconfirmed record keeps tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 0U, "unconfirmed record keeps remote confirmation");
+	vAssertTrue(xContext.uRetransmissionPending == 1U, "unconfirmed record keeps pending");
+	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 4U, "unconfirmed record keeps base");
+	vAssertTrue(
+		xContext.uLastRetransmissionRequestTxSequenceNumber == 1U,
+		"unconfirmed record keeps request tx");
+
+	xMessage.uSequenceNumber = 5U;
+	xMessage.uConfirmationNumber = 1U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) ==
+			RSRX_STATUS_REJECTED,
+		"retransmission record guard gap rejected");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 3U, "gap record keeps last rx");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 0U, "gap record keeps remote confirmation");
+
+	xMessage.uSequenceNumber = 4U;
+	vAssertTrue(
+		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) ==
+			RSRX_STATUS_OK,
+		"retransmission record guard confirmed accepted");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 4U, "confirmed record updates last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 4U, "confirmed record updates tx confirmation");
+	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 1U, "confirmed record updates remote confirmation");
+	vAssertTrue(xContext.uRetransmissionPending == 1U, "confirmed record leaves cleanup to caller");
+}
+
 static void vTestRetransmissionOrderingMatrix(void)
 {
 	typedef struct
@@ -1502,6 +1564,7 @@ int main(void)
 	vTestResolveFailureClearsEvent();
 	vTestInvalidInboundMessageTypeRejected();
 	vTestRecoverySuccessResolution();
+	vTestRetransmissionRecordGuard();
 	vTestProtocolOrderingCloseoutMatrix();
 	vTestDuplicateInboundSequenceRejected();
 	vTestInitialZeroSequenceRejected();
