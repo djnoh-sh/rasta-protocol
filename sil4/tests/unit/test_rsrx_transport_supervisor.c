@@ -1221,6 +1221,12 @@ static void vTestSupervisorPollReceiveHandshake(void)
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "poll handshake channel available");
 	vAssertTrue(xTransport.uQueryCount == 1U, "poll handshake query count");
 	vAssertTrue(xTransport.uReceiveCount == 1U, "poll handshake receive count");
+	vAssertTrue(pxSupervisorReport->xLastFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "poll handshake frame channel");
+	vAssertTrue(pxSupervisorReport->xLastFrame.puPayload == auPayload, "poll handshake frame payload");
+	vAssertTrue(pxSupervisorReport->xLastFrame.xPayloadLength == sizeof(auPayload), "poll handshake frame length");
+	vAssertTrue(pxSupervisorReport->xLastFrame.eEventType == RSRX_TRANSPORT_EVENT_FRAME_RECEIVED, "poll handshake frame event");
+	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll handshake receive stage");
+	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_OK, "poll handshake receive status");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "poll handshake established");
 }
 
