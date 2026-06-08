@@ -1527,12 +1527,18 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	vSetReceiveScript(&xTransport, axFrames, aeStatuses, 4U);
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll retry matrix first error");
+	vAssertTrue(xTransport.uQueryCount == 1U, "poll retry matrix first error query count");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "poll retry matrix first error receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll retry matrix first error available count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll retry matrix first error count");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "poll retry matrix first error reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "poll retry matrix first error decision");
 	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_RX_ERROR, "poll retry matrix first error status");
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "poll retry matrix no frame reset");
+	vAssertTrue(xTransport.uQueryCount == 2U, "poll retry matrix no frame query count");
+	vAssertTrue(xTransport.uReceiveCount == 2U, "poll retry matrix no frame receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll retry matrix no frame available count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix no frame clears count");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "poll retry matrix no frame reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "poll retry matrix no frame decision");
@@ -1540,6 +1546,9 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "poll retry matrix no frame status");
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll retry matrix second error");
+	vAssertTrue(xTransport.uQueryCount == 3U, "poll retry matrix second error query count");
+	vAssertTrue(xTransport.uReceiveCount == 3U, "poll retry matrix second error receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll retry matrix second error available count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll retry matrix second error count");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 1U, "poll retry matrix second error reset count stable");
 	vAssertTrue(pxSupervisorReport->eLastReceiveTransportStatus == RSRX_TRANSPORT_STATUS_RX_ERROR, "poll retry matrix second error status");
@@ -1552,6 +1561,9 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 		1U,
 		0U);
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "poll retry matrix success reset");
+	vAssertTrue(xTransport.uQueryCount == 4U, "poll retry matrix success query count");
+	vAssertTrue(xTransport.uReceiveCount == 4U, "poll retry matrix success receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll retry matrix success available count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix success clears count");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "poll retry matrix success reset count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "poll retry matrix success decision");
@@ -1563,6 +1575,9 @@ static void vTestSupervisorPollReceiveRetryOrderingMatrix(void)
 	/* cppcheck-suppress redundantAssignment */
 	xTransport.uPrimaryAvailable = 0U;
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "poll retry matrix channel gated");
+	vAssertTrue(xTransport.uQueryCount == 5U, "poll retry matrix channel gated query count");
+	vAssertTrue(xTransport.uReceiveCount == 4U, "poll retry matrix channel gated receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 0U, "poll retry matrix channel gated available count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 0U, "poll retry matrix channel gated count zero");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 2U, "poll retry matrix channel gated no extra reset");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "poll retry matrix channel gated decision");
