@@ -5832,6 +5832,9 @@ static void vTestSupervisorPumpReceiveTerminalOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump matrix processed then idle");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 2U, "pump matrix processed then idle iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "pump matrix processed then idle processed");
+	vAssertTrue(xTransport.uQueryCount == 2U, "pump matrix processed then idle query count");
+	vAssertTrue(xTransport.uReceiveCount == 2U, "pump matrix processed then idle receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump matrix processed then idle available count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "pump matrix processed then idle decision");
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
@@ -5846,6 +5849,9 @@ static void vTestSupervisorPumpReceiveTerminalOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "pump matrix immediate idle");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 1U, "pump matrix immediate idle iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 0U, "pump matrix immediate idle processed");
+	vAssertTrue(xTransport.uQueryCount == 1U, "pump matrix immediate idle query count");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "pump matrix immediate idle receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump matrix immediate idle available count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "pump matrix immediate idle decision");
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_NONE);
@@ -5859,6 +5865,9 @@ static void vTestSupervisorPumpReceiveTerminalOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "pump matrix immediate gated");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 1U, "pump matrix immediate gated iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 0U, "pump matrix immediate gated processed");
+	vAssertTrue(xTransport.uQueryCount == 1U, "pump matrix immediate gated query count");
+	vAssertTrue(xTransport.uReceiveCount == 0U, "pump matrix immediate gated receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 0U, "pump matrix immediate gated available count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "pump matrix immediate gated decision");
 }
 
