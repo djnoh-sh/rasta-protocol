@@ -1313,8 +1313,12 @@ static void vTestSupervisorPollReceiveNoFrame(void)
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "poll idle status");
 	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll idle poll count");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "poll idle processed count");
+	vAssertTrue(xTransport.uQueryCount == 1U, "poll idle query count");
 	vAssertTrue(xTransport.uReceiveCount == 1U, "poll idle receive count");
 	vAssertTrue(g_xCodecContext.uCallCount == 0U, "poll idle codec not called");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "poll idle channel id");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "poll idle channel available");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll idle available channel count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "poll idle decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "poll idle decision class");
 	vAssertTrue(pxSupervisorReport->uIgnoredDecisionCount == 1U, "poll idle ignored decision count");
@@ -1390,6 +1394,11 @@ static void vTestSupervisorPollReceiveErrorBudgeted(void)
 	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "poll receive error supervisor init");
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "poll receive error budgeted status");
+	vAssertTrue(xTransport.uQueryCount == 1U, "poll receive error query count");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "poll receive error receive count");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "poll receive error channel id");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "poll receive error channel available");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll receive error available channel count");
 	vAssertTrue(pxSupervisorReport->uConsecutiveReceiveErrorCount == 1U, "poll receive error count one");
 	vAssertTrue(pxSupervisorReport->uReceiveErrorBudgetResetCount == 0U, "poll receive error reset count zero");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "poll receive error budgeted decision");
