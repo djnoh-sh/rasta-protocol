@@ -1359,8 +1359,12 @@ static void vTestSupervisorPollReceiveNonFrameNoFrameGating(void)
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_NO_FRAME, "poll non-frame status");
 	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll non-frame poll count");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 0U, "poll non-frame processed count");
+	vAssertTrue(xTransport.uQueryCount == 1U, "poll non-frame query count");
 	vAssertTrue(xTransport.uReceiveCount == 1U, "poll non-frame receive count");
 	vAssertTrue(g_xCodecContext.uCallCount == 0U, "poll non-frame codec not called");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "poll non-frame channel id");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "poll non-frame channel available");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll non-frame available channel count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE, "poll non-frame decision");
 	vAssertTrue(pxSupervisorReport->eLastDecisionClass == RSRX_SUPERVISOR_DECISION_CLASS_IGNORED, "poll non-frame decision class");
 	vAssertTrue(pxSupervisorReport->eLastReceiveErrorStage == RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE, "poll non-frame error stage");
