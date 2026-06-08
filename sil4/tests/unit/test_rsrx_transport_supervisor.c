@@ -5991,6 +5991,9 @@ static void vTestSupervisorPumpReceiveIgnoredOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "pump ignored matrix immediate budgeted");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 1U, "pump ignored matrix immediate iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 0U, "pump ignored matrix immediate processed");
+	vAssertTrue(xTransport.uQueryCount == 1U, "pump ignored matrix immediate query count");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "pump ignored matrix immediate receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump ignored matrix immediate available count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "pump ignored matrix immediate decision");
 
 	vInitTransportContext(&xTransport, auPayloadA, sizeof(auPayloadA), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
@@ -6024,6 +6027,9 @@ static void vTestSupervisorPumpReceiveIgnoredOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_IGNORED_EVENT, "pump ignored matrix processed then budgeted");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 2U, "pump ignored matrix processed then budgeted iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "pump ignored matrix processed then budgeted processed");
+	vAssertTrue(xTransport.uQueryCount == 2U, "pump ignored matrix processed then budgeted query count");
+	vAssertTrue(xTransport.uReceiveCount == 2U, "pump ignored matrix processed then budgeted receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump ignored matrix processed then budgeted available count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED, "pump ignored matrix processed then budgeted decision");
 }
 
