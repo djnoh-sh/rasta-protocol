@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-06-06`
+- Last Updated: `2026-06-08`
 
 ## Scope
 
@@ -107,5 +107,5 @@
 | TC-SUP-082 | FR-003, SR-002, IF-001 | inbound event resolve public API boundary 검증 | decoded inbound frame을 처리하는 session-supervisor 준비 | inbound frame decode 후 effective event resolution path 수행 | supervisor가 session public API boundary를 통해 protocol-context sequencing/confirmation event를 resolve한다 | inbound decision parity가 유지되고 supervisor가 transport-adapter protocol-context internals 직접 읽기에 의존하지 않는다 |
 | TC-SUP-083 | FR-003, SR-002, IF-001 | inbound message record public API boundary 검증 | accepted decoded inbound frame을 처리하는 session-supervisor 준비 | effective event가 suggested event 또는 recovery success인 inbound path 수행 | supervisor가 session public API boundary를 통해 accepted decoded inbound message를 기록하고, record API 실패 시 stale inbound cache를 사용하지 않고 `INBOUND_RECORD_FAILED` error decision으로 escalation한다 | inbound/application delivery parity가 유지되고 supervisor가 transport-adapter inbound-record internals 직접 mutation에 의존하지 않는다 |
 | TC-SUP-084 | FR-003, SR-002, IF-001 | outbound feedback clear public API boundary 검증 | correlated `SEND_COMPLETED`/escalating `SEND_FAILED` feedback을 처리하는 session-supervisor 준비 | feedback clear path 수행 | supervisor가 session public API boundary를 통해 outstanding send state를 clear하고, clear API 실패 시 stale outstanding state를 사용하지 않고 `OUTBOUND_CLEAR_FAILED` error decision으로 escalation한다 | send-feedback decision parity가 유지되고 supervisor가 transport-adapter outstanding-clear internals 직접 mutation에 의존하지 않는다 |
-| TC-SUP-085 | FR-003, SR-002, IF-001 | channel query public API boundary 검증 | channel query를 수행하는 poll/alternative/refresh supervisor paths 준비 | poll receive and channel event paths 수행 | supervisor가 session public API boundary를 통해 transport channel state를 조회한다 | channel gating/failover decision parity가 유지되고 supervisor가 transport-adapter query internals 직접 호출에 의존하지 않는다 |
+| TC-SUP-085 | FR-003, SR-002, IF-001 | channel query public API boundary 검증 | channel query를 수행하는 poll/alternative/refresh supervisor paths 준비 | poll receive and channel event paths 수행 | supervisor가 session public API boundary를 통해 transport channel state를 조회하고 report의 last-channel/availability telemetry를 보존한다 | channel gating/failover decision parity와 channel query telemetry가 유지되고 supervisor가 transport-adapter query internals 직접 호출에 의존하지 않는다 |
 | TC-SUP-086 | FR-003, SR-002, IF-001 | frame receive public API boundary 검증 | poll receive frame-receive path를 수행하는 session-supervisor 준비 | channel available 상태에서 poll receive 수행 | supervisor가 session public API boundary를 통해 transport frame을 수신하고 report의 last-frame/status/stage telemetry를 보존한다 | poll/no-frame/channel/error decision parity와 last-frame telemetry가 유지되고 supervisor가 transport-adapter receive internals 직접 호출에 의존하지 않는다 |

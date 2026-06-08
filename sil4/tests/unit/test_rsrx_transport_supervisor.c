@@ -1218,7 +1218,9 @@ static void vTestSupervisorPollReceiveHandshake(void)
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "poll handshake receive");
 	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll handshake poll count");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "poll handshake processed count");
+	vAssertTrue(pxSupervisorReport->xLastChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "poll handshake channel id");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 1U, "poll handshake channel available");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "poll handshake available channel count");
 	vAssertTrue(xTransport.uQueryCount == 1U, "poll handshake query count");
 	vAssertTrue(xTransport.uReceiveCount == 1U, "poll handshake receive count");
 	vAssertTrue(pxSupervisorReport->xLastFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "poll handshake frame channel");
@@ -1264,6 +1266,7 @@ static void vTestSupervisorPollReceiveChannelDown(void)
 
 	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "poll down status");
 	vAssertTrue(pxSupervisorReport->uPollCount == 1U, "poll down poll count");
+	vAssertTrue(xTransport.uQueryCount == 1U, "poll down query count");
 	vAssertTrue(xTransport.uReceiveCount == 0U, "poll down receive not called");
 	vAssertTrue(g_xCodecContext.uCallCount == 0U, "poll down codec not called");
 	vAssertTrue(pxSupervisorReport->xLastChannelState.uIsAvailable == 0U, "poll down channel unavailable");
