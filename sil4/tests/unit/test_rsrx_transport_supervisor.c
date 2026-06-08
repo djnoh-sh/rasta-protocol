@@ -6066,6 +6066,9 @@ static void vTestSupervisorPumpReceiveEscalationOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 1U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump escalation matrix immediate status");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 1U, "pump escalation matrix immediate iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 0U, "pump escalation matrix immediate processed");
+	vAssertTrue(xTransport.uQueryCount == 2U, "pump escalation matrix immediate query count");
+	vAssertTrue(xTransport.uReceiveCount == 2U, "pump escalation matrix immediate receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump escalation matrix immediate available count");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "pump escalation matrix immediate safe disconnect");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED, "pump escalation matrix immediate decision");
 	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_PROTOCOL_ERROR, "pump escalation matrix immediate event");
