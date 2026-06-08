@@ -5923,6 +5923,9 @@ static void vTestSupervisorPumpReceiveErrorOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN, "pump error matrix processed then gated");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 2U, "pump error matrix processed then gated iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "pump error matrix processed then gated processed");
+	vAssertTrue(xTransport.uQueryCount == 2U, "pump error matrix processed then gated query count");
+	vAssertTrue(xTransport.uReceiveCount == 2U, "pump error matrix processed then gated receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump error matrix processed then gated available count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN, "pump error matrix processed then gated decision");
 
 	vInitTransportContext(&xTransport, auPayloadA, sizeof(auPayloadA), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
@@ -5947,6 +5950,9 @@ static void vTestSupervisorPumpReceiveErrorOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 3U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "pump error matrix processed then decode fail");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 2U, "pump error matrix processed then decode fail iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 1U, "pump error matrix processed then decode fail processed");
+	vAssertTrue(xTransport.uQueryCount == 2U, "pump error matrix processed then decode fail query count");
+	vAssertTrue(xTransport.uReceiveCount == 2U, "pump error matrix processed then decode fail receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump error matrix processed then decode fail available count");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_DECODE_FAILED, "pump error matrix processed then decode fail decision");
 }
 
