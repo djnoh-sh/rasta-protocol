@@ -6137,6 +6137,9 @@ static void vTestSupervisorPumpReceiveMaxPollOrderingMatrix(void)
 	vAssertTrue(rsrx_transport_supervisor_pump_receive(&xSupervisor, 2U, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "pump max matrix status");
 	vAssertTrue(pxSupervisorReport->uLastPumpIterationCount == 2U, "pump max matrix iterations");
 	vAssertTrue(pxSupervisorReport->uLastPumpProcessedFrameCount == 2U, "pump max matrix processed");
+	vAssertTrue(xTransport.uQueryCount == 2U, "pump max matrix query count");
+	vAssertTrue(xTransport.uReceiveCount == 2U, "pump max matrix receive count");
+	vAssertTrue(pxSupervisorReport->uAvailableChannelCount == 1U, "pump max matrix available count");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "pump max matrix cumulative processed");
 	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "pump max matrix last decision");
 	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "pump max matrix established");
