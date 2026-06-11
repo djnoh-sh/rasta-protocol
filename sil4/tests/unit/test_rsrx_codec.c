@@ -447,6 +447,12 @@ static void vTestRastaDisconnectReasonMapping(void)
 			RSRX_CODEC_STATUS_UNSUPPORTED_REASON,
 		"non-disconnect reason unsupported mapping");
 	vAssertTrue(usMappedReason == 0U, "unsupported reason clears mapped rasta reason");
+	usMappedReason = 0xFFFFU;
+	vAssertTrue(
+		rsrx_codec_map_reason_to_rasta_disconnect_reason((rsrx_reason_code_t)0xFFU, &usMappedReason) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_REASON,
+		"out-of-range reason unsupported mapping");
+	vAssertTrue(usMappedReason == 0U, "out-of-range reason clears mapped rasta reason");
 	vAssertTrue(
 		rsrx_codec_map_reason_to_rasta_disconnect_reason(RSRX_REASON_TIMEOUT_EXPIRED, (uint16_t *)0) ==
 			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
