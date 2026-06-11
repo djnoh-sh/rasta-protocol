@@ -1548,6 +1548,17 @@ static void vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping(void)
 	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff future timestamp clears message");
 
 	xPacket.uTimestamp = 1000U;
+	xPacket.uConfirmedTimestamp = 899U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&xPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_TIMESTAMP_STALE,
+		"rasta sr handoff stale confirmed timestamp rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff stale confirmed timestamp clears message");
+
+	xPacket.uConfirmedTimestamp = 1000U;
 	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA;
 	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(
