@@ -396,3 +396,30 @@ The following items from the 2026-06-02 comprehensive V&V audit have been reflec
 18. Added `RV-445` portable host closeout for the public API critical-section and reset-quiescence response scope.
 
 `RV-445` is a document-only closeout update based on the already verified `RV-433..RV-444` evidence; no host build/test/cppcheck rerun is required for this document-only step.
+
+## Addendum: 2026-06-11 Comprehensive V&V Follow-Up and Finding G Review
+
+The V&V team updated `comprehensive_vv_audit_report_2026-06-02.md` with a 2026-06-11 follow-up. The project reviewed the update on 2026-06-11 without modifying the V&V report file itself.
+
+### 2026-06-11 Finding Disposition
+
+| Finding | V&V Topic | Official Project Disposition | Planning Impact |
+| --- | --- | --- | --- |
+| Finding A | Duplicate `TC-SM-012` in TS-002 | Accepted as closed. The existing roadmap already treats this as a closed document/traceability correction. | No new action. |
+| Finding E | Public API critical-section protection | Accepted as closed for the portable host scope, with an important wording boundary: portable host evidence does not by itself prove SafeRTOS multi-task/ISR safety. | Keep `R-009` target binding and callback reentrancy evidence residual. |
+| Finding F | `rsrx_session_reset` timer cancellation | Accepted as closed for the portable host baseline by `TC-API-019`/`RV-432`. | Keep target timer binding evidence under `R-009`/`R-008`. |
+| Finding G | Confirmed timestamp past-window validation missing | Accepted as a confirmed portable codec defect. Corrective action adds a `uConfirmedTimestamp < uPastBoundary` guard returning `RSRX_CODEC_STATUS_TIMESTAMP_STALE`, extends `TC-CODEC-043`, and records `RV-477`. | `R-006` current baseline now includes the confirmed timestamp stale-window guard; broader checksum/MAC/security-vector residuals remain unchanged. |
+
+### Official Interpretation
+
+Finding G is treated differently from earlier parity-growth items because the current baseline already claimed codec-level timestamp/window admission for both timestamp and confirmed timestamp fields. The missing confirmed-timestamp past-boundary check was therefore a current baseline defect, not merely future protocol completeness work.
+
+The Finding E closure wording in the V&V report is accepted for the portable host implementation only. The project position remains that SafeRTOS multi-task/ISR concurrency safety requires target binding, callback reentrancy/deferred-callback policy, and target integration/fault-injection evidence before it can be claimed.
+
+### Accepted Items Reflected Into Planning
+
+The following items from the 2026-06-11 V&V update have been reflected into `sil4/docs/roadmap_status.md`:
+
+1. Added `RV-477` as the corrective action for confirmed timestamp stale-window admission.
+2. Updated `R-006` to state that codec-level timestamp/window admission now includes the confirmed timestamp stale guard.
+3. Kept `R-009` target concurrency residual unchanged despite V&V portable host closure.

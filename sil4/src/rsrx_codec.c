@@ -946,6 +946,11 @@ rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
 		return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
 	}
 
+	if(pxPacket->uConfirmedTimestamp < uPastBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_STALE;
+	}
+
 	return RSRX_CODEC_STATUS_OK;
 }
 

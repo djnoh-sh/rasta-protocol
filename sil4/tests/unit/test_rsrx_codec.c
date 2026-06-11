@@ -1303,6 +1303,12 @@ static void vTestRastaSrTimestampAdmissionPolicy(void)
 			RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
 		"rasta sr future confirmed timestamp rejected");
 
+	xPacket.uConfirmedTimestamp = 899U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_STALE,
+		"rasta sr stale confirmed timestamp rejected");
+
 	xPacket.uConfirmedTimestamp = 995U;
 	xPolicy.uCurrentTimestamp = 0U;
 	vAssertTrue(

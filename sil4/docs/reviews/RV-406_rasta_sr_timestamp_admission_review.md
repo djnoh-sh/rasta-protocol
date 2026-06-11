@@ -32,7 +32,7 @@ This keeps timestamp policy deterministic and testable before it is wired into h
 - Valid timestamp values within the configured past/future window return `RSRX_CODEC_STATUS_OK`.
 - Packet timestamp `0` or current timestamp `0` returns `RSRX_CODEC_STATUS_TIMESTAMP_ZERO`.
 - Packet or confirmed timestamp beyond the future window returns `RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE`.
-- Packet timestamp older than the past window returns `RSRX_CODEC_STATUS_TIMESTAMP_STALE`.
+- Packet or confirmed timestamp older than the past window returns `RSRX_CODEC_STATUS_TIMESTAMP_STALE`.
 - Packet timestamp not greater than the last accepted timestamp returns `RSRX_CODEC_STATUS_TIMESTAMP_REGRESSED`.
 - Window arithmetic overflow/underflow and null arguments return `RSRX_CODEC_STATUS_INVALID_ARGUMENT`.
 
