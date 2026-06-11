@@ -404,6 +404,12 @@ static void vTestRastaSrMessageTypeMapping(void)
 			RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE,
 		"retrresp unsupported inbound mapping");
 	vAssertTrue(eMappedType == RSRX_MESSAGE_TYPE_INVALID, "retrresp unsupported clears mapped message type");
+	eMappedType = RSRX_MESSAGE_TYPE_DATA;
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_type_to_message_type((uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA, &eMappedType) ==
+			RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE,
+		"retrdata unsupported inbound mapping");
+	vAssertTrue(eMappedType == RSRX_MESSAGE_TYPE_INVALID, "retrdata unsupported clears mapped message type");
 	vAssertTrue(
 		rsrx_codec_map_message_type_to_rasta_sr_type(RSRX_MESSAGE_TYPE_DATA, (uint16_t *)0) ==
 			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
