@@ -25015,6 +25015,7 @@ static void vTestIntegratedFlapBypassCloseoutFlow(void)
 	vTestIntegratedFlapBypassStaleFeedbackBudgetResetLongRunFlow();
 	vTestIntegratedFlapBypassReceiveCarryoverFlow();
 	vTestIntegratedFlapBypassReceiveResetFlow();
+	vTestIntegratedFlapBypassReceiveCarryoverResetLongRunFlow();
 }
 
 static void vTestIntegratedRedundancyFeedbackLongRunRepresentativeFlow(void)
