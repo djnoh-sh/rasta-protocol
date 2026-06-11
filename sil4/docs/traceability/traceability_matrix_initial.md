@@ -20,6 +20,7 @@
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_validate_rasta_sr_timestamp_admission` | TC-CODEC-043 | RV-477 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission` | TC-CODEC-044 | RV-478 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-479 | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-483 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_event`, `rsrx_session_reset` | TC-API-005, TC-API-012, TC-API-013, TC-API-017, TC-API-018, TC-API-019 | RV-296, RV-297, RV-298, RV-302, RV-395, RV-396, RV-432 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-012 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_application_data_indication_t`, `vApplicationExecutorDispatch`, `rsrx_transport_adapter_get_last_inbound_message`, `rsrx_platform_adapter_build_executor_table` | TC-APP-001, TC-APP-002 |  | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-013 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c`, `sil4/include/rsrx_platform_adapters.h`, `sil4/src/rsrx_platform_adapters.c` | `rsrx_session_send_application_data`, `rsrx_transport_adapter_send_application_data` | TC-OUT-001, TC-OUT-004, TC-OUT-005, TC-OUT-006, TC-OUT-008, TC-OUT-009, TC-API-010, TC-PA-005 | RV-233 | Draft |
@@ -270,6 +271,7 @@
 | FR-004 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_validate_rasta_sr_timestamp_admission` | TC-CODEC-043 | RV-477 | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission` | TC-CODEC-044 | RV-478 | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-479 | Draft |
+| FR-004 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-483 | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-007 | `sil4/include/rsrx_api.h`, `sil4/src/rsrx_api.c` | `rsrx_session_process_event` | TC-API-006 |  | Draft |
 | FR-004 | HZ-003 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame` | TC-SUP-001, TC-SUP-005 |  | Draft |
 | FR-004 | HZ-003 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedRetransmissionRecoveryFlow` | TC-INT-002 |  | Draft |
@@ -292,6 +294,7 @@
 | SR-001 | HZ-001 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_validate_rasta_sr_timestamp_admission` | TC-CODEC-043 | RV-477 | Draft |
 | SR-001 | HZ-001 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission` | TC-CODEC-044 | RV-478 | Draft |
 | SR-001 | HZ-001 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-479 | Draft |
+| SR-001 | HZ-001 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-483 | Draft |
 | SR-001 | HZ-001 | HLD-001, LLD-009 | `sil4/include/rsrx_transport_supervisor.h`, `sil4/src/rsrx_transport_supervisor.c` | `rsrx_transport_supervisor_process_frame` | TC-SUP-006 |  | Draft |
 | SR-001 | HZ-001 | HLD-001 | `sil4/tests/integration/test_rsrx_session_supervisor_flow.c` | `vTestIntegratedDecodeFailureFlow`, `vTestIntegratedInvalidChannelDecodeFailureFlow` | TC-INT-005, TC-INT-206 | RV-322, RV-353 | Draft |
 | SR-002 | HZ-002 | HLD-001, LLD-002 | `sil4/src/rsrx_state_machine.c` | `rsrx_state_machine_handle_event` | TC-SM-003, TC-SM-014, TC-SM-018 |  | Draft |
