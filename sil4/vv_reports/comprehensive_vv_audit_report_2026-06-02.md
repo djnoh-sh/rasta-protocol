@@ -75,3 +75,46 @@
 
 *   전반적인 코드베이스는 드래프트 문서의 스펙을 높은 수준으로 정합 반영하고 있으나, 비동기 멀티태스킹 환경을 대비한 **공개 API의 임계 영역 가드 보호 부재(Finding E)** 및 **세션 리셋 시 타이머 비활성화 누락(Finding F)**과 같은 설계상의 심각한 보안 리스크가 소스 코드에서 추가 발굴되었습니다.
 *   인증 가능한 무결성 획득을 위해 본 보고서의 Finding E와 Finding F에 대한 조속한 수정 보완 조치를 권고합니다.
+
+---
+
+## 6. 2026-06-11 조치 결과 최종 검증 및 종결 (V&V Follow-Up Audit)
+
+본 V&V 팀은 개발팀의 조치 내용에 대해 소스 코드, 설계/테스트 문서 검증 및 로컬 빌드/테스트/정적분석 수행을 통하여 다음과 같이 최종 검증을 완료하고 관련 지적 사항들을 종결 처리합니다.
+
+### 6.1 Finding A: 테스트 사양서(TS-002) 내 테스트 케이스 ID 중복 오류
+*   **검증 결과:** `[COMPLIANT / CLOSED]`
+*   **기술적 사실 및 근거:** `connection_state_machine_test_spec_draft.md` (TS-002) 파일에서 기존에 중복 매핑되어 있던 `TC-SM-012` ID가 단일화되었으며, `SHUTDOWN` 상태의 이벤트 무시 검증 케이스가 `TC-SM-013`으로 재할당되고 순차 재정렬(`TC-SM-001..019`)이 정상 완료된 것을 확인했습니다.
+
+### 6.2 Finding F: 세션 리셋(`rsrx_session_reset`) 시 실행 중인 타이머의 명시적 비활성화(Stop) 누락 우려
+*   **검증 결과:** `[COMPLIANT / CLOSED]`
+*   **기술적 사실 및 근거:** `rsrx_api.c` 내 `rsrx_session_reset` 함수 시작부에서 `eCancelSessionRuntimeTimers(pxSession)`을 통해 런타임 타이머(`RSRX_TIMER_ID_SUPERVISION`, `RSRX_TIMER_ID_RETRANSMISSION`)에 `RSRX_TIMER_COMMAND_CANCEL` 명령을 명시적으로 발행하는 가드 로직이 소스코드 레벨에서 올바르게 동작함을 확인했습니다.
+
+### 6.3 Finding E: 공개 API 계층의 비동기 호출 간 임계 영역(Critical Section) 보호 부재 (잠재적 Data Race 위협)
+*   **검증 결과:** `[COMPLIANT / CLOSED]`
+*   **기술적 사실 및 근거:** `rsrx_api.c` 내부의 공개 API 및 비동기 수신 이벤트 핸들러(`eProcessSessionEvent`, `rsrx_session_send_application_data`, `rsrx_session_resolve_inbound_event` 등) 진입 시 플랫폼 어댑터의 크리티컬 섹션 포트(`eEnterSessionCriticalSection`/`eExitSessionCriticalSection`)를 호출하도록 방어 설계가 적용되었습니다. 이를 통해 SafeRTOS 등의 멀티태스킹/ISR 환경에서 세션 공유 컨텍스트 데이터 접근 간의 Data Race 위협이 완벽하게 가드됨을 검증했습니다.
+
+### 6.4 검증 프로그램 빌드 및 실행 결과
+*   **검증 결과:** `[COMPLIANT]`
+*   **기술적 사실 및 근거:** 로컬 환경에서 `run_ci_verification.sh`를 활용한 완전 순차 검증(`Configure -> Build -> Test -> Cppcheck`)을 수행한 결과, 총 13개 단위/통합 테스트가 모두 통과되었으며 컴파일러 Warning 및 Cppcheck 정적 분석 Warning 모두 **0건(Zero Warning)**을 기록하여 안전성 기준을 만족했습니다.
+
+---
+
+## 7. 신규 안전/규격 결함 발굴 및 조치 권고 (New Audit Findings)
+
+독립 V&V 검증 과정에서 소스 코드 분석을 통해 보안 및 데이터 무결성 측면에서 실질적으로 위협이 될 수 있는 잠재 결함 1건을 추가 식별하여 제기합니다.
+
+### 7.1 [Finding G] Confirmed Timestamp에 대한 과거 시간 윈도우(Past Boundary) 검증 누락 (안전 무결성 취약점)
+*   **기술적 사실:**
+    *   `[rsrx_codec.c](file:///home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c)` 내의 `rsrx_codec_validate_rasta_sr_timestamp_admission` 함수(Line 897-950)는 수신한 RaSTA SR 패킷의 타임스탬프와 확인 타임스탬프(`uConfirmedTimestamp`)에 대해 시간 윈도우 승인 검사를 수행합니다.
+    *   현재 소스 코드(Line 944-947)에는 `uConfirmedTimestamp`가 미래 경계(`uFutureBoundary`)를 초과하는지 여부만 검사하고 있습니다:
+        ```c
+        if(pxPacket->uConfirmedTimestamp > uFutureBoundary)
+        {
+            return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
+        }
+        ```
+    *   그러나, `uConfirmedTimestamp`가 허용된 과거 경계(`uPastBoundary`)보다 오래되었는지 여부(`uConfirmedTimestamp < uPastBoundary`)를 검사하는 가드 로직이 **완전히 누락**되어 있습니다.
+*   **V&V 평가 및 권고:**
+    *   확인 타임스탬프(`uConfirmedTimestamp`)에 대한 과거 시간 윈도우 검증이 누락될 경우, 상대방이 고의적으로 혹은 시간 동기화 에러로 인해 유효 기간이 지난 매우 오래된(Stale) 타임스탬프를 실어 보내더라도 이를 감지하지 못하고 수용하게 됩니다. 이는 비동기 시간 오작동 혹은 Replay Attack 공격 경로에 대한 방어 취약점으로 작용할 수 있습니다.
+    *   따라서, `rsrx_codec_validate_rasta_sr_timestamp_admission` 함수 하단에 `uConfirmedTimestamp < uPastBoundary` 여부를 검사하여 `RSRX_CODEC_STATUS_TIMESTAMP_STALE`을 반환하는 안전 가드 코드를 추가할 것을 강력 권고합니다.
