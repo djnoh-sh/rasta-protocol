@@ -807,6 +807,10 @@ static void vTestRepeatedGapRetransmissionProgression(void)
 		&xRequest) == RSRX_STATUS_OK, "first retransmission request");
 	vAssertTrue(xRequest.uSequenceNumber == 1U, "first retransmission tx sequence");
 	vAssertTrue(uReadUint32BigEndian(xRequest.puPayload) == 4U, "first retransmission base sequence");
+	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 4U, "first retransmission stores base");
+	vAssertTrue(
+		xContext.uLastRetransmissionRequestTxSequenceNumber == 1U,
+		"first retransmission stores latest request tx");
 
 	xMessage.uSequenceNumber = 5U;
 	xMessage.uConfirmationNumber = 1U;
@@ -822,6 +826,10 @@ static void vTestRepeatedGapRetransmissionProgression(void)
 		&xRequest) == RSRX_STATUS_OK, "second retransmission request");
 	vAssertTrue(xRequest.uSequenceNumber == 2U, "second retransmission tx sequence");
 	vAssertTrue(uReadUint32BigEndian(xRequest.puPayload) == 4U, "repeated gap keeps retransmission base");
+	vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 4U, "repeated gap keeps stored base");
+	vAssertTrue(
+		xContext.uLastRetransmissionRequestTxSequenceNumber == 2U,
+		"repeated gap updates latest request tx");
 
 	xMessage.uSequenceNumber = 4U;
 	xMessage.uConfirmationNumber = 2U;
