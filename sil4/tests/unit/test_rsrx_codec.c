@@ -1321,6 +1321,12 @@ static void vTestRastaSrTimestampAdmissionPolicy(void)
 			RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
 		"rasta sr future confirmed timestamp rejected");
 
+	xPacket.uConfirmedTimestamp = 1001U;
+	vAssertTrue(
+		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
+			RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+		"rasta sr causal future confirmed timestamp rejected");
+
 	xPacket.uConfirmedTimestamp = 899U;
 	vAssertTrue(
 		rsrx_codec_validate_rasta_sr_timestamp_admission(&xPacket, &xPolicy) ==
@@ -1620,6 +1626,16 @@ static void vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping(void)
 			&xMessage) == RSRX_CODEC_STATUS_TIMESTAMP_STALE,
 		"rasta sr handoff stale confirmed timestamp rejected");
 	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff stale confirmed timestamp clears message");
+
+	xPacket.uConfirmedTimestamp = 1001U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&xPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+		"rasta sr handoff causal future confirmed timestamp rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff causal future confirmed timestamp clears message");
 
 	xPacket.uConfirmedTimestamp = 1000U;
 	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA;
