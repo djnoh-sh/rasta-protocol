@@ -970,6 +970,11 @@ static void vTestRepeatedGapPostRecoveryOrderingMatrix(void)
 		vAssertTrue(eEvent == RSRX_EVENT_RECOVERY_SUCCESS, "latest recovery success accepted");
 		vAssertTrue(rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK, "record recovery success");
 		vAssertTrue(rsrx_protocol_context_clear_retransmission(&xContext) == RSRX_STATUS_OK, "clear retransmission");
+		vAssertTrue(xContext.uRetransmissionPending == 0U, "repeated-gap recovery clear resets pending");
+		vAssertTrue(xContext.uRetransmissionBaseSequenceNumber == 0U, "repeated-gap recovery clear resets base");
+		vAssertTrue(
+			xContext.uLastRetransmissionRequestTxSequenceNumber == 0U,
+			"repeated-gap recovery clear resets latest request tx");
 
 		vAssertTrue(rsrx_protocol_context_build_encode_request(
 			&xContext,
