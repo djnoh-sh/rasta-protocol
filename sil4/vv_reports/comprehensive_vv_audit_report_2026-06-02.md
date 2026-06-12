@@ -118,3 +118,17 @@
 *   **V&V 평가 및 권고:**
     *   확인 타임스탬프(`uConfirmedTimestamp`)에 대한 과거 시간 윈도우 검증이 누락될 경우, 상대방이 고의적으로 혹은 시간 동기화 에러로 인해 유효 기간이 지난 매우 오래된(Stale) 타임스탬프를 실어 보내더라도 이를 감지하지 못하고 수용하게 됩니다. 이는 비동기 시간 오작동 혹은 Replay Attack 공격 경로에 대한 방어 취약점으로 작용할 수 있습니다.
     *   따라서, `rsrx_codec_validate_rasta_sr_timestamp_admission` 함수 하단에 `uConfirmedTimestamp < uPastBoundary` 여부를 검사하여 `RSRX_CODEC_STATUS_TIMESTAMP_STALE`을 반환하는 안전 가드 코드를 추가할 것을 강력 권고합니다.
+
+---
+
+## 8. 2026-06-12 조치 결과 최종 검증 및 종결 (V&V Follow-Up Audit)
+
+본 V&V 팀은 개발팀이 2026-06-11에 반영한 Finding G의 조치 완료 결과에 대해 소스 코드, 단위 테스트 및 로컬 빌드 검증을 수행하여 다음과 같이 최종 종결 처리합니다.
+
+### 8.1 Finding G: Confirmed Timestamp에 대한 과거 시간 윈도우(Past Boundary) 검증 누락
+*   **검증 결과:** `[COMPLIANT / CLOSED]`
+*   **기술적 사실 및 근거:** 
+    *   **소스 코드 반영:** `rsrx_codec.c` 내의 `rsrx_codec_validate_rasta_sr_timestamp_admission` 함수에 `pxPacket->uConfirmedTimestamp < uPastBoundary` 여부를 검증하고 `RSRX_CODEC_STATUS_TIMESTAMP_STALE`을 반환하는 가드 로직이 정상 반영되었음을 확인했습니다.
+    *   **테스트 커버리지 확보:** `test_rsrx_codec.c` (`vTestRastaSrTimestampAdmissionPolicy`) 단위 테스트 코드 상에 stale confirmed timestamp가 유입되었을 때 정상적으로 거부 및 처리되는 시나리오(`rasta sr stale confirmed timestamp rejected`)가 구현 및 통합되어 검증을 통과했습니다.
+    *   **문서 및 로드맵 추적성:** `TS-008` (`TC-CODEC-043`) 사양서의 예상 결과 기술 사항이 수정 완료되었으며, `sil4/docs/roadmap_status.md` 및 `OFFICIAL_RESPONSE_TO_VV_REPORTS_2026-04-29.md`에 형상 통제 이력(`RV-477`)이 정합 투영되었음을 확인했습니다.
+    *   **종합 검증 빌드 결과:** 픽스가 반영된 상태에서 `run_ci_verification.sh`를 재구동한 결과, 총 13개 단위/통합 테스트 통과 및 컴파일러/정적분석 경고 0건(Zero Warning) 상태를 안정적으로 유지함을 실증하였습니다.
