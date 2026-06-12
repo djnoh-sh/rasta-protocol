@@ -1550,6 +1550,7 @@ static void vTestRastaSrIdentityAndTimestampAdmittedSessionHandoffMapping(void)
 	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff unsupported type clears message");
 
 	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(
 		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
 			&xPacket,
@@ -1557,6 +1558,7 @@ static void vTestRastaSrIdentityAndTimestampAdmittedSessionHandoffMapping(void)
 			(const rsrx_rasta_sr_identity_admission_policy_t *)0,
 			&xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
 		"rasta sr identity handoff null identity policy rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff null identity policy clears message");
 	vAssertTrue(
 		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
 			&xPacket,
