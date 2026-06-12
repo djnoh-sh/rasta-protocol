@@ -1622,6 +1622,14 @@ static void vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping(void)
 			&xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
 		"rasta sr handoff null packet rejected");
 	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff null packet clears message");
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			(const rsrx_rasta_sr_timestamp_admission_policy_t *)0,
+			&xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr handoff null timestamp policy rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff null timestamp policy clears message");
 	vAssertTrue(
 		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
 			&xPacket,
