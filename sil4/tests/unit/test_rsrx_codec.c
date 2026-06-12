@@ -1559,6 +1559,15 @@ static void vTestRastaSrIdentityAndTimestampAdmittedSessionHandoffMapping(void)
 			&xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
 		"rasta sr identity handoff null identity policy rejected");
 	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff null identity policy clears message");
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			(const rsrx_rasta_sr_timestamp_admission_policy_t *)0,
+			&xIdentityPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr identity handoff null timestamp policy rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff null timestamp policy clears message");
 	vAssertTrue(
 		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
 			&xPacket,
