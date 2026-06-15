@@ -1264,6 +1264,32 @@ static void vTestRastaRedundancyCarriedSrNoChecksumRejectsInvalidInputs(void)
 	vAssertRastaSrDecodedPacketCleared(&xPacket,
 		"rasta redundancy carried sr inner unsupported type clears packet");
 
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)RSRX_RASTA_SR_TYPE_DATA,
+			&auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES + 2U]) ==
+			RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr inner truncated fixture type");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 1U),
+			&auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES]) ==
+			RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr inner truncated fixture length");
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD,
+		"rasta redundancy carried sr inner truncated payload reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr inner truncated payload clears packet");
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+			&auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES]) ==
+			RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr outer reserve fixture inner length restore");
 	auRedundancyEncoded[3] = 1U;
 	vSeedRastaSrDecodedPacket(&xPacket);
 	vAssertTrue(
