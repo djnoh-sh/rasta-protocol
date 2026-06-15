@@ -1215,7 +1215,7 @@ static void vTestRastaRedundancyCarriedSrNoChecksumDecodeRoundTrip(void)
 static void vTestRastaRedundancyCarriedSrNoChecksumRejectsInvalidInputs(void)
 {
 	uint8_t auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
-		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES] = { 0U };
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 1U] = { 0U };
 	rsrx_transport_frame_t xFrame;
 	rsrx_rasta_sr_decoded_packet_t xPacket;
 
@@ -1240,7 +1240,8 @@ static void vTestRastaRedundancyCarriedSrNoChecksumRejectsInvalidInputs(void)
 
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
 	xFrame.puPayload = auRedundancyEncoded;
-	xFrame.xPayloadLength = sizeof(auRedundancyEncoded);
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
 	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
 
 	vSeedRastaSrDecodedPacket(&xPacket);
@@ -1286,10 +1287,40 @@ static void vTestRastaRedundancyCarriedSrNoChecksumRejectsInvalidInputs(void)
 
 	vAssertTrue(
 		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+				D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 1U),
+			&auRedundancyEncoded[0]) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr inner trailing fixture outer length");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+			&auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES]) ==
+			RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr inner trailing fixture inner length");
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 1U;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_TRAILING_BYTES,
+		"rasta redundancy carried sr inner trailing payload reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr inner trailing payload clears packet");
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+				D_RSRX_CODEC_RASTA_SR_HEADER_BYTES),
+			&auRedundancyEncoded[0]) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr outer reserve fixture outer length restore");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
 			(uint16_t)D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
 			&auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES]) ==
 			RSRX_CODEC_STATUS_OK,
 		"rasta redundancy carried sr outer reserve fixture inner length restore");
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
 	auRedundancyEncoded[3] = 1U;
 	vSeedRastaSrDecodedPacket(&xPacket);
 	vAssertTrue(
