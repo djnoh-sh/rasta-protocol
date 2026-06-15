@@ -973,6 +973,8 @@ static void vTestSupervisorRastaRedundancySrRuntimeDecodeBridge(void)
 	uint8_t auSrEncoded[D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES];
 	uint8_t auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
 		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 2U];
+	uint8_t auOversizedRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + 1U] = { 0U };
 	static const uint8_t auPayload[2] = { 0xC1U, 0xC2U };
 
 	vInitTransportContext(&xTransport, auPayload, sizeof(auPayload), RSRX_TRANSPORT_EVENT_FRAME_RECEIVED);
@@ -1072,6 +1074,27 @@ static void vTestSupervisorRastaRedundancySrRuntimeDecodeBridge(void)
 	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO,
 		"rasta redundancy runtime direct sr status");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U, "rasta redundancy runtime rejected direct frame not processed");
+	vAssertTrue(xCallbacks.uApplicationCount == 1U, "rasta redundancy runtime direct reject no callback");
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+				D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + 1U),
+			&auOversizedRedundancyEncoded[0]) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy runtime oversized fixture length");
+	xFrame.puPayload = auOversizedRedundancyEncoded;
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + 1U;
+	vAssertTrue(
+		rsrx_transport_supervisor_process_frame(&xSupervisor, &xFrame, &pxSupervisorReport) ==
+			RSRX_SUPERVISOR_STATUS_DECODE_FAILED,
+		"rasta redundancy runtime rejects oversized carried packet");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE,
+		"rasta redundancy runtime oversized status");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 1U,
+		"rasta redundancy runtime oversized not processed");
+	vAssertTrue(xCallbacks.uApplicationCount == 1U,
+		"rasta redundancy runtime oversized no callback");
 }
 
 static void vTestSupervisorSequenceGapDetection(void)
