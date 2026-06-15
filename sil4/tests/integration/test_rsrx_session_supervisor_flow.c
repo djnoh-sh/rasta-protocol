@@ -12198,11 +12198,13 @@ static void vTestIntegratedRastaRedundancySrRuntimeFlow(void)
 	uint8_t auHandshakeFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
 	uint8_t auSrFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
 	uint8_t auRedundancyFrame[D_RSRX_CODEC_MAX_FRAME_BYTES];
+	uint8_t auOversizedRedundancyFrame[D_RSRX_CODEC_MAX_RASTA_REDUNDANCY_FRAME_BYTES] = { 0U };
 	static const uint8_t auFramePayload[8] = { 0U };
 	static const uint8_t auDataPayload[2] = { 0xE1U, 0xE2U };
 	size_t xHandshakeLength;
 	size_t xSrLength;
 	size_t xRedundancyLength;
+	size_t xOversizedRedundancyLength;
 
 	xTransport.uPrimaryAvailable = 1U;
 	xTransport.uSecondaryAvailable = 0U;
@@ -12303,6 +12305,26 @@ static void vTestIntegratedRastaRedundancySrRuntimeFlow(void)
 	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO, "rasta redundancy sr integration direct sr status");
 	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "rasta redundancy sr integration direct sr not processed");
 	vAssertTrue(xApplication.uCallCount == 1U, "rasta redundancy sr integration no extra callback");
+
+	xOversizedRedundancyLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + 1U;
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)xOversizedRedundancyLength,
+			&auOversizedRedundancyFrame[0]) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy sr integration oversized length fixture");
+	xTransport.axReceiveFrames[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.axReceiveFrames[0].puPayload = auOversizedRedundancyFrame;
+	xTransport.axReceiveFrames[0].xPayloadLength = xOversizedRedundancyLength;
+	xTransport.axReceiveFrames[0].eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xTransport.aeReceiveStatuses[0] = RSRX_TRANSPORT_STATUS_OK;
+	xTransport.uReceiveScriptIndex = 0U;
+
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_DECODE_FAILED, "rasta redundancy sr integration oversized reject");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_DECODE_FAILED, "rasta redundancy sr integration oversized decision");
+	vAssertTrue(pxSupervisorReport->eLastCodecStatus == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE, "rasta redundancy sr integration oversized status");
+	vAssertTrue(pxSupervisorReport->uProcessedFrameCount == 2U, "rasta redundancy sr integration oversized not processed");
+	vAssertTrue(xApplication.uCallCount == 1U, "rasta redundancy sr integration oversized no extra callback");
 }
 
 static void vTestIntegratedInvalidChannelDecodeFailureFlow(void)
