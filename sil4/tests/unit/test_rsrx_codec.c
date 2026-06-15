@@ -1543,7 +1543,30 @@ static void vTestRastaSrIdentityAndTimestampAdmittedSessionHandoffMapping(void)
 		"rasta sr identity handoff stale confirmed timestamp rejected");
 	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff stale confirmed timestamp clears message");
 
+	xPacket.uConfirmedTimestamp = 1001U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			&xIdentityPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE,
+		"rasta sr identity handoff causal future confirmed timestamp rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff causal future confirmed timestamp clears message");
+
 	xPacket.uConfirmedTimestamp = 995U;
+	xPacket.xPayloadLength = D_RSRX_CODEC_MAX_PAYLOAD_BYTES + 1U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+			&xPacket,
+			&xTimestampPolicy,
+			&xIdentityPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE,
+		"rasta sr identity handoff oversized payload rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr identity handoff oversized payload clears message");
+
+	xPacket.xPayloadLength = 1U;
 	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA;
 	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(
