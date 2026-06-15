@@ -1257,6 +1257,80 @@ static void vTestRastaRedundancyCarriedSrNoChecksumRejectsInvalidInputs(void)
 			(rsrx_rasta_sr_decoded_packet_t *)0) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
 		"rasta redundancy carried sr null packet reject");
 
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES - 1U;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_SHORT_HEADER,
+		"rasta redundancy carried sr outer short header reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr outer short header clears packet");
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES - 1U),
+			&auRedundancyEncoded[0]) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr outer length mismatch fixture");
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_LENGTH_MISMATCH,
+		"rasta redundancy carried sr outer length mismatch reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr outer length mismatch clears packet");
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+				D_RSRX_CODEC_RASTA_SR_HEADER_BYTES),
+			&auRedundancyEncoded[0]) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr outer malformed fixture restore");
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES - 1U;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD,
+		"rasta redundancy carried sr outer truncated reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr outer truncated clears packet");
+
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 1U;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_TRAILING_BYTES,
+		"rasta redundancy carried sr outer trailing reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr outer trailing clears packet");
+
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_CHANNEL_UP;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_NON_FRAME_EVENT,
+		"rasta redundancy carried sr outer non-frame reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr outer non-frame clears packet");
+
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_INVALID_CHANNEL,
+		"rasta redundancy carried sr outer invalid channel reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr outer invalid channel clears packet");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
+
 	vSeedRastaSrDecodedPacket(&xPacket);
 	vAssertTrue(
 		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
