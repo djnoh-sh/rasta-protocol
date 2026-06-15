@@ -18,7 +18,7 @@
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_message_type_to_rasta_sr_type` | TC-CODEC-039 | RV-481 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_reason_to_rasta_disconnect_reason` | TC-CODEC-039 | RV-482 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_validate_rasta_sr_timestamp_admission` | TC-CODEC-043 | RV-477, RV-494 | Draft |
-| FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission` | TC-CODEC-044 | RV-478, RV-494 | Draft |
+| FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission` | TC-CODEC-044 | RV-478, RV-494, RV-495 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission` | TC-CODEC-044 | RV-485 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-479 | Draft |
 | FR-003 | HZ-003 | HLD-001, LLD-008 | `sil4/include/rsrx_codec.h`, `sil4/src/rsrx_codec.c` | `rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission` | TC-CODEC-045 | RV-483 | Draft |

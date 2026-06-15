@@ -1638,6 +1638,17 @@ static void vTestRastaSrTimestampHandoffRejectsBeforeMessageMapping(void)
 	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff causal future confirmed timestamp clears message");
 
 	xPacket.uConfirmedTimestamp = 1000U;
+	xPacket.xPayloadLength = D_RSRX_CODEC_MAX_PAYLOAD_BYTES + 1U;
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+			&xPacket,
+			&xPolicy,
+			&xMessage) == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE,
+		"rasta sr handoff oversized payload rejected");
+	vAssertDecodedMessageCleared(&xMessage, "rasta sr handoff oversized payload clears message");
+
+	xPacket.xPayloadLength = 0U;
 	xPacket.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA;
 	vSeedDecodedMessage(&xMessage);
 	vAssertTrue(
