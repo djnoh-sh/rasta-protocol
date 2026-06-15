@@ -1216,6 +1216,8 @@ static void vTestRastaRedundancyCarriedSrNoChecksumRejectsInvalidInputs(void)
 {
 	uint8_t auRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
 		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 1U] = { 0U };
+	uint8_t auOversizedRedundancyEncoded[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + 1U] = { 0U };
 	rsrx_transport_frame_t xFrame;
 	rsrx_rasta_sr_decoded_packet_t xPacket;
 
@@ -1327,7 +1329,26 @@ static void vTestRastaRedundancyCarriedSrNoChecksumRejectsInvalidInputs(void)
 	vAssertRastaSrDecodedPacketCleared(&xPacket,
 		"rasta redundancy carried sr outer invalid channel clears packet");
 
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16(
+			(uint16_t)(D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+				D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + 1U),
+			&auOversizedRedundancyEncoded[0]) == RSRX_CODEC_STATUS_OK,
+		"rasta redundancy carried sr outer oversized fixture length");
 	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auOversizedRedundancyEncoded;
+	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES + 1U;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(&xFrame, &xPacket) ==
+			RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE,
+		"rasta redundancy carried sr outer oversized carried packet reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket,
+		"rasta redundancy carried sr outer oversized carried packet clears packet");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auRedundancyEncoded;
 	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
 		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
 
