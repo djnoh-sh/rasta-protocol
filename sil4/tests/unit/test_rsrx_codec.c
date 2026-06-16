@@ -634,6 +634,65 @@ static void vTestRastaSrNoChecksumZeroPayloadRoundTrip(void)
 	vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr zero checksum absent");
 }
 
+static void vTestRastaSrNoChecksumMaxPayloadRoundTrip(void)
+{
+	uint8_t auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES];
+	uint8_t auEncoded[D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES];
+	rsrx_rasta_sr_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	size_t xIndex;
+
+	for(xIndex = 0U; xIndex < sizeof(auPayload); ++xIndex)
+	{
+		auPayload[xIndex] = (uint8_t)((xIndex * 3U) & 0xFFU);
+	}
+
+	xRequest.usPacketLength = (uint16_t)D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES;
+	xRequest.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+	xRequest.uReceiverId = 0x21222324U;
+	xRequest.uSenderId = 0x25262728U;
+	xRequest.uSequenceNumber = 0x292A2B2CU;
+	xRequest.uConfirmedSequenceNumber = 0x2D2E2F30U;
+	xRequest.uTimestamp = 0x31323334U;
+	xRequest.uConfirmedTimestamp = 0x35363738U;
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
+	xRequest.puChecksum = (const uint8_t *)0;
+	xRequest.xChecksumLength = 0U;
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 99U;
+
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK,
+		"rasta sr no-checksum max payload encode");
+	vAssertTrue(
+		xBuffer.xEncodedLength == D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES,
+		"rasta sr no-checksum max payload encoded length");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_sr_no_checksum(&xFrame, &xPacket) == RSRX_CODEC_STATUS_OK,
+		"rasta sr no-checksum max payload decode");
+	vAssertTrue(xPacket.usPacketLength == D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES, "rasta sr max length");
+	vAssertTrue(xPacket.xPayloadLength == D_RSRX_CODEC_MAX_PAYLOAD_BYTES, "rasta sr max payload length");
+	vAssertTrue(xPacket.auPayload[0] == 0x00U, "rasta sr max payload first byte");
+	vAssertTrue(xPacket.auPayload[1] == 0x03U, "rasta sr max payload second byte");
+	vAssertTrue(
+		xPacket.auPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES - 1U] == 0xFDU,
+		"rasta sr max payload last byte");
+	vAssertTrue(xPacket.xChecksumLength == 0U, "rasta sr max checksum length");
+	vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr max checksum absent");
+}
+
 static void vTestRastaSrNoChecksumEncodeRejectsInvalidInputs(void)
 {
 	static const uint8_t auPayload[1] = { 0x7EU };
@@ -2760,6 +2819,7 @@ int main(void)
 	vTestRastaSrByteOrderIsFixedBigEndian();
 	vTestRastaSrNoChecksumEncodeDecodeRoundTrip();
 	vTestRastaSrNoChecksumZeroPayloadRoundTrip();
+	vTestRastaSrNoChecksumMaxPayloadRoundTrip();
 	vTestRastaSrNoChecksumEncodeRejectsInvalidInputs();
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
