@@ -697,6 +697,21 @@ static void vTestRastaSrNoChecksumDecodeRejectsMalformedFrames(void)
 			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
 		"rasta sr no-checksum null packet reject");
 
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_sr_no_checksum((const rsrx_transport_frame_t *)0, &xPacket) ==
+			RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr no-checksum null frame reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket, "rasta sr no-checksum null frame clears packet");
+
+	xFrame.puPayload = (const uint8_t *)0;
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_sr_no_checksum(&xFrame, &xPacket) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr no-checksum null payload reject");
+	vAssertRastaSrDecodedPacketCleared(&xPacket, "rasta sr no-checksum null payload clears packet");
+
+	xFrame.puPayload = auEncoded;
 	xFrame.xPayloadLength = D_RSRX_CODEC_RASTA_SR_HEADER_BYTES - 1U;
 	vSeedRastaSrDecodedPacket(&xPacket);
 	vAssertTrue(
