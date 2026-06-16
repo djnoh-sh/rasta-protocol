@@ -583,6 +583,7 @@ static void vTestRastaSrNoChecksumEncodeDecodeRoundTrip(void)
 static void vTestRastaSrNoChecksumEncodeRejectsInvalidInputs(void)
 {
 	static const uint8_t auPayload[1] = { 0x7EU };
+	static const uint8_t auOversizedPayload[D_RSRX_CODEC_MAX_PAYLOAD_BYTES + 1U] = { 0x42U };
 	static const uint8_t auChecksum[1] = { 0xAAU };
 	uint8_t auEncoded[D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES];
 	rsrx_rasta_sr_encode_request_t xRequest;
@@ -633,6 +634,27 @@ static void vTestRastaSrNoChecksumEncodeRejectsInvalidInputs(void)
 		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_LENGTH_MISMATCH,
 		"rasta sr no-checksum length mismatch reject");
 	vAssertTrue(xBuffer.xEncodedLength == 0U, "rasta sr no-checksum length mismatch clears length");
+
+	xRequest.usPacketLength = (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auOversizedPayload));
+	xRequest.puPayload = auOversizedPayload;
+	xRequest.xPayloadLength = sizeof(auOversizedPayload);
+	xBuffer.xEncodedLength = 99U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE,
+		"rasta sr no-checksum oversized payload reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "rasta sr no-checksum oversized payload clears length");
+
+	xRequest.usPacketLength = (uint16_t)(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + sizeof(auPayload));
+	xRequest.puPayload = (const uint8_t *)0;
+	xRequest.xPayloadLength = sizeof(auPayload);
+	xBuffer.xEncodedLength = 99U;
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_INVALID_ARGUMENT,
+		"rasta sr no-checksum null non-empty payload reject");
+	vAssertTrue(xBuffer.xEncodedLength == 0U, "rasta sr no-checksum null non-empty payload clears length");
+
+	xRequest.puPayload = auPayload;
+	xRequest.xPayloadLength = sizeof(auPayload);
 
 	vAssertTrue(
 		rsrx_codec_encode_rasta_sr_no_checksum((const rsrx_rasta_sr_encode_request_t *)0, &xBuffer) ==
