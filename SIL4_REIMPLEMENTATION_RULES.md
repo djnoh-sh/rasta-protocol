@@ -170,10 +170,17 @@
 - 테스트 이름만 보고 무엇을 검증하는지 알 수 있어야 한다.
 - 테스트가 없으면 기능 완료로 인정하지 않는다.
 - 검증 실행 순서는 `configure -> build -> build 종료 확인 -> test -> static analysis`를 기본 규칙으로 한다.
+- 본 저장소의 표준 로컬 검증은 `/tmp/sil4-build` clean configure, build,
+  모든 `/tmp/sil4-build/rsrx_*_test` 실행, `cppcheck` 순서로 수행한다.
 - `build`가 끝나기 전에 test binary를 실행하지 않는다.
 - `build`와 `test`를 병렬 실행하지 않는다.
 - `cppcheck` 같은 정적 분석도 build와 병렬 실행하지 않는다.
 - 빠른 확인이 필요해도 검증 단계 간 순서를 깨는 임시 병렬 실행은 허용하지 않는다.
+- 코드/테스트 변경 작업의 roadmap 상태는 검증 전에는 pending으로 기록할 수 있지만,
+  실제 build/test/static analysis가 통과한 뒤에만 green으로 확정한다.
+- 문서만 수정한 작업은 해당 문서 변경이 코드 동작, 테스트 기대값, 빌드 설정을 바꾸지 않는 경우
+  full build/test/cppcheck 재실행을 생략할 수 있다.
+- 문서-only 검증 생략 시 작업 기록 또는 응답에 그 사유를 명시한다.
 - 반복 패턴 확장 작업은 큰 블록 자동 치환보다 `함수 1개 + registration 1개 + 문서 1세트` 단위의 좁은 수정으로 나눈다.
 - 반복 패턴 확장에서 자동 복제나 치환을 썼다면 build 전에 새로 추가된 함수 블록만 별도로 다시 읽어 progression, registration, 정의 순서를 검산한다.
 - holdoff/remaining/count 같은 수열형 값은 반복 확장 직후 해당 함수 범위 안에서 직접 검산하고, 넓은 범위 일괄 치환만으로 완료 처리하지 않는다.
@@ -203,6 +210,12 @@
 - 각 커밋 또는 작업 단위는 관련 ID를 포함한다.
 - 문서와 코드가 어긋나면 문서를 먼저 갱신하거나 작업을 중단한다.
 - 추적되지 않는 코드는 임시 코드로 간주하며 병합하지 않는다.
+- `roadmap_status.md`는 현재 상태의 운영 기준 문서로 유지한다.
+- `roadmap_status.md`를 갱신할 때는 관련 summary 항목도 함께 갱신한다.
+- `roadmap_status.md`의 `Last Updated` 값은 실제 문서 갱신 날짜이며,
+  순번처럼 임의 증가시키지 않는다.
+- external artifact는 어떤 문서/로그/도구 산출물인지, 출처 run 또는 생성 절차가 무엇인지,
+  저장 위치가 어디인지 추적 가능하게 기록한다.
 
 ## 21. Change Management Rules
 
@@ -214,7 +227,12 @@
 - `git add`, `git commit`, `git rm`, `git mv`, `git restore --staged`처럼 index/worktree를 쓰는 git 명령은 순차 실행만 허용한다.
 - index를 쓰는 git 명령을 병렬 실행하지 않는다.
 - staging과 commit은 기본적으로 `git add -> staged diff 확인 -> git commit` 순서로만 진행한다.
+- 하나의 작업 단계가 검증과 문서 갱신까지 끝나면 별도 커밋으로 남긴다.
+- 여러 독립 단계를 하나의 커밋으로 묶지 않는다.
 - `index.lock` 오류가 나면 먼저 동시 실행 여부와 살아있는 git 프로세스를 확인하고, stale lock 여부가 확인되기 전에는 임의 삭제하지 않는다.
+- 구현/evidence branch와 examples branch는 목적을 분리한다.
+- 예제 코드는 별도 example branch에서 관리하고, 본 구현/evidence branch에는 필요한 경우에만 명시적으로 포함한다.
+- `.codex` 디렉터리나 파일은 과제 산출물로 취급하지 않으며 수정하지 않는다.
 
 ## 22. Documentation Rules
 
@@ -223,6 +241,8 @@
 - 시퀀스 다이어그램, 상태도, 인터페이스 표는 코드와 같이 유지한다.
 - 문서는 "설명"이 아니라 "판단 기준"이 되도록 작성한다.
 - 문서에 예외 사항이 있으면 이유와 범위를 함께 적는다.
+- V&V report 원본은 검증팀 입력물로 취급하며 임의 수정하지 않는다.
+- V&V report에 대한 수용, 반박, 보류, 계획 반영 내용은 공식 답변서와 roadmap에 기록한다.
 
 ## 23. Definition of Done
 
@@ -263,3 +283,5 @@
 - 안전 관련 판단이 애매하면 구현을 미루고 규칙/설계/요구사항을 먼저 명확히 한다.
 - 로컬 검증과 CI 검증 모두 `build 완료 후 test 실행` 원칙을 따른다.
 - 검증 로그를 분리해 남기고, test 실패 해석 전에 해당 시점 build가 실제로 끝났는지 먼저 확인한다.
+- 작업은 기본적으로 `작은 변경 -> 검증 -> roadmap/review/spec 갱신 -> 커밋` 흐름으로 닫는다.
+- push 또는 PR 전에 local branch가 원격보다 앞선 커밋 수와 작업트리 상태를 확인한다.
