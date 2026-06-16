@@ -580,6 +580,60 @@ static void vTestRastaSrNoChecksumEncodeDecodeRoundTrip(void)
 	vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr decoded checksum absent");
 }
 
+static void vTestRastaSrNoChecksumZeroPayloadRoundTrip(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES];
+	rsrx_rasta_sr_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+
+	xRequest.usPacketLength = D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
+	xRequest.usMessageType = (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ;
+	xRequest.uReceiverId = 0x01020304U;
+	xRequest.uSenderId = 0x05060708U;
+	xRequest.uSequenceNumber = 0x090A0B0CU;
+	xRequest.uConfirmedSequenceNumber = 0x0D0E0F10U;
+	xRequest.uTimestamp = 0x11121314U;
+	xRequest.uConfirmedTimestamp = 0x15161718U;
+	xRequest.puPayload = (const uint8_t *)0;
+	xRequest.xPayloadLength = 0U;
+	xRequest.puChecksum = (const uint8_t *)0;
+	xRequest.xChecksumLength = 0U;
+
+	xBuffer.puBuffer = auEncoded;
+	xBuffer.xBufferCapacity = sizeof(auEncoded);
+	xBuffer.xEncodedLength = 99U;
+
+	vAssertTrue(
+		rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK,
+		"rasta sr no-checksum zero payload encode");
+	vAssertTrue(
+		xBuffer.xEncodedLength == D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+		"rasta sr no-checksum zero payload encoded length");
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = xBuffer.xEncodedLength;
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_sr_no_checksum(&xFrame, &xPacket) == RSRX_CODEC_STATUS_OK,
+		"rasta sr no-checksum zero payload decode");
+	vAssertTrue(xPacket.usPacketLength == D_RSRX_CODEC_RASTA_SR_HEADER_BYTES, "rasta sr zero length");
+	vAssertTrue(xPacket.usMessageType == (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ, "rasta sr zero type");
+	vAssertTrue(xPacket.uReceiverId == 0x01020304U, "rasta sr zero receiver");
+	vAssertTrue(xPacket.uSenderId == 0x05060708U, "rasta sr zero sender");
+	vAssertTrue(xPacket.uSequenceNumber == 0x090A0B0CU, "rasta sr zero sequence");
+	vAssertTrue(xPacket.uConfirmedSequenceNumber == 0x0D0E0F10U, "rasta sr zero confirmed sequence");
+	vAssertTrue(xPacket.uTimestamp == 0x11121314U, "rasta sr zero timestamp");
+	vAssertTrue(xPacket.uConfirmedTimestamp == 0x15161718U, "rasta sr zero confirmed timestamp");
+	vAssertTrue(xPacket.xPayloadLength == 0U, "rasta sr zero payload length");
+	vAssertTrue(xPacket.xChecksumLength == 0U, "rasta sr zero checksum length");
+	vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr zero checksum absent");
+}
+
 static void vTestRastaSrNoChecksumEncodeRejectsInvalidInputs(void)
 {
 	static const uint8_t auPayload[1] = { 0x7EU };
@@ -2705,6 +2759,7 @@ int main(void)
 	vTestRastaDisconnectReasonMapping();
 	vTestRastaSrByteOrderIsFixedBigEndian();
 	vTestRastaSrNoChecksumEncodeDecodeRoundTrip();
+	vTestRastaSrNoChecksumZeroPayloadRoundTrip();
 	vTestRastaSrNoChecksumEncodeRejectsInvalidInputs();
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
