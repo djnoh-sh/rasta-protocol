@@ -819,6 +819,84 @@ static void vTestRastaSrNoChecksumControlFamilyWireTypeBytes(void)
 	}
 }
 
+static void vTestRastaSrNoChecksumControlFamilyWireFixtureDecode(void)
+{
+	typedef struct
+	{
+		uint16_t usMessageType;
+	} test_case_t;
+
+	uint8_t auFrame[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES];
+	rsrx_transport_frame_t xFrame;
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_HB }
+	};
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auFrame;
+	xFrame.xPayloadLength = sizeof(auFrame);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint16(D_RSRX_CODEC_RASTA_SR_HEADER_BYTES, &auFrame[0]) ==
+				RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture length write");
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint16(axCases[uIndex].usMessageType, &auFrame[2]) ==
+				RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture type write");
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint32(0x51000000U + uIndex, &auFrame[4]) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture receiver write");
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint32(0x52000000U + uIndex, &auFrame[8]) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture sender write");
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint32(0x53000000U + uIndex, &auFrame[12]) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture sequence write");
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint32(0x54000000U + uIndex, &auFrame[16]) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture confirmed sequence write");
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint32(0x55000000U + uIndex, &auFrame[20]) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture timestamp write");
+		vAssertTrue(
+			rsrx_codec_write_rasta_sr_uint32(0x56000000U + uIndex, &auFrame[24]) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture confirmed timestamp write");
+
+		vSeedRastaSrDecodedPacket(&xPacket);
+		vAssertTrue(
+			rsrx_codec_decode_rasta_sr_no_checksum(&xFrame, &xPacket) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control fixture decode");
+		vAssertTrue(
+			xPacket.usPacketLength == D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+			"rasta sr control fixture length");
+		vAssertTrue(xPacket.usMessageType == axCases[uIndex].usMessageType, "rasta sr control fixture type");
+		vAssertTrue(xPacket.uReceiverId == (0x51000000U + uIndex), "rasta sr control fixture receiver");
+		vAssertTrue(xPacket.uSenderId == (0x52000000U + uIndex), "rasta sr control fixture sender");
+		vAssertTrue(xPacket.uSequenceNumber == (0x53000000U + uIndex), "rasta sr control fixture sequence");
+		vAssertTrue(
+			xPacket.uConfirmedSequenceNumber == (0x54000000U + uIndex),
+			"rasta sr control fixture confirmed sequence");
+		vAssertTrue(xPacket.uTimestamp == (0x55000000U + uIndex), "rasta sr control fixture timestamp");
+		vAssertTrue(
+			xPacket.uConfirmedTimestamp == (0x56000000U + uIndex),
+			"rasta sr control fixture confirmed timestamp");
+		vAssertTrue(xPacket.xPayloadLength == 0U, "rasta sr control fixture payload length");
+		vAssertTrue(xPacket.xChecksumLength == 0U, "rasta sr control fixture checksum length");
+		vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr control fixture checksum absent");
+	}
+}
+
 static void vTestRastaSrNoChecksumEncodeRejectsInvalidInputs(void)
 {
 	static const uint8_t auPayload[1] = { 0x7EU };
@@ -2948,6 +3026,7 @@ int main(void)
 	vTestRastaSrNoChecksumMaxPayloadRoundTrip();
 	vTestRastaSrNoChecksumControlFamilyRoundTrip();
 	vTestRastaSrNoChecksumControlFamilyWireTypeBytes();
+	vTestRastaSrNoChecksumControlFamilyWireFixtureDecode();
 	vTestRastaSrNoChecksumEncodeRejectsInvalidInputs();
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
