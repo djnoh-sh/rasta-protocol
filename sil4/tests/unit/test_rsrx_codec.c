@@ -693,6 +693,82 @@ static void vTestRastaSrNoChecksumMaxPayloadRoundTrip(void)
 	vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr max checksum absent");
 }
 
+static void vTestRastaSrNoChecksumControlFamilyRoundTrip(void)
+{
+	typedef struct
+	{
+		uint16_t usMessageType;
+		const char * pcLabel;
+	} test_case_t;
+
+	uint8_t auEncoded[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES];
+	rsrx_rasta_sr_encode_request_t xRequest;
+	rsrx_encode_buffer_t xBuffer;
+	rsrx_transport_frame_t xFrame;
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+	uint32_t uIndex;
+	static const test_case_t axCases[] =
+	{
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ, "connreq" },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP, "connresp" },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_HB, "heartbeat" },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ, "retrreq" },
+		{ (uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ, "discreq" }
+	};
+
+	for(uIndex = 0U; uIndex < (sizeof(axCases) / sizeof(axCases[0])); ++uIndex)
+	{
+		xRequest.usPacketLength = D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
+		xRequest.usMessageType = axCases[uIndex].usMessageType;
+		xRequest.uReceiverId = 0x41000000U + uIndex;
+		xRequest.uSenderId = 0x42000000U + uIndex;
+		xRequest.uSequenceNumber = 0x43000000U + uIndex;
+		xRequest.uConfirmedSequenceNumber = 0x44000000U + uIndex;
+		xRequest.uTimestamp = 0x45000000U + uIndex;
+		xRequest.uConfirmedTimestamp = 0x46000000U + uIndex;
+		xRequest.puPayload = (const uint8_t *)0;
+		xRequest.xPayloadLength = 0U;
+		xRequest.puChecksum = (const uint8_t *)0;
+		xRequest.xChecksumLength = 0U;
+
+		xBuffer.puBuffer = auEncoded;
+		xBuffer.xBufferCapacity = sizeof(auEncoded);
+		xBuffer.xEncodedLength = 99U;
+
+		vAssertTrue(
+			rsrx_codec_encode_rasta_sr_no_checksum(&xRequest, &xBuffer) == RSRX_CODEC_STATUS_OK,
+			axCases[uIndex].pcLabel);
+		vAssertTrue(
+			xBuffer.xEncodedLength == D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+			"rasta sr control family encoded length");
+
+		xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+		xFrame.puPayload = auEncoded;
+		xFrame.xPayloadLength = xBuffer.xEncodedLength;
+		xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+		vSeedRastaSrDecodedPacket(&xPacket);
+		vAssertTrue(
+			rsrx_codec_decode_rasta_sr_no_checksum(&xFrame, &xPacket) == RSRX_CODEC_STATUS_OK,
+			"rasta sr control family decode");
+		vAssertTrue(xPacket.usPacketLength == D_RSRX_CODEC_RASTA_SR_HEADER_BYTES, "rasta sr control length");
+		vAssertTrue(xPacket.usMessageType == axCases[uIndex].usMessageType, "rasta sr control type");
+		vAssertTrue(xPacket.uReceiverId == xRequest.uReceiverId, "rasta sr control receiver");
+		vAssertTrue(xPacket.uSenderId == xRequest.uSenderId, "rasta sr control sender");
+		vAssertTrue(xPacket.uSequenceNumber == xRequest.uSequenceNumber, "rasta sr control sequence");
+		vAssertTrue(
+			xPacket.uConfirmedSequenceNumber == xRequest.uConfirmedSequenceNumber,
+			"rasta sr control confirmed sequence");
+		vAssertTrue(xPacket.uTimestamp == xRequest.uTimestamp, "rasta sr control timestamp");
+		vAssertTrue(
+			xPacket.uConfirmedTimestamp == xRequest.uConfirmedTimestamp,
+			"rasta sr control confirmed timestamp");
+		vAssertTrue(xPacket.xPayloadLength == 0U, "rasta sr control payload length");
+		vAssertTrue(xPacket.xChecksumLength == 0U, "rasta sr control checksum length");
+		vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr control checksum absent");
+	}
+}
+
 static void vTestRastaSrNoChecksumEncodeRejectsInvalidInputs(void)
 {
 	static const uint8_t auPayload[1] = { 0x7EU };
@@ -2820,6 +2896,7 @@ int main(void)
 	vTestRastaSrNoChecksumEncodeDecodeRoundTrip();
 	vTestRastaSrNoChecksumZeroPayloadRoundTrip();
 	vTestRastaSrNoChecksumMaxPayloadRoundTrip();
+	vTestRastaSrNoChecksumControlFamilyRoundTrip();
 	vTestRastaSrNoChecksumEncodeRejectsInvalidInputs();
 	vTestRastaSrNoChecksumDecodeRejectsMalformedFrames();
 	vTestRastaSrChecksumProfileAdmissionPolicy();
