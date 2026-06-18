@@ -580,6 +580,69 @@ static void vTestRastaSrNoChecksumEncodeDecodeRoundTrip(void)
 	vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr decoded checksum absent");
 }
 
+static void vTestRastaSrNoChecksumDataWireFixtureDecode(void)
+{
+	static uint8_t auFrame[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 4U];
+	rsrx_transport_frame_t xFrame;
+	rsrx_rasta_sr_decoded_packet_t xPacket;
+
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16((uint16_t)sizeof(auFrame), &auFrame[0]) ==
+			RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture length write");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint16((uint16_t)RSRX_RASTA_SR_TYPE_DATA, &auFrame[2]) ==
+			RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture type write");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0xA1020304U, &auFrame[4]) == RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture receiver write");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0xB5060708U, &auFrame[8]) == RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture sender write");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0xC90A0B0CU, &auFrame[12]) == RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture sequence write");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0xDD0E0F10U, &auFrame[16]) == RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture confirmed sequence write");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0xE1121314U, &auFrame[20]) == RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture timestamp write");
+	vAssertTrue(
+		rsrx_codec_write_rasta_sr_uint32(0xF5161718U, &auFrame[24]) == RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture confirmed timestamp write");
+	auFrame[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES] = 0x21U;
+	auFrame[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 1U] = 0x22U;
+	auFrame[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 2U] = 0x23U;
+	auFrame[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + 3U] = 0x24U;
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auFrame;
+	xFrame.xPayloadLength = sizeof(auFrame);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSeedRastaSrDecodedPacket(&xPacket);
+	vAssertTrue(
+		rsrx_codec_decode_rasta_sr_no_checksum(&xFrame, &xPacket) == RSRX_CODEC_STATUS_OK,
+		"rasta sr data fixture decode");
+	vAssertTrue(xPacket.usPacketLength == sizeof(auFrame), "rasta sr data fixture length");
+	vAssertTrue(xPacket.usMessageType == (uint16_t)RSRX_RASTA_SR_TYPE_DATA, "rasta sr data fixture type");
+	vAssertTrue(xPacket.uReceiverId == 0xA1020304U, "rasta sr data fixture receiver");
+	vAssertTrue(xPacket.uSenderId == 0xB5060708U, "rasta sr data fixture sender");
+	vAssertTrue(xPacket.uSequenceNumber == 0xC90A0B0CU, "rasta sr data fixture sequence");
+	vAssertTrue(
+		xPacket.uConfirmedSequenceNumber == 0xDD0E0F10U,
+		"rasta sr data fixture confirmed sequence");
+	vAssertTrue(xPacket.uTimestamp == 0xE1121314U, "rasta sr data fixture timestamp");
+	vAssertTrue(xPacket.uConfirmedTimestamp == 0xF5161718U, "rasta sr data fixture confirmed timestamp");
+	vAssertTrue(xPacket.xPayloadLength == 4U, "rasta sr data fixture payload length");
+	vAssertTrue(xPacket.auPayload[0] == 0x21U, "rasta sr data fixture payload byte 0");
+	vAssertTrue(xPacket.auPayload[3] == 0x24U, "rasta sr data fixture payload byte 3");
+	vAssertTrue(xPacket.xChecksumLength == 0U, "rasta sr data fixture checksum length");
+	vAssertTrue(xPacket.uChecksumPresent == 0U, "rasta sr data fixture checksum absent");
+}
+
 static void vTestRastaSrNoChecksumZeroPayloadRoundTrip(void)
 {
 	uint8_t auEncoded[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES];
@@ -3022,6 +3085,7 @@ int main(void)
 	vTestRastaDisconnectReasonMapping();
 	vTestRastaSrByteOrderIsFixedBigEndian();
 	vTestRastaSrNoChecksumEncodeDecodeRoundTrip();
+	vTestRastaSrNoChecksumDataWireFixtureDecode();
 	vTestRastaSrNoChecksumZeroPayloadRoundTrip();
 	vTestRastaSrNoChecksumMaxPayloadRoundTrip();
 	vTestRastaSrNoChecksumControlFamilyRoundTrip();
