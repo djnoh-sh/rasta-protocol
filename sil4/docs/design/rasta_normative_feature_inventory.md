@@ -29,6 +29,7 @@ If an official RaSTA specification PDF or controlled customer requirement set is
 | `RaSTA Mandatory` | Defined by RaSTA packet/runtime behavior and required for protocol parity | Implement in portable core or a mandatory selected codec/profile path |
 | `RaSTA Configurable` | Defined by RaSTA but selected by configuration/profile | Implement selectable profiles and reject unsupported configured selections |
 | `Project Extension` | Not currently evidenced as RaSTA mandatory; project or deployment security addition | Keep behind explicit config/adapter boundary, do not imply RaSTA parity |
+| `Standard Parity Decision` | V&V/customer/official input identifies the feature as required before claiming full RaSTA standard parity, but exact clause/vector implementation inputs are still pending | Treat as in-scope for full parity planning; do not implement speculatively before a controlled design/test packet exists |
 | `Target Evidence` | Depends on AM263Px/SafeRTOS/toolchain/hardware execution | Keep out of portable core; capture in target evidence package |
 
 ## Feature Inventory
@@ -46,7 +47,7 @@ If an official RaSTA specification PDF or controlled customer requirement set is
 | Sequence, confirmed sequence, retransmission, and ordering windows | `sr_sn_in_seq`, `sr_sn_range_valid`, `sr_cs_valid`, retransmission analysis docs | RaSTA Mandatory | Representative sequence/confirmation/retransmission families are implemented and tested | Compare current policy against official/window parameters and add missing boundary vectors |
 | Packet authenticity: sender/receiver ID validation | `sr_message_authentic` in analysis docs | RaSTA Mandatory | Codec-level receiver/sender identity admission and supervisor SR runtime identity policy wiring exist | Add only deployment-specific identity configuration evidence |
 | Application data payload/message aggregation | `RastaMessageData`, `MAX_APP_MSG_LEN`, factory constructors in analysis docs | RaSTA Mandatory if SCI/application aggregation is in scope | Current payload path supports bounded payload bytes, not multi-application-message aggregation parity | Decide SCI/application aggregation scope; implement if in scope, otherwise document exclusion |
-| MAC/HMAC-style authentication beyond RaSTA checksum/hash profile | Not evidenced in current repository as RaSTA mandatory | Project Extension | `uRequireMac` is rejected because no MAC-capable codec profile exists | Keep as extension until a controlled requirement requires it; if required, define algorithm/key/lifecycle policy separately |
+| MAC/HMAC-style authentication beyond RaSTA checksum/hash profile | V&V Section 9 standard-parity assessment; exact official/customer clause mapping still required | Standard Parity Decision | `uRequireMac` is rejected because no MAC-capable codec profile exists; this remains valid unsupported-state behavior, not full parity | Define MAC algorithm/key/lifecycle policy, vectors, and target crypto/equivalence evidence before implementation |
 | AM263Px hardware CRC/crypto acceleration | Target deployment requirement | Target Evidence | Portable CRC32 calculator injection seam exists | Add target adapter and software-vs-hardware equivalence evidence only in the target package |
 
 ## Immediate Backlog Split
@@ -55,10 +56,12 @@ If an official RaSTA specification PDF or controlled customer requirement set is
 2. `PDU-PARITY-002`: Numeric message type and disconnect reason mapping are implemented for the current supported boundary; add new message-family behavior only if selected.
 3. `PDU-PARITY-003`: Sender/receiver RaSTA ID authenticity validation is implemented at codec admission and supervisor policy wiring boundaries; deployment-specific identity configuration evidence remains target/customer scope.
 4. `PDU-PARITY-004`: Timestamp and confirmed timestamp fields plus codec admission are implemented; target monotonic source binding remains target evidence scope.
-5. `CHECKSUM-PARITY-001`: Keep selected no-checksum default profile closed; open MD4/BLAKE2b/SipHash 8-byte or 16-byte profiles only if a controlled requirement selects one.
-6. `CRC-PARITY-001`: Keep option A no-CRC accepted and B-E explicitly rejected unless selected by controlled requirement.
+5. `CHECKSUM-PARITY-001`: Keep selected no-checksum default profile closed; open MD4/BLAKE2b/SipHash 8-byte or 16-byte profiles only when the controlled design/test packet selects exact algorithm/profile behavior.
+6. `CRC-PARITY-001`: Keep option A no-CRC accepted and B-E explicitly rejected until the CRC-bearing redundancy design/test packet defines option layout, vectors, and evidence boundaries.
 7. `RED-PDU-PARITY-001`: Redundancy PDU profile metadata, option A no-CRC encode/decode behavior, carried no-checksum SR decode bridging, and supervisor runtime selection are defined; open CRC-bearing behavior only if selected.
-8. `EXT-MAC-001`: Keep MAC as project extension unless official/customer requirements make it mandatory.
+8. `MAC-PARITY-001`: Treat MAC sign/verify as full standard-parity scope after V&V Section 9, but keep it unimplemented until controlled algorithm/key/lifecycle and vector inputs are available.
+9. `TIME-PARITY-001`: Treat dynamic clock/time supervision as full standard-parity scope after V&V Section 9; static timestamp-window admission is not a substitute for T_max/drift/retransmission-delay supervision.
+10. `RED-MODE-PARITY-001`: Treat Parallel Delivery and receive-side multi-path merge/filtering as full redundancy parity scope after V&V Section 9; active-standby remains only the selected representative baseline.
 
 ## Current Interpretation
 
@@ -68,7 +71,7 @@ The roadmap should therefore distinguish:
 
 - `RaSTA PDU/checksum/timestamp parity`: selected no-checksum SR host parity is closed; checksum-bearing and target timestamp-source evidence remain conditional residuals.
 - `RaSTA SCI/application-message aggregation`: outside the current selected PDU wire-profile claim unless a controlled official/customer scope decision selects it.
-- `MAC/security extension`: optional/project-specific unless a controlled requirement says otherwise.
+- `MAC/security extension`: standard-parity decision after V&V Section 9, with implementation gated on controlled algorithm/key/lifecycle and vector inputs.
 - `AM263Px/SafeRTOS hardware acceleration`: target adapter/evidence backlog, not portable core logic.
 
-`PDU-PARITY-001A..001F` are now implemented through profile metadata, public SR packet data contracts, numeric type/disconnect reason mappings, fixed big-endian byte-order policy, no-checksum SR common-header/payload encode/decode behavior, selected no-checksum default profile, explicit unsupported checksum-profile admission rejection, codec-level timestamp/window admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, codec-level receiver/sender identity admission, and supervisor identity policy wiring. `RED-PDU-PARITY-001A` is implemented through redundancy wire-profile metadata, CRC option admission, option A no-CRC encode/decode behavior, carried no-checksum SR decode bridging, and supervisor runtime selection. The remaining open parity work is non-none checksum/hash calculation only if required, target timestamp source refresh policy, CRC-bearing redundancy PDU behavior only if selected, and SCI/application-message aggregation only if scoped in.
+`PDU-PARITY-001A..001F` are now implemented through profile metadata, public SR packet data contracts, numeric type/disconnect reason mappings, fixed big-endian byte-order policy, no-checksum SR common-header/payload encode/decode behavior, selected no-checksum default profile, explicit unsupported checksum-profile admission rejection, codec-level static timestamp/window admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, codec-level receiver/sender identity admission, and supervisor identity policy wiring. `RED-PDU-PARITY-001A` is implemented through redundancy wire-profile metadata, CRC option admission, option A no-CRC encode/decode behavior, carried no-checksum SR decode bridging, and supervisor runtime selection. The remaining open standard-parity work is MAC sign/verify, dynamic clock/time supervision, non-none checksum/hash calculation, CRC-bearing redundancy PDU behavior, Parallel Delivery / multi-path merge, and SCI/application-message aggregation only if scoped in.
