@@ -21,9 +21,9 @@ This document is repo-source-derived. It uses the existing open-source implement
 
 Before claiming official specification conformance, this draft must be updated with controlled RaSTA specification or customer requirement document IDs and exact clause references.
 
-## Current SIL4 Codec Baseline
+## Current SIL4 Codec Baselines
 
-The current SIL4 codec is a representative skeleton profile. Its header is 16 bytes:
+The default SIL4 codec profile remains a representative skeleton profile. Its header is 16 bytes:
 
 | Offset | Size | Current SIL4 Field |
 | --- | ---: | --- |
@@ -35,7 +35,9 @@ The current SIL4 codec is a representative skeleton profile. Its header is 16 by
 | 12 | 2 | payload length |
 | 14 | 2 | reserved |
 
-This layout is useful for bounded codec and supervisor evidence, but it is not full RaSTA SR wire-layout parity.
+This layout is useful for bounded codec and supervisor evidence, but it is not the selected RaSTA SR wire-layout profile.
+
+The selected RaSTA SR no-checksum host profile is implemented separately. It uses the 28-byte SR header described below, fixed big-endian field encoding, explicit request/decoded-packet contracts, supported numeric message type mapping, receiver/sender IDs, sequence/confirmed sequence, timestamp/confirmed timestamp, bounded payload, and zero-checksum metadata. Checksum-bearing SR profiles remain conditional follow-up work.
 
 ## Repo-Source SR PDU Layout
 
@@ -108,19 +110,19 @@ The existing RaSTA implementation wraps one SR packet in a redundancy-layer PDU 
 
 The SIL4 implementation now exposes this as `D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY`, with an 8-byte header, max carried SR frame capacity, and a max 4-byte CRC envelope. CRC option admission currently accepts option A / 0-byte no-CRC and rejects B/C/D/E as unsupported until implemented. Option A no-CRC redundancy PDU encode/decode, carried no-checksum SR decode bridging, and supervisor runtime selection are implemented; CRC-bearing redundancy PDU behavior and RaSTA CRC calculation parity remain follow-up work only if selected.
 
-## Required SIL4 Delta
+## Remaining Conditional SIL4 Delta
 
-The current SIL4 codec lacks the following SR PDU parity fields or semantics:
+The selected no-checksum SR host baseline implements the current SR PDU common-field path. Remaining deltas are conditional on a selected checksum/security/redundancy/target requirement:
 
-| Gap | Required Follow-up |
+| Boundary | Required Follow-up |
 | --- | --- |
-| No 28-byte SR header profile | Implemented for no-checksum SR encode/decode; checksum-bearing profiles remain follow-up |
-| No RaSTA numeric type values | Implemented for supported current inbound/outbound SR message families |
-| No receiver/sender ID fields | Implemented in no-checksum SR encode/decode, codec-level identity admission, and supervisor SR runtime identity policy wiring |
-| No timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields with codec-level admission boundary, timestamp-admitted handoff mapping, and explicit supervisor runtime SR selection |
+| 28-byte SR header profile | Implemented for no-checksum SR encode/decode; checksum-bearing profiles remain follow-up |
+| RaSTA numeric type values | Implemented for supported current inbound/outbound SR message families |
+| Receiver/sender ID fields | Implemented in no-checksum SR encode/decode, codec-level identity admission, and supervisor SR runtime identity policy wiring |
+| Timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields with codec-level admission boundary, timestamp-admitted handoff mapping, and explicit supervisor runtime SR selection |
 | CRC32 wrapper is not SR safety-code parity | Selected default SR checksum profile is no-checksum; explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains follow-up only if a non-none profile is selected |
-| No redundancy PDU profile | Implemented by `rsrx_codec_get_rasta_redundancy_wire_profile()`, option A no-CRC encode/decode, carried SR decode bridging, supervisor runtime selection, `TC-CODEC-047`, `TC-CODEC-049`, `TC-CODEC-050`, and `TC-SUP-077`; CRC-bearing behavior remains follow-up if selected |
-| No redundancy CRC option admission | Implemented for option A accepted and B/C/D/E unsupported by `rsrx_codec_validate_rasta_redundancy_crc_profile()` and `TC-CODEC-048`; actual CRC calculation remains follow-up if selected |
+| Redundancy PDU profile | Implemented by `rsrx_codec_get_rasta_redundancy_wire_profile()`, option A no-CRC encode/decode, carried SR decode bridging, supervisor runtime selection, `TC-CODEC-047`, `TC-CODEC-049`, `TC-CODEC-050`, and `TC-SUP-077`; CRC-bearing behavior remains follow-up if selected |
+| Redundancy CRC option admission | Implemented for option A accepted and B/C/D/E unsupported by `rsrx_codec_validate_rasta_redundancy_crc_profile()` and `TC-CODEC-048`; actual CRC calculation remains follow-up if selected |
 | Internal reason byte is not RaSTA DiscReq reason parity | Implemented for the current mapping boundary by `rsrx_codec_map_reason_to_rasta_disconnect_reason()` and `TC-CODEC-039`; add more mappings only if a new controlled DiscReq reason boundary is introduced |
 
 ## Staged Implementation Plan
