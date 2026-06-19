@@ -12,8 +12,8 @@
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 대체로 유지 중이며, 2026-06-02 comprehensive V&V audit의 public API 비동기 임계영역은 portable host guard 적용까지 진행됐고, 신규 Finding G는 codec timestamp admission corrective action으로 수용했다.
-- 최근 업데이트: `RV-529`로 CRC32 wrapper inner-status preservation matrix를 current default codec decode status family 기준 representative-closeout으로 정리했다.
-- 다음 주력 단계: external lane은 `actual vendor export acquisition` 및 `first AM263Px/SafeRTOS target package execution`; local lane은 target context가 들어오면 `EVID-TGT-003`/`EVID-TGT-005`/`EVID-TGT-007` fill-in 지원, 그 외 checksum/security 또는 새 wrapper status growth는 controlled requirement/status family 추가 시에만 진행
+- 최근 업데이트: `RV-530`으로 current unblocked work를 재평가했고, 외부/타깃 산출물 또는 controlled requirement 없이 host-only 숫자/케이스를 계속 늘리는 구현은 열지 않는 것으로 정리했다.
+- 다음 주력 단계: external lane은 `actual vendor export acquisition` 및 `first AM263Px/SafeRTOS target package execution`; local lane은 target context가 들어오면 `EVID-TGT-003`/`EVID-TGT-005`/`EVID-TGT-007` fill-in 지원, 그 외 checksum/security, protocol/redundancy policy, 새 wrapper status growth는 controlled requirement/status family 추가 시에만 진행
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
 ## Overall Phase Status
@@ -32,7 +32,7 @@
 | --- | --- | --- | --- |
 | Rules and Governance | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` | 유지 관리 |
 | Requirements and HLD | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` | 인증/타깃 요구사항 정제 |
-| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-529` | 새 policy/evidence growth마다 review/spec linkage 유지 |
+| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-530` | 새 policy/evidence growth마다 review/spec linkage 유지 |
 | State Machine / Orchestrator | In Progress | `rsrx_state_machine.*`, `rsrx_orchestrator.*`, unit tests, reset baseline evidence `RV-393..RV-394` | future state/action 확장 시 assertion density 유지 |
 | Platform / Transport Abstraction | In Progress | `rsrx_platform.h`, `rsrx_transport.h`, contract tests, critical-section port contract `TC-PLAT-004`/`RV-433`, portable API boundary closeout `RV-445` | 포팅 시 target adapter evidence |
 | Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..015`, `TC-API-003`, `TC-API-014..029`, public API report-output guard evidence `RV-427`, adapter query/receive/executor output guard evidence `RV-429..RV-431`, reset timer quiescence evidence `RV-432`, critical-section startup gate evidence `TC-CFG-011`/`RV-433`, public API critical-section guard evidence `RV-434`, outbound telemetry snapshot evidence `RV-435`, outbound queue snapshot/report-helper/feedback-clear evidence `RV-436`/`RV-439`/`RV-442`, channel-manager snapshot evidence `RV-437`, inbound event resolve/record boundary evidence `RV-440`/`RV-441`, channel query/frame receive boundary evidence `RV-443`/`RV-444`, transport API balanced matrix evidence `RV-447` | target runtime binding, callback reentrancy policy, selected codec policy 유지 |
@@ -56,6 +56,7 @@
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
 - Latest local verification was green after `RV-528`.
+- Latest document-only work-priority reassessment is `RV-530`, which confirms no additional unselected host-only implementation growth should proceed without external/target artifacts or a controlled requirement/status/policy selection; no host verification rerun was required for that document-only step.
 - Latest document-only codec closeout update is `RV-529`, which closes the current CRC32 wrapper inner-status preservation matrix; no host verification rerun was required for that document-only step.
 - Latest document-only planning update is `RV-523`, which adds the AM263Px/SafeRTOS target artifact package fill-in runbook; no host verification rerun was required for that document-only step.
 - External artifact references:
@@ -123,4 +124,5 @@
   - accepted V&V follow-up이 baseline defect wording이 아니라 explicit backlog/evidence item으로 유지될 것
   - AM263Px/SafeRTOS work가 core implementation dependency가 아니라 target porting/evidence workstream으로 유지되고, hardware acceleration은 target adapter 뒤에만 위치할 것
   - numeric parity growth는 current target range에서 closeout으로 유지하고, 새 policy/failure-mode가 있을 때만 확장할 것
+  - unselected host-only growth는 `RV-530` 기준으로 중단하고, 다음 구현은 external/target artifact 또는 controlled requirement/status/policy selection으로만 열 것
   - build, unit/integration test, `cppcheck`가 깨끗할 것
