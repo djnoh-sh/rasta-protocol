@@ -1,0 +1,51 @@
+name: SIL4 Example Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  posix-echo-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake cppcheck make gcc
+
+      - name: Run POSIX Echo Smoke
+        run: bash sil4/tools/run_posix_echo_smoke.sh
+
+      - name: Publish Step Summary
+        if: always()
+        run: |
+          if [ -f /tmp/rsrx-example-smoke-logs/summary.md ]; then
+            cat /tmp/rsrx-example-smoke-logs/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "SIL4 example smoke summary not found" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload Example Smoke Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sil4-example-smoke-logs
+          path: |
+            /tmp/rsrx-example-smoke-logs/summary.md
+            /tmp/rsrx-example-smoke-logs/example_build.log
+            /tmp/rsrx-example-smoke-logs/smoke_run.log
+            /tmp/rsrx-example-smoke-logs/server.log
+            /tmp/rsrx-example-smoke-logs/client.log
+            /tmp/rsrx-example-smoke-logs/verification/configure.log
+            /tmp/rsrx-example-smoke-logs/verification/build.log
+            /tmp/rsrx-example-smoke-logs/verification/tests.log
+            /tmp/rsrx-example-smoke-logs/verification/cppcheck.log
+            /tmp/rsrx-example-smoke-logs/verification/summary.md
+            /tmp/rsrx-example-smoke-logs/verification/summary.env
+          if-no-files-found: error
