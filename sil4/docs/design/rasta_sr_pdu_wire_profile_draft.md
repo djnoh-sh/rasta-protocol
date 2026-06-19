@@ -121,7 +121,7 @@ The current SIL4 codec lacks the following SR PDU parity fields or semantics:
 | CRC32 wrapper is not SR safety-code parity | Selected default SR checksum profile is no-checksum; explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains follow-up only if a non-none profile is selected |
 | No redundancy PDU profile | Implemented by `rsrx_codec_get_rasta_redundancy_wire_profile()`, option A no-CRC encode/decode, carried SR decode bridging, supervisor runtime selection, `TC-CODEC-047`, `TC-CODEC-049`, `TC-CODEC-050`, and `TC-SUP-077`; CRC-bearing behavior remains follow-up if selected |
 | No redundancy CRC option admission | Implemented for option A accepted and B/C/D/E unsupported by `rsrx_codec_validate_rasta_redundancy_crc_profile()` and `TC-CODEC-048`; actual CRC calculation remains follow-up if selected |
-| Internal reason byte is not RaSTA DiscReq reason parity | Add disconnect reason mapping tests |
+| Internal reason byte is not RaSTA DiscReq reason parity | Implemented for the current mapping boundary by `rsrx_codec_map_reason_to_rasta_disconnect_reason()` and `TC-CODEC-039`; add more mappings only if a new controlled DiscReq reason boundary is introduced |
 
 ## Staged Implementation Plan
 
