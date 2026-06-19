@@ -10,7 +10,7 @@
 
 ## Purpose
 
-This draft defines the concrete wire-profile and implementation-status baseline for selected no-checksum RaSTA SR PDU parity in the SIL4 reimplementation. It is intentionally limited to the SR packet layout, selected no-checksum SR host behavior, and option A no-CRC redundancy status; checksum algorithms, target timestamp-source binding, redundancy PDU CRC-bearing behavior, and target acceleration remain separate conditional follow-up items.
+This draft defines the concrete wire-profile and implementation-status baseline for selected no-checksum RaSTA SR PDU parity in the SIL4 reimplementation. It is intentionally limited to the SR packet layout, selected no-checksum SR host behavior, and option A no-CRC redundancy status; checksum algorithms (`SR-CHECKSUM-PARITY-001`), target timestamp-source binding (`TIME-PARITY-001` target evidence), redundancy PDU CRC-bearing behavior (`RED-CRC-PARITY-001`), and target acceleration remain separate gated follow-up items.
 
 This profile does not claim SCI/application-message aggregation parity. The current selected host boundary treats the SR data field as a bounded payload byte sequence; `SCI-SCOPE-001` records that any RaSTA SCI/application aggregation behavior must be reopened by controlled official/customer scope input before implementation.
 
@@ -39,7 +39,7 @@ The default SIL4 codec profile remains a representative skeleton profile. Its he
 
 This layout is useful for bounded codec and supervisor evidence, but it is not the selected RaSTA SR wire-layout profile.
 
-The selected RaSTA SR no-checksum host profile is implemented separately. It uses the 28-byte SR header described below, fixed big-endian field encoding, explicit request/decoded-packet contracts, supported numeric message type mapping, receiver/sender IDs, sequence/confirmed sequence, timestamp/confirmed timestamp, bounded payload, and zero-checksum metadata. Checksum-bearing SR profiles remain conditional follow-up work.
+The selected RaSTA SR no-checksum host profile is implemented separately. It uses the 28-byte SR header described below, fixed big-endian field encoding, explicit request/decoded-packet contracts, supported numeric message type mapping, receiver/sender IDs, sequence/confirmed sequence, timestamp/confirmed timestamp, bounded payload, and zero-checksum metadata. Checksum-bearing SR profiles remain conditional follow-up work through `SR-CHECKSUM-PARITY-001`.
 
 ## Repo-Source SR PDU Layout
 
@@ -110,7 +110,7 @@ The existing RaSTA implementation wraps one SR packet in a redundancy-layer PDU 
 | 8 | variable | carried SR packet | `rastaModuleToBytes(packet.data, ...)` |
 | 8 + SR length | 0, 2, or 4 | redundancy CRC | `packet.checksum_type.width / 8` |
 
-The SIL4 implementation now exposes this as `D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY`, with an 8-byte header, max carried SR frame capacity, and a max 4-byte CRC envelope. CRC option admission currently accepts option A / 0-byte no-CRC and rejects B/C/D/E as unsupported until selected by controlled requirement. Option A no-CRC redundancy PDU encode/decode, carried no-checksum SR decode bridging, and supervisor runtime selection are implemented; CRC-bearing redundancy PDU behavior and RaSTA CRC calculation parity remain follow-up work only if selected.
+The SIL4 implementation now exposes this as `D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY`, with an 8-byte header, max carried SR frame capacity, and a max 4-byte CRC envelope. CRC option admission currently accepts option A / 0-byte no-CRC and rejects B/C/D/E as unsupported until selected by controlled requirement. Option A no-CRC redundancy PDU encode/decode, carried no-checksum SR decode bridging, and supervisor runtime selection are implemented; CRC-bearing redundancy PDU behavior and RaSTA CRC calculation parity remain gated by `RED-CRC-PARITY-001`.
 
 ## Remaining Conditional SIL4 Delta
 
@@ -118,13 +118,13 @@ The selected no-checksum SR host baseline implements the current SR PDU common-f
 
 | Boundary | Required Follow-up |
 | --- | --- |
-| 28-byte SR header profile | Implemented for no-checksum SR encode/decode; checksum-bearing profiles remain follow-up |
+| 28-byte SR header profile | Implemented for no-checksum SR encode/decode; checksum-bearing profiles remain gated by `SR-CHECKSUM-PARITY-001` |
 | RaSTA numeric type values | Implemented for supported current inbound/outbound SR message families |
 | Receiver/sender ID fields | Implemented in no-checksum SR encode/decode, codec-level identity admission, and supervisor SR runtime identity policy wiring |
-| Timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields with codec-level admission boundary, timestamp-admitted handoff mapping, and explicit supervisor runtime SR selection |
-| CRC32 wrapper is not SR safety-code parity | Selected default SR checksum profile is no-checksum; explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains follow-up only if a non-none profile is selected |
-| Redundancy PDU profile | Implemented by `rsrx_codec_get_rasta_redundancy_wire_profile()`, option A no-CRC encode/decode, carried SR decode bridging, supervisor runtime selection, `TC-CODEC-047`, `TC-CODEC-049`, `TC-CODEC-050`, and `TC-SUP-077`; CRC-bearing behavior remains follow-up if selected |
-| Redundancy CRC option admission | Implemented for option A accepted and B/C/D/E unsupported by `rsrx_codec_validate_rasta_redundancy_crc_profile()` and `TC-CODEC-048`; actual CRC calculation remains follow-up if selected |
+| Timestamp/confirmed timestamp fields | Implemented as encoded/decoded fields with codec-level admission boundary, timestamp-admitted handoff mapping, and explicit supervisor runtime SR selection; dynamic supervision remains gated by `TIME-PARITY-001` |
+| CRC32 wrapper is not SR safety-code parity | Selected default SR checksum profile is no-checksum; explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains gated by `SR-CHECKSUM-PARITY-001` if a non-none profile is selected |
+| Redundancy PDU profile | Implemented by `rsrx_codec_get_rasta_redundancy_wire_profile()`, option A no-CRC encode/decode, carried SR decode bridging, supervisor runtime selection, `TC-CODEC-047`, `TC-CODEC-049`, `TC-CODEC-050`, and `TC-SUP-077`; CRC-bearing behavior remains gated by `RED-CRC-PARITY-001` |
+| Redundancy CRC option admission | Implemented for option A accepted and B/C/D/E unsupported by `rsrx_codec_validate_rasta_redundancy_crc_profile()` and `TC-CODEC-048`; actual CRC calculation remains gated by `RED-CRC-PARITY-001` |
 | SCI/application-message aggregation | Not claimed by this PDU wire profile; current host path carries bounded payload bytes only; `SCI-SCOPE-001` keeps aggregation scoped out until controlled official/customer input reopens it |
 | Internal reason byte is not RaSTA DiscReq reason parity | Implemented for the current mapping boundary by `rsrx_codec_map_reason_to_rasta_disconnect_reason()` and `TC-CODEC-039`; add more mappings only if a new controlled DiscReq reason boundary is introduced |
 
@@ -140,4 +140,4 @@ The selected no-checksum SR host baseline implements the current SR PDU common-f
 
 ## Review Position
 
-This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path, selected no-checksum default profile, unsupported checksum-profile admission boundary, codec-level timestamp admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, codec-level receiver/sender identity admission, supervisor identity policy wiring, redundancy PDU metadata boundary, redundancy CRC option admission boundary, redundancy option A no-CRC encode/decode behavior, carried no-checksum SR decode bridge, and supervisor redundancy runtime selection are implemented. This does not claim MD4/BLAKE2b/SipHash calculation, CRC-bearing redundancy PDU behavior, redundancy CRC calculation, target timestamp-source binding, or MAC/security-extension completion. SCI/application-message aggregation remains scoped out by `SCI-SCOPE-001` unless controlled official/customer input reopens it.
+This profile definition narrows `R-006` from a broad codec/security residual to a concrete SR PDU parity backlog. The no-checksum SR common-header/payload behavioral path, selected no-checksum default profile, unsupported checksum-profile admission boundary, codec-level timestamp admission boundary, timestamp-admitted handoff mapping, supervisor runtime SR selection, codec-level receiver/sender identity admission, supervisor identity policy wiring, redundancy PDU metadata boundary, redundancy CRC option admission boundary, redundancy option A no-CRC encode/decode behavior, carried no-checksum SR decode bridge, and supervisor redundancy runtime selection are implemented. This does not claim MD4/BLAKE2b/SipHash calculation (`SR-CHECKSUM-PARITY-001`), CRC-bearing redundancy PDU behavior or redundancy CRC calculation (`RED-CRC-PARITY-001`), dynamic timestamp-source supervision (`TIME-PARITY-001`), or MAC/security-extension completion (`MAC-PARITY-001`). SCI/application-message aggregation remains scoped out by `SCI-SCOPE-001` unless controlled official/customer input reopens it.

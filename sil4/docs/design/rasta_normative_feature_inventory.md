@@ -62,6 +62,7 @@ If an official RaSTA specification PDF or controlled customer requirement set is
 8. `MAC-PARITY-001`: MAC sign/verify design/test packet is drafted; implementation remains blocked until controlled algorithm/key/lifecycle, coverage, wire-placement, vector, and target-evidence inputs are available.
 9. `TIME-PARITY-001`: Dynamic Clock/Time Supervision design/test packet is drafted; implementation remains blocked until controlled T_max/drift/retransmission-delay, runtime ownership, vector, and target timing evidence inputs are available.
 10. `RED-MODE-PARITY-001`: Parallel Delivery and receive-side multi-path merge/filtering design/test packet is drafted; active-standby remains only the selected representative baseline until routing, duplicate detection, feedback aggregation, diagnostics, and target evidence inputs are available.
+11. `SCI-SCOPE-001`: SCI/application-message aggregation is explicitly excluded from the current SIL4 core claim; implementation remains blocked until controlled official/customer scope input reopens it and supplies layout, vector, ownership, and target-evidence inputs.
 
 ## Current Interpretation
 
