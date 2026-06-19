@@ -51,7 +51,7 @@ Before starting source-code implementation for any selected scope item, the proj
 
 ## Priority Order After This Decision
 
-1. MAC/security sign/verify design packet.
+1. MAC/security sign/verify design packet: drafted as `MAC-PARITY-001`; implementation remains blocked until controlled inputs are filled.
 2. Dynamic Clock/Time Supervision design packet.
 3. CRC-bearing redundancy PDU Option B-E design packet.
 4. Parallel Delivery / multi-path merge design packet.
