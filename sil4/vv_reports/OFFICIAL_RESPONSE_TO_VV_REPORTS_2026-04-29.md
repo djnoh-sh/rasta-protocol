@@ -423,3 +423,34 @@ The following items from the 2026-06-11 V&V update have been reflected into `sil
 1. Added `RV-477` as the corrective action for confirmed timestamp stale-window admission.
 2. Updated `R-006` to state that codec-level timestamp/window admission now includes the confirmed timestamp stale guard.
 3. Kept `R-009` target concurrency residual unchanged despite V&V portable host closure.
+
+## Addendum: 2026-06-19 Comprehensive V&V Section 9 Parity Gap Review
+
+The V&V team updated `comprehensive_vv_audit_report_2026-06-02.md` with Section 9, which compares the current `sil4` implementation against RaSTA standard parity expectations. The project reviewed the update on 2026-06-19 without modifying the V&V report file itself.
+
+### 2026-06-19 Section 9 Disposition
+
+| Section | V&V Topic | Official Project Disposition | Planning Impact |
+| --- | --- | --- | --- |
+| 9.1 | MAC generation and verification missing | Accepted as a standard-parity gap requiring a formal requirement decision. The current baseline intentionally rejects `uRequireMac` and reports no MD4/Blake2b MAC support; that is a correct unsupported-state behavior, not a completed security implementation. | Escalate `MAC/security extension` from optional wording to `standard parity decision required` under `R-006`. If the project accepts full RaSTA standard parity as scope, implement MAC sign/verify, algorithm selection, negative vectors, and target crypto/equivalence evidence. |
+| 9.2 | Dynamic Clock/Time Supervision missing | Accepted as a newly explicit gap. Finding G closed only static timestamp-window admission; it did not implement dynamic peer clock supervision, T_max monitoring, accumulated drift handling, or retransmission-delay supervision. | Add explicit `Dynamic Clock/Time Supervision` residual under `R-006`/`R-002`; do not treat `RV-477` timestamp admission as full time-supervision closeout. |
+| 9.3 | Redundancy-layer CRC options B-E unsupported | Accepted as a standard-parity gap. The current redundancy PDU baseline supports Option A no-CRC behavior and rejects unsupported CRC profiles with typed status; it does not yet serialize or verify CRC-bearing redundancy frames. | Keep `CRC-bearing redundancy PDU behavior` as a high-priority selected requirement under `R-006`; connect it explicitly to Section 9.3 and target hardware/software CRC evidence under `R-008`. |
+| 9.4 | Parallel Delivery redundancy missing | Accepted as future redundancy-mode growth. The current active-standby channel manager is representative-closeout for its selected policy but does not implement simultaneous multi-path transmission or receive-side duplicate merge/filtering. | Rename the generic future redundancy item to explicitly include `Parallel Delivery / multi-path merge` under `R-003`. |
+
+### Official Interpretation
+
+Section 9 is accepted as a standard-parity gap assessment, not as evidence that the current implemented behavior is internally inconsistent. The current baseline remains valid for the selected host scope: unsupported MAC/checksum profiles are rejected deterministically, timestamp admission is statically bounded, redundancy Option A no-CRC behavior is explicit, and active-standby channel selection is representative-closeout for the selected policy.
+
+However, those selected-scope closeouts must not be cited as full RaSTA standard parity. Full parity requires a controlled scope decision and implementation work for MAC, dynamic time supervision, CRC-bearing redundancy options, and Parallel Delivery.
+
+### Accepted Items Reflected Into Planning
+
+The following items from the 2026-06-19 Section 9 update have been reflected into `sil4/docs/roadmap_status.md`:
+
+1. Added `RV-551` as the document-only response and roadmap alignment record for Section 9.
+2. Updated `R-006` so MAC is no longer described merely as optional; it is a standard-parity decision item.
+3. Added explicit dynamic clock/time supervision residual wording so static timestamp-window admission is not overclaimed.
+4. Tied CRC-bearing redundancy PDU behavior to Section 9.3 and AM263Px/SafeRTOS hardware/software CRC evidence.
+5. Clarified `R-003` future redundancy growth as Parallel Delivery and receive-side multi-path merge/filtering.
+
+`RV-551` is document-only. No host build/test/cppcheck rerun is required because no source, test, build, or generated verification logic changed.
