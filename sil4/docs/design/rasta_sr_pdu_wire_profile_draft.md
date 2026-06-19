@@ -12,6 +12,8 @@
 
 This draft defines the concrete wire-profile and implementation-status baseline for selected no-checksum RaSTA SR PDU parity in the SIL4 reimplementation. It is intentionally limited to the SR packet layout, selected no-checksum SR host behavior, and option A no-CRC redundancy status; checksum algorithms, target timestamp-source binding, redundancy PDU CRC-bearing behavior, and target acceleration remain separate conditional follow-up items.
 
+This profile does not claim SCI/application-message aggregation parity. The current selected host boundary treats the SR data field as a bounded payload byte sequence; any RaSTA SCI/application aggregation behavior must be opened by a separate controlled scope decision before implementation.
+
 This document is repo-source-derived. It uses the existing open-source implementation as the immediate baseline:
 
 - `src/rasta/headers/rastamodule.h`
@@ -123,6 +125,7 @@ The selected no-checksum SR host baseline implements the current SR PDU common-f
 | CRC32 wrapper is not SR safety-code parity | Selected default SR checksum profile is no-checksum; explicit unsupported-profile rejection is implemented for MD4/BLAKE2b/SipHash profiles; algorithm implementation remains follow-up only if a non-none profile is selected |
 | Redundancy PDU profile | Implemented by `rsrx_codec_get_rasta_redundancy_wire_profile()`, option A no-CRC encode/decode, carried SR decode bridging, supervisor runtime selection, `TC-CODEC-047`, `TC-CODEC-049`, `TC-CODEC-050`, and `TC-SUP-077`; CRC-bearing behavior remains follow-up if selected |
 | Redundancy CRC option admission | Implemented for option A accepted and B/C/D/E unsupported by `rsrx_codec_validate_rasta_redundancy_crc_profile()` and `TC-CODEC-048`; actual CRC calculation remains follow-up if selected |
+| SCI/application-message aggregation | Not claimed by this PDU wire profile; current host path carries bounded payload bytes only; aggregation behavior requires a separate controlled scope decision |
 | Internal reason byte is not RaSTA DiscReq reason parity | Implemented for the current mapping boundary by `rsrx_codec_map_reason_to_rasta_disconnect_reason()` and `TC-CODEC-039`; add more mappings only if a new controlled DiscReq reason boundary is introduced |
 
 ## Selected Baseline Implementation Status
