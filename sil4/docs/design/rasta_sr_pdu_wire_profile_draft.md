@@ -6,11 +6,11 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-06-01`
+- Last Updated: `2026-06-19`
 
 ## Purpose
 
-This draft defines the first concrete wire-profile target for RaSTA SR PDU parity in the SIL4 reimplementation. It is intentionally limited to the SR packet layout and the staged implementation plan; checksum algorithms, timestamp admission policy, redundancy PDU CRC behavior, and target acceleration remain separate follow-up items.
+This draft defines the concrete wire-profile and implementation-status baseline for selected no-checksum RaSTA SR PDU parity in the SIL4 reimplementation. It is intentionally limited to the SR packet layout, selected no-checksum SR host behavior, and option A no-CRC redundancy status; checksum algorithms, target timestamp-source binding, redundancy PDU CRC-bearing behavior, and target acceleration remain separate conditional follow-up items.
 
 This document is repo-source-derived. It uses the existing open-source implementation as the immediate baseline:
 
@@ -108,7 +108,7 @@ The existing RaSTA implementation wraps one SR packet in a redundancy-layer PDU 
 | 8 | variable | carried SR packet | `rastaModuleToBytes(packet.data, ...)` |
 | 8 + SR length | 0, 2, or 4 | redundancy CRC | `packet.checksum_type.width / 8` |
 
-The SIL4 implementation now exposes this as `D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY`, with an 8-byte header, max carried SR frame capacity, and a max 4-byte CRC envelope. CRC option admission currently accepts option A / 0-byte no-CRC and rejects B/C/D/E as unsupported until implemented. Option A no-CRC redundancy PDU encode/decode, carried no-checksum SR decode bridging, and supervisor runtime selection are implemented; CRC-bearing redundancy PDU behavior and RaSTA CRC calculation parity remain follow-up work only if selected.
+The SIL4 implementation now exposes this as `D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY`, with an 8-byte header, max carried SR frame capacity, and a max 4-byte CRC envelope. CRC option admission currently accepts option A / 0-byte no-CRC and rejects B/C/D/E as unsupported until selected by controlled requirement. Option A no-CRC redundancy PDU encode/decode, carried no-checksum SR decode bridging, and supervisor runtime selection are implemented; CRC-bearing redundancy PDU behavior and RaSTA CRC calculation parity remain follow-up work only if selected.
 
 ## Remaining Conditional SIL4 Delta
 
