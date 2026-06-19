@@ -2638,6 +2638,40 @@ static void vTestCrc32WirePreservesTruncatedPayloadDecodeStatus(void)
 	vAssertDecodedMessageCleared(&xMessage, "crc32 wrapped truncated-payload clears stale decoded message");
 }
 
+static void vTestCrc32WirePreservesOversizedPayloadDecodeStatus(void)
+{
+	uint8_t auEncoded[D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_CRC_BYTES] = { 0U };
+	rsrx_transport_frame_t xFrame;
+	rsrx_decoded_message_t xMessage;
+	uint32_t uCrc;
+	const uint16_t usOversizedPayloadLength = (uint16_t)(D_RSRX_CODEC_MAX_PAYLOAD_BYTES + 1U);
+
+	auEncoded[0] = (uint8_t)RSRX_MESSAGE_TYPE_DATA;
+	auEncoded[1] = (uint8_t)RSRX_REASON_DATA_ACCEPTED;
+	auEncoded[12] = (uint8_t)((usOversizedPayloadLength >> 8) & 0xFFU);
+	auEncoded[13] = (uint8_t)(usOversizedPayloadLength & 0xFFU);
+
+	vAssertTrue(
+		rsrx_codec_calculate_crc32(auEncoded, D_RSRX_CODEC_HEADER_BYTES, &uCrc) == RSRX_CODEC_STATUS_OK,
+		"crc32 wrapped oversized-payload crc calculate");
+	auEncoded[D_RSRX_CODEC_HEADER_BYTES] = (uint8_t)((uCrc >> 24) & 0xFFU);
+	auEncoded[D_RSRX_CODEC_HEADER_BYTES + 1U] = (uint8_t)((uCrc >> 16) & 0xFFU);
+	auEncoded[D_RSRX_CODEC_HEADER_BYTES + 2U] = (uint8_t)((uCrc >> 8) & 0xFFU);
+	auEncoded[D_RSRX_CODEC_HEADER_BYTES + 3U] = (uint8_t)(uCrc & 0xFFU);
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auEncoded;
+	xFrame.xPayloadLength = sizeof(auEncoded);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	vSeedDecodedMessage(&xMessage);
+	vAssertTrue(
+		rsrx_codec_decode_frame_with_crc32(&xFrame, &xMessage) ==
+			RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE,
+		"crc32 wrapped oversized-payload status");
+	vAssertDecodedMessageCleared(&xMessage, "crc32 wrapped oversized-payload clears stale decoded message");
+}
+
 static void vTestCrc32WirePreservesTransportMetadataDecodeStatus(void)
 {
 	uint8_t auPayload[1] = { 0x61U };
@@ -3214,6 +3248,7 @@ int main(void)
 	vTestCrc32WirePreservesUnsupportedReasonDecodeStatus();
 	vTestCrc32WirePreservesTrailingBytesDecodeStatus();
 	vTestCrc32WirePreservesTruncatedPayloadDecodeStatus();
+	vTestCrc32WirePreservesOversizedPayloadDecodeStatus();
 	vTestCrc32WirePreservesTransportMetadataDecodeStatus();
 	vTestMaxPayloadEncodeDecodeRoundTrip();
 	vTestDecodeRejectsUnsupportedMessage();
