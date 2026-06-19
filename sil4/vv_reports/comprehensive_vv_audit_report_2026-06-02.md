@@ -132,3 +132,30 @@
     *   **테스트 커버리지 확보:** `test_rsrx_codec.c` (`vTestRastaSrTimestampAdmissionPolicy`) 단위 테스트 코드 상에 stale confirmed timestamp가 유입되었을 때 정상적으로 거부 및 처리되는 시나리오(`rasta sr stale confirmed timestamp rejected`)가 구현 및 통합되어 검증을 통과했습니다.
     *   **문서 및 로드맵 추적성:** `TS-008` (`TC-CODEC-043`) 사양서의 예상 결과 기술 사항이 수정 완료되었으며, `sil4/docs/roadmap_status.md` 및 `OFFICIAL_RESPONSE_TO_VV_REPORTS_2026-04-29.md`에 형상 통제 이력(`RV-477`)이 정합 투영되었음을 확인했습니다.
     *   **종합 검증 빌드 결과:** 픽스가 반영된 상태에서 `run_ci_verification.sh`를 재구동한 결과, 총 13개 단위/통합 테스트 통과 및 컴파일러/정적분석 경고 0건(Zero Warning) 상태를 안정적으로 유지함을 실증하였습니다.
+
+---
+
+## 9. RaSTA 표준 규격(DIN VDE V 0831-200) 대비 미구현 Parity Gap 상세 평가
+
+V&V 팀은 현재 `sil4` 구현 소스 코드(`src/*`, `include/*`) 및 인터페이스 명세서와 RaSTA 안전 통신 표준(DIN VDE V 0831-200 / EN 50159) 본 규격 명세를 대조 검증하여, 실제 안전 통신 인증을 위해 보완/구현되어야 하는 미구현 기능적 격차(Parity Gap)를 다음과 같이 객관적 사실에 의거하여 평가 및 리포트합니다.
+
+### 9.1 메시지 인증 코드(MAC) 생성 및 검증 기능 부재
+*   **표준 요구사항:** RaSTA 통신 메시지 무결성 및 출처 인증을 보장하기 위해 각 패킷에 MD4 또는 Blake2b 기반의 암호화 메시지 인증 코드(MAC)를 계산 및 부착하여 전송하고, 수신 측에서 이를 대조 검증해야 합니다.
+*   **구현 정합성 대조:** `rsrx_codec.c` 내 코덱 보안 지원 정의(`rsrx_codec_get_security_capabilities`)에서 `uSupportsMacBlake2b`, `uSupportsMacMd4`가 모두 `0U` (미지원)로 선언되어 있으며, 세션 설정 검증기(`rsrx_config_validator.c`)에서는 보안 옵션(`uRequireMac`)이 켜져 있을 때 빌드/실행을 거부(`RSRX_CONFIG_STATUS_INCONSISTENT_VALUE`)합니다.
+*   **V&V 의견:** 안전 무결성 등급(SIL4)의 외부 통신 위협 방어를 위해서는 최종 인증 통과 전에 해시 라이브러리의 통합 및 실질적인 MAC 서명/검증 로직 구현이 반드시 선행되어야 합니다.
+
+### 9.2 실시간 동적 시간 동기화(Dynamic Clock/Time Supervision) 누락
+*   **표준 요구사항:** 표준 5.5.7절에 따라, 두 통신 노드 간에 송수신 타임스탬프 차이를 실시간 모니터링하여 지속적인 클럭 지연 시간(T_max)을 평가하고 클럭 편차 및 메시지 재전송 지연을 동적으로 관리하는 시간 동기화 제어 구조가 구비되어야 합니다.
+*   **구현 정합성 대조:** 현재 구현은 `Finding G` 조치로 타임스탬프가 고정된 과거/미래 시간 윈도우 범위(`uAcceptedPastWindow`, `uAcceptedFutureWindow`) 내에 포함되는지만 정적으로 검사(Validation)하고 있으며, 상위 계층으로의 수신 피드백 주기 검사 및 실시간 누적 클럭 지연/편차 보정(Dynamic Time/Clock Supervision) 제어 루틴은 아키텍처 상에 구현되지 않은 상태입니다.
+*   **V&V 의견:** 수신 윈도우 검사와는 별개로, 동적 타임아웃 감시 및 클럭 편차 한계 감지를 위해 시간 감독 엔진의 세부 구조 설계 및 추가 구현이 요구됩니다.
+
+### 9.3 Redundancy Layer 내 다중 CRC Checksum 규격 미지원
+*   **표준 요구사항:** 표준 이중화 계층(Redundancy Layer) 요구사항에 따라 각 물리 채널별 전송 프레임의 무결성 검증을 위해 2바이트 또는 4바이트 크기의 다중 CRC 옵션(Option B, C, D, E)을 유연하게 탑재할 수 있어야 합니다.
+*   **구현 정합성 대조:** `rsrx_codec.c`의 `rsrx_codec_validate_rasta_redundancy_crc_profile`에서는 오직 `RSRX_RASTA_REDUNDANCY_CRC_OPTION_A` (No CRC) 옵션만 정상 코덱으로 승인하고 있으며, 표준 CRC 검증 옵션인 Option B~E 지정 시 `RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE` 오류를 반환하며 전체 수신 패킷을 거부합니다.
+*   **V&V 의견:** 비록 Option A가 로컬 테스트용 프로토타입으로 허용되나, 이중화 채널 레벨의 하드웨어 전송 오류 방어를 위해 실제 규격 옵션(Option B~E)에 맞춘 다중 CRC 직렬화 및 검증 로직의 확보가 필수적입니다.
+
+### 9.4 다중 경로 병렬 전송(Parallel Delivery) 이중화 방식 누락
+*   **표준 요구사항:** RaSTA Redundancy Layer는 선로 장애 시 지연 없는 fail-safe 무손실 전환을 보장하기 위해 동일한 프레임을 Primary 및 Secondary 채널로 동시에 중복 송신(Parallel Transmission)하고, 수신 측에서 중복 수신된 프레임을 식별하여 무손실 병합하는 Parallel Delivery 동작 방식을 권장합니다.
+*   **구현 정합성 대조:** `rsrx_channel_manager.c`는 Active-Standby 기반의 단일 채널 선택(Selection) 및 플래핑 억제(Flap Penalty) 구조에 집중되어 있으며, 동일 패킷의 다중 채널 동시 복제 전송 및 수신 측 시퀀스 기반 중복 필터링(Parallel Multi-path Merging) 동작은 지원하지 않습니다.
+*   **V&V 의견:** 안전 무결성을 극대화하기 위해 향후 마일스톤에서 병렬 이중화 전송 메커니즘을 이식성 계층 및 상태 제어기 내에 반영해야 합니다.
+
