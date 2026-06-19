@@ -154,6 +154,8 @@
 | EVID-CI-117 | `../reviews/RV-330_stack_memory_host_baseline_review.md` | Complete | first host stack/memory evidence execution review |
 | EVID-CI-118 | `strict_warning_default_gate_policy_2026-05-06.md` | Complete | strict-warning default-gate policy decision |
 | EVID-CI-119 | `../reviews/RV-331_strict_warning_default_gate_policy_review.md` | Complete | strict-warning default-gate policy review |
+| EVID-CI-120 | `reports/operational_evidence_readiness_snapshot_2026-06-19.md` | Draft | updated R-005 readiness snapshot: baseline available, vendor export missing |
+| EVID-CI-121 | `../reviews/RV-520_operational_readiness_vendor_blocker_snapshot_review.md` | Draft | updated R-005 readiness snapshot review |
 | EVID-TGT-001 | `am263px_safertos_porting_evidence_plan.md` | Draft | AM263Px/SafeRTOS target porting and evidence plan |
 | EVID-TGT-002 | `../reviews/RV-415_am263px_safertos_porting_evidence_plan_review.md` | Draft | AM263Px/SafeRTOS target evidence plan review |
 | EVID-TGT-003 | `am263px_safertos_critical_section_binding_template.md` | Draft | AM263Px/SafeRTOS critical-section binding evidence template |
