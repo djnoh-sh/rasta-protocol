@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-06-11`
+- Last Updated: `2026-06-19`
 
 ## Scope
 
@@ -80,3 +80,4 @@
 | TC-CODEC-056 | FR-003, FR-004, SR-001 | RaSTA SR no-checksum control-family wire type byte 검증 | supported control SR types `ConnReq`, `ConnResp`, `RetrReq`, `DiscReq`, `Hb` zero-payload requests 준비 | `rsrx_codec_encode_rasta_sr_no_checksum()` 호출 후 encoded header bytes 확인 | 28-byte packet length는 `00 1C`, supported control numeric type은 fixed big-endian byte order로 `18 38`, `18 39`, `18 44`, `18 48`, `18 4C`에 encode된다 | selected no-checksum SR path가 supported control family의 decoded round-trip뿐 아니라 actual wire numeric type bytes도 repo-source constants와 일치하게 보존한다 |
 | TC-CODEC-057 | FR-003, FR-004, SR-001 | RaSTA SR no-checksum control-family wire fixture decode 검증 | encode helper를 통하지 않고 fixed big-endian bytes로 구성한 supported control SR `ConnReq`, `ConnResp`, `RetrReq`, `DiscReq`, `Hb` 28-byte frame 준비 | `rsrx_codec_decode_rasta_sr_no_checksum()` 호출 | 각 hand-authored fixture는 supported control type, receiver/sender, sequence/confirmed sequence, timestamp/confirmed timestamp, zero payload, checksum absent state로 decode된다 | selected no-checksum SR decode path가 encoder 산출물에만 의존하지 않고 actual wire fixture의 supported control family도 수용함을 고정한다 |
 | TC-CODEC-058 | FR-003, FR-004, SR-001 | RaSTA SR no-checksum data wire fixture decode 검증 | encode helper를 통하지 않고 fixed big-endian bytes와 4-byte payload로 구성한 `DATA` SR frame 준비 | `rsrx_codec_decode_rasta_sr_no_checksum()` 호출 | hand-authored `DATA` fixture는 packet length, type, receiver/sender, sequence/confirmed sequence, timestamp/confirmed timestamp, payload bytes, checksum absent state로 decode된다 | selected no-checksum SR decode path가 payload-bearing `DATA` wire fixture도 encoder 산출물에 의존하지 않고 수용함을 고정한다 |
+| TC-CODEC-059 | FR-003, FR-004, SR-001 | CRC32 wrapper unsupported reason status preservation 검증 | valid CRC를 가진 frame에 unsupported reason code와 stale decoded message output 준비 | `rsrx_codec_decode_frame_with_crc32()` 수행 | CRC 검증은 통과하지만 inner decode가 `UNSUPPORTED_REASON`을 반환하고 decoded-message output을 clear한다 | CRC32 wrapper가 authenticated payload라도 unsupported reason tamper를 수용하지 않고 direct decode typed status와 stale-output clear contract를 보존한다 |
