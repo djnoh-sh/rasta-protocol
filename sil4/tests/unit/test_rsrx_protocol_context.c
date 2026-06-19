@@ -195,6 +195,26 @@ static void vTestInvalidOutboundMessageTypeRejected(void)
 	vAssertEncodeRequestCleared(&xRequest, "invalid outbound type clears request");
 }
 
+static void vTestConnectResponseOutboundAccepted(void)
+{
+	rsrx_protocol_context_t xContext;
+	rsrx_encode_request_t xRequest;
+
+	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "connect response outbound init");
+	xContext.uLastTxConfirmationNumber = 3U;
+	vAssertTrue(rsrx_protocol_context_build_encode_request(
+		&xContext,
+		RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
+		RSRX_REASON_HANDSHAKE_COMPLETED,
+		(const uint8_t *)0,
+		0U,
+		&xRequest) == RSRX_STATUS_OK, "connect response outbound accepted");
+	vAssertTrue(xRequest.eMessageType == RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, "connect response outbound type");
+	vAssertTrue(xRequest.uSequenceNumber == 1U, "connect response outbound sequence");
+	vAssertTrue(xRequest.uConfirmationNumber == 3U, "connect response outbound confirmation");
+	vAssertTrue(xContext.uNextTxSequenceNumber == 2U, "connect response outbound advances next tx");
+}
+
 static void vTestRetransmissionRequestPayload(void)
 {
 	rsrx_protocol_context_t xContext;
@@ -1024,6 +1044,12 @@ static void vTestSequencedMessageFamilyOrderingMatrix(void)
 	static const test_case_t axCases[] =
 	{
 		{
+			RSRX_MESSAGE_TYPE_CONNECT_REQUEST,
+			RSRX_EVENT_CONNECT_REQUEST,
+			1U, 0U, 0U, 0U, 0U, 0U,
+			1U, 0U, RSRX_EVENT_CONNECT_REQUEST
+		},
+		{
 			RSRX_MESSAGE_TYPE_CONNECT_RESPONSE,
 			RSRX_EVENT_HANDSHAKE_SUCCESS,
 			1U, 0U, 0U, 0U, 0U, 0U,
@@ -1231,13 +1257,6 @@ static void vTestUnsequencedMessageFamilyPassThroughMatrix(void)
 	static const test_case_t axCases[] =
 	{
 		{
-			RSRX_MESSAGE_TYPE_CONNECT_REQUEST,
-			RSRX_EVENT_CONNECT_REQUEST,
-			RSRX_REASON_CONNECT_REQUESTED,
-			1U, 0U, 0U, 0U, 0U, 0U,
-			7U, 9U, RSRX_EVENT_CONNECT_REQUEST
-		},
-		{
 			RSRX_MESSAGE_TYPE_DISCONNECT,
 			RSRX_EVENT_DISCONNECT_REQUEST,
 			RSRX_REASON_DISCONNECT_REQUESTED,
@@ -1295,14 +1314,14 @@ static void vTestUnsequencedMessageFamilyPassThroughMatrix(void)
 	}
 }
 
-static void vTestConnectRequestRemainsUnsequencedBaseline(void)
+static void vTestConnectRequestSeedsSequencedBaseline(void)
 {
 	rsrx_protocol_context_t xContext;
 	rsrx_decoded_message_t xMessage;
 	rsrx_event_t eEvent;
 
 	vAssertTrue(rsrx_protocol_context_init(&xContext) == RSRX_STATUS_OK, "connect request baseline init");
-	xContext.uNextTxSequenceNumber = 5U;
+	xContext.uNextTxSequenceNumber = 1U;
 	xContext.uLastRxSequenceNumber = 0U;
 	xContext.uLastTxConfirmationNumber = 0U;
 	xContext.uLastRemoteConfirmationNumber = 0U;
@@ -1310,8 +1329,8 @@ static void vTestConnectRequestRemainsUnsequencedBaseline(void)
 	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_REQUEST;
 	xMessage.eSuggestedEvent = RSRX_EVENT_CONNECT_REQUEST;
 	xMessage.eReason = RSRX_REASON_CONNECT_REQUESTED;
-	xMessage.uSequenceNumber = 7U;
-	xMessage.uConfirmationNumber = 9U;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
 	xMessage.xPayloadLength = 0U;
 
 	vAssertTrue(
@@ -1321,22 +1340,22 @@ static void vTestConnectRequestRemainsUnsequencedBaseline(void)
 	vAssertTrue(
 		rsrx_protocol_context_record_inbound_message(&xContext, &xMessage) == RSRX_STATUS_OK,
 		"connect request baseline record");
-	vAssertTrue(xContext.uLastRxSequenceNumber == 0U, "connect request baseline keeps last rx");
-	vAssertTrue(xContext.uLastTxConfirmationNumber == 0U, "connect request baseline keeps tx confirmation");
+	vAssertTrue(xContext.uLastRxSequenceNumber == 1U, "connect request baseline records last rx");
+	vAssertTrue(xContext.uLastTxConfirmationNumber == 1U, "connect request baseline updates tx confirmation");
 	vAssertTrue(xContext.uLastRemoteConfirmationNumber == 0U, "connect request baseline keeps remote confirmation");
 
-	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
-	xMessage.eSuggestedEvent = RSRX_EVENT_HANDSHAKE_SUCCESS;
-	xMessage.eReason = RSRX_REASON_HANDSHAKE_COMPLETED;
-	xMessage.uSequenceNumber = 1U;
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_HEARTBEAT;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_HEARTBEAT;
+	xMessage.eReason = RSRX_REASON_HEARTBEAT_ACCEPTED;
+	xMessage.uSequenceNumber = 2U;
 	xMessage.uConfirmationNumber = 0U;
 
 	vAssertTrue(
 		rsrx_protocol_context_resolve_inbound_event(&xContext, &xMessage, &eEvent) == RSRX_STATUS_OK,
-		"connect response after unsequenced connect request resolve");
+		"sequenced heartbeat after connect request resolve");
 	vAssertTrue(
-		eEvent == RSRX_EVENT_HANDSHAKE_SUCCESS,
-		"first sequenced inbound remains connect response after unsequenced connect request");
+		eEvent == RSRX_EVENT_VALID_HEARTBEAT,
+		"connect request seeds next expected inbound sequence");
 }
 
 static void vTestDuplicateInboundSequenceRejected(void)
@@ -1582,7 +1601,7 @@ static void vTestProtocolOrderingCloseoutMatrix(void)
 	vTestSequencedMessageFamilyOrderingMatrix();
 	vTestPostRecoveryMessageFamilyOrderingMatrix();
 	vTestUnsequencedMessageFamilyPassThroughMatrix();
-	vTestConnectRequestRemainsUnsequencedBaseline();
+	vTestConnectRequestSeedsSequencedBaseline();
 }
 
 int main(void)
@@ -1592,6 +1611,7 @@ int main(void)
 	vTestInboundConfirmationTracking();
 	vTestOutboundSequenceWrapRejected();
 	vTestInvalidOutboundMessageTypeRejected();
+	vTestConnectResponseOutboundAccepted();
 	vTestRetransmissionRequestPayload();
 	vTestClearRetransmissionPreservesSequenceState();
 	vTestInboundConfirmationValidation();
