@@ -12,7 +12,7 @@
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 대체로 유지 중이며, 2026-06-02 comprehensive V&V audit의 public API 비동기 임계영역은 portable host guard 적용까지 진행됐고, 신규 Finding G는 codec timestamp admission corrective action으로 수용했다.
-- 최근 업데이트: `RV-535`로 protocol codec verification spec의 RaSTA SR/redundancy 항목이 pre-implementation wording이 아니라 current selected baseline과 conditional residual을 설명하도록 정렬했다.
+- 최근 업데이트: `RV-536`으로 RaSTA SR wire-profile draft의 numeric type 및 byte-order 문구를 current selected no-checksum SR baseline과 정렬했다.
 - 다음 주력 단계: external lane은 `actual vendor export acquisition` 및 `first AM263Px/SafeRTOS target package execution`; local lane은 target context가 들어오면 `EVID-TGT-003`/`EVID-TGT-005`/`EVID-TGT-007` fill-in 지원, 그 외 checksum/security, protocol/redundancy policy, 새 wrapper status growth는 controlled requirement/status family 추가 시에만 진행
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
@@ -32,7 +32,7 @@
 | --- | --- | --- | --- |
 | Rules and Governance | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` | 유지 관리 |
 | Requirements and HLD | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` | 인증/타깃 요구사항 정제 |
-| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-535` | 새 policy/evidence growth마다 review/spec linkage 유지 |
+| Traceability | In Progress | `traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-536` | 새 policy/evidence growth마다 review/spec linkage 유지 |
 | State Machine / Orchestrator | In Progress | `rsrx_state_machine.*`, `rsrx_orchestrator.*`, unit tests, reset baseline evidence `RV-393..RV-394` | future state/action 확장 시 assertion density 유지 |
 | Platform / Transport Abstraction | In Progress | `rsrx_platform.h`, `rsrx_transport.h`, contract tests, critical-section port contract `TC-PLAT-004`/`RV-433`, portable API boundary closeout `RV-445` | 포팅 시 target adapter evidence |
 | Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..015`, `TC-API-003`, `TC-API-014..029`, public API report-output guard evidence `RV-427`, adapter query/receive/executor output guard evidence `RV-429..RV-431`, reset timer quiescence evidence `RV-432`, critical-section startup gate evidence `TC-CFG-011`/`RV-433`, public API critical-section guard evidence `RV-434`, outbound telemetry snapshot evidence `RV-435`, outbound queue snapshot/report-helper/feedback-clear evidence `RV-436`/`RV-439`/`RV-442`, channel-manager snapshot evidence `RV-437`, inbound event resolve/record boundary evidence `RV-440`/`RV-441`, channel query/frame receive boundary evidence `RV-443`/`RV-444`, transport API balanced matrix evidence `RV-447` | target runtime binding, callback reentrancy policy, selected codec policy 유지 |
@@ -56,6 +56,7 @@
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
 - Latest local verification was green after `RV-528`.
+- Latest document-only RaSTA SR wire-profile cleanup is `RV-536`, which aligns numeric type and byte-order wording with the selected no-checksum SR encode/decode baseline; no host verification rerun was required for that document-only step.
 - Latest document-only protocol codec spec cleanup is `RV-535`, which aligns `TC-CODEC-037..050` wording with the selected no-checksum RaSTA SR and option A redundancy-carried SR baseline; no host verification rerun was required for that document-only step.
 - Latest document-only protocol codec LLD cleanup is `RV-534`, which aligns `LLD-008` with the selected no-checksum RaSTA SR and option A redundancy-carried SR implementation baseline; no host verification rerun was required for that document-only step.
 - Latest document-only wire-profile consistency cleanup is `RV-533`, which separates the default 16-byte skeleton codec baseline from the selected no-checksum 28-byte RaSTA SR host profile; no host verification rerun was required for that document-only step.

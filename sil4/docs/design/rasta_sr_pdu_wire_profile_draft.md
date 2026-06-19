@@ -78,7 +78,7 @@ The repo-source `rasta_conn_type` values are:
 | `RASTA_TYPE_DATA` | 6240 |
 | `RASTA_TYPE_RETRDATA` | 6241 |
 
-The SIL4 implementation must either encode these exact numeric values in a RaSTA SR wire profile or provide an explicit conversion layer that proves equivalent wire behavior.
+The selected no-checksum SIL4 RaSTA SR profile encodes and decodes the supported current numeric type boundary using these repo-source values. `RetrResp` and `RetrData` remain explicit unsupported mappings until their behavior is selected by controlled requirement.
 
 ## Byte-Order Policy
 
@@ -94,7 +94,7 @@ The SIL4 implementation does not inherit host-dependent wire encoding. The selec
 | Helper coverage | `rsrx_codec_write_rasta_sr_uint16`, `rsrx_codec_read_rasta_sr_uint16`, `rsrx_codec_write_rasta_sr_uint32`, `rsrx_codec_read_rasta_sr_uint32` |
 | Verification | `TC-CODEC-040` |
 
-This closes the internal byte-order policy for future SR encode/decode implementation. It does not by itself prove interoperability with legacy peers that may depend on the repo-source host-endian behavior. If such compatibility is required, deployment-specific golden vectors must be captured and reviewed before enabling that compatibility path.
+This closes the internal byte-order policy for the selected SR encode/decode path. It does not by itself prove interoperability with legacy peers that may depend on the repo-source host-endian behavior. If such compatibility is required, deployment-specific golden vectors must be captured and reviewed before enabling that compatibility path.
 
 ## Repo-Source Redundancy PDU Metadata Boundary
 
