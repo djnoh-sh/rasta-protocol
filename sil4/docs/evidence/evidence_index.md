@@ -162,6 +162,8 @@
 | EVID-TGT-004 | `../reviews/RV-519_am263px_safertos_critical_section_binding_template_review.md` | Draft | AM263Px/SafeRTOS critical-section binding template review |
 | EVID-TGT-005 | `am263px_safertos_target_artifact_package_template.md` | Draft | AM263Px/SafeRTOS target artifact package template |
 | EVID-TGT-006 | `../reviews/RV-521_am263px_safertos_target_artifact_package_template_review.md` | Draft | AM263Px/SafeRTOS target artifact package template review |
+| EVID-TGT-007 | `am263px_safertos_callback_reentrancy_policy_template.md` | Draft | AM263Px/SafeRTOS callback reentrancy/deferred-callback policy template |
+| EVID-TGT-008 | `../reviews/RV-522_current_actionable_priority_reassessment_review.md` | Draft | current actionable priority reassessment and callback policy template review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |

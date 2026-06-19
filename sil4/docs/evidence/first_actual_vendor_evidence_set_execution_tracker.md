@@ -38,6 +38,8 @@
   - `am263px_safertos_critical_section_binding_template.md`
 - AM263Px/SafeRTOS target artifact package template:
   - `am263px_safertos_target_artifact_package_template.md`
+- AM263Px/SafeRTOS callback reentrancy policy template:
+  - `am263px_safertos_callback_reentrancy_policy_template.md`
 
 ## Current Execution Status
 
@@ -54,7 +56,7 @@
 | EVS-009 | `Host Baseline Available, Target/Vendor Open` | stack-bound analysis artifact | 2026-05-06 host stack-usage package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor stack analysis output remains open |
 | EVS-010 | `Host Baseline Available, Target/Vendor Open` | static memory map artifact | 2026-05-06 host linker-map package: `reports/stack_memory_host_baseline_2026-05-06/summary.md`; target/vendor memory map remains open |
 | EVS-011 | `Closed` | `strict_warning_default_gate_policy_2026-05-06.md` | 2026-05-06: `Evidence-only` policy accepted by `RV-331`; refresh cadence defined |
-| EVS-012 | `Planned` | AM263Px/SafeRTOS target evidence package | 2026-06-19: target evidence plan, critical-section binding template, and target package template are prepared by `EVID-TGT-001`/`EVID-TGT-003`/`EVID-TGT-005`; actual target build/logs remain open |
+| EVS-012 | `Planned` | AM263Px/SafeRTOS target evidence package | 2026-06-19: target evidence plan, critical-section binding template, callback policy template, and target package template are prepared by `EVID-TGT-001`/`EVID-TGT-003`/`EVID-TGT-005`/`EVID-TGT-007`; actual target build/logs remain open |
 
 ## Execution Notes
 
@@ -64,7 +66,7 @@
   - baseline fetch actual evidence is now available and `EVS-001`/`EVS-002` are closed
   - vendor export remains unavailable, so `EVS-003` through `EVS-008` remain `Open`
   - V&V v1.4 stack/memory/default-gate follow-ups are now tracked as `EVS-009`~`EVS-011`
-  - AM263Px/SafeRTOS target planning/package templates are prepared, but `EVS-012` remains open until target artifacts are attached
+  - AM263Px/SafeRTOS target planning/package/callback-policy templates are prepared, but `EVS-012` remains open until target artifacts are attached
 
 ### Baseline Fetch Track
 
@@ -114,6 +116,9 @@
 - target artifact package template:
   - `am263px_safertos_target_artifact_package_template.md`
   - `../reviews/RV-521_am263px_safertos_target_artifact_package_template_review.md`
+- callback reentrancy policy template:
+  - `am263px_safertos_callback_reentrancy_policy_template.md`
+  - `../reviews/RV-522_current_actionable_priority_reassessment_review.md`
 - trigger to close:
   - target build metadata, SafeRTOS task/timer/queue policy, TI driver transport binding, target linker map, target stack/timing evidence, target integration logs, and hardware CRC/crypto equivalence/diagnostic logs if acceleration is selected
 - current note:

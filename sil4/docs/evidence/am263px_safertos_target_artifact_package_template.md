@@ -37,13 +37,14 @@ This is a package template only. It does not claim that the target build, target
 | TGT-PKG-001 | target build metadata | exact commit, toolchain, TI SDK, SafeRTOS, linker command file, and flags are recorded |
 | TGT-PKG-002 | SafeRTOS task/timer/queue policy | task priorities, stack allocations, timer ownership, queue ownership, and overflow policy are documented |
 | TGT-PKG-003 | completed critical-section binding artifact | `EVID-TGT-003` is filled with target primitive mapping, context classification, and fault-injection evidence |
-| TGT-PKG-004 | transport adapter binding | TI driver status, timeout, retry ownership, and fail-safe mapping to `rsrx_transport_port_t` are documented |
-| TGT-PKG-005 | target linker map | text/rodata/data/bss/stack/heap regions are traceable to the same target build |
-| TGT-PKG-006 | target stack evidence | per-task stack bound or measured high-water mark includes method, workload, and margin |
-| TGT-PKG-007 | target timing evidence | supervision pump, encode/decode, dispatch, timer callback, and transport adapter timing are measured or analyzed |
-| TGT-PKG-008 | target integration logs | connect, data, retransmission, fail-safe, redundancy, queue-full, transport-down, malformed-PDU, and reset-quiescence flows run on target or target-qualified simulator |
-| TGT-PKG-009 | hardware acceleration evidence | if selected, CRC/crypto hardware vectors match portable software reference and diagnostic failures map to typed status or fail-safe |
-| TGT-PKG-010 | safety manual compliance note | SafeRTOS and TI SDK assumptions are listed with project responses and unresolved constraints |
+| TGT-PKG-004 | completed callback reentrancy/deferred-callback policy | `EVID-TGT-007` is filled with callback context, prohibited paths, deferred boundaries, and reentry fault-injection evidence |
+| TGT-PKG-005 | transport adapter binding | TI driver status, timeout, retry ownership, and fail-safe mapping to `rsrx_transport_port_t` are documented |
+| TGT-PKG-006 | target linker map | text/rodata/data/bss/stack/heap regions are traceable to the same target build |
+| TGT-PKG-007 | target stack evidence | per-task stack bound or measured high-water mark includes method, workload, and margin |
+| TGT-PKG-008 | target timing evidence | supervision pump, encode/decode, dispatch, timer callback, and transport adapter timing are measured or analyzed |
+| TGT-PKG-009 | target integration logs | connect, data, retransmission, fail-safe, redundancy, queue-full, transport-down, malformed-PDU, and reset-quiescence flows run on target or target-qualified simulator |
+| TGT-PKG-010 | hardware acceleration evidence | if selected, CRC/crypto hardware vectors match portable software reference and diagnostic failures map to typed status or fail-safe |
+| TGT-PKG-011 | safety manual compliance note | SafeRTOS and TI SDK assumptions are listed with project responses and unresolved constraints |
 
 ## Non-Substitution Rules
 
@@ -96,5 +97,6 @@ The package can be accepted only when:
 1. every required artifact row is either filled with a concrete target reference or explicitly marked `Not Selected` with a controlled-requirement rationale
 2. no host-only artifact is used as a substitute for target evidence
 3. `EVID-TGT-003` is completed if any multi-task, timer, callback, or ISR/deferred-ISR concurrency claim is made
-4. target logs are tied to the same commit/build metadata as the stack, memory, and timing evidence
-5. open target constraints are copied into `roadmap_status.md` instead of being treated as closed
+4. `EVID-TGT-007` is completed before claiming callback reentrancy or deferred-callback safety
+5. target logs are tied to the same commit/build metadata as the stack, memory, and timing evidence
+6. open target constraints are copied into `roadmap_status.md` instead of being treated as closed
