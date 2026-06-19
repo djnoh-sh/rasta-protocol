@@ -25,7 +25,7 @@
 | File | Purpose | Public/Internal | Notes |
 | --- | --- | --- | --- |
 | `include/rsrx_codec.h` | codec public contract 정의 | Public | encode/decode 타입 및 port 정의 |
-| `src/rsrx_codec.c` | deterministic encode/decode skeleton 구현 | Internal | 고정 header 기반 wire format |
+| `src/rsrx_codec.c` | deterministic default codec plus selected RaSTA SR/redundancy codec paths 구현 | Internal | default 16-byte header, selected no-checksum 28-byte RaSTA SR profile, option A redundancy-carried SR path |
 | `tests/unit/test_rsrx_codec_contract.c` | codec header contract smoke test | Internal | 타입 계약 및 기본 레이아웃 검증 |
 | `tests/unit/test_rsrx_codec.c` | codec round-trip 단위 테스트 | Internal | encode/decode 정상/오류 경로 검증 |
 
@@ -61,6 +61,14 @@
   - declared payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
 - CRC32 decode wrapper:
   - null frame/message/payload pointer는 CRC/truncation/mismatch 판정보다 먼저 `INVALID_ARGUMENT`로 거부하며 decoded-message output이 유효한 null frame/payload failure는 output을 clear한다.
+- RaSTA SR no-checksum path:
+  - selected SR profile은 28-byte fixed header, fixed big-endian field encoding, receiver/sender ID, sequence/confirmed sequence, timestamp/confirmed timestamp, bounded payload, and explicit zero-checksum metadata를 사용한다.
+  - supported current SR message families는 numeric RaSTA type mapping을 통해 encode/decode되고, unsupported families remain typed rejected mappings until selected.
+  - timestamp admission and identity admission are explicit codec boundaries before protocol/session handoff.
+- RaSTA redundancy option A path:
+  - option A no-CRC redundancy PDU는 8-byte redundancy header와 carried no-checksum SR packet을 encode/decode한다.
+  - carried SR decode bridge는 outer redundancy status와 inner SR decode status를 보존한다.
+  - CRC-bearing redundancy variants remain unsupported until selected by controlled requirement.
 - encode:
   - buffer argument가 유효하면 encode 시작 시 `xEncodedLength`를 `0`으로 초기화하고, 성공 시에만 encoded length를 설정한다.
   - null request/buffer/output buffer pointer는 `INVALID_ARGUMENT`로 거부한다.
@@ -72,7 +80,7 @@
   - non-zero payload length에서는 payload pointer가 null이면 `INVALID_ARGUMENT`로 거부한다.
   - payload length가 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`를 초과하면 `PAYLOAD_TOO_LARGE`로 거부한다.
   - payload length가 정확히 `D_RSRX_CODEC_MAX_PAYLOAD_BYTES`이면 정상 payload 경계값으로 수용한다.
-  - skeleton 구현은 고정 길이 header와 variable payload로 구성된 deterministic wire format을 사용한다.
+  - default skeleton 구현은 고정 길이 16-byte header와 variable payload로 구성된 deterministic wire format을 사용한다.
 
 ## Design Rules
 
@@ -119,6 +127,9 @@
   - CRC32 calculator public header contract 검증
   - decode null argument failure의 stale decoded output clear 검증
   - encode failure path의 encoded length clear 검증
+  - RaSTA SR wire profile metadata, structure contract, numeric type/disconnect reason mapping, fixed byte-order, no-checksum encode/decode, checksum profile admission, timestamp admission, identity admission, selected default no-checksum profile 검증
+  - RaSTA redundancy metadata, CRC option admission, option A no-CRC encode/decode, carried SR decode bridge 검증
+  - selected no-checksum SR payload guard, argument guard, zero/max payload boundary, supported control-family, control wire-type byte, hand-authored control/data fixture decode 검증
 - 분석 포인트:
   - payload 최대 길이 상한
   - payload pointer/length consistency
