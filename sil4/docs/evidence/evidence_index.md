@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-06-01`
+- Last Updated: `2026-06-19`
 
 ## Purpose
 
@@ -156,6 +156,8 @@
 | EVID-CI-119 | `../reviews/RV-331_strict_warning_default_gate_policy_review.md` | Complete | strict-warning default-gate policy review |
 | EVID-TGT-001 | `am263px_safertos_porting_evidence_plan.md` | Draft | AM263Px/SafeRTOS target porting and evidence plan |
 | EVID-TGT-002 | `../reviews/RV-415_am263px_safertos_porting_evidence_plan_review.md` | Draft | AM263Px/SafeRTOS target evidence plan review |
+| EVID-TGT-003 | `am263px_safertos_critical_section_binding_template.md` | Draft | AM263Px/SafeRTOS critical-section binding evidence template |
+| EVID-TGT-004 | `../reviews/RV-519_am263px_safertos_critical_section_binding_template_review.md` | Draft | AM263Px/SafeRTOS critical-section binding template review |
 | EVID-CI-069 | `../reviews/RV-059_operational_packet_invocation_examples_review.md` | Draft | operational packet invocation examples review |
 | EVID-CI-021 | `first_vendor_deviation_example.md` | Draft | first vendor deviation reference example |
 | EVID-CI-022 | `../reviews/RV-020_first_vendor_deviation_example_review.md` | Draft | vendor deviation example safety review |

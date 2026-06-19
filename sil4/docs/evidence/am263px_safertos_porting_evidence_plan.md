@@ -6,7 +6,7 @@
 - Version: `0.1.0`
 - Status: `Draft`
 - Owner: `Project Team`
-- Last Updated: `2026-06-01`
+- Last Updated: `2026-06-19`
 
 ## Purpose
 
@@ -54,6 +54,7 @@ Out of scope:
 | TGT-008 | hardware CRC/crypto equivalence | software-vs-hardware vector logs for every selected accelerated algorithm |
 | TGT-009 | hardware diagnostic handling | accelerator self-test, timeout, fault injection, and fallback/degrade behavior |
 | TGT-010 | safety manual compliance note | SafeRTOS and TI SDK safety manual assumptions, constraints, and project responses |
+| TGT-011 | critical-section binding evidence | completed `EVID-TGT-003` with SafeRTOS primitive mapping, context classification, balanced instrumentation, fault injection, and safety manual response |
 
 ## Hardware CRC/Crypto Acceleration Policy
 
@@ -81,6 +82,7 @@ Before claiming target readiness, record:
 6. static allocation policy and dynamic allocation prohibition or deviation
 7. startup/shutdown sequencing with config validation
 8. fault injection results for transport down, malformed PDU, queue full, timeout, and hardware accelerator fault
+9. critical-section binding evidence from `EVID-TGT-003`, including ISR/deferred-ISR policy and balanced enter/exit logs
 
 ## Roadmap Impact
 
