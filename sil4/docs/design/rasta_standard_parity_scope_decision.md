@@ -53,7 +53,7 @@ Before starting source-code implementation for any selected scope item, the proj
 
 1. MAC/security sign/verify design packet: drafted as `MAC-PARITY-001`; implementation remains blocked until controlled inputs are filled.
 2. Dynamic Clock/Time Supervision design packet: drafted as `TIME-PARITY-001`; implementation remains blocked until controlled inputs are filled.
-3. CRC-bearing redundancy PDU Option B-E design packet.
+3. CRC-bearing redundancy PDU Option B-E design packet: drafted as `RED-CRC-PARITY-001`; implementation remains blocked until controlled inputs are filled.
 4. Parallel Delivery / multi-path merge design packet.
 
 ## Review Position
