@@ -282,7 +282,7 @@ static void vTestInboundConnectPath(void)
 
 	eStatus = rsrx_state_machine_handle_event(&xContext, RSRX_EVENT_VALID_INBOUND_CONNECT, &xResult);
 	vAssertEqualStatus(RSRX_STATUS_OK, eStatus, "valid inbound connect event");
-	vAssertEqualState(RSRX_STATE_CONNECTING, xResult.eNextState, "state after inbound connect");
+	vAssertEqualState(RSRX_STATE_ESTABLISHED, xResult.eNextState, "state after inbound connect");
 	vAssertEqualReason(RSRX_REASON_INBOUND_CONNECT_ACCEPTED, xResult.eReason, "inbound connect reason");
 	vAssertActionAt(RSRX_ACTION_ACCEPT_INBOUND_CONNECT, &xResult, 0U, "inbound connect action 0");
 }

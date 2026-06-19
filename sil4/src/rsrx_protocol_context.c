@@ -42,7 +42,8 @@ static uint32_t uRetransmissionRequestIsConfirmed(
 static uint32_t uMessageTypeIsSequenced(
 	rsrx_message_type_t eMessageType)
 {
-	return (uint32_t)((eMessageType == RSRX_MESSAGE_TYPE_CONNECT_RESPONSE) ||
+	return (uint32_t)((eMessageType == RSRX_MESSAGE_TYPE_CONNECT_REQUEST) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_CONNECT_RESPONSE) ||
 		(eMessageType == RSRX_MESSAGE_TYPE_HEARTBEAT) ||
 		(eMessageType == RSRX_MESSAGE_TYPE_DATA) ||
 		(eMessageType == RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST));
@@ -52,6 +53,7 @@ static uint32_t uMessageTypeIsSupportedOutbound(
 	rsrx_message_type_t eMessageType)
 {
 	return (uint32_t)((eMessageType == RSRX_MESSAGE_TYPE_CONNECT_REQUEST) ||
+		(eMessageType == RSRX_MESSAGE_TYPE_CONNECT_RESPONSE) ||
 		(eMessageType == RSRX_MESSAGE_TYPE_HEARTBEAT) ||
 		(eMessageType == RSRX_MESSAGE_TYPE_DATA) ||
 		(eMessageType == RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST) ||

@@ -13340,7 +13340,7 @@ static void vTestIntegratedInitialZeroSequenceProtocolErrorFlow(void)
 	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "zero sequence integration lifecycle callback");
 }
 
-static void vTestIntegratedUnsequencedConnectRequestIgnoresOrderingFlow(void)
+static void vTestIntegratedSequencedConnectRequestEstablishesFlow(void)
 {
 	rsrx_session_t xSession;
 	rsrx_session_config_t xConfig;
@@ -13373,15 +13373,15 @@ static void vTestIntegratedUnsequencedConnectRequestIgnoresOrderingFlow(void)
 		auFramePayload,
 		sizeof(auFramePayload));
 
-	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "unsequenced connect request integration session init");
-	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "unsequenced connect request integration session start");
-	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INITIALIZED, "unsequenced connect request integration initialized");
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "sequenced connect request integration session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxSessionReport) == RSRX_STATUS_OK, "sequenced connect request integration session start");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INITIALIZED, "sequenced connect request integration initialized");
 
 	vEncodeFrame(
 		RSRX_MESSAGE_TYPE_CONNECT_REQUEST,
 		RSRX_REASON_INBOUND_CONNECT_ACCEPTED,
-		123U,
-		45U,
+		1U,
+		0U,
 		(const uint8_t *)0,
 		0U,
 		auConnectRequestFrame,
@@ -13396,14 +13396,14 @@ static void vTestIntegratedUnsequencedConnectRequestIgnoresOrderingFlow(void)
 	xTransport.uReceiveScriptCount = 1U;
 	xTransport.uReceiveScriptIndex = 0U;
 
-	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "unsequenced connect request integration supervisor init");
-	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "unsequenced connect request integration poll");
-	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "unsequenced connect request integration connecting");
-	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_VALID_INBOUND_CONNECT, "unsequenced connect request integration effective inbound connect");
-	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_OK, "unsequenced connect request integration accepted status");
-	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "unsequenced connect request integration accepted decision");
-	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_INBOUND_CONNECT_ACCEPTED, "unsequenced connect request integration reason");
-	vAssertTrue(xApplication.uCallCount == 0U, "unsequenced connect request integration no application callback");
+	vAssertTrue(rsrx_transport_supervisor_init(&xSupervisor, &xSession, &xCodec) == RSRX_SUPERVISOR_STATUS_OK, "sequenced connect request integration supervisor init");
+	vAssertTrue(rsrx_transport_supervisor_poll_receive(&xSupervisor, &pxSupervisorReport) == RSRX_SUPERVISOR_STATUS_OK, "sequenced connect request integration poll");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "sequenced connect request integration established");
+	vAssertTrue(pxSupervisorReport->eLastEffectiveEvent == RSRX_EVENT_VALID_INBOUND_CONNECT, "sequenced connect request integration effective inbound connect");
+	vAssertTrue(pxSupervisorReport->eLastSessionStatus == RSRX_STATUS_OK, "sequenced connect request integration accepted status");
+	vAssertTrue(pxSupervisorReport->eLastDecision == RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED, "sequenced connect request integration accepted decision");
+	vAssertTrue(pxSupervisorReport->pxLastReport->xTransition.eReason == RSRX_REASON_INBOUND_CONNECT_ACCEPTED, "sequenced connect request integration reason");
+	vAssertTrue(xApplication.uCallCount == 0U, "sequenced connect request integration no application callback");
 }
 
 static void vTestIntegratedUnsequencedDisconnectIgnoresOrderingFlow(void)
@@ -26408,7 +26408,7 @@ static void vTestIntegratedFailoverRegressingConfirmationProtocolErrorFlow(void)
 static void vTestIntegratedConnectResponseSequencingRepresentativeFlow(void)
 {
 	vTestIntegratedInitialZeroSequenceProtocolErrorFlow();
-	vTestIntegratedUnsequencedConnectRequestIgnoresOrderingFlow();
+	vTestIntegratedSequencedConnectRequestEstablishesFlow();
 	vTestIntegratedUnsequencedDisconnectIgnoresOrderingFlow();
 	vTestIntegratedUnsequencedDiagnosticIgnoresOrderingFlow();
 	vTestIntegratedRetransmissionPendingUnsequencedDiagnosticIgnoresOrderingFlow();

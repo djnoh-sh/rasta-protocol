@@ -439,6 +439,16 @@ static void vTestTransportTimerAndDiagnosticsDispatch(void)
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_CONNECT_REQUEST, "handshake message type encoded");
 	vAssertTrue(xTransportContext.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_CONNECT_REQUESTED, "handshake reason encoded");
 
+	rsrx_transport_adapter_clear_outstanding_send(&xTransportAdapterContext);
+	xTransition.ePreviousState = RSRX_STATE_INITIALIZED;
+	xTransition.eNextState = RSRX_STATE_CONNECTING;
+	xTransition.eReason = RSRX_REASON_INBOUND_CONNECT_ACCEPTED;
+	rsrx_transport_executor_dispatch(&xTransportAdapterContext, &xTransition, RSRX_ACTION_ACCEPT_INBOUND_CONNECT, 0U);
+	vAssertTrue(xTransportContext.uCallCount == 2U, "connect response transport send called");
+	vAssertTrue(xTransportContext.xLastRequest.xPayloadLength == D_RSRX_CODEC_HEADER_BYTES, "connect response payload encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_CONNECT_RESPONSE, "connect response message type encoded");
+	vAssertTrue(xTransportContext.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_INBOUND_CONNECT_ACCEPTED, "connect response reason encoded");
+
 	xTransition.ePreviousState = RSRX_STATE_ESTABLISHED;
 	xTransition.eNextState = RSRX_STATE_ESTABLISHED;
 	xTransition.eReason = RSRX_REASON_DATA_ACCEPTED;
