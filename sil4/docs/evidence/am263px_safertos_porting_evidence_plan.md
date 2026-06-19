@@ -55,6 +55,7 @@ Out of scope:
 | TGT-009 | hardware diagnostic handling | accelerator self-test, timeout, fault injection, and fallback/degrade behavior |
 | TGT-010 | safety manual compliance note | SafeRTOS and TI SDK safety manual assumptions, constraints, and project responses |
 | TGT-011 | critical-section binding evidence | completed `EVID-TGT-003` with SafeRTOS primitive mapping, context classification, balanced instrumentation, fault injection, and safety manual response |
+| TGT-012 | target artifact package | completed `EVID-TGT-005` tying build metadata, linker map, stack, timing, transport, integration, and optional hardware acceleration evidence to the same target build |
 
 ## Hardware CRC/Crypto Acceleration Policy
 
@@ -83,6 +84,7 @@ Before claiming target readiness, record:
 7. startup/shutdown sequencing with config validation
 8. fault injection results for transport down, malformed PDU, queue full, timeout, and hardware accelerator fault
 9. critical-section binding evidence from `EVID-TGT-003`, including ISR/deferred-ISR policy and balanced enter/exit logs
+10. target artifact package from `EVID-TGT-005`, including build, linker-map, stack, timing, transport, integration, and optional acceleration evidence
 
 ## Roadmap Impact
 
