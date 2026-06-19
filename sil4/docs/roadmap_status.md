@@ -12,8 +12,8 @@
 
 - 현재 전체 진행률 추정: `92~94%`
 - 현재 상태: `P3/P4 representative closeout` 기준선은 대체로 유지 중이며, 2026-06-02 comprehensive V&V audit의 public API 비동기 임계영역과 Finding G는 portable host corrective action으로 수용/반영했다.
-- 최근 업데이트: `RV-559`로 `PROTO-MSG-PARITY-001` design/test packet을 추가해 `RetrResp`/`RetrData` 등 future message-family 구현 착수 전 필요한 wire layout, sequencing/confirmation, recovery interaction, diagnostics gate를 명확히 했다.
-- 다음 주력 단계: external lane은 `actual vendor export acquisition` 및 `first AM263Px/SafeRTOS target package execution`; local lane은 drafted parity packets의 controlled inputs 확보이며, MAC/time/SR-checksum/redundancy-CRC/parallel-delivery/protocol-message-family 구현은 각 packet의 missing controlled inputs가 채워질 때까지 보류
+- 최근 업데이트: `RV-560`으로 parity design/test packet 작성 이후 현재 로컬 구현 동결점을 명시했다. `SR-CHECKSUM-PARITY-001`, `MAC-PARITY-001`, `TIME-PARITY-001`, `RED-CRC-PARITY-001`, `RED-MODE-PARITY-001`, `PROTO-MSG-PARITY-001`, `SCI-SCOPE-001`은 모두 controlled inputs 없이는 구현을 열지 않는다.
+- 다음 주력 단계: external lane은 `actual vendor export acquisition` 및 `first AM263Px/SafeRTOS target package execution`; local lane은 새 V&V/공식/고객 입력 수용 또는 drafted parity packets의 controlled inputs 확보이며, 추가 host-only 구현은 현재 보류
 - 상세 변경 이력은 `docs/reviews/RV-*`, `docs/verification/*_spec*_draft.md`, `docs/evidence/**`, `vv_reports/**`를 기준 증거로 삼는다.
 
 ## Overall Phase Status
@@ -32,7 +32,7 @@
 | --- | --- | --- | --- |
 | Rules and Governance | Completed | `SIL4_REIMPLEMENTATION_RULES.md`, `CODING_RULES.md`, `sil4/README.md` | 유지 관리 |
 | Requirements and HLD | In Progress | `system_requirements_draft.md`, `hazard_log_draft.md`, `reimplementation_architecture_draft.md` | 인증/타깃 요구사항 정제 |
-| Traceability | In Progress | `sil4/docs/traceability/traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-559` | 새 policy/evidence growth마다 review/spec linkage 유지 |
+| Traceability | In Progress | `sil4/docs/traceability/traceability_matrix_initial.md`, `RV-030`, `RV-217..RV-326`, `RV-332..RV-560` | 새 policy/evidence growth마다 review/spec linkage 유지 |
 | State Machine / Orchestrator | In Progress | `rsrx_state_machine.*`, `rsrx_orchestrator.*`, unit tests, reset baseline evidence `RV-393..RV-394` | future state/action 확장 시 assertion density 유지 |
 | Platform / Transport Abstraction | In Progress | `rsrx_platform.h`, `rsrx_transport.h`, contract tests, critical-section port contract `TC-PLAT-004`/`RV-433`, portable API boundary closeout `RV-445` | 포팅 시 target adapter evidence |
 | Adapter Layer / Public API | In Progress | `rsrx_platform_adapters.*`, `rsrx_api.*`, `TC-PA-010..015`, `TC-API-003`, `TC-API-014..029`, public API report-output guard evidence `RV-427`, adapter query/receive/executor output guard evidence `RV-429..RV-431`, reset timer quiescence evidence `RV-432`, critical-section startup gate evidence `TC-CFG-011`/`RV-433`, public API critical-section guard evidence `RV-434`, outbound telemetry snapshot evidence `RV-435`, outbound queue snapshot/report-helper/feedback-clear evidence `RV-436`/`RV-439`/`RV-442`, channel-manager snapshot evidence `RV-437`, inbound event resolve/record boundary evidence `RV-440`/`RV-441`, channel query/frame receive boundary evidence `RV-443`/`RV-444`, transport API balanced matrix evidence `RV-447` | target runtime binding, callback reentrancy policy, selected codec policy 유지 |
@@ -56,7 +56,8 @@
   - all `/tmp/sil4-build/rsrx_*_test` unit/integration executables
   - `cppcheck --enable=warning,style,performance,portability --std=c11 --force --inline-suppr sil4/include sil4/src sil4/tests/unit sil4/tests/integration`
 - Latest executable host verification baseline was green after `RV-528`.
-- Changes from `RV-529` through `RV-559` are document-only closeout, wording, priority, V&V response, scope-decision, design/test packet, or roadmap-evidence clarifications unless explicitly noted otherwise; they did not change source or executable test logic.
+- Changes from `RV-529` through `RV-560` are document-only closeout, wording, priority, V&V response, scope-decision, design/test packet, or roadmap-evidence clarifications unless explicitly noted otherwise; they did not change source or executable test logic.
+- Latest document-only local implementation freeze review is `RV-560`, which records that no additional host-only implementation should start until an external/target artifact, V&V finding, or controlled requirement input opens a specific gate.
 - Latest document-only protocol message-family design/test packet is `RV-559`, which adds `PROTO-MSG-PARITY-001` and keeps `RetrResp`, `RetrData`, and future sequencing variants blocked until exact message-family selection, wire layout, sequencing/confirmation, recovery interaction, vectors, and diagnostics are supplied.
 - Latest document-only SR checksum design/test packet is `RV-558`, which adds `SR-CHECKSUM-PARITY-001` and keeps MD4, BLAKE2b, and SipHash-2-4 implementation blocked until exact profile selection, coverage, key/IV policy, vectors, status taxonomy, and target HW/SW equivalence inputs are supplied.
 - Latest document-only SCI/application aggregation scope decision is `RV-557`, which adds `SCI-SCOPE-001` and keeps SCI-P, SCI-LS, and `RastaMessageData` multi-message aggregation outside the current SIL4 core claim unless controlled official/customer input reopens it.
@@ -144,10 +145,10 @@
 
 | Lane | Current State | Open Condition |
 | --- | --- | --- |
-| Host-only implementation | Blocked | external/target artifact or controlled scope/requirement/status/policy selection |
+| Host-only implementation | Frozen / Blocked | external/target artifact, V&V finding, or controlled scope/requirement/status/policy input that opens a specific drafted gate |
 | Document consistency | Maintenance only | new V&V finding, new requirement/clause mapping, or contradiction discovered in current evidence |
 | Evidence fill-in | Waiting | vendor export, AM263Px/SafeRTOS target package, or target-qualified stack/memory/timing artifact |
-| Controlled requirement work | Waiting | design/test packet with exact clause/vector/evidence boundary for non-none checksum, CRC-bearing redundancy, MAC/security, dynamic clock/time supervision, protocol sequencing variant, or Parallel Delivery redundancy policy growth; SCI/application aggregation requires `SCI-SCOPE-001` reopen input first |
+| Controlled requirement work | Waiting | fill an existing drafted gate with exact clause/vector/evidence inputs before implementation; SCI/application aggregation requires `SCI-SCOPE-001` reopen input first |
 
 ## Next Gate Definition
 
