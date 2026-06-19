@@ -35,9 +35,9 @@ If an official RaSTA specification PDF or controlled customer requirement set is
 
 | Feature | Source Basis | Classification | Current SIL4 Baseline | Required Next Action |
 | --- | --- | --- | --- | --- |
-| SR PDU common fields: length, type, receiver ID, sender ID, sequence number, confirmed sequence number, timestamp, confirmed timestamp, data, checksum | `RastaPacket` in `rastamodule.h` | RaSTA Mandatory | Current skeleton codec has message type, reason, sequence, confirmation, payload, reserved bytes; it does not yet claim full RaSTA SR PDU layout parity | Define `RSRX_CODEC_WIRE_PROFILE_RASTA_SR` with exact field order/size/endian and add encode/decode parity tests |
-| RaSTA message types: `ConnReq`, `ConnResp`, `RetrReq`, `RetrResp`, `DiscReq`, `Heartbeat`, `Data`, `RetrData` | `rasta_conn_type` in `rastamodule.h` | RaSTA Mandatory | Current message/event family is representative but not full numeric RaSTA type parity | Map SIL4 `rsrx_message_type_t` to RaSTA numeric type values or introduce explicit RaSTA wire type conversion |
-| Disconnect reason values | `rasta_disconnect_reason` in `rasta_new.h` | RaSTA Mandatory | Internal reason taxonomy exists, but numeric RaSTA disconnect reason parity is not separately asserted | Add disconnect-reason parity mapping table and encode/decode tests |
+| SR PDU common fields: length, type, receiver ID, sender ID, sequence number, confirmed sequence number, timestamp, confirmed timestamp, data, checksum | `RastaPacket` in `rastamodule.h` | RaSTA Mandatory | Selected no-checksum SR host path implements the 28-byte SR profile, fixed byte order, encode/decode request and decoded packet contracts, receiver/sender IDs, sequence/confirmed sequence, timestamp/confirmed timestamp, payload, and explicit no-checksum metadata | Attach official/customer clause IDs before claiming formal conformance; implement checksum-bearing profiles only if selected |
+| RaSTA message types: `ConnReq`, `ConnResp`, `RetrReq`, `RetrResp`, `DiscReq`, `Heartbeat`, `Data`, `RetrData` | `rasta_conn_type` in `rastamodule.h` | RaSTA Mandatory | Numeric type constants and mapping APIs are implemented for the current supported host boundary; unsupported `RetrResp`/`RetrData` remain explicit rejected mappings until their behavior is selected | Add behavior for unsupported message families only if a controlled protocol requirement selects them |
+| Disconnect reason values | `rasta_disconnect_reason` in `rasta_new.h` | RaSTA Mandatory | Numeric disconnect reason mapping is implemented by `rsrx_codec_map_reason_to_rasta_disconnect_reason()` and `TC-CODEC-039`, including unsupported/null-output clear behavior | Add mappings only if new internal reasons or controlled DiscReq reason boundaries are introduced |
 | SR safety code/checksum | `RastaPacket.checksum`, `rasta_calculate_hash`, `rastahashing.h` | RaSTA Configurable | Current CRC32 wrapper is not the same as SR hash/checksum parity; selected default SR checksum profile is explicitly no-checksum, and MD4/BLAKE2b/SipHash profiles are rejected until selected by controlled requirement | Implement non-none SR checksum profile calculation only if a controlled requirement selects one |
 | SR checksum algorithms: MD4, BLAKE2b, SipHash-2-4 with 0/8/16 byte checksum options | `rasta_hash_algorithm`, `rasta_checksum_type` in `rastahashing.h` | RaSTA Configurable | `sil4` has a selected no-checksum default profile plus admission rejection for unsupported non-none profiles; current CRC32 path is separate | Add actual algorithm abstraction and vectors only when a non-none selected profile is required |
 | Redundancy PDU fields: length, reserve, PDU sequence number, carried SR packet | `RastaRedundancyPacket` in `rastamodule.h` | RaSTA Mandatory if redundancy layer is in scope | Redundancy no-CRC encode/decode is implemented for option A with an 8-byte header carrying one SR packet, a carried no-checksum SR decode bridge is available, and supervisor runtime can select that bridge; behavioral channel manager policy remains separate | Add CRC-bearing redundancy PDU encode/decode behavior only if options b-e are selected |
@@ -51,10 +51,10 @@ If an official RaSTA specification PDF or controlled customer requirement set is
 
 ## Immediate Backlog Split
 
-1. `PDU-PARITY-001`: Define exact RaSTA SR PDU wire layout profile. Initial repo-source-derived profile draft: `sil4/docs/design/rasta_sr_pdu_wire_profile_draft.md`.
-2. `PDU-PARITY-002`: Add RaSTA numeric message type and disconnect reason mapping.
-3. `PDU-PARITY-003`: Add sender/receiver RaSTA ID authenticity validation. Status: codec-level admission boundary and supervisor policy wiring are implemented.
-4. `PDU-PARITY-004`: Add timestamp and confirmed timestamp fields plus validation.
+1. `PDU-PARITY-001`: Selected no-checksum SR wire layout/profile is implemented for the host baseline; official/customer clause mapping remains external evidence work.
+2. `PDU-PARITY-002`: Numeric message type and disconnect reason mapping are implemented for the current supported boundary; add new message-family behavior only if selected.
+3. `PDU-PARITY-003`: Sender/receiver RaSTA ID authenticity validation is implemented at codec admission and supervisor policy wiring boundaries; deployment-specific identity configuration evidence remains target/customer scope.
+4. `PDU-PARITY-004`: Timestamp and confirmed timestamp fields plus codec admission are implemented; target monotonic source binding remains target evidence scope.
 5. `CHECKSUM-PARITY-001`: Keep selected no-checksum default profile closed; implement MD4/BLAKE2b/SipHash 8-byte or 16-byte profiles only if a controlled requirement selects one.
 6. `CRC-PARITY-001`: Keep option A no-CRC accepted; implement or explicitly reject selected redundancy CRC options b-e.
 7. `RED-PDU-PARITY-001`: Redundancy PDU profile metadata, option A no-CRC encode/decode behavior, carried no-checksum SR decode bridging, and supervisor runtime selection are defined; add CRC-bearing behavior only if selected.
@@ -62,11 +62,11 @@ If an official RaSTA specification PDF or controlled customer requirement set is
 
 ## Current Interpretation
 
-The current `sil4` codec/security baseline is a strong representative skeleton with optional CRC32 evidence, but it should not be described as full RaSTA PDU/checksum/timestamp parity yet.
+The current `sil4` codec/security baseline is representative-host closed for the selected no-checksum SR PDU boundary with optional CRC32 wrapper evidence, but it should not be described as full checksum-bearing or target-qualified RaSTA conformance yet.
 
 The roadmap should therefore distinguish:
 
-- `RaSTA PDU/checksum/timestamp parity`: required protocol parity backlog.
+- `RaSTA PDU/checksum/timestamp parity`: selected no-checksum SR host parity is closed; checksum-bearing and target timestamp-source evidence remain conditional residuals.
 - `MAC/security extension`: optional/project-specific unless a controlled requirement says otherwise.
 - `AM263Px/SafeRTOS hardware acceleration`: target adapter/evidence backlog, not portable core logic.
 
