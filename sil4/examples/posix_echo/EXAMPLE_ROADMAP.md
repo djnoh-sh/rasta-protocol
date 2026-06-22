@@ -3,10 +3,10 @@
 ## Document Control
 
 - Document ID: `EXAMPLE-POSIX-ECHO-ROADMAP`
-- Branch: `sil4-example-posix-echo-pr`
-- Last Updated: `2026-06-19`
+- Branch: `sil4-evidence-baseline`
+- Last Updated: `2026-06-22`
 - Owner: `Project Team`
-- Status: `Ready for PR after prerequisite core branch`
+- Status: `Merged into evidence baseline`
 
 ## Goal
 
@@ -40,7 +40,7 @@
 | SafeRTOS / AM263Px porting note | Done | `PORTING_SAFERTOS_AM263PX.md` |
 | Example progress tracking | Done | This document |
 | Example readiness | Done | All P0/P1/P2 example items are closed as of `2026-06-19` |
-| PR scope readiness | Done | This branch is based on `sil4-core-inbound-connect-prereq`; diff against that prerequisite branch contains only example/workflow/helper files |
+| PR scope readiness | Done | Core prerequisite PR #2 and POSIX echo example PR #3 were merged into `sil4-evidence-baseline` |
 
 ## Work Items
 
@@ -55,13 +55,13 @@
 | EX-CODE-001 | P2 | Done | Optional structured logging cleanup | Closed by decision: keep human-readable stable logs; full structured logging is production/project-specific and would obscure this educational example |
 | EX-CODE-002 | P2 | Done | Optional graceful shutdown note/code | Example calls `rsrx_session_disconnect()` before cleanup when stopping from `ESTABLISHED`; docs explain cleanup ownership and limitations |
 | EX-CI-001 | P2 | Done | CI artifact guidance | `CI_ARTIFACTS.md` documents workflow trigger, artifact contents, local log mapping, and evidence limits |
-| EX-MERGE-001 | P0 | Done | Main branch merge gate | Core handshake/sequence deltas were split to `sil4-core-inbound-connect-prereq`; this branch carries only the POSIX echo example, CI workflow, and smoke helper on top of that prerequisite |
+| EX-MERGE-001 | P0 | Done | Main branch merge gate | Core handshake/sequence prerequisite was accepted via PR #2; the POSIX echo example, CI workflow, and smoke helper were accepted via PR #3 |
 
 ## Recommended Next Order
 
-1. Merge or otherwise accept prerequisite branch `sil4-core-inbound-connect-prereq` first.
-2. Open PR from `sil4-example-posix-echo-pr` after the prerequisite is available in the target base.
-3. Re-run the example merge gate if either the prerequisite branch or `sil4-evidence-baseline` changes before merge.
+1. Keep the POSIX example as an educational integration reference.
+2. Re-run the example verification command set when core session, transport, platform adapter, or codec contracts change.
+3. Add target-specific examples only on separate branches with separate evidence scope.
 
 ## Main Branch Merge Gate
 
@@ -76,7 +76,7 @@ Required criteria:
 | POSIX example build | Pass | `make -C sil4/examples/posix_echo BUILD_DIR=/tmp/sil4-build` passed on `2026-06-19` |
 | Basic smoke | Pass | `make -C sil4/examples/posix_echo BUILD_DIR=/tmp/sil4-build smoke` passed on `2026-06-19` |
 | Failover smoke | Pass | `make -C sil4/examples/posix_echo BUILD_DIR=/tmp/sil4-build failover-smoke` passed on `2026-06-19` |
-| Latest main alignment | Pass with prerequisite | This branch is intentionally based on `sil4-core-inbound-connect-prereq`; example PR diff should be reviewed against that prerequisite or against `sil4-evidence-baseline` after prerequisite merge |
+| Latest main alignment | Pass | PR #2 and PR #3 are both merged into `sil4-evidence-baseline` |
 | Review readiness | Pass | README points to all example documents; no stale branch-only wording or missing file links |
 | Scope clarity | Pass | Example remains educational/integration-oriented and does not claim SIL4 certification evidence by itself |
 
@@ -87,30 +87,28 @@ Current merge-readiness snapshot on `2026-06-19`:
 - `make -C sil4/examples/posix_echo BUILD_DIR=/tmp/sil4-build smoke`: pass
 - `make -C sil4/examples/posix_echo BUILD_DIR=/tmp/sil4-build failover-smoke`: pass
 - Post-merge compatibility fix: POSIX platform now provides the required critical-section port; POSIX transport receive scans configured UDP channels because the core receive wrapper owns frame initialization.
-- Scope split completed on `2026-06-19`: core handshake/sequence deltas were moved to `sil4-core-inbound-connect-prereq`; this branch should be compared against that prerequisite branch for example-only review.
+- Scope split completed on `2026-06-19`: core handshake/sequence deltas were accepted through PR #2, and the example-only PR was accepted through PR #3.
 
 Merge implication:
 
-- This branch now intentionally keeps `sil4/examples/posix_echo` even though the current evidence branch baseline does not contain it.
-- The runnable example depends on prerequisite core behavior in `sil4-core-inbound-connect-prereq`.
-- The final example PR/merge must review the example restoration as an intentional educational addition, not as an accidental reintroduction.
-- If `sil4-evidence-baseline` changes again before PR merge, rerun the merge gate and update this snapshot.
+- `sil4/examples/posix_echo` is now intentionally part of `sil4-evidence-baseline`.
+- The runnable example depends on core behavior accepted through the main SIL4 implementation path.
+- Future example changes must remain educational/integration-oriented unless a separate certification evidence plan is created.
+- If `sil4-evidence-baseline` changes in a way that affects session, transport, platform adapter, or codec contracts, rerun the example verification command set.
 
 Merge procedure:
 
-1. Finish all P0/P1 work items.
-2. Update this roadmap so each completed item is marked `Done`.
-3. Bring `sil4-example-posix-echo` up to date with `sil4-evidence-baseline`.
-4. Run the current example verification command set.
-5. Inspect `git diff --check` and final changed-file scope.
-6. Open a PR or merge request from `sil4-example-posix-echo-pr` after `sil4-core-inbound-connect-prereq` is accepted or selected as the comparison base.
-7. Merge only after review confirms the example does not alter core SIL4 behavior unintentionally.
+1. Create a separate branch for future POSIX example changes.
+2. Keep example-only changes limited to `.github/workflows/sil4-example-smoke.yml`, `sil4/examples/posix_echo/**`, and `sil4/tools/run_posix_echo_smoke.sh` unless a core prerequisite is explicitly planned.
+3. Run the current example verification command set.
+4. Inspect `git diff --check` and final changed-file scope.
+5. Merge only after review confirms the example does not alter core SIL4 behavior unintentionally.
 
 Do not merge if any of the following is true:
 
 - P0 or P1 documentation is still `Planned`.
 - Smoke or failover smoke is failing.
-- The prerequisite core branch has not been accepted or the PR is compared against a base that makes core deltas appear in the example PR.
+- The change includes core implementation deltas that have not been accepted through the main SIL4 implementation/review/verification flow.
 - The example text implies certified target evidence or vendor-qualified evidence that this POSIX example does not provide.
 
 ## Verification Policy
@@ -135,14 +133,14 @@ make -C sil4/examples/posix_echo BUILD_DIR=/tmp/sil4-build failover-smoke
 
 ## Definition of Done
 
-The example branch is ready to merge into `sil4-evidence-baseline` when all P0/P1 items are `Done`, `EX-MERGE-001` is satisfied, the current example verification command set passes after aligning with the prerequisite/base branch, and PR scope contains no unreviewed core implementation delta.
+The example is ready to remain in `sil4-evidence-baseline` when all P0/P1 items are `Done`, `EX-MERGE-001` is satisfied, the current example verification command set passes after aligning with the current evidence branch, and the scope contains no unreviewed core implementation delta.
 
-Current status: ready for PR after prerequisite core branch acceptance as of `2026-06-19`.
+Current status: merged into `sil4-evidence-baseline` as of `2026-06-22`.
 
 P2 items are optional polish. They should not block sharing the example unless a reviewer identifies a concrete usability defect.
 
 ## Notes
 
-- This branch is intentionally separate from `sil4-evidence-baseline`.
+- The old POSIX example work branches were temporary staging branches; `sil4-evidence-baseline` is now the source of truth for the merged example.
 - The example is educational and integration-oriented; it is not a SIL4 certification artifact by itself.
 - SafeRTOS / AM263Px production evidence remains target-specific and belongs outside this POSIX example branch unless a target-specific example is explicitly created.
