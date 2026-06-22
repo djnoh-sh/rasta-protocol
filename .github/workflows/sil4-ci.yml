@@ -1,0 +1,215 @@
+name: SIL4 CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'sil4/**'
+      - '.github/workflows/sil4-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'sil4/**'
+      - '.github/workflows/sil4-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  sil4-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake cppcheck
+
+      - name: Run SIL4 Verification
+        run: bash sil4/tools/run_ci_verification.sh
+
+      - name: Resolve Baseline Artifact
+        if: always() && github.event_name == 'pull_request'
+        id: baseline_artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowId = 'sil4-ci.yml';
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.pull_request.number;
+            const branch = context.payload.pull_request.head.ref;
+            const currentRunId = context.runId;
+
+            async function findArtifactForRuns(params, matcher) {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner,
+                repo,
+                workflow_id: workflowId,
+                per_page: 100,
+                ...params
+              });
+
+              for (const run of runs) {
+                if (run.id === currentRunId || run.conclusion !== 'success') {
+                  continue;
+                }
+                if (!matcher(run)) {
+                  continue;
+                }
+
+                const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+                  owner,
+                  repo,
+                  run_id: run.id,
+                  per_page: 100
+                });
+                const artifact = artifacts.find((item) => item.name === 'sil4-ci-logs' && item.expired === false);
+                if (artifact) {
+                  return {
+                    found: true,
+                    source: run.event === 'pull_request' ? 'same-pr' : 'main-branch',
+                    url: artifact.archive_download_url,
+                    runId: String(run.id)
+                  };
+                }
+              }
+              return { found: false, source: 'none', url: '', runId: '' };
+            }
+
+            const samePrResult = await findArtifactForRuns(
+              { event: 'pull_request', branch, status: 'completed' },
+              (run) => Array.isArray(run.pull_requests) && run.pull_requests.some((pr) => pr.number === issueNumber)
+            );
+
+            let result = samePrResult;
+            if (!result.found) {
+              result = await findArtifactForRuns(
+                { event: 'push', branch: 'main', status: 'completed' },
+                () => true
+              );
+            }
+
+            core.setOutput('found', result.found ? 'true' : 'false');
+            core.setOutput('source', result.source);
+            core.setOutput('url', result.url);
+            core.setOutput('run_id', result.runId);
+
+      - name: Download Baseline Artifact
+        if: always() && github.event_name == 'pull_request' && steps.baseline_artifact.outputs.found == 'true'
+        env:
+          BASELINE_ARTIFACT_URL: ${{ steps.baseline_artifact.outputs.url }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/rsrx-ci-logs
+          curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "$BASELINE_ARTIFACT_URL" \
+            -o /tmp/rsrx-ci-logs/baseline_artifact.zip
+
+      - name: Materialize Baseline Summary
+        if: always() && github.event_name == 'pull_request' && steps.baseline_artifact.outputs.found == 'true'
+        run: |
+          bash sil4/tools/materialize_baseline_summary.sh \
+            /tmp/rsrx-ci-logs/baseline_artifact.zip \
+            /tmp/rsrx-ci-logs/baseline_summary.env
+
+      - name: Render PR Annotation
+        if: always() && github.event_name == 'pull_request'
+        run: bash sil4/tools/render_pr_annotation.sh
+
+      - name: Capture Baseline Fetch Context
+        if: always() && github.event_name == 'pull_request'
+        env:
+          BASELINE_SOURCE: ${{ steps.baseline_artifact.outputs.source }}
+          BASELINE_SOURCE_RUN_ID: ${{ steps.baseline_artifact.outputs.run_id }}
+        run: |
+          mkdir -p /tmp/rsrx-ci-logs
+          cat >/tmp/rsrx-ci-logs/baseline_fetch_context.env <<EOF
+          EXECUTION_DATE=$(date -u +%F)
+          COMMIT_ID=${GITHUB_SHA}
+          REF_NAME=${GITHUB_HEAD_REF}
+          RUN_ID=${GITHUB_RUN_ID}
+          TRIGGER_REF=${GITHUB_REF}
+          SOURCE_TYPE=${BASELINE_SOURCE}
+          SOURCE_RUN_ID=${BASELINE_SOURCE_RUN_ID}
+          EOF
+
+      - name: Publish Step Summary
+        if: always()
+        run: |
+          if [ -f /tmp/rsrx-ci-logs/summary.md ]; then
+            cat /tmp/rsrx-ci-logs/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "SIL4 CI summary not found" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ -f /tmp/rsrx-ci-logs/pr_annotation.md ]; then
+            printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/rsrx-ci-logs/pr_annotation.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publish PR Comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- rsrx-sil4-pr-annotation -->';
+            const path = '/tmp/rsrx-ci-logs/pr_annotation.md';
+            if (!fs.existsSync(path)) {
+              core.info('PR annotation markdown not found; skipping comment publication');
+              return;
+            }
+            const body = `${marker}\n` + fs.readFileSync(path, 'utf8');
+            const issue_number = context.payload.pull_request.number;
+            const { owner, repo } = context.repo;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100
+            });
+            const existing = comments.find((comment) => comment.body && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body
+              });
+              core.info(`Updated PR annotation comment ${existing.id}`);
+            } else {
+              const created = await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body
+              });
+              core.info(`Created PR annotation comment ${created.data.id}`);
+            }
+
+      - name: Upload SIL4 CI Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sil4-ci-logs
+          path: |
+            /tmp/rsrx-ci-logs/configure.log
+            /tmp/rsrx-ci-logs/build.log
+            /tmp/rsrx-ci-logs/tests.log
+            /tmp/rsrx-ci-logs/cppcheck.log
+            /tmp/rsrx-ci-logs/summary.md
+            /tmp/rsrx-ci-logs/summary.env
+            /tmp/rsrx-ci-logs/baseline_artifact.zip
+            /tmp/rsrx-ci-logs/baseline_summary.env
+            /tmp/rsrx-ci-logs/baseline_fetch_context.env
+            /tmp/rsrx-ci-logs/pr_annotation.md
+            /tmp/rsrx-ci-logs/pr_annotation.env
+          if-no-files-found: error

@@ -1,0 +1,377 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "rsrx_channel_manager.h"
+#include "rsrx_config_validator.h"
+#include "rsrx_codec.h"
+
+static void vAssertTrue(int iCondition, const char * pcMessage)
+{
+	if(iCondition == 0)
+	{
+		(void)fprintf(stderr, "ASSERT FAILED: %s\n", pcMessage);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static rsrx_transport_status_t eTransportSend(void * pvContext, const rsrx_transport_send_request_t * pxRequest)
+{
+	(void)pvContext;
+	(void)pxRequest;
+	return RSRX_TRANSPORT_STATUS_OK;
+}
+
+static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transport_frame_t * pxFrame)
+{
+	(void)pvContext;
+	(void)pxFrame;
+	return RSRX_TRANSPORT_STATUS_OK;
+}
+
+static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
+{
+	(void)pvContext;
+	(void)pxState;
+	return RSRX_TRANSPORT_STATUS_OK;
+}
+
+static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
+{
+	(void)pvContext;
+	*puNowNs = 100U;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eTimerCommand(void * pvContext, const rsrx_timer_command_t * pxCommand)
+{
+	(void)pvContext;
+	(void)pxCommand;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eDiagnosticWrite(void * pvContext, const rsrx_diagnostic_record_t * pxRecord)
+{
+	(void)pvContext;
+	(void)pxRecord;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eCriticalSectionEnter(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eCriticalSectionExit(void * pvContext)
+{
+	(void)pvContext;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport)
+{
+	(void)pvContext;
+	(void)pxReport;
+}
+
+static void vApplicationDataNotify(
+	void * pvContext,
+	const rsrx_orchestrator_report_t * pxReport,
+	const rsrx_application_data_indication_t * pxIndication)
+{
+	(void)pvContext;
+	(void)pxReport;
+	(void)pxIndication;
+}
+
+static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport, rsrx_action_t eAction, uint32_t uActionIndex)
+{
+	(void)pvContext;
+	(void)pxReport;
+	(void)eAction;
+	(void)uActionIndex;
+}
+
+static void vFillValidConfig(rsrx_session_config_t * pxConfig, void * pvContext)
+{
+	static const uint8_t auPayload[2] = { 0x01U, 0x02U };
+
+	pxConfig->xTransportPort.pvContext = pvContext;
+	pxConfig->xTransportPort.pfSend = eTransportSend;
+	pxConfig->xTransportPort.pfReceive = eTransportReceive;
+	pxConfig->xTransportPort.pfQueryChannel = eTransportQuery;
+	pxConfig->xCodecPort = *rsrx_codec_get_default_port();
+	pxConfig->xPlatformPorts.xClock.pvContext = pvContext;
+	pxConfig->xPlatformPorts.xClock.pfNow = eClockNow;
+	pxConfig->xPlatformPorts.xTimer.pvContext = pvContext;
+	pxConfig->xPlatformPorts.xTimer.pfCommand = eTimerCommand;
+	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pvContext;
+	pxConfig->xPlatformPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+	pxConfig->xPlatformPorts.xCriticalSection.pvContext = pvContext;
+	pxConfig->xPlatformPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
+	pxConfig->xPlatformPorts.xCriticalSection.pfExit = eCriticalSectionExit;
+	pxConfig->eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxConfig->xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
+	pxConfig->xChannelManagerConfig.uChannelCount = 1U;
+	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
+	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxConfig->xChannelManagerConfig.axChannels[1].uIsAvailable = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[1].uPriority = 0U;
+	pxConfig->puFramePayload = auPayload;
+	pxConfig->xFramePayloadLength = sizeof(auPayload);
+	pxConfig->uSupervisionIntervalNs = 100U;
+	pxConfig->uRetransmissionIntervalNs = 200U;
+	pxConfig->uDiagnosticFlushIntervalNs = 300U;
+	pxConfig->uBusyRejectErrorThreshold = 0U;
+	pxConfig->uRequireCrc = 0U;
+	pxConfig->uRequireMac = 0U;
+	pxConfig->uRequireTimestamp = 0U;
+	pxConfig->pvApplicationDataContext = pvContext;
+	pxConfig->pfApplicationData = vApplicationDataNotify;
+	pxConfig->pvApiCallbackContext = pvContext;
+	pxConfig->pfApiNotification = vApiNotify;
+	pxConfig->pvLifecycleCallbackContext = pvContext;
+	pxConfig->pfLifecycleNotification = vLifecycleNotify;
+}
+
+static void vTestValidConfiguration(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_OK, "valid config");
+	vAssertTrue(xReport.eStatus == RSRX_CONFIG_STATUS_OK, "valid report status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "valid report field");
+}
+
+static void vTestMissingTransportPort(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xTransportPort.pfSend = (rsrx_transport_send_fn)0;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing transport status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_TRANSPORT_PORT, "missing transport field");
+}
+
+static void vTestMissingCodecPort(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xCodecPort.pfEncode = (rsrx_encode_message_fn)0;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing codec status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "missing codec field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xCodecPort.pfDecode = (rsrx_decode_frame_fn)0;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing codec decode status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "missing codec decode field");
+}
+
+static void vTestInvalidIntervals(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uSupervisionIntervalNs = 0U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INVALID_RANGE, "invalid interval status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_SUPERVISION_INTERVAL, "invalid interval field");
+}
+
+static void vTestMissingApplicationCallback(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.pfApplicationData = (rsrx_application_data_fn)0;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD, "missing application callback status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_APPLICATION_DATA_CALLBACK, "missing application callback field");
+}
+
+static void vTestMissingCriticalSectionPort(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xPlatformPorts.xCriticalSection.pfEnter = (rsrx_critical_section_enter_fn)0;
+
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, &xReport) ==
+			RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD,
+		"missing critical section enter status");
+	vAssertTrue(
+		xReport.eField == RSRX_CONFIG_FIELD_PLATFORM_CRITICAL_SECTION,
+		"missing critical section enter field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xPlatformPorts.xCriticalSection.pfExit = (rsrx_critical_section_exit_fn)0;
+
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, &xReport) ==
+			RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD,
+		"missing critical section exit status");
+	vAssertTrue(
+		xReport.eField == RSRX_CONFIG_FIELD_PLATFORM_CRITICAL_SECTION,
+		"missing critical section exit field");
+}
+
+static void vTestInconsistentPayload(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.puFramePayload = (const uint8_t *)0;
+	xConfig.xFramePayloadLength = 4U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "inconsistent payload status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_FRAME_PAYLOAD, "inconsistent payload field");
+}
+
+static void vTestDefaultChannelMustBelongToTopology(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "default channel topology mismatch status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_DEFAULT_CHANNEL, "default channel topology mismatch field");
+}
+
+static void vTestDuplicateChannelPriorityRejected(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.xChannelManagerConfig.uChannelCount = 2U;
+	xConfig.xChannelManagerConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xConfig.xChannelManagerConfig.axChannels[1].uIsAvailable = 1U;
+	xConfig.xChannelManagerConfig.axChannels[1].uPriority =
+		xConfig.xChannelManagerConfig.axChannels[0].uPriority;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INVALID_RANGE, "duplicate priority status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_DEFAULT_CHANNEL, "duplicate priority field");
+}
+
+static void vTestCrcPolicyRequiresCrc32CodecPort(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireCrc = 1U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "crc required default codec status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "crc required default codec field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireCrc = 1U;
+	xConfig.xCodecPort = *rsrx_codec_get_crc32_port();
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_OK, "crc required crc32 codec status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "crc required crc32 codec field");
+}
+
+static void vTestUnavailableSecurityPoliciesAreRejected(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireMac = 1U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "mac required status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "mac required field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uRequireTimestamp = 1U;
+
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_INCONSISTENT_VALUE, "timestamp required status");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_CODEC_PORT, "timestamp required field");
+}
+
+static void vTestInvalidArguments(void)
+{
+	rsrx_session_config_t xConfig;
+	rsrx_config_validation_report_t xReport;
+	uint32_t uContext = 0U;
+
+	xReport.eStatus = RSRX_CONFIG_STATUS_MISSING_REQUIRED_FIELD;
+	xReport.eField = RSRX_CONFIG_FIELD_TRANSPORT_PORT;
+	vAssertTrue(rsrx_validate_session_config((const rsrx_session_config_t *)0, &xReport) == RSRX_CONFIG_STATUS_INVALID_ARGUMENT, "null config");
+	vAssertTrue(xReport.eStatus == RSRX_CONFIG_STATUS_INVALID_ARGUMENT, "null config status clears stale report");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "null config field");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xReport.eStatus = RSRX_CONFIG_STATUS_INVALID_RANGE;
+	xReport.eField = RSRX_CONFIG_FIELD_SUPERVISION_INTERVAL;
+	vAssertTrue(rsrx_validate_session_config(&xConfig, &xReport) == RSRX_CONFIG_STATUS_OK, "valid config clears stale report status");
+	vAssertTrue(xReport.eStatus == RSRX_CONFIG_STATUS_OK, "valid config report status clear");
+	vAssertTrue(xReport.eField == RSRX_CONFIG_FIELD_NONE, "valid config report field clear");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.puFramePayload = (const uint8_t *)0;
+	xConfig.xFramePayloadLength = 4U;
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, (rsrx_config_validation_report_t *)0) ==
+			RSRX_CONFIG_STATUS_INCONSISTENT_VALUE,
+		"null report inconsistent payload safe");
+
+	vFillValidConfig(&xConfig, &uContext);
+	xConfig.uSupervisionIntervalNs = 0U;
+	vAssertTrue(
+		rsrx_validate_session_config(&xConfig, (rsrx_config_validation_report_t *)0) ==
+			RSRX_CONFIG_STATUS_INVALID_RANGE,
+		"null report invalid interval safe");
+}
+
+int main(void)
+{
+	vTestValidConfiguration();
+	vTestMissingTransportPort();
+	vTestMissingCodecPort();
+	vTestInvalidIntervals();
+	vTestMissingApplicationCallback();
+	vTestMissingCriticalSectionPort();
+	vTestInconsistentPayload();
+	vTestDefaultChannelMustBelongToTopology();
+	vTestDuplicateChannelPriorityRejected();
+	vTestCrcPolicyRequiresCrc32CodecPort();
+	vTestUnavailableSecurityPoliciesAreRejected();
+	vTestInvalidArguments();
+
+	(void)printf("rsrx_config_validator_test: all tests passed\n");
+	return EXIT_SUCCESS;
+}

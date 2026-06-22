@@ -1,0 +1,283 @@
+#ifndef RSRX_TRANSPORT_SUPERVISOR_H
+#define RSRX_TRANSPORT_SUPERVISOR_H
+
+#include <stdint.h>
+
+#include "rsrx_api.h"
+#include "rsrx_codec.h"
+
+typedef enum
+{
+	RSRX_SUPERVISOR_STATUS_OK = 0,
+	RSRX_SUPERVISOR_STATUS_INVALID_ARGUMENT,
+	RSRX_SUPERVISOR_STATUS_DECODE_FAILED,
+	RSRX_SUPERVISOR_STATUS_SESSION_ERROR,
+	RSRX_SUPERVISOR_STATUS_NO_FRAME,
+	RSRX_SUPERVISOR_STATUS_CHANNEL_DOWN,
+	RSRX_SUPERVISOR_STATUS_RECEIVE_ERROR,
+	RSRX_SUPERVISOR_STATUS_IGNORED_EVENT
+} rsrx_supervisor_status_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_DECISION_NONE = 0,
+	RSRX_SUPERVISOR_DECISION_DECODE_FAILED,
+	RSRX_SUPERVISOR_DECISION_SESSION_ACCEPTED,
+	RSRX_SUPERVISOR_DECISION_SESSION_REJECTED,
+	RSRX_SUPERVISOR_DECISION_CHANNEL_GATED_DOWN,
+	RSRX_SUPERVISOR_DECISION_NO_FRAME_AVAILABLE,
+	RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_BUDGETED,
+	RSRX_SUPERVISOR_DECISION_RECEIVE_ERROR_ESCALATED,
+	RSRX_SUPERVISOR_DECISION_SEND_FAILURE_BUDGETED,
+	RSRX_SUPERVISOR_DECISION_SEND_FEEDBACK_UNCORRELATED_IGNORED,
+	RSRX_SUPERVISOR_DECISION_SEND_FAILURE_INACTIVE_CHANNEL_IGNORED,
+	RSRX_SUPERVISOR_DECISION_SEND_FAILURE_ESCALATED,
+	RSRX_SUPERVISOR_DECISION_SEND_COMPLETED_IGNORED,
+	RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_ESCALATED,
+	RSRX_SUPERVISOR_DECISION_CHANNEL_DOWN_FAILOVER_USED,
+	RSRX_SUPERVISOR_DECISION_CHANNEL_UP_REFRESHED,
+	RSRX_SUPERVISOR_DECISION_TRANSPORT_EVENT_IGNORED,
+	RSRX_SUPERVISOR_DECISION_TIMER_DELEGATED,
+	RSRX_SUPERVISOR_DECISION_INBOUND_RECORD_FAILED,
+	RSRX_SUPERVISOR_DECISION_OUTBOUND_CLEAR_FAILED
+} rsrx_supervisor_decision_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_DECISION_CLASS_NONE = 0,
+	RSRX_SUPERVISOR_DECISION_CLASS_ACCEPTED,
+	RSRX_SUPERVISOR_DECISION_CLASS_REJECTED,
+	RSRX_SUPERVISOR_DECISION_CLASS_IGNORED,
+	RSRX_SUPERVISOR_DECISION_CLASS_ERROR
+} rsrx_supervisor_decision_class_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_BUDGET_UPDATE_NONE = 0,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_INCREMENTED,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_AND_INCREMENT_ON_CHANNEL_SWITCH,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_INBOUND_FRAME,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_SEND_COMPLETED,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_CHANNEL_DOWN,
+	RSRX_SUPERVISOR_BUDGET_UPDATE_RESET_ON_ESCALATION
+} rsrx_supervisor_budget_update_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_NONE = 0,
+	RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_CHANNEL_QUERY,
+	RSRX_SUPERVISOR_RECEIVE_ERROR_STAGE_FRAME_RECEIVE
+} rsrx_supervisor_receive_error_stage_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_SWITCH_KIND_NONE = 0,
+	RSRX_SUPERVISOR_SWITCH_KIND_FAILOVER,
+	RSRX_SUPERVISOR_SWITCH_KIND_PREFERRED_RECOVERY
+} rsrx_supervisor_switch_kind_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_SWITCH_REASON_NONE = 0,
+	RSRX_SUPERVISOR_SWITCH_REASON_FAILOVER_CHANNEL_DOWN,
+	RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_IMMEDIATE,
+	RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_AFTER_HOLDOFF,
+	RSRX_SUPERVISOR_SWITCH_REASON_PREFERRED_RECOVERY_BYPASS_ACTIVE_LOSS,
+	RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_RESET_CHANNEL_DOWN,
+	RSRX_SUPERVISOR_SWITCH_REASON_HOLDOFF_REFRESH_NOOP,
+	RSRX_SUPERVISOR_SWITCH_REASON_ACTIVE_REFRESH_NOOP
+} rsrx_supervisor_switch_reason_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_NONE = 0,
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_IN_PROGRESS,
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_COMPLETED,
+	RSRX_SUPERVISOR_HOLDOFF_CYCLE_STATE_ABORTED
+} rsrx_supervisor_holdoff_cycle_state_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_NONE = 0,
+	RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_ORDINARY,
+	RSRX_SUPERVISOR_COMPLETED_HOLDOFF_CYCLE_KIND_BYPASS
+} rsrx_supervisor_completed_holdoff_cycle_kind_t;
+
+typedef enum
+{
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_NONE = 0,
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ORDINARY_COMPLETED,
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_BYPASS_COMPLETED,
+	RSRX_SUPERVISOR_TERMINAL_HOLDOFF_OUTCOME_ABORTED
+} rsrx_supervisor_terminal_holdoff_outcome_t;
+
+typedef struct
+{
+	rsrx_transport_channel_state_t xLastChannelState;
+	rsrx_transport_frame_t xLastFrame;
+	rsrx_decoded_message_t xLastMessage;
+	rsrx_codec_status_t eLastCodecStatus;
+	rsrx_event_t eLastEffectiveEvent;
+	rsrx_status_t eLastSessionStatus;
+	rsrx_supervisor_decision_t eLastDecision;
+	rsrx_supervisor_decision_class_t eLastDecisionClass;
+	rsrx_supervisor_budget_update_t eLastBudgetUpdate;
+	rsrx_supervisor_receive_error_stage_t eLastReceiveErrorStage;
+	rsrx_transport_status_t eLastReceiveTransportStatus;
+	rsrx_transport_channel_id_t eBudgetChannelId;
+	const rsrx_orchestrator_report_t * pxLastReport;
+	uint32_t uProcessedFrameCount;
+	uint32_t uPollCount;
+	uint32_t uConsecutiveSendFailureCount;
+	uint32_t uSendFailureBudgetResetCount;
+	uint32_t uConsecutiveReceiveErrorCount;
+	uint32_t uReceiveErrorBudgetResetCount;
+	uint32_t uAcceptedDecisionCount;
+	uint32_t uRejectedDecisionCount;
+	uint32_t uIgnoredDecisionCount;
+	uint32_t uErrorDecisionCount;
+	uint32_t uChannelSwitchCount;
+	uint32_t uLastChannelSwitchOccurred;
+	uint32_t uAvailableChannelCount;
+	uint32_t uChannelUnavailableSelectionCount;
+	uint32_t uFailoverSwitchCount;
+	uint32_t uPreferredRecoverySwitchCount;
+	uint32_t uImmediatePreferredRecoverySwitchCount;
+	uint32_t uHoldoffPreferredRecoverySwitchCount;
+	uint32_t uCompletedHoldoffPreferredRecoverySwitchCount;
+	uint32_t uBypassPreferredRecoverySwitchCount;
+	uint32_t uNoOpRefreshCount;
+	uint32_t uPreferredChannelTriggeredRefreshEventCount;
+	uint32_t uNonPreferredChannelTriggeredRefreshEventCount;
+	uint32_t uPreferredChannelTriggeredSwitchCount;
+	uint32_t uNonPreferredChannelTriggeredSwitchCount;
+	uint32_t uPreferredChannelTriggeredNoOpRefreshCount;
+	uint32_t uNonPreferredChannelTriggeredNoOpRefreshCount;
+	uint32_t uHoldoffRefreshNoOpCount;
+	uint32_t uActiveRefreshNoOpCount;
+	uint32_t uHoldoffCycleCount;
+	uint32_t uPreferredChannelTriggeredHoldoffCycleCount;
+	uint32_t uNonPreferredChannelTriggeredHoldoffCycleCount;
+	uint32_t uChannelUpTriggeredHoldoffCycleCount;
+	uint32_t uChannelDownTriggeredHoldoffCycleCount;
+	uint32_t uCompletedHoldoffCycleCount;
+	uint32_t uOrdinaryCompletedHoldoffCycleCount;
+	uint32_t uBypassCompletedHoldoffCycleCount;
+	uint32_t uAbortedHoldoffCycleCount;
+	uint32_t uTerminalHoldoffOutcomeCount;
+	uint32_t uOrdinaryTerminalHoldoffOutcomeCount;
+	uint32_t uBypassTerminalHoldoffOutcomeCount;
+	uint32_t uAbortedTerminalHoldoffOutcomeCount;
+	uint32_t uPreferredChannelTriggeredTerminalHoldoffOutcomeCount;
+	uint32_t uNonPreferredChannelTriggeredTerminalHoldoffOutcomeCount;
+	uint32_t uChannelUpTriggeredTerminalHoldoffOutcomeCount;
+	uint32_t uChannelDownTriggeredTerminalHoldoffOutcomeCount;
+	uint32_t uHoldoffResetCount;
+	uint32_t uPreferredRecoveryHoldoffActive;
+	uint32_t uPreferredRecoveryHoldoffProgressCount;
+	uint32_t uPreferredRecoveryPendingPenaltyCount;
+	uint32_t uPreferredRecoveryPenaltyArmCount;
+	uint32_t uPreferredRecoveryPenaltyRearmCount;
+	uint32_t uPreferredRecoveryPenaltyAppliedCycleCount;
+	uint32_t uPreferredRecoveryPenaltyAbortCount;
+	uint32_t uPreferredRecoveryPenaltyClearCount;
+	uint32_t uPreferredRecoveryPenaltyBypassClearCount;
+	uint32_t uPreferredRecoveryPenaltyResetClearCount;
+	uint32_t uPreferredRecoveryHoldoffTargetCount;
+	uint32_t uPreferredRecoveryHoldoffRemainingCount;
+	rsrx_supervisor_holdoff_cycle_state_t eLastHoldoffCycleState;
+	rsrx_transport_event_type_t eLastHoldoffCycleStartTriggerEventType;
+	rsrx_transport_channel_id_t eLastHoldoffCycleStartTriggerChannelId;
+	rsrx_supervisor_completed_holdoff_cycle_kind_t eLastCompletedHoldoffCycleKind;
+	rsrx_supervisor_terminal_holdoff_outcome_t eLastTerminalHoldoffOutcome;
+	rsrx_transport_event_type_t eLastTerminalHoldoffOutcomeTriggerEventType;
+	rsrx_transport_channel_id_t eLastTerminalHoldoffOutcomeTriggerChannelId;
+	rsrx_supervisor_switch_kind_t eLastSwitchKind;
+	rsrx_supervisor_switch_reason_t eLastSwitchReason;
+	rsrx_transport_event_type_t eLastSwitchTriggerEventType;
+	rsrx_transport_channel_id_t eLastSwitchTriggerChannelId;
+	rsrx_transport_channel_id_t eLastSwitchFromChannelId;
+	rsrx_transport_channel_id_t eLastSwitchToChannelId;
+	uint32_t uLastPumpIterationCount;
+	uint32_t uLastPumpProcessedFrameCount;
+	uint32_t uOutstandingSendPresent;
+	uint32_t uDeferredSendPresent;
+	uint32_t uDeferredSendCount;
+	uint32_t uQueuedSendCount;
+	uint32_t uMaxDeferredSendCount;
+	uint32_t uDeferredDispatchCount;
+	uint32_t uQueueOverflowRejectCount;
+	uint32_t uOutboundRuntimeResetCount;
+	rsrx_outbound_reject_reason_t eLastOutboundRejectReason;
+	uint32_t uBusyRejectedSendCount;
+	uint32_t uConsecutiveBusyRejectedSendCount;
+	uint32_t uMaxConsecutiveBusyRejectedSendCount;
+	uint32_t uBusyRejectEscalationCount;
+	uint32_t uLastBusyRejectEscalated;
+	uint32_t uRastaSrRuntimeEnabled;
+	uint32_t uRastaRedundancySrRuntimeEnabled;
+	uint32_t uRastaSrCurrentTimestamp;
+	uint32_t uRastaSrLastAcceptedTimestamp;
+	uint32_t uRastaSrIdentityAdmissionEnabled;
+	uint32_t uRastaSrExpectedReceiverId;
+	uint32_t uRastaSrExpectedSenderId;
+} rsrx_transport_supervisor_report_t;
+
+typedef struct
+{
+	rsrx_session_t * pxSession;
+	rsrx_codec_port_t xCodec;
+	rsrx_rasta_sr_timestamp_admission_policy_t xRastaSrTimestampPolicy;
+	rsrx_rasta_sr_identity_admission_policy_t xRastaSrIdentityPolicy;
+	rsrx_transport_supervisor_report_t xLastReport;
+	uint32_t uMaxConsecutiveSendFailures;
+	uint32_t uMaxConsecutiveReceiveErrors;
+	uint32_t uRastaSrRuntimeEnabled;
+	uint32_t uRastaRedundancySrRuntimeEnabled;
+	uint32_t uRastaSrIdentityAdmissionEnabled;
+	uint32_t uNoOpAuditCountedInCurrentCall;
+	uint32_t uInitialized;
+} rsrx_transport_supervisor_context_t;
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_init(
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_session_t * pxSession,
+	const rsrx_codec_port_t * pxCodec);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_process_frame(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_transport_frame_t * pxFrame,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_runtime(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_redundancy_sr_runtime(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_enable_rasta_sr_identity_admission(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxPolicy);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_poll_receive(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_pump_receive(
+	rsrx_transport_supervisor_context_t * pxContext,
+	uint32_t uMaxPolls,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_process_transport_event(
+	rsrx_transport_supervisor_context_t * pxContext,
+	const rsrx_transport_frame_t * pxFrame,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+rsrx_supervisor_status_t rsrx_transport_supervisor_process_timer_expiry(
+	rsrx_transport_supervisor_context_t * pxContext,
+	rsrx_timer_expiry_source_t eTimerSource,
+	const rsrx_transport_supervisor_report_t ** ppxReport);
+
+#endif

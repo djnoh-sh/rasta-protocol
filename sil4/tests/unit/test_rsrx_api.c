@@ -1,0 +1,1859 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "rsrx_channel_manager.h"
+#include "rsrx_api.h"
+#include "rsrx_codec.h"
+#include "rsrx_platform_adapters.h"
+
+typedef struct
+{
+	rsrx_monotonic_time_ns_t uNowNs;
+} test_clock_context_t;
+
+typedef struct
+{
+	uint32_t uCallCount;
+	rsrx_orchestrator_report_t xLastReport;
+} test_counter_t;
+
+typedef struct
+{
+	rsrx_application_data_indication_t xLastIndication;
+	uint32_t uCallCount;
+} test_application_context_t;
+
+typedef struct
+{
+	rsrx_transport_send_request_t xLastRequest;
+	uint32_t uSendCount;
+	rsrx_transport_channel_state_t xQueryState;
+	rsrx_transport_status_t eQueryStatus;
+	uint32_t uQueryCount;
+	rsrx_transport_frame_t xReceiveFrame;
+	rsrx_transport_status_t eReceiveStatus;
+	uint32_t uReceiveCount;
+} test_transport_context_t;
+
+#define TEST_TRANSPORT_CONTEXT_INIT \
+	{ \
+		{ RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_REASON_NONE }, \
+		0U, \
+		{ RSRX_TRANSPORT_CHANNEL_INVALID, 0U }, \
+		RSRX_TRANSPORT_STATUS_OK, \
+		0U, \
+		{ RSRX_TRANSPORT_CHANNEL_INVALID, (const uint8_t *)0, 0U, RSRX_TRANSPORT_EVENT_NONE }, \
+		RSRX_TRANSPORT_STATUS_OK, \
+		0U \
+	}
+
+typedef struct
+{
+	rsrx_timer_command_t xLastCommand;
+	uint32_t uCallCount;
+} test_timer_context_t;
+
+typedef struct
+{
+	rsrx_diagnostic_record_t xLastRecord;
+	uint32_t uCallCount;
+} test_diagnostics_context_t;
+
+typedef struct
+{
+	uint32_t uEnterCount;
+	uint32_t uExitCount;
+	uint32_t uActiveDepth;
+	uint32_t uMaxDepth;
+	uint32_t uFailEnter;
+	uint32_t uFailExit;
+} test_critical_section_context_t;
+
+static void vAssertTrue(int iCondition, const char * pcMessage)
+{
+	if(iCondition == 0)
+	{
+		(void)fprintf(stderr, "ASSERT FAILED: %s\n", pcMessage);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static rsrx_timer_command_t axTimerCommandHistory[64];
+static uint32_t uTimerCommandHistoryCount;
+static test_critical_section_context_t xCriticalSectionContext;
+
+static void vResetCriticalSectionContext(void)
+{
+	xCriticalSectionContext.uEnterCount = 0U;
+	xCriticalSectionContext.uExitCount = 0U;
+	xCriticalSectionContext.uActiveDepth = 0U;
+	xCriticalSectionContext.uMaxDepth = 0U;
+	xCriticalSectionContext.uFailEnter = 0U;
+	xCriticalSectionContext.uFailExit = 0U;
+}
+
+/* cppcheck-suppress constParameterCallback */
+static rsrx_platform_status_t eClockNow(void * pvContext, rsrx_monotonic_time_ns_t * puNowNs)
+{
+	const test_clock_context_t * pxContext = (const test_clock_context_t *)pvContext;
+	*puNowNs = pxContext->uNowNs;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eTimerCommand(void * pvContext, const rsrx_timer_command_t * pxCommand)
+{
+	test_timer_context_t * pxContext = (test_timer_context_t *)pvContext;
+	pxContext->xLastCommand = *pxCommand;
+	if(uTimerCommandHistoryCount < 64U)
+	{
+		axTimerCommandHistory[uTimerCommandHistoryCount] = *pxCommand;
+	}
+	uTimerCommandHistoryCount++;
+	pxContext->uCallCount++;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eDiagnosticWrite(void * pvContext, const rsrx_diagnostic_record_t * pxRecord)
+{
+	test_diagnostics_context_t * pxContext = (test_diagnostics_context_t *)pvContext;
+	pxContext->xLastRecord = *pxRecord;
+	pxContext->uCallCount++;
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eCriticalSectionEnter(void * pvContext)
+{
+	test_critical_section_context_t * pxContext =
+		(test_critical_section_context_t *)pvContext;
+	if(pxContext == (test_critical_section_context_t *)0)
+	{
+		return RSRX_PLATFORM_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->uEnterCount++;
+	if(pxContext->uFailEnter != 0U)
+	{
+		return RSRX_PLATFORM_STATUS_UNAVAILABLE;
+	}
+
+	pxContext->uActiveDepth++;
+	if(pxContext->uActiveDepth > pxContext->uMaxDepth)
+	{
+		pxContext->uMaxDepth = pxContext->uActiveDepth;
+	}
+
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_platform_status_t eCriticalSectionExit(void * pvContext)
+{
+	test_critical_section_context_t * pxContext =
+		(test_critical_section_context_t *)pvContext;
+	if(pxContext == (test_critical_section_context_t *)0)
+	{
+		return RSRX_PLATFORM_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxContext->uExitCount++;
+	if(pxContext->uFailExit != 0U)
+	{
+		return RSRX_PLATFORM_STATUS_UNAVAILABLE;
+	}
+
+	if(pxContext->uActiveDepth > 0U)
+	{
+		pxContext->uActiveDepth--;
+	}
+
+	return RSRX_PLATFORM_STATUS_OK;
+}
+
+static rsrx_transport_status_t eTransportSend(void * pvContext, const rsrx_transport_send_request_t * pxRequest)
+{
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+	pxContext->xLastRequest = *pxRequest;
+	pxContext->uSendCount++;
+	return RSRX_TRANSPORT_STATUS_OK;
+}
+
+static rsrx_transport_status_t eTransportReceive(void * pvContext, rsrx_transport_frame_t * pxFrame)
+{
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+	rsrx_transport_status_t eStatus = RSRX_TRANSPORT_STATUS_OK;
+
+	if(pxContext != (test_transport_context_t *)0)
+	{
+		pxContext->uReceiveCount++;
+		eStatus = pxContext->eReceiveStatus;
+	}
+
+	if((pxContext != (test_transport_context_t *)0) &&
+		(pxFrame != (rsrx_transport_frame_t *)0))
+	{
+		*pxFrame = pxContext->xReceiveFrame;
+	}
+
+	return eStatus;
+}
+
+static rsrx_transport_status_t eTransportQuery(void * pvContext, rsrx_transport_channel_state_t * pxState)
+{
+	test_transport_context_t * pxContext = (test_transport_context_t *)pvContext;
+	rsrx_transport_status_t eStatus = RSRX_TRANSPORT_STATUS_OK;
+
+	if(pxContext != (test_transport_context_t *)0)
+	{
+		pxContext->uQueryCount++;
+		eStatus = pxContext->eQueryStatus;
+	}
+
+	if(pxState != (rsrx_transport_channel_state_t *)0)
+	{
+		if((pxContext != (test_transport_context_t *)0) &&
+			((pxContext->xQueryState.eChannelId != RSRX_TRANSPORT_CHANNEL_INVALID) ||
+				(pxContext->xQueryState.uIsAvailable != 0U)))
+		{
+			*pxState = pxContext->xQueryState;
+		}
+		else
+		{
+			pxState->eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+			pxState->uIsAvailable = 1U;
+		}
+	}
+	return eStatus;
+}
+
+static void vApiNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport)
+{
+	test_counter_t * pxContext = (test_counter_t *)pvContext;
+	pxContext->uCallCount++;
+	if(pxReport != (const rsrx_orchestrator_report_t *)0)
+	{
+		pxContext->xLastReport = *pxReport;
+	}
+}
+
+static void vApplicationDataNotify(
+	void * pvContext,
+	const rsrx_orchestrator_report_t * pxReport,
+	const rsrx_application_data_indication_t * pxIndication)
+{
+	test_application_context_t * pxContext = (test_application_context_t *)pvContext;
+	(void)pxReport;
+	pxContext->uCallCount++;
+	pxContext->xLastIndication = *pxIndication;
+}
+
+static void vLifecycleNotify(void * pvContext, const rsrx_orchestrator_report_t * pxReport, rsrx_action_t eAction, uint32_t uActionIndex)
+{
+	test_counter_t * pxContext = (test_counter_t *)pvContext;
+	(void)eAction;
+	(void)uActionIndex;
+	pxContext->uCallCount++;
+	if(pxReport != (const rsrx_orchestrator_report_t *)0)
+	{
+		pxContext->xLastReport = *pxReport;
+	}
+}
+
+static void vFillConfig(
+	rsrx_session_config_t * pxConfig,
+	test_transport_context_t * pxTransport,
+	test_clock_context_t * pxClock,
+	test_timer_context_t * pxTimer,
+	test_diagnostics_context_t * pxDiagnostics,
+	test_application_context_t * pxApplication,
+	test_counter_t * pxApiCounter,
+	test_counter_t * pxLifecycleCounter,
+	const uint8_t * puPayload,
+	size_t xPayloadLength)
+{
+	pxConfig->xTransportPort.pvContext = pxTransport;
+	pxConfig->xTransportPort.pfSend = eTransportSend;
+	pxConfig->xTransportPort.pfReceive = eTransportReceive;
+	pxConfig->xTransportPort.pfQueryChannel = eTransportQuery;
+	pxConfig->xCodecPort = *rsrx_codec_get_default_port();
+	pxConfig->xPlatformPorts.xClock.pvContext = pxClock;
+	pxConfig->xPlatformPorts.xClock.pfNow = eClockNow;
+	pxConfig->xPlatformPorts.xTimer.pvContext = pxTimer;
+	pxConfig->xPlatformPorts.xTimer.pfCommand = eTimerCommand;
+	pxConfig->xPlatformPorts.xDiagnostics.pvContext = pxDiagnostics;
+	pxConfig->xPlatformPorts.xDiagnostics.pfWrite = eDiagnosticWrite;
+	vResetCriticalSectionContext();
+	pxConfig->xPlatformPorts.xCriticalSection.pvContext = &xCriticalSectionContext;
+	pxConfig->xPlatformPorts.xCriticalSection.pfEnter = eCriticalSectionEnter;
+	pxConfig->xPlatformPorts.xCriticalSection.pfExit = eCriticalSectionExit;
+	pxConfig->eDefaultChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxConfig->xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_SINGLE;
+	pxConfig->xChannelManagerConfig.uChannelCount = 1U;
+	pxConfig->xChannelManagerConfig.uPreferredChannelIndex = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 0U;
+	pxConfig->xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[0].eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	pxConfig->xChannelManagerConfig.axChannels[0].uIsAvailable = 1U;
+	pxConfig->xChannelManagerConfig.axChannels[0].uPriority = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_INVALID;
+	pxConfig->xChannelManagerConfig.axChannels[1].uIsAvailable = 0U;
+	pxConfig->xChannelManagerConfig.axChannels[1].uPriority = 0U;
+	pxConfig->puFramePayload = puPayload;
+	pxConfig->xFramePayloadLength = xPayloadLength;
+	pxConfig->uSupervisionIntervalNs = 200U;
+	pxConfig->uRetransmissionIntervalNs = 300U;
+	pxConfig->uDiagnosticFlushIntervalNs = 400U;
+	pxConfig->uBusyRejectErrorThreshold = 0U;
+	pxConfig->uRequireCrc = 0U;
+	pxConfig->uRequireMac = 0U;
+	pxConfig->uRequireTimestamp = 0U;
+	pxConfig->pvApplicationDataContext = pxApplication;
+	pxConfig->pfApplicationData = vApplicationDataNotify;
+	pxConfig->pvApiCallbackContext = pxApiCounter;
+	pxConfig->pfApiNotification = vApiNotify;
+	pxConfig->pvLifecycleCallbackContext = pxLifecycleCounter;
+	pxConfig->pfLifecycleNotification = vLifecycleNotify;
+}
+
+static void vPrepareEstablishedSession(
+	rsrx_session_t * pxSession,
+	rsrx_session_config_t * pxConfig,
+	const rsrx_orchestrator_report_t ** ppxReport,
+	test_transport_context_t * pxTransport,
+	test_clock_context_t * pxClock,
+	test_timer_context_t * pxTimer,
+	test_diagnostics_context_t * pxDiagnostics,
+	test_application_context_t * pxApplication,
+	test_counter_t * pxApiCounter,
+	test_counter_t * pxLifecycleCounter,
+	const uint8_t * puPayload,
+	size_t xPayloadLength)
+{
+	vFillConfig(
+		pxConfig,
+		pxTransport,
+		pxClock,
+		pxTimer,
+		pxDiagnostics,
+		pxApplication,
+		pxApiCounter,
+		pxLifecycleCounter,
+		puPayload,
+		xPayloadLength);
+	vAssertTrue(rsrx_session_init(pxSession, pxConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_start(pxSession, ppxReport) == RSRX_STATUS_OK, "session start");
+	vAssertTrue(rsrx_session_connect(pxSession, ppxReport) == RSRX_STATUS_OK, "session connect");
+	vAssertTrue(rsrx_session_process_event(pxSession, RSRX_EVENT_HANDSHAKE_SUCCESS, ppxReport) == RSRX_STATUS_OK, "handshake success");
+	vAssertTrue(rsrx_session_get_state(pxSession) == RSRX_STATE_ESTABLISHED, "session established");
+}
+
+static void vTestSessionStartupAndConnect(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[3] = { 0x01U, 0x02U, 0x03U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "initial session state");
+
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK, "session start");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_INIT_COMPLETED, "start reason");
+	vAssertTrue(xApiCounter.uCallCount == 1U, "api notified on start");
+	vAssertTrue(xDiagnostics.uCallCount == 1U, "diagnostics written on start");
+
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "session connect");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "connecting state");
+	vAssertTrue(xTransport.uSendCount == 1U, "transport send count");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_CONNECT_REQUESTED, "transport reason on connect");
+	vAssertTrue(xTimer.uCallCount == 1U, "timer command count");
+	vAssertTrue(xApiCounter.uCallCount == 2U, "api notified on connect");
+	vAssertTrue(xDiagnostics.uCallCount == 1U, "no new diagnostics on connect");
+}
+
+static void vTestSessionInitClearsReportBaseline(void)
+{
+	rsrx_session_t xSession = { 0 };
+	rsrx_session_config_t xConfig;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x5AU };
+
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	xSession.xLastReport.uDispatchedActionCount = 5U;
+	xSession.xLastReport.xTransition.ePreviousState = RSRX_STATE_ESTABLISHED;
+	xSession.xLastReport.xTransition.eNextState = RSRX_STATE_SAFE_DISCONNECT;
+	xSession.xLastReport.xTransition.eStatus = RSRX_STATUS_REJECTED;
+	xSession.xLastReport.xTransition.eReason = RSRX_REASON_PROTOCOL_ERROR_DETECTED;
+	xSession.xLastReport.xTransition.eDiagnostic = RSRX_DIAG_ERROR_PROTOCOL;
+	xSession.xLastReport.xTransition.xActions.uActionCount = 3U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "session init baseline init");
+	vAssertTrue(xSession.uInitialized == 1U, "session init baseline initialized");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "session init baseline state");
+	vAssertTrue(xSession.xLastReport.uDispatchedActionCount == 0U, "session init baseline dispatched count");
+	vAssertTrue(xSession.xLastReport.xTransition.ePreviousState == RSRX_STATE_INVALID, "session init baseline previous state");
+	vAssertTrue(xSession.xLastReport.xTransition.eNextState == RSRX_STATE_INVALID, "session init baseline next state");
+	vAssertTrue(xSession.xLastReport.xTransition.eStatus == RSRX_STATUS_OK, "session init baseline status");
+	vAssertTrue(xSession.xLastReport.xTransition.eReason == RSRX_REASON_NONE, "session init baseline reason");
+	vAssertTrue(xSession.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_NONE, "session init baseline diagnostic");
+	vAssertTrue(xSession.xLastReport.xTransition.xActions.uActionCount == 0U, "session init baseline action count");
+}
+
+static void vTestSessionDisconnectPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 500U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0xAAU, 0xBBU };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	(void)rsrx_session_init(&xSession, &xConfig);
+	(void)rsrx_session_start(&xSession, &pxReport);
+	(void)rsrx_session_connect(&xSession, &pxReport);
+	(void)rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport);
+
+	vAssertTrue(rsrx_session_disconnect(&xSession, &pxReport) == RSRX_STATUS_OK, "session disconnect");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_DISCONNECT_REQUESTED, "disconnect reason");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "disconnect state");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "lifecycle callback count");
+	vAssertTrue(xApiCounter.uCallCount >= 3U, "api callback count after disconnect");
+	vAssertTrue(
+		(xTransport.uSendCount == 1U) || (xTransport.uSendCount == 2U),
+		"transport send count after disconnect");
+	if(xTransport.uSendCount == 2U)
+	{
+		vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_DISCONNECT_REQUESTED, "disconnect transport reason");
+	}
+}
+
+static void vTestSessionInboundHeartbeatPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 700U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x11U, 0x22U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_HEARTBEAT, &pxReport) == RSRX_STATUS_OK, "heartbeat event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "heartbeat keeps established");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_HEARTBEAT_ACCEPTED, "heartbeat reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 2U, "heartbeat dispatched actions");
+	vAssertTrue(xTransport.uSendCount == 1U, "heartbeat does not send transport payload");
+	vAssertTrue(xTimer.uCallCount == 3U, "heartbeat timer restart");
+	vAssertTrue(xTimer.xLastCommand.eCommandType == RSRX_TIMER_COMMAND_RESTART, "heartbeat timer command");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "heartbeat diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "heartbeat no api notify");
+}
+
+static void vTestSessionInboundDataPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 800U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[3] = { 0x21U, 0x22U, 0x23U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(
+		rsrx_session_record_inbound_message(
+			&xSession,
+			&(const rsrx_decoded_message_t){
+				RSRX_MESSAGE_TYPE_DATA,
+				RSRX_EVENT_VALID_DATA,
+				RSRX_REASON_DATA_ACCEPTED,
+				1U,
+				1U,
+				{ 0x21U, 0x22U, 0x23U },
+				3U }) == RSRX_STATUS_OK,
+		"data record inbound message");
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_DATA, &pxReport) == RSRX_STATUS_OK, "data event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "data keeps established");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_DATA_ACCEPTED, "data reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 3U, "data dispatched actions");
+	vAssertTrue(xTransport.uSendCount == 1U, "data delivery does not send outbound transport");
+	vAssertTrue(xApplication.uCallCount == 1U, "application data callback count");
+	vAssertTrue(xApplication.xLastIndication.xPayloadLength == 3U, "application data payload length");
+	vAssertTrue(xApplication.xLastIndication.puPayload != (const uint8_t *)0, "application data payload pointer");
+	vAssertTrue(xApplication.xLastIndication.puPayload[0] == 0x21U, "application data payload byte 0");
+	vAssertTrue(xApplication.xLastIndication.eReason == RSRX_REASON_DATA_ACCEPTED, "application data reason");
+	vAssertTrue(xApplication.xLastIndication.uSequenceNumber == 1U, "application data sequence");
+	vAssertTrue(xApplication.xLastIndication.uConfirmationNumber == 1U, "application data confirmation");
+	vAssertTrue(xTimer.uCallCount == 3U, "data timer restart");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "data diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "data no api notify");
+}
+
+static void vTestSessionOutboundApplicationDataPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 850U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[3] = { 0x21U, 0x22U, 0x23U };
+	static const uint8_t auDataPayload[4] = { 0x61U, 0x62U, 0x63U, 0x64U };
+	uint32_t uDeferredIndex;
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(pxTelemetry != (const rsrx_outbound_send_telemetry_t *)0, "outbound application telemetry available");
+
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"application data send");
+	vAssertTrue(xTransport.uSendCount == 2U, "outbound application send count");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application send reason");
+	vAssertTrue(xTransport.xLastRequest.xPayloadLength == (D_RSRX_CODEC_HEADER_BYTES + sizeof(auDataPayload)), "outbound application encoded length");
+	vAssertTrue(xTransport.xLastRequest.puPayload[0] == (uint8_t)RSRX_MESSAGE_TYPE_DATA, "outbound application message type");
+	vAssertTrue(xTransport.xLastRequest.puPayload[1] == (uint8_t)RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application encoded reason");
+	vAssertTrue(xTransport.xLastRequest.puPayload[7] == 0x02U, "outbound application sequence");
+	vAssertTrue(xTransport.xLastRequest.puPayload[11] == 0x00U, "outbound application confirmation");
+	vAssertTrue(xTransport.xLastRequest.puPayload[D_RSRX_CODEC_HEADER_BYTES] == auDataPayload[0], "outbound application payload copied");
+	vAssertTrue(xApplication.uCallCount == 0U, "outbound application send does not trigger inbound callback");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "outbound application accepted telemetry");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 0U, "outbound application queued telemetry before queue");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 0U, "outbound application busy telemetry before reject");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count before reject");
+	vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count before reject");
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"application data send queued");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "outbound application queued telemetry after queue");
+	vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count after queue");
+	vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count after queue");
+	for(uDeferredIndex = 2U; uDeferredIndex <= D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY; ++uDeferredIndex)
+	{
+		vAssertTrue(
+			rsrx_session_send_application_data(
+				&xSession,
+				auDataPayload,
+				sizeof(auDataPayload)) == RSRX_STATUS_OK,
+			"application data additional deferred send queued");
+		vAssertTrue(pxTelemetry->uQueuedSendCount == uDeferredIndex, "outbound application queued telemetry after capacity fill");
+		vAssertTrue(xApiCounter.uCallCount == 3U, "outbound application api count after capacity fill");
+		vAssertTrue(xDiagnostics.uCallCount == 2U, "outbound application diagnostic count after capacity fill");
+	}
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
+		"application data send overflow reject");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 1U, "outbound application busy telemetry after reject");
+	vAssertTrue(pxTelemetry->uQueueOverflowRejectCount == 1U, "outbound application queue overflow telemetry after reject");
+	vAssertTrue(pxTelemetry->eLastSendStatus == RSRX_TRANSPORT_STATUS_UNAVAILABLE, "outbound application last send status telemetry");
+	vAssertTrue(xApiCounter.uCallCount == 4U, "outbound application api count after reject");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "outbound application diagnostic count after reject");
+	vAssertTrue(xDiagnostics.xLastRecord.eStatus == RSRX_STATUS_REJECTED, "outbound application reject diagnostic status");
+	vAssertTrue(xDiagnostics.xLastRecord.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application reject diagnostic reason");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "outbound application reject diagnostic code");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eStatus == RSRX_STATUS_REJECTED, "outbound application reject report status");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eReason == RSRX_REASON_APPLICATION_DATA_REQUESTED, "outbound application reject report reason");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "outbound application reject report diagnostic");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "outbound application busy streak one");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 1U, "outbound application busy max one");
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
+		"application data second overflow guard");
+	vAssertTrue(pxTelemetry->uBusyRejectedSendCount == 2U, "outbound application busy telemetry after second reject");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "outbound application busy streak two");
+	vAssertTrue(pxTelemetry->uMaxConsecutiveBusyRejectedSendCount == 2U, "outbound application busy max two");
+	vAssertTrue(xApiCounter.uCallCount == 5U, "outbound application api count after second reject");
+	vAssertTrue(xDiagnostics.uCallCount == 4U, "outbound application diagnostic count after second reject");
+}
+
+static void vTestSessionOutboundTelemetrySnapshot(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_outbound_send_telemetry_t xTelemetry;
+	rsrx_outbound_queue_snapshot_t xQueueSnapshot;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 855U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[2] = { 0x21U, 0x22U };
+	static const uint8_t auDataPayload[2] = { 0x65U, 0x66U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	vAssertTrue(
+		rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) ==
+			RSRX_STATUS_OK,
+		"telemetry snapshot send");
+
+	vAssertTrue(
+		rsrx_session_copy_outbound_telemetry(&xSession, &xTelemetry) == RSRX_STATUS_OK,
+		"telemetry snapshot copy");
+	vAssertTrue(xTelemetry.uAcceptedSendCount == 2U, "telemetry snapshot accepted");
+	vAssertTrue(xTelemetry.uQueuedSendCount == 0U, "telemetry snapshot queued");
+	vAssertTrue(xTelemetry.eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "telemetry snapshot status");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "telemetry snapshot balanced");
+	vAssertTrue(
+		rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) ==
+			RSRX_STATUS_OK,
+		"queue snapshot deferred send");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xQueueSnapshot) ==
+			RSRX_STATUS_OK,
+		"queue snapshot copy");
+	vAssertTrue(xQueueSnapshot.uOutstandingSendPresent == 1U, "queue snapshot outstanding");
+	vAssertTrue(
+		xQueueSnapshot.eOutstandingSendChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY,
+		"queue snapshot outstanding channel");
+	vAssertTrue(xQueueSnapshot.uDeferredSendPresent == 1U, "queue snapshot deferred present");
+	vAssertTrue(xQueueSnapshot.uDeferredSendCount == 1U, "queue snapshot deferred count");
+	vAssertTrue(xQueueSnapshot.xTelemetry.uQueuedSendCount == 1U, "queue snapshot queued telemetry");
+
+	xTelemetry.uAcceptedSendCount = 77U;
+	xTelemetry.uQueuedSendCount = 66U;
+	xQueueSnapshot.uOutstandingSendPresent = 55U;
+	xQueueSnapshot.eOutstandingSendChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xQueueSnapshot.uDeferredSendPresent = 45U;
+	xQueueSnapshot.uDeferredSendCount = 44U;
+	xQueueSnapshot.xTelemetry.uQueuedSendCount = 33U;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_copy_outbound_telemetry(&xSession, &xTelemetry) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"telemetry snapshot enter fail");
+	vAssertTrue(xTelemetry.uAcceptedSendCount == 0U, "telemetry snapshot fail clears accepted");
+	vAssertTrue(xTelemetry.uQueuedSendCount == 0U, "telemetry snapshot fail clears queued");
+	vAssertTrue(xTelemetry.eLastSendStatus == RSRX_TRANSPORT_STATUS_OK, "telemetry snapshot fail clears status");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xQueueSnapshot) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"queue snapshot enter fail");
+	vAssertTrue(xQueueSnapshot.uOutstandingSendPresent == 0U, "queue snapshot fail clears outstanding");
+	vAssertTrue(
+		xQueueSnapshot.eOutstandingSendChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"queue snapshot fail clears outstanding channel");
+	vAssertTrue(xQueueSnapshot.uDeferredSendPresent == 0U, "queue snapshot fail clears deferred present");
+	vAssertTrue(xQueueSnapshot.uDeferredSendCount == 0U, "queue snapshot fail clears deferred count");
+	vAssertTrue(xQueueSnapshot.xTelemetry.uQueuedSendCount == 0U, "queue snapshot fail clears telemetry");
+}
+
+static void vTestSessionChannelManagerSnapshot(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_channel_manager_snapshot_t xSnapshot;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 856U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[2] = { 0x31U, 0x32U };
+
+	vFillConfig(
+		&xConfig,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	xConfig.xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.xChannelManagerConfig.uChannelCount = 2U;
+	xConfig.xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	xConfig.xChannelManagerConfig.axChannels[1].eChannelId =
+		RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xConfig.xChannelManagerConfig.axChannels[1].uIsAvailable = 1U;
+	xConfig.xChannelManagerConfig.axChannels[1].uPriority = 1U;
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "channel snapshot init");
+	vAssertTrue(
+		rsrx_session_copy_channel_manager_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"channel snapshot copy");
+	vAssertTrue(xSnapshot.eActiveChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel snapshot active");
+	vAssertTrue(xSnapshot.ePreferredChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "channel snapshot preferred");
+	vAssertTrue(xSnapshot.uAvailableChannelCount == 2U, "channel snapshot available count");
+	vAssertTrue(xSnapshot.uPreferredRecoveryHoldoffTargetCount == 2U, "channel snapshot holdoff target");
+	vAssertTrue(xSnapshot.uPreferredRecoveryHoldoffRemainingCount == 2U, "channel snapshot holdoff remaining");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "channel snapshot balanced");
+
+	xSnapshot.eActiveChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xSnapshot.ePreferredChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xSnapshot.uAvailableChannelCount = 77U;
+	xSnapshot.uTotalSwitchCount = 66U;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_copy_channel_manager_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"channel snapshot enter fail");
+	vAssertTrue(xSnapshot.eActiveChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel snapshot fail clears active");
+	vAssertTrue(xSnapshot.ePreferredChannelId == RSRX_TRANSPORT_CHANNEL_INVALID, "channel snapshot fail clears preferred");
+	vAssertTrue(xSnapshot.uAvailableChannelCount == 0U, "channel snapshot fail clears available");
+	vAssertTrue(xSnapshot.uTotalSwitchCount == 0U, "channel snapshot fail clears switch count");
+}
+
+static void vTestSessionOutboundApplicationBusyRejectThreshold(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 860U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[3] = { 0x24U, 0x25U, 0x26U };
+	static const uint8_t auDataPayload[2] = { 0x71U, 0x72U };
+	uint32_t uDeferredIndex;
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	xConfig.uBusyRejectErrorThreshold = 2U;
+	xSession.uBusyRejectErrorThreshold = 2U;
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"busy reject threshold priming send");
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_OK,
+		"busy reject threshold queued send");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "busy reject threshold queued telemetry");
+	for(uDeferredIndex = 2U; uDeferredIndex <= D_RSRX_TRANSPORT_ADAPTER_DEFERRED_SEND_CAPACITY; ++uDeferredIndex)
+	{
+		vAssertTrue(
+			rsrx_session_send_application_data(
+				&xSession,
+				auDataPayload,
+				sizeof(auDataPayload)) == RSRX_STATUS_OK,
+			"busy reject threshold additional queued send");
+		vAssertTrue(pxTelemetry->uQueuedSendCount == uDeferredIndex, "busy reject threshold capacity fill telemetry");
+	}
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
+		"busy reject threshold first reject");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy reject threshold first diagnostic warning");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_WARN_REJECTED_EVENT, "busy reject threshold first report warning");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 1U, "busy reject threshold streak one");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 0U, "busy reject threshold escalation count before threshold");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 0U, "busy reject threshold escalation latch before threshold");
+
+	vAssertTrue(
+		rsrx_session_send_application_data(
+			&xSession,
+			auDataPayload,
+			sizeof(auDataPayload)) == RSRX_STATUS_REJECTED,
+		"busy reject threshold second reject");
+	vAssertTrue(xDiagnostics.xLastRecord.eDiagnostic == RSRX_DIAG_ERROR_INTERFACE, "busy reject threshold second diagnostic error");
+	vAssertTrue(xDiagnostics.xLastRecord.eSeverity == RSRX_LOG_SEVERITY_ERROR, "busy reject threshold second severity error");
+	vAssertTrue(xApiCounter.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_ERROR_INTERFACE, "busy reject threshold second report error");
+	vAssertTrue(pxTelemetry->uConsecutiveBusyRejectedSendCount == 2U, "busy reject threshold streak two");
+	vAssertTrue(pxTelemetry->uBusyRejectEscalationCount == 1U, "busy reject threshold escalation count after threshold");
+	vAssertTrue(pxTelemetry->uLastBusyRejectEscalated == 1U, "busy reject threshold escalation latch after threshold");
+}
+
+static void vTestSessionRetransmissionPath(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 900U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[4] = { 0x31U, 0x32U, 0x33U, 0x34U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_SEQUENCE_GAP_DETECTED, &pxReport) == RSRX_STATUS_OK, "sequence gap event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_RETRANSMISSION_PENDING, "retransmission pending");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "sequence gap reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 3U, "sequence gap dispatched actions");
+	vAssertTrue(xTransport.uSendCount == 2U, "retransmission request sent");
+	vAssertTrue(xTransport.xLastRequest.eReason == RSRX_REASON_SEQUENCE_GAP_DETECTED, "retransmission reason");
+	vAssertTrue(xTimer.uCallCount == 2U, "sequence gap no timer restart");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "sequence gap diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 4U, "sequence gap api notify");
+
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_RECOVERY_SUCCESS, &pxReport) == RSRX_STATUS_OK, "recovery success event");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "recovery returns established");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_RECOVERY_COMPLETED, "recovery reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 4U, "recovery dispatched actions");
+	vAssertTrue(xTimer.uCallCount == 3U, "recovery timer restart");
+	vAssertTrue(xDiagnostics.uCallCount == 4U, "recovery diagnostic count");
+	vAssertTrue(xApiCounter.uCallCount == 5U, "recovery api notify");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "recovery lifecycle action");
+}
+
+static void vTestSessionSupervisionTimerExpiry(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1000U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x41U, 0x42U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_SUPERVISION, &pxReport) == RSRX_STATUS_REJECTED, "supervision timeout status");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "supervision timeout state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_TIMEOUT_EXPIRED, "supervision timeout reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 4U, "supervision timeout actions");
+	vAssertTrue(xTransport.uSendCount == 2U, "supervision timeout disconnect sent");
+	vAssertTrue(xApiCounter.uCallCount == 4U, "supervision timeout api notify");
+	vAssertTrue(xDiagnostics.uCallCount == 3U, "supervision timeout diagnostic");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "supervision timeout lifecycle");
+}
+
+static void vTestSessionRetransmissionTimerExpiry(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1100U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x51U, 0x52U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_SEQUENCE_GAP_DETECTED, &pxReport) == RSRX_STATUS_OK, "enter retransmission pending");
+
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_RETRANSMISSION, &pxReport) == RSRX_STATUS_REJECTED, "retransmission timeout status");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_SAFE_DISCONNECT, "retransmission timeout state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_RETRANSMISSION_FAILED, "retransmission timeout reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 4U, "retransmission timeout actions");
+	vAssertTrue(
+		(xTransport.uSendCount == 2U) || (xTransport.uSendCount == 3U),
+		"retransmission timeout transport send count");
+	vAssertTrue(xApiCounter.uCallCount == 5U, "retransmission timeout api notify");
+	vAssertTrue(xDiagnostics.uCallCount == 4U, "retransmission timeout diagnostic");
+	vAssertTrue(xLifecycleCounter.uCallCount == 1U, "retransmission timeout lifecycle");
+}
+
+static void vTestInvalidArguments(void)
+{
+	rsrx_session_t xSession = { 0 };
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 100U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x01U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	xConfig.uSupervisionIntervalNs = 0U;
+
+	vAssertTrue(rsrx_session_init((rsrx_session_t *)0, (const rsrx_session_config_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "null session init");
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "invalid config rejected");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "start before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "start before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "connect before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "connect before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(rsrx_session_disconnect(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "disconnect before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "disconnect before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(
+		rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_HEARTBEAT, &pxReport) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"process event before init");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "process event before init clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(
+		rsrx_session_process_event((rsrx_session_t *)0, RSRX_EVENT_VALID_HEARTBEAT, &pxReport) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"process event null session");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "process event null session clears report");
+	vAssertTrue(rsrx_session_send_application_data((rsrx_session_t *)0, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "null session send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "send before init");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_INVALID, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "invalid timer source");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "invalid timer source clears report");
+	pxReport = &xSession.xLastReport;
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_DIAGNOSTIC_FLUSH, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "unsupported timer source");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "unsupported timer source clears report");
+	vAssertTrue(rsrx_session_get_state((const rsrx_session_t *)0) == RSRX_STATE_INVALID, "get state null");
+	vAssertTrue(rsrx_session_reset((rsrx_session_t *)0) == RSRX_STATUS_INVALID_ARGUMENT, "reset null");
+}
+
+static void vTestSessionInitRejectsCrcRequiredDefaultCodec(void)
+{
+	rsrx_session_t xSession = { 0 };
+	rsrx_session_config_t xConfig;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 100U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x42U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	xConfig.uRequireCrc = 1U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "crc required default codec init reject");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INVALID, "crc required rejected session invalid");
+
+	xConfig.xCodecPort = *rsrx_codec_get_crc32_port();
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "crc required crc32 codec init accept");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "crc required crc32 codec initial state");
+}
+
+static void vTestSessionInitRejectsUnavailableSecurityPolicies(void)
+{
+	rsrx_session_t xSession = { 0 };
+	rsrx_session_config_t xConfig;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 100U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x43U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	xConfig.uRequireMac = 1U;
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "mac required init reject");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INVALID, "mac required rejected session invalid");
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	xConfig.uRequireTimestamp = 1U;
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_INVALID_ARGUMENT, "timestamp required init reject");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INVALID, "timestamp required rejected session invalid");
+}
+
+static void vTestSessionResetClearsChannelManagerPenalty(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_channel_selection_result_t xResult;
+	rsrx_transport_channel_state_t xState;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1200U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x81U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	xConfig.xChannelManagerConfig.eMode = RSRX_REDUNDANCY_MODE_ACTIVE_STANDBY;
+	xConfig.xChannelManagerConfig.uChannelCount = 2U;
+	xConfig.xChannelManagerConfig.uPreferredRecoveryHoldoffSelections = 2U;
+	xConfig.xChannelManagerConfig.uPreferredRecoveryFlapPenaltySelections = 1U;
+	xConfig.xChannelManagerConfig.axChannels[1].eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xConfig.xChannelManagerConfig.axChannels[1].uIsAvailable = 1U;
+	xConfig.xChannelManagerConfig.axChannels[1].uPriority = 1U;
+
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "reset channel manager penalty init");
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xSession.xChannelManager, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "reset channel manager penalty primary down");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xSession.xChannelManager, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "reset channel manager penalty failover");
+	xState.uIsAvailable = 1U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xSession.xChannelManager, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "reset channel manager penalty primary restored");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xSession.xChannelManager, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "reset channel manager penalty first hold");
+	xState.uIsAvailable = 0U;
+	vAssertTrue(rsrx_channel_manager_update_channel(&xSession.xChannelManager, 0U, &xState) == RSRX_CHANNEL_MANAGER_STATUS_OK, "reset channel manager penalty primary flap");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xSession.xChannelManager, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "reset channel manager penalty armed");
+	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 1U, "reset channel manager penalty pending armed");
+
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "session reset clears channel manager penalty");
+	vAssertTrue(rsrx_channel_manager_select_channel(&xSession.xChannelManager, &xResult) == RSRX_CHANNEL_MANAGER_STATUS_OK, "reset channel manager penalty select after reset");
+	vAssertTrue(xResult.uPreferredRecoveryPendingPenaltyCount == 0U, "session reset cleared pending penalty");
+	vAssertTrue(xResult.uPreferredRecoveryPenaltyResetClearCount == 1U, "session reset increments reset clear count");
+}
+
+static void vTestSessionResetClearsTransportAdapterRuntime(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	const rsrx_outbound_send_telemetry_t * pxTelemetry;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1210U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auFramePayload[1] = { 0x82U };
+	static const uint8_t auDataPayload[2] = { 0x83U, 0x84U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auFramePayload,
+		sizeof(auFramePayload));
+	pxTelemetry = rsrx_session_get_outbound_telemetry(&xSession);
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) == RSRX_STATUS_OK, "reset adapter runtime outstanding send");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auDataPayload, sizeof(auDataPayload)) == RSRX_STATUS_OK, "reset adapter runtime deferred send");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 1U, "reset adapter runtime outstanding present");
+	vAssertTrue(xSession.xTransportAdapter.uDeferredSendCount == 1U, "reset adapter runtime deferred present");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "reset adapter runtime accepted count before reset");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "reset adapter runtime queued count before reset");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 1U, "reset adapter runtime max deferred before reset");
+
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "session reset clears adapter runtime");
+	vAssertTrue(rsrx_transport_adapter_has_outstanding_send(&xSession.xTransportAdapter) == 0U, "reset adapter runtime outstanding cleared");
+	vAssertTrue(xSession.xTransportAdapter.uDeferredSendCount == 0U, "reset adapter runtime deferred cleared");
+	vAssertTrue(xSession.xTransportAdapter.uHasLastInboundMessage == 0U, "reset adapter runtime inbound cache cleared");
+	vAssertTrue(pxTelemetry->eLastRejectReason == RSRX_OUTBOUND_REJECT_REASON_NONE, "reset adapter runtime reject reason cleared");
+	vAssertTrue(pxTelemetry->uAcceptedSendCount == 2U, "reset adapter runtime accepted count retained");
+	vAssertTrue(pxTelemetry->uQueuedSendCount == 1U, "reset adapter runtime queued count retained");
+	vAssertTrue(pxTelemetry->uMaxDeferredSendCount == 1U, "reset adapter runtime max deferred retained");
+	vAssertTrue(pxTelemetry->uRuntimeResetCount == 1U, "reset adapter runtime reset telemetry");
+}
+
+static void vTestSessionResetClearsReportBaseline(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1220U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x85U };
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_SUPERVISION, &pxReport) == RSRX_STATUS_REJECTED, "reset report baseline dirty timeout");
+	vAssertTrue(xSession.xLastReport.xTransition.eStatus == RSRX_STATUS_REJECTED, "reset report baseline dirty status");
+	vAssertTrue(xSession.xLastReport.xTransition.eReason == RSRX_REASON_TIMEOUT_EXPIRED, "reset report baseline dirty reason");
+	vAssertTrue(xSession.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_ERROR_TIMEOUT, "reset report baseline dirty diagnostic");
+	vAssertTrue(xSession.xLastReport.uDispatchedActionCount > 0U, "reset report baseline dirty dispatch count");
+
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "session reset clears report baseline");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "reset report baseline state");
+	vAssertTrue(xSession.xLastReport.uDispatchedActionCount == 0U, "reset report baseline dispatched count");
+	vAssertTrue(xSession.xLastReport.xTransition.ePreviousState == RSRX_STATE_INVALID, "reset report baseline previous state");
+	vAssertTrue(xSession.xLastReport.xTransition.eNextState == RSRX_STATE_INVALID, "reset report baseline next state");
+	vAssertTrue(xSession.xLastReport.xTransition.eStatus == RSRX_STATUS_OK, "reset report baseline status");
+	vAssertTrue(xSession.xLastReport.xTransition.eReason == RSRX_REASON_NONE, "reset report baseline reason");
+	vAssertTrue(xSession.xLastReport.xTransition.eDiagnostic == RSRX_DIAG_NONE, "reset report baseline diagnostic");
+	vAssertTrue(xSession.xLastReport.xTransition.xActions.uActionCount == 0U, "reset report baseline action count");
+	vAssertTrue(xSession.xLastReport.xTransition.xActions.eActions[0] == RSRX_ACTION_NONE, "reset report baseline action slot");
+}
+
+static void vTestSessionResetCancelsRuntimeTimers(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1225U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x87U };
+	uint32_t uTimerCommandCountBeforeReset;
+	uint32_t uTimerHistoryCountBeforeReset;
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+
+	uTimerCommandCountBeforeReset = xTimer.uCallCount;
+	uTimerHistoryCountBeforeReset = uTimerCommandHistoryCount;
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "reset cancels runtime timers");
+	vAssertTrue(
+		xTimer.uCallCount == (uTimerCommandCountBeforeReset + 2U),
+		"reset cancel timer command count");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].eTimerId == RSRX_TIMER_ID_SUPERVISION,
+		"reset cancels supervision timer");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].eCommandType == RSRX_TIMER_COMMAND_CANCEL,
+		"reset supervision cancel command");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].uDeadlineNs == 0U,
+		"reset supervision cancel deadline");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset].eReason == RSRX_REASON_NONE,
+		"reset supervision cancel reason");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].eTimerId == RSRX_TIMER_ID_RETRANSMISSION,
+		"reset cancels retransmission timer");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].eCommandType == RSRX_TIMER_COMMAND_CANCEL,
+		"reset retransmission cancel command");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].uDeadlineNs == 0U,
+		"reset retransmission cancel deadline");
+	vAssertTrue(
+		axTimerCommandHistory[uTimerHistoryCountBeforeReset + 1U].eReason == RSRX_REASON_NONE,
+		"reset retransmission cancel reason");
+}
+
+static void vTestSessionRestartAfterReset(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1230U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x86U };
+	uint32_t uApiCountBeforeRestart;
+	uint32_t uDiagnosticCountBeforeRestart;
+	uint32_t uTransportSendCountBeforeRestart;
+	uint32_t uTimerCommandCountBeforeRestart;
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(rsrx_session_process_timer_expiry(&xSession, RSRX_TIMER_EXPIRY_SUPERVISION, &pxReport) == RSRX_STATUS_REJECTED, "restart after reset dirty timeout");
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "restart after reset reset");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_UNINITIALIZED, "restart after reset baseline state");
+
+	uApiCountBeforeRestart = xApiCounter.uCallCount;
+	uDiagnosticCountBeforeRestart = xDiagnostics.uCallCount;
+	uTransportSendCountBeforeRestart = xTransport.uSendCount;
+	uTimerCommandCountBeforeRestart = xTimer.uCallCount;
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK, "restart after reset start");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_INITIALIZED, "restart after reset initialized state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_INIT_COMPLETED, "restart after reset start reason");
+	vAssertTrue(pxReport->uDispatchedActionCount == 2U, "restart after reset start dispatched count");
+	vAssertTrue(xApiCounter.uCallCount == (uApiCountBeforeRestart + 1U), "restart after reset api notification");
+	vAssertTrue(xDiagnostics.uCallCount == (uDiagnosticCountBeforeRestart + 1U), "restart after reset diagnostic write");
+
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "restart after reset connect");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_CONNECTING, "restart after reset connecting state");
+	vAssertTrue(pxReport->xTransition.eReason == RSRX_REASON_CONNECT_REQUESTED, "restart after reset connect reason");
+	vAssertTrue(xTransport.uSendCount == (uTransportSendCountBeforeRestart + 1U), "restart after reset transport dispatch retained");
+	vAssertTrue(xTimer.uCallCount == (uTimerCommandCountBeforeRestart + 1U), "restart after reset timer dispatch retained");
+}
+
+static void vTestSessionOutboundApplicationDataStateGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1200U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x71U, 0x72U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "send guard session init");
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK, "send guard session start");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_INVALID_STATE, "send guard invalid state");
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "send guard session connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport) == RSRX_STATUS_OK, "send guard establish");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, (const uint8_t *)0, sizeof(auPayload)) == RSRX_STATUS_INVALID_ARGUMENT, "send guard null payload");
+}
+
+static void vTestSessionCriticalSectionBalancedPublicApi(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1300U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x81U, 0x82U };
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eResolvedEvent;
+	rsrx_transport_channel_state_t xChannelState;
+	rsrx_transport_frame_t xFrame;
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "critical section init");
+
+	vResetCriticalSectionContext();
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK, "critical section start");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "critical section start enter");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 1U, "critical section start exit");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "critical section start balanced");
+	vAssertTrue(xCriticalSectionContext.uMaxDepth == 1U, "critical section start non-nested");
+
+	vAssertTrue(rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK, "critical section connect");
+	vAssertTrue(rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport) == RSRX_STATUS_OK, "critical section handshake");
+	vAssertTrue(rsrx_session_get_state(&xSession) == RSRX_STATE_ESTABLISHED, "critical section get state");
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_HEARTBEAT;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_HEARTBEAT;
+	xMessage.eReason = RSRX_REASON_NONE;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+	eResolvedEvent = RSRX_EVENT_INVALID;
+	vAssertTrue(
+		rsrx_session_resolve_inbound_event(&xSession, &xMessage, &eResolvedEvent) ==
+			RSRX_STATUS_OK,
+		"critical section resolve inbound");
+	vAssertTrue(eResolvedEvent == RSRX_EVENT_VALID_HEARTBEAT, "critical section resolved event");
+	vAssertTrue(rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) == RSRX_STATUS_OK, "critical section send");
+	xTransport.xQueryState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xQueryState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(&xSession, &xChannelState) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"critical section query channel");
+	vAssertTrue(xChannelState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "critical section queried channel");
+	vAssertTrue(xTransport.uQueryCount == 1U, "critical section query delegated");
+	xTransport.xReceiveFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xReceiveFrame.puPayload = auPayload;
+	xTransport.xReceiveFrame.xPayloadLength = sizeof(auPayload);
+	xTransport.xReceiveFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(&xSession, &xFrame) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"critical section receive frame");
+	vAssertTrue(xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "critical section received channel");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "critical section receive delegated");
+	vAssertTrue(rsrx_session_reset(&xSession) == RSRX_STATUS_OK, "critical section reset");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount, "critical section balanced total");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "critical section final depth");
+	vAssertTrue(xCriticalSectionContext.uMaxDepth == 1U, "critical section public api non-nested");
+}
+
+static void vTestSessionCriticalSectionEnterFailureBlocksEvent(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1400U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x91U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "critical section fail init");
+
+	pxReport = &xSession.xLastReport;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_INVALID_ARGUMENT, "critical section enter fail start");
+	vAssertTrue(pxReport == (const rsrx_orchestrator_report_t *)0, "critical section enter fail clears report");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "critical section enter fail counted");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 0U, "critical section enter fail no exit");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "critical section enter fail no depth");
+	vAssertTrue(xApiCounter.uCallCount == 0U, "critical section enter fail no api callback");
+	vAssertTrue(xDiagnostics.uCallCount == 0U, "critical section enter fail no diagnostic");
+	vAssertTrue(rsrx_orchestrator_get_state(&xSession.xOrchestrator) == RSRX_STATE_UNINITIALIZED, "critical section enter fail state unchanged");
+}
+
+static void vTestSessionResolveInboundEventGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_decoded_message_t xMessage;
+	rsrx_event_t eResolvedEvent;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1450U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x92U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "resolve guard init");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_CONNECT_REQUEST;
+	xMessage.eSuggestedEvent = RSRX_EVENT_CONNECT_REQUEST;
+	xMessage.eReason = RSRX_REASON_NONE;
+	xMessage.uSequenceNumber = 0U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.xPayloadLength = 0U;
+
+	eResolvedEvent = RSRX_EVENT_VALID_DATA;
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_resolve_inbound_event(&xSession, &xMessage, &eResolvedEvent) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"resolve guard enter fail");
+	vAssertTrue(eResolvedEvent == RSRX_EVENT_INVALID, "resolve guard enter fail clears event");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "resolve guard enter counted");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 0U, "resolve guard no exit");
+
+	xCriticalSectionContext.uFailEnter = 0U;
+	eResolvedEvent = RSRX_EVENT_VALID_DATA;
+	vAssertTrue(
+		rsrx_session_resolve_inbound_event(&xSession, (const rsrx_decoded_message_t *)0, &eResolvedEvent) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"resolve guard null message");
+	vAssertTrue(eResolvedEvent == RSRX_EVENT_INVALID, "resolve guard null clears event");
+}
+
+static void vTestSessionRecordInboundMessageGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	rsrx_decoded_message_t xMessage;
+	const rsrx_orchestrator_report_t * pxReport;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1460U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x93U };
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vAssertTrue(rsrx_session_init(&xSession, &xConfig) == RSRX_STATUS_OK, "record guard init");
+
+	xMessage.eMessageType = RSRX_MESSAGE_TYPE_DATA;
+	xMessage.eSuggestedEvent = RSRX_EVENT_VALID_DATA;
+	xMessage.eReason = RSRX_REASON_DATA_ACCEPTED;
+	xMessage.uSequenceNumber = 1U;
+	xMessage.uConfirmationNumber = 0U;
+	xMessage.auPayload[0] = 0x93U;
+	xMessage.xPayloadLength = 1U;
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_record_inbound_message(&xSession, &xMessage) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"record guard enter fail");
+	vAssertTrue(xCriticalSectionContext.uEnterCount == 1U, "record guard enter counted");
+	vAssertTrue(xCriticalSectionContext.uExitCount == 0U, "record guard no exit");
+
+	xCriticalSectionContext.uFailEnter = 0U;
+	vAssertTrue(
+		rsrx_session_record_inbound_message(&xSession, (const rsrx_decoded_message_t *)0) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"record guard null message");
+	vAssertTrue(
+		rsrx_session_record_inbound_message(&xSession, &xMessage) == RSRX_STATUS_OK,
+		"record guard success");
+	vAssertTrue(
+		rsrx_session_start(&xSession, &pxReport) == RSRX_STATUS_OK,
+		"record guard start");
+	vAssertTrue(
+		rsrx_session_connect(&xSession, &pxReport) == RSRX_STATUS_OK,
+		"record guard connect");
+	vAssertTrue(
+		rsrx_session_process_event(&xSession, RSRX_EVENT_HANDSHAKE_SUCCESS, &pxReport) ==
+			RSRX_STATUS_OK,
+		"record guard establish");
+	vAssertTrue(
+		rsrx_session_process_event(&xSession, RSRX_EVENT_VALID_DATA, &pxReport) ==
+			RSRX_STATUS_OK,
+		"record guard process data");
+	vAssertTrue(xApplication.uCallCount == 1U, "record guard application callback");
+	vAssertTrue(xApplication.xLastIndication.puPayload[0] == 0x93U, "record guard payload copied");
+}
+
+static void vTestSessionClearOutstandingFeedbackGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_outbound_queue_snapshot_t xSnapshot;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1470U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x94U };
+
+	vAssertTrue(
+		rsrx_session_clear_outstanding_send_on_feedback((rsrx_session_t *)0) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"clear feedback null session");
+
+	vFillConfig(&xConfig, &xTransport, &xClock, &xTimer, &xDiagnostics, &xApplication, &xApiCounter, &xLifecycleCounter, auPayload, sizeof(auPayload));
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	vAssertTrue(
+		rsrx_session_send_application_data(&xSession, auPayload, sizeof(auPayload)) ==
+			RSRX_STATUS_OK,
+		"clear feedback outstanding send");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"clear feedback snapshot before");
+	vAssertTrue(xSnapshot.uOutstandingSendPresent == 1U, "clear feedback outstanding before");
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	vAssertTrue(
+		rsrx_session_clear_outstanding_send_on_feedback(&xSession) ==
+			RSRX_STATUS_INVALID_ARGUMENT,
+		"clear feedback enter fail");
+	xCriticalSectionContext.uFailEnter = 0U;
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"clear feedback snapshot after fail");
+	vAssertTrue(xSnapshot.uOutstandingSendPresent == 1U, "clear feedback outstanding retained after fail");
+
+	vAssertTrue(
+		rsrx_session_clear_outstanding_send_on_feedback(&xSession) == RSRX_STATUS_OK,
+		"clear feedback success");
+	vAssertTrue(
+		rsrx_session_copy_outbound_queue_snapshot(&xSession, &xSnapshot) ==
+			RSRX_STATUS_OK,
+		"clear feedback snapshot after success");
+	vAssertTrue(xSnapshot.uOutstandingSendPresent == 0U, "clear feedback outstanding cleared");
+	vAssertTrue(
+		xSnapshot.xTelemetry.uClearOnFeedbackCount == 1U,
+		"clear feedback telemetry");
+}
+
+static void vTestSessionQueryChannelStateGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_transport_channel_state_t xState;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1480U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[1] = { 0x95U };
+
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_SECONDARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(
+			(const rsrx_session_t *)0,
+			&xState) == RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"query channel null session");
+	vAssertTrue(
+		xState.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"query channel null clears channel");
+	vAssertTrue(xState.uIsAvailable == 0U, "query channel null clears availability");
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	xTransport.xQueryState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xQueryState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(&xSession, &xState) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"query channel success");
+	vAssertTrue(
+		xState.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY,
+		"query channel state");
+	vAssertTrue(xState.uIsAvailable == 1U, "query channel availability");
+	vAssertTrue(xTransport.uQueryCount == 1U, "query channel delegated");
+	vAssertTrue(
+		xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount,
+		"query channel balanced");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "query channel depth");
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	xState.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xState.uIsAvailable = 1U;
+	vAssertTrue(
+		rsrx_session_query_channel_state(&xSession, &xState) ==
+			RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"query channel enter fail");
+	vAssertTrue(
+		xState.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"query channel enter fail clears channel");
+	vAssertTrue(xState.uIsAvailable == 0U, "query channel enter fail clears availability");
+	vAssertTrue(xTransport.uQueryCount == 1U, "query channel enter fail blocks delegate");
+	xCriticalSectionContext.uFailEnter = 0U;
+}
+
+static void vTestSessionReceiveTransportFrameGuards(void)
+{
+	rsrx_session_t xSession;
+	rsrx_session_config_t xConfig;
+	const rsrx_orchestrator_report_t * pxReport;
+	rsrx_transport_frame_t xFrame;
+	test_transport_context_t xTransport = TEST_TRANSPORT_CONTEXT_INIT;
+	test_clock_context_t xClock = { 1490U };
+	test_timer_context_t xTimer = { { RSRX_TIMER_ID_INVALID, RSRX_TIMER_COMMAND_NONE, 0U, RSRX_REASON_NONE }, 0U };
+	test_diagnostics_context_t xDiagnostics = { { RSRX_LOG_SEVERITY_INFO, RSRX_STATE_INVALID, RSRX_STATE_INVALID, RSRX_STATUS_OK, RSRX_REASON_NONE, RSRX_DIAG_NONE, 0U }, 0U };
+	test_application_context_t xApplication = { { (const uint8_t *)0, 0U, RSRX_REASON_NONE, 0U, 0U }, 0U };
+	test_counter_t xApiCounter = { 0U };
+	test_counter_t xLifecycleCounter = { 0U };
+	static const uint8_t auPayload[2] = { 0x96U, 0x97U };
+
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(
+			(const rsrx_session_t *)0,
+			&xFrame) == RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"receive frame null session");
+	vAssertTrue(
+		xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"receive frame null clears channel");
+	vAssertTrue(
+		xFrame.puPayload == (const uint8_t *)0,
+		"receive frame null clears payload");
+	vAssertTrue(xFrame.xPayloadLength == 0U, "receive frame null clears length");
+	vAssertTrue(
+		xFrame.eEventType == RSRX_TRANSPORT_EVENT_NONE,
+		"receive frame null clears event");
+
+	vPrepareEstablishedSession(
+		&xSession,
+		&xConfig,
+		&pxReport,
+		&xTransport,
+		&xClock,
+		&xTimer,
+		&xDiagnostics,
+		&xApplication,
+		&xApiCounter,
+		&xLifecycleCounter,
+		auPayload,
+		sizeof(auPayload));
+	xTransport.xReceiveFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xTransport.xReceiveFrame.puPayload = auPayload;
+	xTransport.xReceiveFrame.xPayloadLength = sizeof(auPayload);
+	xTransport.xReceiveFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(&xSession, &xFrame) ==
+			RSRX_TRANSPORT_STATUS_OK,
+		"receive frame success");
+	vAssertTrue(xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_PRIMARY, "receive frame channel");
+	vAssertTrue(xFrame.puPayload == auPayload, "receive frame payload");
+	vAssertTrue(xFrame.xPayloadLength == sizeof(auPayload), "receive frame length");
+	vAssertTrue(
+		xFrame.eEventType == RSRX_TRANSPORT_EVENT_FRAME_RECEIVED,
+		"receive frame event");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "receive frame delegated");
+	vAssertTrue(
+		xCriticalSectionContext.uEnterCount == xCriticalSectionContext.uExitCount,
+		"receive frame balanced");
+	vAssertTrue(xCriticalSectionContext.uActiveDepth == 0U, "receive frame depth");
+
+	xCriticalSectionContext.uFailEnter = 1U;
+	xFrame.eChannelId = RSRX_TRANSPORT_CHANNEL_PRIMARY;
+	xFrame.puPayload = auPayload;
+	xFrame.xPayloadLength = sizeof(auPayload);
+	xFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+	vAssertTrue(
+		rsrx_session_receive_transport_frame(&xSession, &xFrame) ==
+			RSRX_TRANSPORT_STATUS_INVALID_ARGUMENT,
+		"receive frame enter fail");
+	vAssertTrue(
+		xFrame.eChannelId == RSRX_TRANSPORT_CHANNEL_INVALID,
+		"receive frame enter fail clears channel");
+	vAssertTrue(
+		xFrame.puPayload == (const uint8_t *)0,
+		"receive frame enter fail clears payload");
+	vAssertTrue(xFrame.xPayloadLength == 0U, "receive frame enter fail clears length");
+	vAssertTrue(
+		xFrame.eEventType == RSRX_TRANSPORT_EVENT_NONE,
+		"receive frame enter fail clears event");
+	vAssertTrue(xTransport.uReceiveCount == 1U, "receive frame enter fail blocks delegate");
+	xCriticalSectionContext.uFailEnter = 0U;
+}
+
+int main(void)
+{
+	vTestSessionStartupAndConnect();
+	vTestSessionInitClearsReportBaseline();
+	vTestSessionDisconnectPath();
+	vTestSessionInboundHeartbeatPath();
+	vTestSessionInboundDataPath();
+	vTestSessionOutboundApplicationDataPath();
+	vTestSessionOutboundTelemetrySnapshot();
+	vTestSessionChannelManagerSnapshot();
+	vTestSessionOutboundApplicationBusyRejectThreshold();
+	vTestSessionRetransmissionPath();
+	vTestSessionSupervisionTimerExpiry();
+	vTestSessionRetransmissionTimerExpiry();
+	vTestInvalidArguments();
+	vTestSessionInitRejectsCrcRequiredDefaultCodec();
+	vTestSessionInitRejectsUnavailableSecurityPolicies();
+	vTestSessionResetClearsChannelManagerPenalty();
+	vTestSessionResetClearsTransportAdapterRuntime();
+	vTestSessionResetClearsReportBaseline();
+	vTestSessionResetCancelsRuntimeTimers();
+	vTestSessionRestartAfterReset();
+	vTestSessionOutboundApplicationDataStateGuards();
+	vTestSessionCriticalSectionBalancedPublicApi();
+	vTestSessionCriticalSectionEnterFailureBlocksEvent();
+	vTestSessionResolveInboundEventGuards();
+	vTestSessionRecordInboundMessageGuards();
+	vTestSessionClearOutstandingFeedbackGuards();
+	vTestSessionQueryChannelStateGuards();
+	vTestSessionReceiveTransportFrameGuards();
+
+	(void)printf("rsrx_api_test: all tests passed\n");
+
+	return EXIT_SUCCESS;
+}

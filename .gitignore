@@ -20,5 +20,9 @@ assets/usr
 *.o
 *.d
 
+# local agent and downloaded CI artifacts
+.codex
+sil4-ci-logs*/
+
 # exclude documentation files
 doc/

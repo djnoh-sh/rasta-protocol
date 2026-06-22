@@ -1,0 +1,12 @@
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:3:13:vWriteUint32BigEndian	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:13:17:uHighestSentSequenceNumber	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:24:17:uConfirmationIsValid	48	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:34:17:uRetransmissionRequestIsConfirmed	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:42:17:uMessageTypeIsSequenced	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:51:17:uMessageTypeIsSupportedOutbound	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:62:17:uMessageTypeIsSupportedInbound	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:74:15:rsrx_protocol_context_init	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:93:15:rsrx_protocol_context_record_inbound_message	32	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:132:15:rsrx_protocol_context_resolve_inbound_event	40	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:231:15:rsrx_protocol_context_build_encode_request	56	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_protocol_context.c:292:15:rsrx_protocol_context_clear_retransmission	16	static

@@ -1,0 +1,10 @@
+[ 20%] Built target rsrx_channel_manager
+[ 20%] Built target rsrx_state_machine
+[ 30%] Built target rsrx_codec
+[ 40%] Built target rsrx_config_validator
+[ 50%] Built target rsrx_orchestrator
+[ 60%] Built target rsrx_protocol_context
+[ 70%] Built target rsrx_platform_adapters
+[ 80%] Built target rsrx_api
+[ 90%] Built target rsrx_transport_supervisor
+[100%] Built target rsrx_session_supervisor_flow_test

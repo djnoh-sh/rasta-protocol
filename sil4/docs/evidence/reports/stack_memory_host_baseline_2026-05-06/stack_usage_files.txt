@@ -1,0 +1,10 @@
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_api.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_channel_manager.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_codec.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_config_validator.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_orchestrator.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_platform_adapters.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_protocol_context.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_state_machine.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/rsrx_transport_supervisor.c.su
+sil4/docs/evidence/reports/stack_memory_host_baseline_2026-05-06/stack_usage/test_rsrx_session_supervisor_flow.c.su

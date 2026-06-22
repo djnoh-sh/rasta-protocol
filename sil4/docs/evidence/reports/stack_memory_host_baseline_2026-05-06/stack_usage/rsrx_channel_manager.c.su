@@ -1,0 +1,10 @@
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:3:17:uGetEffectiveHoldoffTarget	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:17:17:uConfigIsValid	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:69:17:uCountAvailableChannels	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:87:17:uFindBestAvailableChannel	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:124:13:vPopulateHoldoffTelemetry	48	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:174:31:rsrx_channel_manager_init	40	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:203:31:rsrx_channel_manager_update_channel	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:222:31:rsrx_channel_manager_select_channel	80	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:387:29:rsrx_channel_manager_get_active_channel	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_channel_manager.c:400:31:rsrx_channel_manager_reset	16	static

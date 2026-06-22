@@ -1,0 +1,98 @@
+# Low-Level Design Draft - Platform Adapter Layer
+
+## Document Control
+
+- Document ID: `LLD-005`
+- Version: `0.1.0`
+- Status: `Draft`
+- Owner: `Project Team`
+- Reviewers: `TBD`
+- Last Updated: `2026-04-22`
+
+## Scope
+
+- 대상 모듈:
+  - `MOD-007 Platform Abstraction`
+  - `MOD-008 Connection Orchestrator`
+- 관련 HLD:
+  - `HLD-001`
+- 관련 요구사항:
+  - `IF-002`
+  - `FR-007`
+  - `SR-003`
+  - `SR-004`
+
+## File Structure
+
+| File | Purpose | Public/Internal | Notes |
+| --- | --- | --- | --- |
+| `include/rsrx_platform_adapters.h` | platform-backed executor helper 공개 API | Public | timer/diagnostics executor binding, channel-manager-aware transport binding |
+| `src/rsrx_platform_adapters.c` | platform-backed executor 구현 | Internal | transport/timer/diagnostics executor table 조립 및 active channel 선택 |
+| `tests/unit/test_rsrx_platform_adapters.c` | adapter binding 및 dispatch 단위 테스트 | Internal | platform port stub와 channel manager stub 사용 |
+
+## Types and Interfaces
+
+| Element | Kind | Description | Constraints |
+| --- | --- | --- | --- |
+| `rsrx_transport_adapter_context_t` | struct | transport port, codec port, encoded frame buffer, last inbound message cache, channel manager 참조를 보유 | 동적 메모리 미사용 |
+| `rsrx_platform_adapter_context_t` | struct | platform port와 interval 설정 보유 | 동적 메모리 미사용 |
+| `rsrx_transport_adapter_init` | function | transport adapter context 초기화 | 유효한 transport/codec port 필요 |
+| `rsrx_transport_executor_dispatch` | function | transport action을 encode 후 send request로 변환 | transport action만 처리 |
+| `rsrx_transport_adapter_send_application_data` | function | application payload를 직접 `DATA` encode/send로 변환 | null payload + nonzero length 금지 |
+| `rsrx_platform_adapter_init` | function | platform adapter context 초기화 | 유효한 port table 필요 |
+| `rsrx_platform_timer_executor_dispatch` | function | timer action을 platform timer command로 변환 | timer action만 처리 |
+| `rsrx_platform_diagnostics_executor_dispatch` | function | transition result를 diagnostics record로 변환 | bounded 기록 생성 |
+| `rsrx_platform_adapter_build_executor_table` | function | transport/timer/application/diagnostics/api/lifecycle executor를 결합 | null 금지 |
+
+## Functional Behavior
+
+- transport adapter:
+  - `START_HANDSHAKE`, `ACCEPT_INBOUND_CONNECT`, `SEND_HEARTBEAT`, `REQUEST_RETRANSMISSION`, `SEND_DISCONNECT`를 message type으로 매핑한다.
+  - mapped action은 `protocol context`를 통해 sequence/confirmation이 채워진 `codec encode request`로 변환된다.
+  - channel manager가 구성된 경우 send 직전 active channel을 선택하고, 미구성 시에는 `eDefaultChannelId`를 사용한다.
+  - encode 성공 시 encoded wire buffer를 `rsrx_transport_send_request_t`의 payload로 전달한다.
+  - inbound decoded message는 protocol context의 confirmation 기준 갱신이 성공한 경우에만 outstanding send clear와 마지막 inbound message cache 보존을 수행한다.
+  - protocol context가 duplicate/lower/gap/zero sequence나 invalid confirmation으로 record를 거부하면 adapter layer는 inbound cache, outstanding send, deferred dispatch telemetry를 변경하지 않는다.
+  - explicit outbound application send는 `rsrx_transport_adapter_send_application_data`가 담당한다.
+  - direct-send helper는 `DATA` frame과 `APPLICATION_DATA_REQUESTED` reason을 사용한다.
+  - direct-send helper는 마지막 outbound reject 원인을 telemetry에 기록하고, accepted/queued application submit에서 원인을 clear한다.
+  - `rsrx_transport_adapter_receive_frame`은 유효한 output frame pointer를 진입 시 `INVALID/null/0/NONE` baseline으로 clear하여 invalid argument와 receive failure가 stale frame payload/event를 남기지 않도록 한다.
+  - `rsrx_transport_adapter_query_channel`은 channel manager가 구성된 경우 모든 configured channel의 runtime state를 조회해 manager context에 반영한 뒤 active channel을 선택한다.
+  - `rsrx_transport_adapter_query_channel`은 유효한 output channel state pointer를 진입 시 `INVALID/0` baseline으로 clear하여 invalid argument와 topology-refresh failure가 stale availability를 남기지 않도록 한다.
+  - runtime state refresh 중 transport-reported channel id가 configured channel id와 맞지 않아 channel manager update가 거부되면 adapter query는 `RX_ERROR`로 실패를 전파한다.
+- application executor support:
+  - `DELIVER_DATA`는 transport adapter가 아니라 별도 application executor가 처리한다.
+  - transport adapter는 application executor가 참조할 마지막 inbound message만 제공한다.
+- timer adapter:
+  - `START_SUPERVISION_TIMER`, `RESET_SUPERVISION_TIMER`를 monotonic deadline 기반 command로 변환한다.
+  - 현재 시간은 `rsrx_clock_port_t`를 통해 조회한다.
+- diagnostics adapter:
+  - transition result를 `rsrx_diagnostic_record_t`로 변환한다.
+  - severity는 `diagnostic code`에서 결정한다.
+  - event counter는 adapter context 내부에서 증가시킨다.
+- executor table builder:
+  - 유효한 output executor table pointer는 진입 시 모든 executor slot을 null baseline으로 clear한다.
+  - invalid argument로 table build가 실패하면 이전 dispatch/context binding을 남기지 않는다.
+  - transport executor는 transport adapter dispatch 함수로 설정한다.
+  - timer/diagnostics executor는 platform adapter dispatch 함수로 설정한다.
+  - application/api/lifecycle executor는 외부 제공 executor를 사용한다.
+
+## Verification Notes
+
+- 필요한 테스트:
+  - executor table 조립 검증
+  - transport action -> encoded send request 변환 검증
+  - channel manager 기반 failover send selection 검증
+  - channel manager runtime topology mutation rejection 전파 검증
+  - direct outbound application send 검증
+  - outbound reject reason telemetry 검증
+  - inbound message cache 조회 검증
+  - rejected inbound record side-effect 차단 검증
+  - timer action -> timer command 변환 검증
+  - diagnostics action -> diagnostic record 변환 검증
+- 분석 포인트:
+  - transport action과 message type mapping의 bounded 정책
+  - encoded frame buffer 상한과 codec 실패 시 무송신 정책
+  - monotonic deadline 계산 bounded 여부
+  - severity mapping 완전성
+  - platform callback 실패가 상위 상태 머신 결정성에 영향을 주지 않도록 유지

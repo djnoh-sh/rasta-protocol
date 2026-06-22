@@ -1,0 +1,12 @@
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:3:17:uMessageTypeIsSupported	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:10:17:uReasonCodeIsSupported	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:16:17:uTransportChannelIsSupported	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:23:21:eMapMessageTypeToEvent	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:55:13:vWriteUint32	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:65:17:uReadUint32	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:74:13:vWriteUint16	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:82:17:usReadUint16	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:89:17:uReservedHeaderBytesAreZero	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:98:21:rsrx_codec_encode_message	48	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:149:21:rsrx_codec_decode_frame	64	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_codec.c:214:27:rsrx_codec_get_default_port	16	static

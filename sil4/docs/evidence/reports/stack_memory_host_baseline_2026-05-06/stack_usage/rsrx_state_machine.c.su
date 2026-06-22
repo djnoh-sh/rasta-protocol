@@ -1,0 +1,14 @@
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:29:13:vSetNoActionResult	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:51:13:vCopyActions	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:73:13:vApplyTransitionRule	40	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:95:17:uIsStateValid	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:102:17:uIsEventValid	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:109:17:uStateUsesConservativeFailSafePolicy	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:413:13:vBuildRejectedResult	32	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:429:13:vBuildSafeDisconnectResult	32	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:450:13:vBuildIgnoredSafeDisconnectResult	48	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:473:39:pxFindTransitionRule	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:491:15:rsrx_state_machine_init	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:508:15:rsrx_state_machine_handle_event	64	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:596:14:rsrx_state_machine_get_state	16	static
+/home/djnoh/repos/rasta-protocol/sil4/src/rsrx_state_machine.c:607:15:rsrx_state_machine_reset	16	static

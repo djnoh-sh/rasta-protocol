@@ -1,0 +1,1422 @@
+#include "rsrx_codec.h"
+
+static uint32_t uMessageTypeIsSupported(
+	rsrx_message_type_t eMessageType)
+{
+	return (uint32_t)((eMessageType > RSRX_MESSAGE_TYPE_INVALID) &&
+		(eMessageType <= RSRX_MESSAGE_TYPE_DIAGNOSTIC));
+}
+
+static uint32_t uReasonCodeIsSupported(
+	rsrx_reason_code_t eReason)
+{
+	return (uint32_t)(eReason <= RSRX_REASON_INVALID_STATE_VALUE);
+}
+
+static uint32_t uTransportChannelIsSupported(
+	rsrx_transport_channel_id_t eChannelId)
+{
+	return (uint32_t)((eChannelId > RSRX_TRANSPORT_CHANNEL_INVALID) &&
+		(eChannelId <= RSRX_TRANSPORT_CHANNEL_REDUNDANT));
+}
+
+static rsrx_event_t eMapMessageTypeToEvent(
+	rsrx_message_type_t eMessageType)
+{
+	switch(eMessageType)
+	{
+		case RSRX_MESSAGE_TYPE_CONNECT_REQUEST:
+			return RSRX_EVENT_VALID_INBOUND_CONNECT;
+
+		case RSRX_MESSAGE_TYPE_CONNECT_RESPONSE:
+			return RSRX_EVENT_HANDSHAKE_SUCCESS;
+
+		case RSRX_MESSAGE_TYPE_HEARTBEAT:
+			return RSRX_EVENT_VALID_HEARTBEAT;
+
+		case RSRX_MESSAGE_TYPE_DATA:
+			return RSRX_EVENT_VALID_DATA;
+
+		case RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST:
+			return RSRX_EVENT_SEQUENCE_GAP_DETECTED;
+
+		case RSRX_MESSAGE_TYPE_DISCONNECT:
+			return RSRX_EVENT_DISCONNECT_REQUEST;
+
+		case RSRX_MESSAGE_TYPE_DIAGNOSTIC:
+			return RSRX_EVENT_PROTOCOL_ERROR;
+
+		case RSRX_MESSAGE_TYPE_INVALID:
+		default:
+			return RSRX_EVENT_INVALID;
+	}
+}
+
+static rsrx_reason_code_t eMapRastaSrMessageTypeToReason(
+	rsrx_message_type_t eMessageType)
+{
+	switch(eMessageType)
+	{
+		case RSRX_MESSAGE_TYPE_CONNECT_REQUEST:
+			return RSRX_REASON_INBOUND_CONNECT_ACCEPTED;
+
+		case RSRX_MESSAGE_TYPE_CONNECT_RESPONSE:
+			return RSRX_REASON_HANDSHAKE_COMPLETED;
+
+		case RSRX_MESSAGE_TYPE_HEARTBEAT:
+			return RSRX_REASON_HEARTBEAT_ACCEPTED;
+
+		case RSRX_MESSAGE_TYPE_DATA:
+			return RSRX_REASON_DATA_ACCEPTED;
+
+		case RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST:
+			return RSRX_REASON_SEQUENCE_GAP_DETECTED;
+
+		case RSRX_MESSAGE_TYPE_DISCONNECT:
+			return RSRX_REASON_DISCONNECT_REQUESTED;
+
+		case RSRX_MESSAGE_TYPE_DIAGNOSTIC:
+			return RSRX_REASON_PROTOCOL_ERROR_DETECTED;
+
+		case RSRX_MESSAGE_TYPE_INVALID:
+		default:
+			return RSRX_REASON_INVALID_MESSAGE_RECEIVED;
+	}
+}
+
+static void vWriteUint32(
+	uint8_t * puBuffer,
+	uint32_t uValue)
+{
+	puBuffer[0] = (uint8_t)((uValue >> 24) & 0xFFU);
+	puBuffer[1] = (uint8_t)((uValue >> 16) & 0xFFU);
+	puBuffer[2] = (uint8_t)((uValue >> 8) & 0xFFU);
+	puBuffer[3] = (uint8_t)(uValue & 0xFFU);
+}
+
+static uint32_t uReadUint32(
+	const uint8_t * puBuffer)
+{
+	return ((uint32_t)puBuffer[0] << 24) |
+		((uint32_t)puBuffer[1] << 16) |
+		((uint32_t)puBuffer[2] << 8) |
+		(uint32_t)puBuffer[3];
+}
+
+static void vWriteUint16(
+	uint8_t * puBuffer,
+	uint16_t usValue)
+{
+	puBuffer[0] = (uint8_t)((usValue >> 8) & 0xFFU);
+	puBuffer[1] = (uint8_t)(usValue & 0xFFU);
+}
+
+static uint16_t usReadUint16(
+	const uint8_t * puBuffer)
+{
+	return (uint16_t)(((uint16_t)puBuffer[0] << 8) |
+		(uint16_t)puBuffer[1]);
+}
+
+static uint32_t uReservedHeaderBytesAreZero(
+	const uint8_t * puBuffer)
+{
+	return (uint32_t)((puBuffer[2] == 0U) &&
+		(puBuffer[3] == 0U) &&
+		(puBuffer[14] == 0U) &&
+		(puBuffer[15] == 0U));
+}
+
+static void vClearDecodedMessage(
+	rsrx_decoded_message_t * pxMessage)
+{
+	size_t xIndex;
+
+	pxMessage->eMessageType = RSRX_MESSAGE_TYPE_INVALID;
+	pxMessage->eSuggestedEvent = RSRX_EVENT_INVALID;
+	pxMessage->eReason = RSRX_REASON_NONE;
+	pxMessage->uSequenceNumber = 0U;
+	pxMessage->uConfirmationNumber = 0U;
+	pxMessage->xPayloadLength = 0U;
+
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_MAX_PAYLOAD_BYTES; ++xIndex)
+	{
+		pxMessage->auPayload[xIndex] = 0U;
+	}
+}
+
+static void vClearRastaSrDecodedPacket(
+	rsrx_rasta_sr_decoded_packet_t * pxPacket)
+{
+	size_t xIndex;
+
+	pxPacket->usPacketLength = 0U;
+	pxPacket->usMessageType = 0U;
+	pxPacket->uReceiverId = 0U;
+	pxPacket->uSenderId = 0U;
+	pxPacket->uSequenceNumber = 0U;
+	pxPacket->uConfirmedSequenceNumber = 0U;
+	pxPacket->uTimestamp = 0U;
+	pxPacket->uConfirmedTimestamp = 0U;
+	pxPacket->xPayloadLength = 0U;
+	pxPacket->xChecksumLength = 0U;
+	pxPacket->uChecksumPresent = 0U;
+
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_MAX_PAYLOAD_BYTES; ++xIndex)
+	{
+		pxPacket->auPayload[xIndex] = 0U;
+	}
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_RASTA_SR_MAX_CHECKSUM_BYTES; ++xIndex)
+	{
+		pxPacket->auChecksum[xIndex] = 0U;
+	}
+}
+
+static void vClearRastaRedundancyDecodedPacket(
+	rsrx_rasta_redundancy_decoded_packet_t * pxPacket)
+{
+	size_t xIndex;
+
+	pxPacket->usPacketLength = 0U;
+	pxPacket->usReserve = 0U;
+	pxPacket->uSequenceNumber = 0U;
+	pxPacket->xCarriedPacketLength = 0U;
+	pxPacket->xCrcLength = 0U;
+	pxPacket->uCrcPresent = 0U;
+
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES; ++xIndex)
+	{
+		pxPacket->auCarriedPacket[xIndex] = 0U;
+	}
+	for(xIndex = 0U; xIndex < D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES; ++xIndex)
+	{
+		pxPacket->auCrc[xIndex] = 0U;
+	}
+}
+
+static uint32_t uUpdateCrc32Byte(
+	uint32_t uCrc,
+	uint8_t ucData)
+{
+	uint32_t uBitIndex;
+
+	uCrc ^= (uint32_t)ucData;
+
+	for(uBitIndex = 0U; uBitIndex < 8U; ++uBitIndex)
+	{
+		if((uCrc & 1U) != 0U)
+		{
+			uCrc = (uCrc >> 1U) ^ 0xEDB88320U;
+		}
+		else
+		{
+			uCrc >>= 1U;
+		}
+	}
+
+	return uCrc;
+}
+
+rsrx_codec_status_t rsrx_codec_encode_message(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer)
+{
+	size_t xRequiredBytes;
+	size_t xIndex;
+
+	if(pxBuffer == (rsrx_encode_buffer_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxBuffer->xEncodedLength = 0U;
+
+	if((pxRequest == (const rsrx_encode_request_t *)0) ||
+		(pxBuffer->puBuffer == (uint8_t *)0) ||
+		((pxRequest->puPayload == (const uint8_t *)0) &&
+			(pxRequest->xPayloadLength > 0U)))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(uMessageTypeIsSupported(pxRequest->eMessageType) == 0U)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+	if(uReasonCodeIsSupported(pxRequest->eReason) == 0U)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_REASON;
+	}
+	if((pxRequest->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES) ||
+		(pxRequest->xPayloadLength > (size_t)UINT16_MAX))
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	xRequiredBytes = D_RSRX_CODEC_HEADER_BYTES + pxRequest->xPayloadLength;
+	if(pxBuffer->xBufferCapacity < xRequiredBytes)
+	{
+		return RSRX_CODEC_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	pxBuffer->puBuffer[0] = (uint8_t)pxRequest->eMessageType;
+	pxBuffer->puBuffer[1] = (uint8_t)pxRequest->eReason;
+	pxBuffer->puBuffer[2] = 0U;
+	pxBuffer->puBuffer[3] = 0U;
+	vWriteUint32(&pxBuffer->puBuffer[4], pxRequest->uSequenceNumber);
+	vWriteUint32(&pxBuffer->puBuffer[8], pxRequest->uConfirmationNumber);
+	vWriteUint16(&pxBuffer->puBuffer[12], (uint16_t)pxRequest->xPayloadLength);
+	pxBuffer->puBuffer[14] = 0U;
+	pxBuffer->puBuffer[15] = 0U;
+
+	for(xIndex = 0U; xIndex < pxRequest->xPayloadLength; ++xIndex)
+	{
+		pxBuffer->puBuffer[D_RSRX_CODEC_HEADER_BYTES + xIndex] =
+			pxRequest->puPayload[xIndex];
+	}
+
+	pxBuffer->xEncodedLength = xRequiredBytes;
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_decode_frame(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage)
+{
+	size_t xPayloadLength;
+	size_t xExpectedFrameLength;
+	size_t xIndex;
+	rsrx_message_type_t eMessageType;
+
+	if(pxMessage == (rsrx_decoded_message_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearDecodedMessage(pxMessage);
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxFrame->xPayloadLength < D_RSRX_CODEC_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_SHORT_HEADER;
+	}
+	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
+	{
+		return RSRX_CODEC_STATUS_NON_FRAME_EVENT;
+	}
+	if(uTransportChannelIsSupported(pxFrame->eChannelId) == 0U)
+	{
+		return RSRX_CODEC_STATUS_INVALID_CHANNEL;
+	}
+
+	eMessageType = (rsrx_message_type_t)pxFrame->puPayload[0];
+	if(uMessageTypeIsSupported(eMessageType) == 0U)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+	if(uReasonCodeIsSupported((rsrx_reason_code_t)pxFrame->puPayload[1]) == 0U)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_REASON;
+	}
+	if(uReservedHeaderBytesAreZero(pxFrame->puPayload) == 0U)
+	{
+		return RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO;
+	}
+
+	xPayloadLength = (size_t)usReadUint16(&pxFrame->puPayload[12]);
+	if(xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+	xExpectedFrameLength = D_RSRX_CODEC_HEADER_BYTES + xPayloadLength;
+	if(pxFrame->xPayloadLength > xExpectedFrameLength)
+	{
+		return RSRX_CODEC_STATUS_TRAILING_BYTES;
+	}
+	if(pxFrame->xPayloadLength < xExpectedFrameLength)
+	{
+		return RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD;
+	}
+
+	pxMessage->eMessageType = eMessageType;
+	pxMessage->eSuggestedEvent = eMapMessageTypeToEvent(eMessageType);
+	pxMessage->eReason = (rsrx_reason_code_t)pxFrame->puPayload[1];
+	pxMessage->uSequenceNumber = uReadUint32(&pxFrame->puPayload[4]);
+	pxMessage->uConfirmationNumber = uReadUint32(&pxFrame->puPayload[8]);
+	pxMessage->xPayloadLength = xPayloadLength;
+
+	for(xIndex = 0U; xIndex < xPayloadLength; ++xIndex)
+	{
+		pxMessage->auPayload[xIndex] =
+			pxFrame->puPayload[D_RSRX_CODEC_HEADER_BYTES + xIndex];
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+const rsrx_codec_port_t * rsrx_codec_get_default_port(void)
+{
+	static const rsrx_codec_port_t xCodecPort =
+	{
+		rsrx_codec_encode_message,
+		rsrx_codec_decode_frame
+	};
+
+	return &xCodecPort;
+}
+
+const rsrx_codec_port_t * rsrx_codec_get_crc32_port(void)
+{
+	static const rsrx_codec_port_t xCodecPort =
+	{
+		rsrx_codec_encode_message_with_crc32,
+		rsrx_codec_decode_frame_with_crc32
+	};
+
+	return &xCodecPort;
+}
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_wire_profile(void)
+{
+	static const rsrx_codec_wire_profile_t xWireProfile =
+	{
+		D_RSRX_CODEC_WIRE_PROFILE_DEFAULT,
+		D_RSRX_CODEC_WIRE_PROFILE_VERSION,
+		D_RSRX_CODEC_HEADER_BYTES,
+		D_RSRX_CODEC_MAX_PAYLOAD_BYTES,
+		D_RSRX_CODEC_MAX_FRAME_BYTES,
+		0U,
+		0U,
+		0U,
+		0U,
+		0U,
+		0U
+	};
+
+	return &xWireProfile;
+}
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_crc32_wire_profile(void)
+{
+	static const rsrx_codec_wire_profile_t xWireProfile =
+	{
+		D_RSRX_CODEC_WIRE_PROFILE_CRC32,
+		D_RSRX_CODEC_WIRE_PROFILE_VERSION,
+		D_RSRX_CODEC_HEADER_BYTES,
+		D_RSRX_CODEC_MAX_PAYLOAD_BYTES,
+		D_RSRX_CODEC_MAX_CRC_FRAME_BYTES,
+		D_RSRX_CODEC_CRC_BYTES,
+		0U,
+		0U,
+		1U,
+		0U,
+		0U
+	};
+
+	return &xWireProfile;
+}
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_sr_wire_profile(void)
+{
+	static const rsrx_codec_wire_profile_t xWireProfile =
+	{
+		D_RSRX_CODEC_WIRE_PROFILE_RASTA_SR,
+		D_RSRX_CODEC_WIRE_PROFILE_VERSION,
+		D_RSRX_CODEC_RASTA_SR_HEADER_BYTES,
+		D_RSRX_CODEC_MAX_PAYLOAD_BYTES,
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES,
+		0U,
+		0U,
+		D_RSRX_CODEC_RASTA_SR_TIMESTAMP_BYTES,
+		0U,
+		0U,
+		1U
+	};
+
+	return &xWireProfile;
+}
+
+const rsrx_codec_wire_profile_t * rsrx_codec_get_rasta_redundancy_wire_profile(void)
+{
+	static const rsrx_codec_wire_profile_t xWireProfile =
+	{
+		D_RSRX_CODEC_WIRE_PROFILE_RASTA_REDUNDANCY,
+		D_RSRX_CODEC_WIRE_PROFILE_VERSION,
+		D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES,
+		D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES,
+		D_RSRX_CODEC_MAX_RASTA_REDUNDANCY_FRAME_BYTES,
+		D_RSRX_CODEC_RASTA_REDUNDANCY_MAX_CRC_BYTES,
+		0U,
+		0U,
+		1U,
+		0U,
+		0U
+	};
+
+	return &xWireProfile;
+}
+
+const rsrx_codec_security_capabilities_t * rsrx_codec_get_security_capabilities(void)
+{
+	static const rsrx_codec_security_capabilities_t xCapabilities =
+	{
+		0U,
+		1U,
+		0U,
+		0U
+	};
+
+	return &xCapabilities;
+}
+
+rsrx_codec_status_t rsrx_codec_encode_rasta_sr_no_checksum(
+	const rsrx_rasta_sr_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer)
+{
+	size_t xRequiredBytes;
+	size_t xIndex;
+	rsrx_message_type_t eMappedType;
+
+	if(pxBuffer == (rsrx_encode_buffer_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxBuffer->xEncodedLength = 0U;
+
+	if((pxRequest == (const rsrx_rasta_sr_encode_request_t *)0) ||
+		(pxBuffer->puBuffer == (uint8_t *)0) ||
+		((pxRequest->puPayload == (const uint8_t *)0) &&
+			(pxRequest->xPayloadLength > 0U)) ||
+		(pxRequest->puChecksum != (const uint8_t *)0) ||
+		(pxRequest->xChecksumLength != 0U))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_codec_map_rasta_sr_type_to_message_type(pxRequest->usMessageType, &eMappedType) !=
+		RSRX_CODEC_STATUS_OK)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+
+	if(pxRequest->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	xRequiredBytes = D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + pxRequest->xPayloadLength;
+	if((xRequiredBytes > (size_t)UINT16_MAX) ||
+		(pxRequest->usPacketLength != (uint16_t)xRequiredBytes))
+	{
+		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
+	}
+
+	if(pxBuffer->xBufferCapacity < xRequiredBytes)
+	{
+		return RSRX_CODEC_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	vWriteUint16(&pxBuffer->puBuffer[0], pxRequest->usPacketLength);
+	vWriteUint16(&pxBuffer->puBuffer[2], pxRequest->usMessageType);
+	vWriteUint32(&pxBuffer->puBuffer[4], pxRequest->uReceiverId);
+	vWriteUint32(&pxBuffer->puBuffer[8], pxRequest->uSenderId);
+	vWriteUint32(&pxBuffer->puBuffer[12], pxRequest->uSequenceNumber);
+	vWriteUint32(&pxBuffer->puBuffer[16], pxRequest->uConfirmedSequenceNumber);
+	vWriteUint32(&pxBuffer->puBuffer[20], pxRequest->uTimestamp);
+	vWriteUint32(&pxBuffer->puBuffer[24], pxRequest->uConfirmedTimestamp);
+
+	for(xIndex = 0U; xIndex < pxRequest->xPayloadLength; ++xIndex)
+	{
+		pxBuffer->puBuffer[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + xIndex] =
+			pxRequest->puPayload[xIndex];
+	}
+
+	pxBuffer->xEncodedLength = xRequiredBytes;
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_decode_rasta_sr_no_checksum(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_sr_decoded_packet_t * pxPacket)
+{
+	size_t xPayloadLength;
+	size_t xIndex;
+	uint16_t usPacketLength;
+	uint16_t usMessageType;
+	rsrx_message_type_t eMappedType;
+
+	if(pxPacket == (rsrx_rasta_sr_decoded_packet_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearRastaSrDecodedPacket(pxPacket);
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxFrame->xPayloadLength < D_RSRX_CODEC_RASTA_SR_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_SHORT_HEADER;
+	}
+	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
+	{
+		return RSRX_CODEC_STATUS_NON_FRAME_EVENT;
+	}
+	if(uTransportChannelIsSupported(pxFrame->eChannelId) == 0U)
+	{
+		return RSRX_CODEC_STATUS_INVALID_CHANNEL;
+	}
+
+	usPacketLength = usReadUint16(&pxFrame->puPayload[0]);
+	usMessageType = usReadUint16(&pxFrame->puPayload[2]);
+
+	if(rsrx_codec_map_rasta_sr_type_to_message_type(usMessageType, &eMappedType) !=
+		RSRX_CODEC_STATUS_OK)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+
+	if(usPacketLength < D_RSRX_CODEC_RASTA_SR_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
+	}
+	if(pxFrame->xPayloadLength > (size_t)usPacketLength)
+	{
+		return RSRX_CODEC_STATUS_TRAILING_BYTES;
+	}
+	if(pxFrame->xPayloadLength < (size_t)usPacketLength)
+	{
+		return RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD;
+	}
+
+	xPayloadLength = (size_t)usPacketLength - D_RSRX_CODEC_RASTA_SR_HEADER_BYTES;
+	if(xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	pxPacket->usPacketLength = usPacketLength;
+	pxPacket->usMessageType = usMessageType;
+	pxPacket->uReceiverId = uReadUint32(&pxFrame->puPayload[4]);
+	pxPacket->uSenderId = uReadUint32(&pxFrame->puPayload[8]);
+	pxPacket->uSequenceNumber = uReadUint32(&pxFrame->puPayload[12]);
+	pxPacket->uConfirmedSequenceNumber = uReadUint32(&pxFrame->puPayload[16]);
+	pxPacket->uTimestamp = uReadUint32(&pxFrame->puPayload[20]);
+	pxPacket->uConfirmedTimestamp = uReadUint32(&pxFrame->puPayload[24]);
+	pxPacket->xPayloadLength = xPayloadLength;
+
+	for(xIndex = 0U; xIndex < xPayloadLength; ++xIndex)
+	{
+		pxPacket->auPayload[xIndex] =
+			pxFrame->puPayload[D_RSRX_CODEC_RASTA_SR_HEADER_BYTES + xIndex];
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_encode_rasta_redundancy_no_crc(
+	const rsrx_rasta_redundancy_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer)
+{
+	size_t xRequiredBytes;
+	size_t xIndex;
+
+	if(pxBuffer == (rsrx_encode_buffer_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxBuffer->xEncodedLength = 0U;
+
+	if((pxRequest == (const rsrx_rasta_redundancy_encode_request_t *)0) ||
+		(pxBuffer->puBuffer == (uint8_t *)0) ||
+		(pxRequest->puCarriedPacket == (const uint8_t *)0) ||
+		(pxRequest->pxCrcProfile == (const rsrx_rasta_redundancy_crc_profile_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(rsrx_codec_validate_rasta_redundancy_crc_profile(pxRequest->pxCrcProfile) !=
+		RSRX_CODEC_STATUS_OK)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+	}
+	if(pxRequest->pxCrcProfile->eOption != RSRX_RASTA_REDUNDANCY_CRC_OPTION_A)
+	{
+		return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+	}
+	if(pxRequest->usReserve != 0U)
+	{
+		return RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO;
+	}
+	if(pxRequest->xCarriedPacketLength < D_RSRX_CODEC_RASTA_SR_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_SHORT_HEADER;
+	}
+	if(pxRequest->xCarriedPacketLength > D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	xRequiredBytes = D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES +
+		pxRequest->xCarriedPacketLength;
+	if((xRequiredBytes > (size_t)UINT16_MAX) ||
+		(pxRequest->usPacketLength != (uint16_t)xRequiredBytes))
+	{
+		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
+	}
+
+	if(pxBuffer->xBufferCapacity < xRequiredBytes)
+	{
+		return RSRX_CODEC_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	vWriteUint16(&pxBuffer->puBuffer[0], pxRequest->usPacketLength);
+	vWriteUint16(&pxBuffer->puBuffer[2], pxRequest->usReserve);
+	vWriteUint32(&pxBuffer->puBuffer[4], pxRequest->uSequenceNumber);
+
+	for(xIndex = 0U; xIndex < pxRequest->xCarriedPacketLength; ++xIndex)
+	{
+		pxBuffer->puBuffer[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES + xIndex] =
+			pxRequest->puCarriedPacket[xIndex];
+	}
+
+	pxBuffer->xEncodedLength = xRequiredBytes;
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_decode_rasta_redundancy_no_crc(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_redundancy_decoded_packet_t * pxPacket)
+{
+	size_t xCarriedPacketLength;
+	size_t xIndex;
+	uint16_t usPacketLength;
+	uint16_t usReserve;
+
+	if(pxPacket == (rsrx_rasta_redundancy_decoded_packet_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearRastaRedundancyDecodedPacket(pxPacket);
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxFrame->xPayloadLength < D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_SHORT_HEADER;
+	}
+	if(pxFrame->eEventType != RSRX_TRANSPORT_EVENT_FRAME_RECEIVED)
+	{
+		return RSRX_CODEC_STATUS_NON_FRAME_EVENT;
+	}
+	if(uTransportChannelIsSupported(pxFrame->eChannelId) == 0U)
+	{
+		return RSRX_CODEC_STATUS_INVALID_CHANNEL;
+	}
+
+	usPacketLength = usReadUint16(&pxFrame->puPayload[0]);
+	usReserve = usReadUint16(&pxFrame->puPayload[2]);
+
+	if(usReserve != 0U)
+	{
+		return RSRX_CODEC_STATUS_RESERVED_HEADER_NONZERO;
+	}
+	if(usPacketLength < D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_LENGTH_MISMATCH;
+	}
+	if(pxFrame->xPayloadLength > (size_t)usPacketLength)
+	{
+		return RSRX_CODEC_STATUS_TRAILING_BYTES;
+	}
+	if(pxFrame->xPayloadLength < (size_t)usPacketLength)
+	{
+		return RSRX_CODEC_STATUS_TRUNCATED_PAYLOAD;
+	}
+
+	xCarriedPacketLength = (size_t)usPacketLength - D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES;
+	if(xCarriedPacketLength < D_RSRX_CODEC_RASTA_SR_HEADER_BYTES)
+	{
+		return RSRX_CODEC_STATUS_SHORT_HEADER;
+	}
+	if(xCarriedPacketLength > D_RSRX_CODEC_MAX_RASTA_SR_FRAME_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	pxPacket->usPacketLength = usPacketLength;
+	pxPacket->usReserve = usReserve;
+	pxPacket->uSequenceNumber = uReadUint32(&pxFrame->puPayload[4]);
+	pxPacket->xCarriedPacketLength = xCarriedPacketLength;
+	pxPacket->xCrcLength = 0U;
+	pxPacket->uCrcPresent = 0U;
+
+	for(xIndex = 0U; xIndex < xCarriedPacketLength; ++xIndex)
+	{
+		pxPacket->auCarriedPacket[xIndex] =
+			pxFrame->puPayload[D_RSRX_CODEC_RASTA_REDUNDANCY_HEADER_BYTES + xIndex];
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_decode_rasta_redundancy_carried_sr_no_checksum(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_rasta_sr_decoded_packet_t * pxPacket)
+{
+	rsrx_codec_status_t eStatus;
+	rsrx_rasta_redundancy_decoded_packet_t xRedundancyPacket;
+	rsrx_transport_frame_t xCarriedFrame;
+
+	if(pxPacket == (rsrx_rasta_sr_decoded_packet_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearRastaSrDecodedPacket(pxPacket);
+
+	if(pxFrame == (const rsrx_transport_frame_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_decode_rasta_redundancy_no_crc(pxFrame, &xRedundancyPacket);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	xCarriedFrame.eChannelId = pxFrame->eChannelId;
+	xCarriedFrame.puPayload = xRedundancyPacket.auCarriedPacket;
+	xCarriedFrame.xPayloadLength = xRedundancyPacket.xCarriedPacketLength;
+	xCarriedFrame.eEventType = RSRX_TRANSPORT_EVENT_FRAME_RECEIVED;
+
+	return rsrx_codec_decode_rasta_sr_no_checksum(&xCarriedFrame, pxPacket);
+}
+
+const rsrx_rasta_sr_checksum_profile_t * rsrx_codec_get_rasta_sr_default_checksum_profile(void)
+{
+	static const rsrx_rasta_sr_checksum_profile_t xDefaultProfile = {
+		RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE,
+		0U
+	};
+
+	return &xDefaultProfile;
+}
+
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_checksum_profile(
+	const rsrx_rasta_sr_checksum_profile_t * pxProfile)
+{
+	if(pxProfile == (const rsrx_rasta_sr_checksum_profile_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxProfile->eAlgorithm == RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE) &&
+		(pxProfile->xChecksumBytes == 0U))
+	{
+		return RSRX_CODEC_STATUS_OK;
+	}
+
+	if((pxProfile->xChecksumBytes != 8U) &&
+		(pxProfile->xChecksumBytes != 16U))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	switch(pxProfile->eAlgorithm)
+	{
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_MD4:
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_BLAKE2B:
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_SIPHASH_2_4:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+
+		case RSRX_RASTA_SR_CHECKSUM_ALGORITHM_NONE:
+		default:
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+}
+
+rsrx_codec_status_t rsrx_codec_validate_rasta_redundancy_crc_profile(
+	const rsrx_rasta_redundancy_crc_profile_t * pxProfile)
+{
+	if(pxProfile == (const rsrx_rasta_redundancy_crc_profile_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxProfile->eOption == RSRX_RASTA_REDUNDANCY_CRC_OPTION_A) &&
+		(pxProfile->xCrcBytes == 0U))
+	{
+		return RSRX_CODEC_STATUS_OK;
+	}
+
+	switch(pxProfile->eOption)
+	{
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_B:
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_C:
+			if(pxProfile->xCrcBytes == 4U)
+			{
+				return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+			}
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_D:
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_E:
+			if(pxProfile->xCrcBytes == 2U)
+			{
+				return RSRX_CODEC_STATUS_UNSUPPORTED_CHECKSUM_PROFILE;
+			}
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+
+		case RSRX_RASTA_REDUNDANCY_CRC_OPTION_A:
+		default:
+			return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+}
+
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy)
+{
+	uint32_t uPastBoundary;
+	uint32_t uFutureBoundary;
+
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_timestamp_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxPacket->uTimestamp == 0U) ||
+		(pxPolicy->uCurrentTimestamp == 0U))
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_ZERO;
+	}
+
+	if((UINT32_MAX - pxPolicy->uAcceptedFutureWindow) < pxPolicy->uCurrentTimestamp)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+	uFutureBoundary = pxPolicy->uCurrentTimestamp + pxPolicy->uAcceptedFutureWindow;
+
+	if(pxPolicy->uCurrentTimestamp < pxPolicy->uAcceptedPastWindow)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+	uPastBoundary = pxPolicy->uCurrentTimestamp - pxPolicy->uAcceptedPastWindow;
+
+	if((pxPolicy->uLastAcceptedTimestamp != 0U) &&
+		(pxPacket->uTimestamp <= pxPolicy->uLastAcceptedTimestamp))
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_REGRESSED;
+	}
+
+	if(pxPacket->uTimestamp > uFutureBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
+	}
+
+	if(pxPacket->uTimestamp < uPastBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_STALE;
+	}
+
+	if(pxPacket->uConfirmedTimestamp > pxPacket->uTimestamp)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
+	}
+
+	if(pxPacket->uConfirmedTimestamp > uFutureBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_IN_FUTURE;
+	}
+
+	if(pxPacket->uConfirmedTimestamp < uPastBoundary)
+	{
+		return RSRX_CODEC_STATUS_TIMESTAMP_STALE;
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_validate_rasta_sr_identity_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxPolicy)
+{
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_identity_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxPolicy->uExpectedReceiverId == 0U) ||
+		(pxPolicy->uExpectedSenderId == 0U))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxPacket->uReceiverId != pxPolicy->uExpectedReceiverId)
+	{
+		return RSRX_CODEC_STATUS_RECEIVER_ID_MISMATCH;
+	}
+
+	if(pxPacket->uSenderId != pxPolicy->uExpectedSenderId)
+	{
+		return RSRX_CODEC_STATUS_SENDER_ID_MISMATCH;
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxPolicy,
+	rsrx_decoded_message_t * pxMessage)
+{
+	rsrx_codec_status_t eStatus;
+	rsrx_message_type_t eMessageType;
+	size_t xIndex;
+
+	if(pxMessage == (rsrx_decoded_message_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearDecodedMessage(pxMessage);
+
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxPolicy == (const rsrx_rasta_sr_timestamp_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_validate_rasta_sr_timestamp_admission(pxPacket, pxPolicy);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	eStatus = rsrx_codec_map_rasta_sr_type_to_message_type(
+		pxPacket->usMessageType,
+		&eMessageType);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	if(pxPacket->xPayloadLength > D_RSRX_CODEC_MAX_PAYLOAD_BYTES)
+	{
+		return RSRX_CODEC_STATUS_PAYLOAD_TOO_LARGE;
+	}
+
+	pxMessage->eMessageType = eMessageType;
+	pxMessage->eSuggestedEvent = eMapMessageTypeToEvent(eMessageType);
+	pxMessage->eReason = eMapRastaSrMessageTypeToReason(eMessageType);
+	pxMessage->uSequenceNumber = pxPacket->uSequenceNumber;
+	pxMessage->uConfirmationNumber = pxPacket->uConfirmedSequenceNumber;
+	pxMessage->xPayloadLength = pxPacket->xPayloadLength;
+
+	for(xIndex = 0U; xIndex < pxPacket->xPayloadLength; ++xIndex)
+	{
+		pxMessage->auPayload[xIndex] = pxPacket->auPayload[xIndex];
+	}
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_packet_to_message_with_identity_and_timestamp_admission(
+	const rsrx_rasta_sr_decoded_packet_t * pxPacket,
+	const rsrx_rasta_sr_timestamp_admission_policy_t * pxTimestampPolicy,
+	const rsrx_rasta_sr_identity_admission_policy_t * pxIdentityPolicy,
+	rsrx_decoded_message_t * pxMessage)
+{
+	rsrx_codec_status_t eStatus;
+
+	if(pxMessage == (rsrx_decoded_message_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearDecodedMessage(pxMessage);
+
+	if((pxPacket == (const rsrx_rasta_sr_decoded_packet_t *)0) ||
+		(pxTimestampPolicy == (const rsrx_rasta_sr_timestamp_admission_policy_t *)0) ||
+		(pxIdentityPolicy == (const rsrx_rasta_sr_identity_admission_policy_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_validate_rasta_sr_identity_admission(pxPacket, pxIdentityPolicy);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+
+	return rsrx_codec_map_rasta_sr_packet_to_message_with_timestamp_admission(
+		pxPacket,
+		pxTimestampPolicy,
+		pxMessage);
+}
+
+rsrx_codec_status_t rsrx_codec_map_message_type_to_rasta_sr_type(
+	rsrx_message_type_t eMessageType,
+	uint16_t * pusRastaType)
+{
+	if(pusRastaType == (uint16_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*pusRastaType = 0U;
+
+	switch(eMessageType)
+	{
+		case RSRX_MESSAGE_TYPE_CONNECT_REQUEST:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_CONNECT_RESPONSE:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_HEARTBEAT:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_HB;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_DATA:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_DATA;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_DISCONNECT:
+			*pusRastaType = (uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_MESSAGE_TYPE_DIAGNOSTIC:
+		case RSRX_MESSAGE_TYPE_INVALID:
+		default:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+}
+
+rsrx_codec_status_t rsrx_codec_map_rasta_sr_type_to_message_type(
+	uint16_t usRastaType,
+	rsrx_message_type_t * peMessageType)
+{
+	if(peMessageType == (rsrx_message_type_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*peMessageType = RSRX_MESSAGE_TYPE_INVALID;
+
+	switch(usRastaType)
+	{
+		case (uint16_t)RSRX_RASTA_SR_TYPE_CONNREQ:
+			*peMessageType = RSRX_MESSAGE_TYPE_CONNECT_REQUEST;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_CONNRESP:
+			*peMessageType = RSRX_MESSAGE_TYPE_CONNECT_RESPONSE;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_HB:
+			*peMessageType = RSRX_MESSAGE_TYPE_HEARTBEAT;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_DATA:
+			*peMessageType = RSRX_MESSAGE_TYPE_DATA;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_RETRREQ:
+			*peMessageType = RSRX_MESSAGE_TYPE_RETRANSMISSION_REQUEST;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_DISCREQ:
+			*peMessageType = RSRX_MESSAGE_TYPE_DISCONNECT;
+			return RSRX_CODEC_STATUS_OK;
+
+		case (uint16_t)RSRX_RASTA_SR_TYPE_RETRRESP:
+		case (uint16_t)RSRX_RASTA_SR_TYPE_RETRDATA:
+		default:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_MESSAGE;
+	}
+}
+
+rsrx_codec_status_t rsrx_codec_map_reason_to_rasta_disconnect_reason(
+	rsrx_reason_code_t eReason,
+	uint16_t * pusRastaReason)
+{
+	if(pusRastaReason == (uint16_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*pusRastaReason = 0U;
+
+	switch(eReason)
+	{
+		case RSRX_REASON_DISCONNECT_REQUESTED:
+		case RSRX_REASON_SHUTDOWN_REQUESTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_USERREQUEST;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_INVALID_MESSAGE_RECEIVED:
+		case RSRX_REASON_INVALID_RESPONSE_RECEIVED:
+		case RSRX_REASON_UNEXPECTED_EVENT_REJECTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_UNEXPECTEDTYPE;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_SEQUENCE_GAP_DETECTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_SEQNERROR;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_TIMEOUT_EXPIRED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_TIMEOUT;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_INVALID_INPUT_ARGUMENT:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_SERVICENOTALLOWED;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_VERSION_MISMATCH_DETECTED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_INCOMPATIBLEVERSION;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_RETRANSMISSION_FAILED:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_RETRFAILED;
+			return RSRX_CODEC_STATUS_OK;
+
+		case RSRX_REASON_PROTOCOL_ERROR_DETECTED:
+		case RSRX_REASON_CONSERVATIVE_FAILSAFE:
+		case RSRX_REASON_INVALID_EVENT_ENUM:
+		case RSRX_REASON_INVALID_STATE_VALUE:
+			*pusRastaReason = (uint16_t)RSRX_RASTA_DISC_REASON_PROTOCOLERROR;
+			return RSRX_CODEC_STATUS_OK;
+
+		default:
+			return RSRX_CODEC_STATUS_UNSUPPORTED_REASON;
+	}
+}
+
+rsrx_codec_status_t rsrx_codec_write_rasta_sr_uint16(
+	uint16_t usValue,
+	uint8_t * puBuffer)
+{
+	if(puBuffer == (uint8_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vWriteUint16(puBuffer, usValue);
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_read_rasta_sr_uint16(
+	const uint8_t * puBuffer,
+	uint16_t * pusValue)
+{
+	if((puBuffer == (const uint8_t *)0) ||
+		(pusValue == (uint16_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*pusValue = usReadUint16(puBuffer);
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_write_rasta_sr_uint32(
+	uint32_t uValue,
+	uint8_t * puBuffer)
+{
+	if(puBuffer == (uint8_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vWriteUint32(puBuffer, uValue);
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_read_rasta_sr_uint32(
+	const uint8_t * puBuffer,
+	uint32_t * puValue)
+{
+	if((puBuffer == (const uint8_t *)0) ||
+		(puValue == (uint32_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	*puValue = uReadUint32(puBuffer);
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_calculate_crc32(
+	const uint8_t * puData,
+	size_t xDataLength,
+	uint32_t * puCrc)
+{
+	size_t xIndex;
+	uint32_t uCrc = 0xFFFFFFFFU;
+
+	if((puCrc == (uint32_t *)0) ||
+		((puData == (const uint8_t *)0) && (xDataLength > 0U)))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	for(xIndex = 0U; xIndex < xDataLength; ++xIndex)
+	{
+		uCrc = uUpdateCrc32Byte(uCrc, puData[xIndex]);
+	}
+
+	*puCrc = ~uCrc;
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_encode_message_with_crc32(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer)
+{
+	return rsrx_codec_encode_message_with_crc32_calculator(
+		pxRequest,
+		pxBuffer,
+		rsrx_codec_calculate_crc32);
+}
+
+rsrx_codec_status_t rsrx_codec_encode_message_with_crc32_calculator(
+	const rsrx_encode_request_t * pxRequest,
+	rsrx_encode_buffer_t * pxBuffer,
+	rsrx_crc32_calculate_fn pfCalculateCrc32)
+{
+	rsrx_codec_status_t eStatus;
+	uint32_t uCrc;
+	size_t xPayloadFrameLength;
+
+	if(pxBuffer == (rsrx_encode_buffer_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	pxBuffer->xEncodedLength = 0U;
+
+	if(pfCalculateCrc32 == (rsrx_crc32_calculate_fn)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	eStatus = rsrx_codec_encode_message(pxRequest, pxBuffer);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		pxBuffer->xEncodedLength = 0U;
+		return eStatus;
+	}
+
+	xPayloadFrameLength = pxBuffer->xEncodedLength;
+	if(pxBuffer->xBufferCapacity < (xPayloadFrameLength + D_RSRX_CODEC_CRC_BYTES))
+	{
+		pxBuffer->xEncodedLength = 0U;
+		return RSRX_CODEC_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	eStatus = pfCalculateCrc32(pxBuffer->puBuffer, xPayloadFrameLength, &uCrc);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		pxBuffer->xEncodedLength = 0U;
+		return eStatus;
+	}
+
+	vWriteUint32(&pxBuffer->puBuffer[xPayloadFrameLength], uCrc);
+	pxBuffer->xEncodedLength = xPayloadFrameLength + D_RSRX_CODEC_CRC_BYTES;
+
+	return RSRX_CODEC_STATUS_OK;
+}
+
+rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage)
+{
+	return rsrx_codec_decode_frame_with_crc32_calculator(
+		pxFrame,
+		pxMessage,
+		rsrx_codec_calculate_crc32);
+}
+
+rsrx_codec_status_t rsrx_codec_decode_frame_with_crc32_calculator(
+	const rsrx_transport_frame_t * pxFrame,
+	rsrx_decoded_message_t * pxMessage,
+	rsrx_crc32_calculate_fn pfCalculateCrc32)
+{
+	rsrx_transport_frame_t xPayloadFrame;
+	uint32_t uExpectedCrc;
+	uint32_t uActualCrc;
+	size_t xPayloadFrameLength;
+	rsrx_codec_status_t eStatus;
+
+	if(pxMessage == (rsrx_decoded_message_t *)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	vClearDecodedMessage(pxMessage);
+
+	if(pfCalculateCrc32 == (rsrx_crc32_calculate_fn)0)
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if((pxFrame == (const rsrx_transport_frame_t *)0) ||
+		(pxFrame->puPayload == (const uint8_t *)0))
+	{
+		return RSRX_CODEC_STATUS_INVALID_ARGUMENT;
+	}
+
+	if(pxFrame->xPayloadLength < (D_RSRX_CODEC_HEADER_BYTES + D_RSRX_CODEC_CRC_BYTES))
+	{
+		return RSRX_CODEC_STATUS_CRC_TRUNCATED;
+	}
+
+	xPayloadFrameLength = pxFrame->xPayloadLength - D_RSRX_CODEC_CRC_BYTES;
+	uExpectedCrc = uReadUint32(&pxFrame->puPayload[xPayloadFrameLength]);
+
+	eStatus = pfCalculateCrc32(pxFrame->puPayload, xPayloadFrameLength, &uActualCrc);
+	if(eStatus != RSRX_CODEC_STATUS_OK)
+	{
+		return eStatus;
+	}
+	if(uActualCrc != uExpectedCrc)
+	{
+		return RSRX_CODEC_STATUS_CRC_MISMATCH;
+	}
+
+	xPayloadFrame = *pxFrame;
+	xPayloadFrame.xPayloadLength = xPayloadFrameLength;
+
+	return rsrx_codec_decode_frame(&xPayloadFrame, pxMessage);
+}
